@@ -1,5 +1,5 @@
 /* ============================================================================
-   NAOWEE ORGANISMOS — RECORRIDO GUIADO por HU (ORG-01..ORG-08)            v1.0.0
+   NAOWEE ORGANISMOS — RECORRIDO GUIADO por HU (ORG-01..ORG-09 + HURU)     v1.1.0
    Capa de ayuda ADITIVA (no toca la lógica de las páginas): por cada historia
    de usuario muestra TAREA + PROPÓSITO + spotlight de dónde hacer clic + "Paso
    N de M". Un lanzador flotante indexa las HU por FASE del flujo; al elegir una,
@@ -116,6 +116,20 @@
         { sel: '#afApr', body: 'Al <b>Aprobar</b>, el deportista queda <b>Vinculado</b> y hereda automáticamente tu liga y federación. Toda acción queda trazada.' }
       ]
     },
+    'ORG-09': {
+      ph: '3 · Aprobación y delegación', page: 'deportistas.html', role: 'CLUB', demo: true,
+      title: 'Consultar el plantel de deportistas del club',
+      purpose: 'El club consulta en un solo lugar los deportistas que ya tiene afiliados, con la cadena que cada uno heredó. Es el resultado visible de ORG-08 y ejerce el permiso de consulta que la matriz §11.2 concede al club sobre sus afiliados.',
+      /* Los 3 pasos viven en deportistas.html. El último NO hace click:
+         «Ver ficha» NAVEGA a afiliacion.html y una recarga a mitad de HU
+         dejaría el recorrido sin target (§P14) — se explica el destino
+         en vez de saltar a él. */
+      steps: [
+        { sel: '#dpKpis', body: 'El resumen del plantel: <b>cuántos afiliados</b>, en qué deportes, cuántos con medallería y cuántos son <b>menores de edad</b> (requieren consentimiento del tutor).' },
+        { sel: '#dpSearch', body: 'Busca por <b>nombre, documento o modalidad</b>. Los filtros de al lado solo aparecen cuando la dimensión varía en tu plantel: un club de un solo deporte no ve el filtro de deporte.' },
+        { sel: '[data-ficha]', body: '<b>Ver ficha</b> abre el <b>perfil del deportista</b> en modo consulta: identificación, documentos, carné y la <b>cadena heredada</b> club → liga → federación → comité (ORG-05). Solo puedes abrir los deportistas de tu propio club; las bajas se resuelven en <b>Solicitudes de deportistas</b>.' }
+      ]
+    },
     'ORG-07': {
       ph: '4 · Estados y trazabilidad', page: 'organismo-detalle.html', role: 'MINDEPORTE', demo: true, q: { id: 'FED-040' },
       title: 'Estados del organismo y trazabilidad',
@@ -127,7 +141,7 @@
       ]
     }
   };
-  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-06', 'ORG-08', 'ORG-07'];
+  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-07'];
 
   /* ── Estado ── */
   var curHu = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _spotFresh = false;

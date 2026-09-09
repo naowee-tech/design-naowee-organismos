@@ -134,7 +134,12 @@ const CLUBES = [
   { id: 'CLU-010', tipo: 'club', nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000410', nombre: 'Andrés', apellido: 'Caicedo Mora', correo: 'admin@ruedalibrepalmira.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 31 # 29-10' }, contacto: { telefono: '6025101010', correo: 'contacto@ruedalibrepalmira.demo.co' }, fechaRegistro: '2026-01-28' }
 ];
 
-/* ─── 6) Deportistas FICTICIOS (~12, vinculados + autodeclarados) ─── */
+/* ─── 6) Deportistas FICTICIOS (vinculados + autodeclarados) ───
+   El plantel de CLU-001 (Club Patín Cali) es el más poblado a propósito: es el
+   club del rol CLUB de la demo y alimenta «Mis deportistas» (ORG-09). Con 12
+   afiliados la pantalla ejercita búsqueda, paginación (>PAGE_SIZE) y los filtros
+   CONDICIONALES: todos son de Patinaje → el filtro de DEPORTE se oculta (§P20),
+   pero hay 4 modalidades y varias categorías → esos filtros sí se renderizan. */
 const DEPORTISTAS = [
   { id: 'DEP-001', nombre: 'Valentina Ortiz', tipoDoc: 'CC', numDoc: '1144556778', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'valentina.ortiz@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
   { id: 'DEP-002', nombre: 'Mateo Restrepo', tipoDoc: 'CC', numDoc: '1144200145', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'mateo.restrepo@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
@@ -147,7 +152,17 @@ const DEPORTISTAS = [
   { id: 'DEP-009', nombre: 'Camila Suárez', tipoDoc: 'CC', numDoc: '1144556001', deporte: 'Natación', modalidad: 'Mariposa', correo: 'camila.suarez@correo.demo.co', clubId: null, estado: 'autodeclarado' },
   { id: 'DEP-010', nombre: 'Juan D. Marín', tipoDoc: 'CC', numDoc: '1088776655', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'juan.marin@correo.demo.co', clubId: null, estado: 'autodeclarado' },
   { id: 'DEP-011', nombre: 'Sara Betancur', tipoDoc: 'TI', numDoc: '1029887766', deporte: 'Fútbol', modalidad: 'Campo', correo: 'sara.betancur@correo.demo.co', clubId: null, estado: 'autodeclarado' },
-  { id: 'DEP-012', nombre: 'Nicolás Ariza', tipoDoc: 'CC', numDoc: '1144667788', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'nicolas.ariza@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' }
+  { id: 'DEP-012', nombre: 'Nicolás Ariza', tipoDoc: 'CC', numDoc: '1144667788', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'nicolas.ariza@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  /* Resto del plantel de CLU-001 — Club Patín Cali (ORG-09 · «Mis deportistas»). */
+  { id: 'DEP-013', nombre: 'Sofía Arango Cano', tipoDoc: 'TI', numDoc: '1029334455', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'sofia.arango@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-014', nombre: 'Emilio Vásquez Ruiz', tipoDoc: 'CC', numDoc: '1144881122', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'emilio.vasquez@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-015', nombre: 'Manuela Ospina Díaz', tipoDoc: 'TI', numDoc: '1029556677', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'manuela.ospina@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-016', nombre: 'Julián Bedoya Mesa', tipoDoc: 'CC', numDoc: '1144773311', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: 'julian.bedoya@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-017', nombre: 'Antonia Zapata León', tipoDoc: 'CC', numDoc: '1144665544', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'antonia.zapata@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-018', nombre: 'Felipe Quintero Sáenz', tipoDoc: 'TI', numDoc: '1029778899', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: 'felipe.quintero@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-019', nombre: 'Valeria Mosquera Rentería', tipoDoc: 'CC', numDoc: '1144992277', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'valeria.mosquera@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-020', nombre: 'Sebastián Toro Aguirre', tipoDoc: 'CC', numDoc: '1144110099', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'sebastian.toro@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-021', nombre: 'Luciana Palacio Hoyos', tipoDoc: 'TI', numDoc: '1029223344', deporte: 'Patinaje', modalidad: 'Freestyle', correo: 'luciana.palacio@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' }
 ];
 
 /* ─── Seed combinado (orden jerárquico: comités → federaciones → ligas → clubes) ─── */

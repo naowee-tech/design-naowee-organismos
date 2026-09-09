@@ -62,7 +62,35 @@ const PERFIL_EXTRA = {
   'DEP-012': { sexo: 'M', tier: 'profesional', nac: '09 nov 1998', edad: 27, sangre: 'AB+', alt: 178, peso: 73, ciudad: 'Cali', depto: 'Valle del Cauca',
     inscripciones: [{ evento: 'Juegos Regionales Valle 2025', prueba: '500m sprint', fecha: '2025-07-10', estado: 'finalizado' }],
     resultados: [{ evento: 'Juegos Regionales Valle 2025', prueba: '500m sprint', ranking: 4, fecha: '2025-07-10' }],
-    medalleria: [] }
+    medalleria: [] },
+
+  /* ─── Resto del plantel de CLU-001 (ORG-09 · «Mis deportistas») ───
+     Categorías y edades deliberadamente variadas: alimentan los filtros
+     condicionales y el KPI de menores de edad (consentimiento del tutor). */
+  'DEP-013': { sexo: 'F', tier: 'juvenil', nac: '14 may 2009', edad: 16, sangre: 'O+', alt: 158, peso: 49, ciudad: 'Cali', depto: 'Valle del Cauca' },
+  'DEP-014': { sexo: 'M', tier: 'profesional', nac: '21 jul 1997', edad: 28, sangre: 'A+', alt: 180, peso: 75, ciudad: 'Cali', depto: 'Valle del Cauca',
+    inscripciones: [{ evento: 'Campeonato Nacional de Patinaje 2025', prueba: '10.000m puntos', fecha: '2025-04-19', estado: 'finalizado' }],
+    resultados: [{ evento: 'Campeonato Nacional de Patinaje 2025', prueba: '10.000m puntos', ranking: 5, fecha: '2025-04-19' }],
+    medalleria: [] },
+  'DEP-015': { sexo: 'F', tier: 'juvenil', nac: '03 oct 2010', edad: 15, sangre: 'B+', alt: 155, peso: 46, ciudad: 'Cali', depto: 'Valle del Cauca' },
+  'DEP-016': { sexo: 'M', tier: 'amateur', nac: '17 mar 2000', edad: 25, sangre: 'O-', alt: 175, peso: 71, ciudad: 'Cali', depto: 'Valle del Cauca' },
+  'DEP-017': { sexo: 'F', tier: 'olimpico', nac: '28 ene 1996', edad: 29, sangre: 'A+', alt: 170, peso: 62, ciudad: 'Cali', depto: 'Valle del Cauca',
+    inscripciones: [
+      { evento: 'Campeonato Nacional de Patinaje 2025', prueba: '200m contrarreloj', fecha: '2025-04-18', estado: 'finalizado' },
+      { evento: 'Copa Panamericana de Patinaje 2026', prueba: '200m contrarreloj', fecha: '2026-03-22', estado: 'activo' }
+    ],
+    resultados: [{ evento: 'Campeonato Nacional de Patinaje 2025', prueba: '200m contrarreloj', ranking: 1, fecha: '2025-04-18' }],
+    medalleria: [
+      { evento: 'Campeonato Nacional de Patinaje 2025', prueba: '200m contrarreloj', medalla: 'Oro', fecha: '2025-04-18' },
+      { evento: 'Juegos Regionales Valle 2025', prueba: '500m sprint', medalla: 'Bronce', fecha: '2025-07-10' }
+    ] },
+  'DEP-018': { sexo: 'M', tier: 'juvenil', nac: '08 feb 2009', edad: 17, sangre: 'O+', alt: 172, peso: 63, ciudad: 'Cali', depto: 'Valle del Cauca' },
+  'DEP-019': { sexo: 'F', tier: 'profesional', nac: '12 dic 1999', edad: 26, sangre: 'AB+', alt: 164, peso: 56, ciudad: 'Cali', depto: 'Valle del Cauca',
+    inscripciones: [{ evento: 'Nacional de Patinaje Artístico 2025', prueba: 'Libre individual', fecha: '2025-09-06', estado: 'finalizado' }],
+    resultados: [{ evento: 'Nacional de Patinaje Artístico 2025', prueba: 'Libre individual', ranking: 2, fecha: '2025-09-06' }],
+    medalleria: [{ evento: 'Nacional de Patinaje Artístico 2025', prueba: 'Libre individual', medalla: 'Plata', fecha: '2025-09-06' }] },
+  'DEP-020': { sexo: 'M', tier: 'amateur', nac: '05 jun 2001', edad: 24, sangre: 'A-', alt: 177, peso: 70, ciudad: 'Cali', depto: 'Valle del Cauca' },
+  'DEP-021': { sexo: 'F', tier: 'juvenil', nac: '19 sep 2011', edad: 14, sangre: 'O+', alt: 152, peso: 43, ciudad: 'Cali', depto: 'Valle del Cauca' }
 };
 
 function seedFromDoc(numDoc) {

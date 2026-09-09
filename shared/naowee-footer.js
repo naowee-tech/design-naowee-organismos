@@ -415,7 +415,60 @@ const MODULE_NAME = 'Organismos';
              (fondo `--azul` #002B5B) con ícono + texto BLANCOS, borde blanco
              sutil, sombra navy e inner-highlight superior. Cambio en el shared
              `tour.js` → consistente en todas las páginas. Cache-busters ?v=1.2.18. */
-const MODULE_VERSION = 'v1.2.18';
+/* v1.3.0 —  ORG-09 · «MIS DEPORTISTAS»: el club ya puede ver la lista de los
+             deportistas afiliados a su club. Cierra el faltante que Nicolás
+             Mosquera levantó en la mesa del 2026-09-08 ("tendría que haber una
+             lista de deportistas dentro del club") y ejerce el permiso que la
+             matriz §11.2 YA concedía sin pantalla: PERMS.deportistas[CLUB]='R'
+             — «sus afiliados».
+             NUEVO shared/: `deportistas.js` (pantalla) + `deportistas.css`
+             (prefijo .dp-, override pattern: KPI-strip y tallero, lo único que
+             el DS no trae). NUEVA página `deportistas.html`.
+             Contenido: aviso de alcance + KPI-strip (afiliados · deportes ·
+             con medallería · menores de edad · solicitudes por confirmar, esta
+             última enlazada a la bandeja) + `.naowee-card .bj-panel` con
+             `.naowee-searchbox`, FILTROS CONDICIONALES (§P20: el select solo se
+             renderiza si la dimensión varía — un club mono-deporte NO ve el
+             filtro de deporte, sí el de modalidad y categoría), `.cg-table`
+             (mobile→cards) y `.naowee-pagination--small`. Dos empty states
+             distintos: sin plantel vs. sin resultados de filtro.
+             «VER FICHA» NAVEGA al perfil, no abre modal (decisión de Doug):
+             `afiliacion.html?role=…&id=…&from=deportistas` ya ES el perfil 360°
+             canónico del deportista, así que duplicarlo en un modal era
+             reconstruir lo existente. En su lugar `afiliacion.js` gana un MODO
+             CONSULTA (`esConsulta = roleCode !== 'DEPORTISTA'`):
+               · GATE DE JURISDICCIÓN row-level: solo se abre la ficha de un
+                 deportista del subárbol del ancla del rol (`deportistasOf` +
+                 `scopeFor`; Mindeporte global vía `isGlobalScope`). Fuera de
+                 alcance NO se pinta ningún dato — ni el <title>: aviso «Fuera
+                 de tu alcance» + retorno.
+               · READ-ONLY: desaparece el grupo CUENTA del nav (config /
+                 notificaciones / seguridad son del titular), «Editar datos» y
+                 TODOS los CTA de afiliación (asociar / cambiar / retirar /
+                 cancelar baja) vía el helper `soloTitular()`.
+               · VOZ: «Mi club» → «Club y cadena», «Solicitudes» → «Historial de
+                 afiliación», y los textos pasan a tercera persona.
+               · Barra superior `.af-consulta-bar`: botón «Volver al plantel»
+                 arriba-izquierda (§P17, honra `from=`) + `.naowee-message`
+                 de alcance. Estilos `.af-consulta-*`/`.af-oos` en perfil.css.
+             El perfil del DEPORTISTA sobre sí mismo queda INTACTO (4 grupos,
+             Editar datos, sin barra de consulta) — verificado.
+             ALCANCE DELIBERADO — es vista de CONSULTA, no de gestión: el club
+             tiene sobre `deportistas` solo la acción R; la baja la solicita el
+             deportista y el club la resuelve en su bandeja ('RA' sobre
+             `solicitudes`). NO se agregó botón de desafiliar: sería inventar un
+             permiso que el handoff no da. La pregunta de Nico sobre si el CLUB
+             puede desvincular queda como HUECO ABIERTO de la matriz.
+             Shell: nuevo ícono `users` + ítem «Mis deportistas» en el menú del
+             rol CLUB (antes de «Solicitudes de deportistas»: el plantel es el
+             estado permanente, la bandeja es el pendiente).
+             Tour: nueva HU ORG-09 en fase 3 (3 pasos, sin click en «Ver ficha»
+             — navegar a mitad de HU dejaría el recorrido sin target) + ORDER.
+             Datos: el plantel de CLU-001 pasa de 3 a 12 afiliados (DEP-013..021
+             + su PERFIL_EXTRA con categorías y edades variadas, incl. 4 menores)
+             para que la pantalla ejercite búsqueda, paginación y los filtros
+             condicionales de verdad. Cache-busters ?v=1.3.0. */
+const MODULE_VERSION = 'v1.3.0';
 
 (function () {
   function mount() {

@@ -14,8 +14,9 @@ import {
   seedDemoData, seedAfiliacionesDemo, getDeportista,
   buscarClubesActivos, crearSolicitud, retirarAfiliacion,
   crearSolicitudRetiro, retiroPendienteDe, cancelarRetiro,
-  solicitudDeDeportista, allSolicitudes, getOrganismo
+  solicitudDeDeportista, allSolicitudes, getOrganismo, deportistasOf
 } from './organismos-data.js';
+import { scopeFor, isGlobalScope, can } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
 import { qrSvg, qrMatrix } from './qr.js';
 
@@ -71,6 +72,38 @@ const role = ROLES[roleCode] || {};
 const params = new URLSearchParams(location.search);
 const DEP_ID = params.get('id') || role.deportistaId || 'DEP-001';
 
+/* ═══════════════ MODO CONSULTA POR ORGANISMO ═══════════════
+   La misma página sirve dos voces:
+     · DEPORTISTA  → «mi perfil»: gestiona su afiliación y su cuenta.
+     · organismo   → CONSULTA de la ficha de un afiliado suyo (ORG-09).
+   En consulta la página es READ-ONLY y se recorta a lo que le compete al
+   organismo: desaparece el grupo CUENTA (configuración/notificaciones/
+   seguridad son del titular) y todos los CTA de afiliación (asociar,
+   cambiar, retirar) — el organismo NO inicia esas acciones; el deportista
+   las solicita y el club las resuelve en su bandeja ('RA' sobre
+   `solicitudes`). Sobre `deportistas` el organismo tiene solo 'R' (§11.2).
+
+   ALCANCE DE DATOS (row-level): solo puede abrir la ficha de un deportista
+   de SU jurisdicción — el subárbol de su ancla (deportistasOf). Un id fuera
+   de alcance no se renderiza: se muestra un aviso, no los datos. */
+const esConsulta = roleCode !== 'DEPORTISTA';
+const scopeId = esConsulta ? scopeFor(roleCode) : null;
+const desde = params.get('from') || '';
+
+function enJurisdiccion() {
+  if (!esConsulta) return true;
+  if (!can(roleCode, 'R', 'deportistas')) return false;
+  if (isGlobalScope(roleCode)) return true;              // Mindeporte ve todo el SND
+  return deportistasOf(scopeId).some((d) => d.id === DEP_ID);
+}
+
+/* Ruta de retorno: honra `from` (§19) para cerrar el loop de navegación. */
+function volverHref() {
+  if (desde === 'deportistas') return `deportistas.html?role=${encodeURIComponent(roleCode)}`;
+  if (desde === 'bandeja') return `bandeja.html?role=${encodeURIComponent(roleCode)}`;
+  return `deportistas.html?role=${encodeURIComponent(roleCode)}`;
+}
+
 let ATLETA = buildDeportistaDetalle(getDeportista(DEP_ID));
 let activeSec = 'resumen';
 let activeTab = 'datos';
@@ -113,6 +146,20 @@ function navGroups() {
   else if (st.key === 'autodeclarado' || st.key === 'rechazada') miclub.alert = true;
   const sol = { id:'solicitudes', label:'Solicitudes', icon:I.link };
   if (solCount) sol.badge = String(solCount);
+
+  /* En consulta las etiquetas cambian de voz (no es «mi» club) y el grupo
+     CUENTA no se ofrece: pertenece al titular, no al organismo. */
+  if (esConsulta) {
+    miclub.label = 'Club y cadena';
+    delete miclub.alert;
+    sol.label = 'Historial de afiliación';
+    return [
+      { label:'Ficha', items:[ { id:'resumen', label:'Resumen', icon:I.id }, { id:'documentos', label:'Documentos', icon:I.doc, badge:'1' }, { id:'carne', label:'Carné digital', icon:I.carne } ] },
+      { label:'Afiliación', items:[ miclub, sol ] },
+      { label:'Deportivo', items:[ { id:'eventos', label:'Eventos', icon:I.cal }, { id:'historial', label:'Historial', icon:I.award } ] }
+    ];
+  }
+
   return [
     { label:'Perfil', items:[ { id:'resumen', label:'Resumen', icon:I.id }, { id:'documentos', label:'Documentos', icon:I.doc, badge:'1' }, { id:'carne', label:'Carné digital', icon:I.carne } ] },
     { label:'Afiliación', items:[ miclub, sol ] },
@@ -121,12 +168,58 @@ function navGroups() {
   ];
 }
 
+/* Botón de retorno canónico (§P17): mute + small, arriba-IZQUIERDA, en
+   <button> (un <a> heredaría el subrayado global de tokens.css). */
+function backBtnHTML() {
+  return `<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small af-back" id="pfVolver">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Volver al plantel
+  </button>`;
+}
+
+/* Aviso de alcance en consulta: dice con qué voz se está viendo la ficha y
+   dónde se gestionan de verdad las bajas. */
+function consultaBannerHTML() {
+  const org = scopeId ? getOrganismo(scopeId) : null;
+  return `<div class="naowee-message naowee-message--informative af-consulta-msg">
+    <span class="naowee-message__icon">${I.shieldCheck}</span>
+    <div class="naowee-message__body">
+      <p class="naowee-message__text">Ficha en <strong>modo consulta</strong>${org ? ` desde <strong>${esc(org.nombre)}</strong>` : ''}: ves la información del deportista, no gestionas su cuenta. Las afiliaciones y bajas se resuelven en <strong>Solicitudes de deportistas</strong>.</p>
+    </div>
+  </div>`;
+}
+
+/* Ficha fuera de la jurisdicción del rol: NO se pintan los datos. */
+function fueraDeAlcanceHTML() {
+  const org = scopeId ? getOrganismo(scopeId) : null;
+  return `
+    <div class="af-oos">
+      ${backBtnHTML()}
+      <div class="naowee-message naowee-message--caution" style="margin-top:16px">
+        <span class="naowee-message__icon">${I.alert}</span>
+        <div class="naowee-message__body">
+          <p class="naowee-message__title">Fuera de tu alcance</p>
+          <p class="naowee-message__text">Este deportista no está vinculado a ${org ? `<strong>${esc(org.nombre)}</strong> ni a ningún organismo de tu subárbol` : 'tu jurisdicción'}. Cada organismo solo consulta los deportistas de su propia rama de la jerarquía.</p>
+        </div>
+      </div>
+    </div>`;
+}
+
 /* ── Render principal ── */
 function render() {
   const t = TIER[ATLETA.tier];
   const st = affState();
   const afiliado = st.key === 'vinculado' || st.key === 'baja';  // vínculo activo (baja = aún vinculado, en trámite)
+
+  /* Gate de alcance ANTES de pintar cualquier dato del deportista. */
+  if (esConsulta && !enJurisdiccion()) {
+    document.getElementById('pfRoot').innerHTML = fueraDeAlcanceHTML();
+    document.getElementById('pfVolver')?.addEventListener('click', () => { window.location.href = volverHref(); });
+    return;
+  }
+
   document.getElementById('pfRoot').innerHTML = `
+    ${esConsulta ? `<div class="af-consulta-bar">${backBtnHTML()}${consultaBannerHTML()}</div>` : ''}
     <section class="pf-hero">
       <div class="pf-ava-wrap">
         <div class="pf-ava pf-ava--${ATLETA.tier}">${esc(ATLETA.avatar)}</div>
@@ -148,7 +241,7 @@ function render() {
       <div class="pf-side">
         <div class="pf-aff-state">
           ${affStatePillHTML(st)}
-          ${(st.key === 'autodeclarado' || st.key === 'rechazada')
+          ${(!esConsulta && (st.key === 'autodeclarado' || st.key === 'rechazada'))
             ? `<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" id="heroAsociar">${I.link} Asociar a club</button>`
             : ''}
         </div>
@@ -167,6 +260,7 @@ function render() {
     activeSec = b.dataset.sec; syncNav(); renderPanel();
   });
   document.getElementById('heroAsociar')?.addEventListener('click', openAsociarModal);
+  document.getElementById('pfVolver')?.addEventListener('click', () => { window.location.href = volverHref(); });
   renderPanel();
 }
 
@@ -290,7 +384,9 @@ function resumenHTML() {
   else body = `
     ${fld('Correo electrónico', ATLETA.contacto.correo)} ${fld('Teléfono', ATLETA.contacto.telefono)}
     ${fld('Contacto de emergencia', ATLETA.contacto.emergenciaNombre)} ${fld('Tel. de emergencia', ATLETA.contacto.emergenciaTel)}`;
-  const editBtn = `<button class="naowee-btn naowee-btn--mute naowee-btn--small pf-edit">${I.pencil} Editar datos</button>`;
+  /* En consulta no se ofrece edición: el organismo tiene 'R', no 'U', sobre
+     los datos del deportista (§11.2). */
+  const editBtn = esConsulta ? '' : `<button class="naowee-btn naowee-btn--mute naowee-btn--small pf-edit">${I.pencil} Editar datos</button>`;
   return `${head('Datos personales', '', editBtn)}${tabsBar}<div class="pf-body"><div class="pf-fields">${body}</div></div>`;
 }
 
@@ -472,8 +568,15 @@ function downloadBlob(filename, content, mime) {
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-/* ══════════ Mi club — sección estrella (T7) ══════════ */
+/* ══════════ Mi club — sección estrella (T7) ══════════
+   Dos voces: «Mi club» para el titular, «Club y cadena» en consulta por un
+   organismo. Los bloques de acción son SOLO del titular: el organismo no
+   inicia asociaciones ni bajas (tiene 'R' sobre `deportistas`; resuelve las
+   solicitudes desde su bandeja). */
+const soloTitular = (html) => (esConsulta ? '' : html);
+
 function miclubHTML() {
+  const secTitle = esConsulta ? 'Club y cadena' : 'Mi club';
   const st = affState();
   if (st.key === 'vinculado' || st.key === 'baja') {
     const enBaja = st.key === 'baja';
@@ -502,30 +605,38 @@ function miclubHTML() {
           ${chain || '<div class="pf-empty">Sin cadena ascendente registrada.</div>'}
         </div>`;
     if (enBaja) {
-      return `${head('Mi club', 'Tu baja está en trámite: el club debe confirmar tu retiro.')}
+      return `${head(secTitle, esConsulta
+          ? 'El deportista solicitó su baja: el club debe confirmar el retiro.'
+          : 'Tu baja está en trámite: el club debe confirmar tu retiro.')}
         <div class="pf-body">
           <div class="naowee-message naowee-message--caution" role="status" style="margin-bottom:18px">
             <span class="naowee-message__icon">${I.clock}</span>
-            <div class="naowee-message__content"><p class="naowee-message__text"><strong>Solicitud de baja enviada el ${esc(st.sol.fecha)}.</strong> Estás en espera de que <strong>${esc(ATLETA.clubNombre)}</strong> confirme tu retiro. Hasta entonces sigues vinculado y conservas tu liga y federación.</p></div>
+            <div class="naowee-message__body">${esConsulta
+              ? `<p class="naowee-message__text"><strong>Solicitud de baja recibida el ${esc(st.sol.fecha)}.</strong> Está pendiente de que <strong>${esc(ATLETA.clubNombre)}</strong> confirme el retiro en su bandeja. Hasta entonces el deportista sigue vinculado y conserva su liga y federación.</p>`
+              : `<p class="naowee-message__text"><strong>Solicitud de baja enviada el ${esc(st.sol.fecha)}.</strong> Estás en espera de que <strong>${esc(ATLETA.clubNombre)}</strong> confirme tu retiro. Hasta entonces sigues vinculado y conservas tu liga y federación.</p>`}</div>
           </div>
           ${clubCard}
-          <div class="af-node__actions">
+          ${soloTitular(`<div class="af-node__actions">
             <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="miclubCancelarBaja">${I.refresh} Cancelar solicitud de baja</button>
-          </div>
+          </div>`)}
         </div>`;
     }
-    return `${head('Mi club', 'Estás afiliado a un club. Tu liga y federación se heredan automáticamente de él.')}
+    return `${head(secTitle, esConsulta
+        ? 'El deportista está afiliado a este club. Su liga y federación se heredan automáticamente de él.'
+        : 'Estás afiliado a un club. Tu liga y federación se heredan automáticamente de él.')}
       <div class="pf-body">
         ${clubCard}
-        <div class="af-node__actions">
+        ${soloTitular(`<div class="af-node__actions">
           <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="miclubCambiar">${I.refresh} Cambiar de club</button>
           <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="miclubRetirar">Retirar afiliación</button>
-        </div>
+        </div>`)}
       </div>`;
   }
   if (st.key === 'pendiente') {
     const club = getOrganismo(st.sol.clubId);
-    return `${head('Mi club', 'Tu solicitud está en espera de confirmación por parte del club.')}
+    return `${head(secTitle, esConsulta
+        ? 'La solicitud del deportista está en espera de confirmación del club.'
+        : 'Tu solicitud está en espera de confirmación por parte del club.')}
       <div class="pf-body">
         <div class="af-sol-card">
           <div class="af-sol-card__top">
@@ -536,15 +647,17 @@ function miclubHTML() {
               <div class="af-sol-card__meta">Enviada el ${esc(st.sol.fecha)} · en espera de confirmación del club</div>
             </div>
           </div>
-          <div class="af-sol-card__foot">
+          ${soloTitular(`<div class="af-sol-card__foot">
             <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="miclubRetirarSol">Retirar solicitud</button>
-          </div>
+          </div>`)}
         </div>
       </div>`;
   }
   if (st.key === 'rechazada') {
     const club = getOrganismo(st.sol.clubId);
-    return `${head('Mi club', 'Tu última solicitud fue rechazada. Puedes enviar una nueva.')}
+    return `${head(secTitle, esConsulta
+        ? 'La última solicitud del deportista fue rechazada.'
+        : 'Tu última solicitud fue rechazada. Puedes enviar una nueva.')}
       <div class="pf-body">
         <div class="af-sol-card af-sol-card--rechazada">
           <div class="af-sol-card__top">
@@ -555,20 +668,22 @@ function miclubHTML() {
               <div class="af-sol-card__meta">${st.sol.motivo ? 'Motivo: ' + esc(st.sol.motivo) : 'Sin motivo registrado'}</div>
             </div>
           </div>
-          <div class="af-sol-card__foot">
+          ${soloTitular(`<div class="af-sol-card__foot">
             <button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" data-asociar>${I.link} Enviar nueva solicitud</button>
-          </div>
+          </div>`)}
         </div>
       </div>`;
   }
   // Sin CTA en el header: el hero ya tiene "Asociar a club"; aquí el CTA vive en el empty state.
-  return `${head('Mi club', 'Aún no estás afiliado a un club.')}
+  return `${head(secTitle, esConsulta ? 'El deportista no está afiliado a ningún club.' : 'Aún no estás afiliado a un club.')}
     <div class="pf-body">
       <div class="naowee-empty-state">
         <span class="naowee-empty-state__icon">${I.club}</span>
-        <p class="naowee-empty-state__title">Eres un deportista autodeclarado</p>
-        <p class="naowee-empty-state__description">Estás registrado en el SUID pero sin club. Al afiliarte a un club <strong>Activo</strong> y ser aprobado, heredarás automáticamente su liga y su federación (ORG-05). Podrás cambiar o retirar tu afiliación cuando quieras.</p>
-        <button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" data-asociar>${I.link} Buscar un club</button>
+        <p class="naowee-empty-state__title">${esConsulta ? 'Deportista autodeclarado' : 'Eres un deportista autodeclarado'}</p>
+        <p class="naowee-empty-state__description">${esConsulta
+          ? 'Está registrado en el SUID pero sin club, por lo que no hereda liga ni federación. Solo el propio deportista puede iniciar su afiliación; el club la confirma desde su bandeja (ORG-05).'
+          : 'Estás registrado en el SUID pero sin club. Al afiliarte a un club <strong>Activo</strong> y ser aprobado, heredarás automáticamente su liga y su federación (ORG-05). Podrás cambiar o retirar tu afiliación cuando quieras.'}</p>
+        ${soloTitular(`<button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" data-asociar>${I.link} Buscar un club</button>`)}
       </div>
     </div>`;
 }
@@ -937,10 +1052,18 @@ function setupModals() {
 /* ── Boot ── */
 seedDemoData();
 seedAfiliacionesDemo(getDemoMode());
-mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'afiliacion' });
+/* En consulta el activo del sidebar es «Mis deportistas» (el organismo llegó
+   desde ahí); el ítem 'afiliacion' solo existe en el menú del deportista. */
+mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: esConsulta ? 'deportistas' : 'afiliacion' });
 mountHeader({ headerEl: document.getElementById('topHeader'), role });
 mountBackdrop();
 mountDemoSwitcher({ roleCode });
-document.title = `Mi perfil — ${ATLETA.nombreCompleto}`;
+/* El título tampoco revela el nombre de un deportista fuera de alcance
+   (el gate del render bloquea el cuerpo; el <title> debe ser coherente). */
+document.title = !esConsulta
+  ? `Mi perfil — ${ATLETA.nombreCompleto}`
+  : enJurisdiccion()
+    ? `${ATLETA.nombreCompleto} — Ficha del deportista`
+    : 'Ficha fuera de tu alcance — Naowee Organismos';
 render();
 setupModals();
