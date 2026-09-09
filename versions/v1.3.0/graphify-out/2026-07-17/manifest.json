@@ -1,0 +1,1987 @@
+{
+  ".claude/launch.json": {
+    "mtime": 1784114371.2946453,
+    "ast_hash": "25dd0d86b19de3cf9d5d9e1c387b1c85",
+    "semantic_hash": ""
+  },
+  "shared/afiliacion.js": {
+    "mtime": 1784300944.1961274,
+    "ast_hash": "bc330a8da45cf6b843a874aa6604bf88",
+    "semantic_hash": ""
+  },
+  "shared/bandeja.js": {
+    "mtime": 1784298885.2274168,
+    "ast_hash": "9623c5773f716dd24b7d72330e0f8746",
+    "semantic_hash": ""
+  },
+  "shared/cargue.js": {
+    "mtime": 1784213025.9300077,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "shared/deportista-detalle.js": {
+    "mtime": 1784287052.3904624,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "shared/detalle.js": {
+    "mtime": 1784212737.5821912,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "shared/estados.js": {
+    "mtime": 1784212559.495032,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "shared/naowee-footer.js": {
+    "mtime": 1784301080.6229622,
+    "ast_hash": "88be05f64ee7a57822fc148332d056d2",
+    "semantic_hash": ""
+  },
+  "shared/organismos-data.js": {
+    "mtime": 1784257166.8008056,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "shared/permissions.js": {
+    "mtime": 1784118322.4012327,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "shared/qr.js": {
+    "mtime": 1784287225.9795032,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "shared/registro-publico.js": {
+    "mtime": 1784293835.14714,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "shared/registro.js": {
+    "mtime": 1784246046.8865957,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "shared/sidebar.js": {
+    "mtime": 1784169405.0999744,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "shared/tour.js": {
+    "mtime": 1784291343.4461825,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/afiliacion.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/bandeja.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "efe1291f89b5774c2260b9387061b5fb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/cargue.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/deportista-detalle.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/detalle.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/estados.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/naowee-footer.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "737305bf3418eae15c33c12c3dac39a7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/organismos-data.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "affd1323276b9a48892aa08b6b611e32",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/permissions.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/registro-publico.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "1c249a4408be52948c655f2c9c9bf2f9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/registro.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "07aa3545d4cc449df639f7bc27500bed",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/sidebar.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/tour.js": {
+    "mtime": 1784218602.0,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/afiliacion.js": {
+    "mtime": 1784228093.735455,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/bandeja.js": {
+    "mtime": 1784228093.7358334,
+    "ast_hash": "efe1291f89b5774c2260b9387061b5fb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/cargue.js": {
+    "mtime": 1784228093.7360873,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/deportista-detalle.js": {
+    "mtime": 1784228093.7365718,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/detalle.js": {
+    "mtime": 1784228093.737142,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/estados.js": {
+    "mtime": 1784228093.7374103,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/naowee-footer.js": {
+    "mtime": 1784228093.739915,
+    "ast_hash": "d91cddbe92d403cc4fa6d3ffef2a7b18",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/organismos-data.js": {
+    "mtime": 1784228093.740314,
+    "ast_hash": "affd1323276b9a48892aa08b6b611e32",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/permissions.js": {
+    "mtime": 1784228093.7408733,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/registro-publico.js": {
+    "mtime": 1784228093.741558,
+    "ast_hash": "fb1c0f533c829268be9b2e7839de08c6",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/registro.js": {
+    "mtime": 1784228093.7421212,
+    "ast_hash": "07aa3545d4cc449df639f7bc27500bed",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/sidebar.js": {
+    "mtime": 1784228093.74271,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/tour.js": {
+    "mtime": 1784228093.7432015,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/afiliacion.js": {
+    "mtime": 1784244122.0656219,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/bandeja.js": {
+    "mtime": 1784244122.0659935,
+    "ast_hash": "a121e94104471b7b315fb5192bb20959",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/cargue.js": {
+    "mtime": 1784244122.0662773,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/deportista-detalle.js": {
+    "mtime": 1784244122.066819,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/detalle.js": {
+    "mtime": 1784244122.0674338,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/estados.js": {
+    "mtime": 1784244122.0676892,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/naowee-footer.js": {
+    "mtime": 1784244122.0702782,
+    "ast_hash": "0a638f290bbfc5478bced91e8841b22d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/organismos-data.js": {
+    "mtime": 1784244122.0710368,
+    "ast_hash": "cb604a8e4b5dadc40c438ae0f8e6f5c9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/permissions.js": {
+    "mtime": 1784244122.0717256,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/registro-publico.js": {
+    "mtime": 1784244122.0719674,
+    "ast_hash": "f256b138164e5334cdba289c688ab425",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/registro.js": {
+    "mtime": 1784244122.0722947,
+    "ast_hash": "07aa3545d4cc449df639f7bc27500bed",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/sidebar.js": {
+    "mtime": 1784244122.0729108,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/tour.js": {
+    "mtime": 1784244122.0751567,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/afiliacion.js": {
+    "mtime": 1784246979.8279612,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/bandeja.js": {
+    "mtime": 1784246979.828402,
+    "ast_hash": "a7a5f746ddf5f3715fce478fbde82993",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/cargue.js": {
+    "mtime": 1784246979.828663,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/deportista-detalle.js": {
+    "mtime": 1784246979.8292766,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/detalle.js": {
+    "mtime": 1784246979.8298855,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/estados.js": {
+    "mtime": 1784246979.8301983,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/naowee-footer.js": {
+    "mtime": 1784246979.8328679,
+    "ast_hash": "1f5f66452c9e42ad93cd1d02dc0dc33f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/organismos-data.js": {
+    "mtime": 1784246979.8333209,
+    "ast_hash": "cb604a8e4b5dadc40c438ae0f8e6f5c9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/permissions.js": {
+    "mtime": 1784246979.8338675,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/registro-publico.js": {
+    "mtime": 1784246979.834199,
+    "ast_hash": "b3cdc3b0db623494f371beeb212053dc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/registro.js": {
+    "mtime": 1784246979.8345864,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/sidebar.js": {
+    "mtime": 1784246979.835155,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/tour.js": {
+    "mtime": 1784246979.8357248,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/afiliacion.js": {
+    "mtime": 1784258908.83832,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/bandeja.js": {
+    "mtime": 1784258908.8387146,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/cargue.js": {
+    "mtime": 1784258908.8389542,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/deportista-detalle.js": {
+    "mtime": 1784258908.8394523,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/detalle.js": {
+    "mtime": 1784258908.840039,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/estados.js": {
+    "mtime": 1784258908.840321,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/naowee-footer.js": {
+    "mtime": 1784258908.8424816,
+    "ast_hash": "84d1f9ebb661f32c18ce61997d21bf06",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/organismos-data.js": {
+    "mtime": 1784258908.8428578,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/permissions.js": {
+    "mtime": 1784258908.8436089,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/registro-publico.js": {
+    "mtime": 1784258908.8439739,
+    "ast_hash": "932d9a5c462a2b471212364d0bac5591",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/registro.js": {
+    "mtime": 1784258908.8444078,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/sidebar.js": {
+    "mtime": 1784258908.844971,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/tour.js": {
+    "mtime": 1784258908.8454485,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/afiliacion.js": {
+    "mtime": 1784259953.9994419,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/bandeja.js": {
+    "mtime": 1784259953.999866,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/cargue.js": {
+    "mtime": 1784259954.000093,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/deportista-detalle.js": {
+    "mtime": 1784259954.0006797,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/detalle.js": {
+    "mtime": 1784259954.001283,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/estados.js": {
+    "mtime": 1784259954.0016353,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/naowee-footer.js": {
+    "mtime": 1784259954.0038126,
+    "ast_hash": "44670fea641502a9331445cddaffbfe6",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/organismos-data.js": {
+    "mtime": 1784259954.0042257,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/permissions.js": {
+    "mtime": 1784259954.0048666,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/registro-publico.js": {
+    "mtime": 1784259954.0052142,
+    "ast_hash": "949198d64dff13ff61544dd8a65798c0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/registro.js": {
+    "mtime": 1784259954.005765,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/sidebar.js": {
+    "mtime": 1784259954.0063877,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/tour.js": {
+    "mtime": 1784259954.006947,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  ".github/workflows/publicar-version.yml": {
+    "mtime": 1784225085.2441049,
+    "ast_hash": "3499a8687440fe481f37cb0effbdd371",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1784215087.660716,
+    "ast_hash": "cfeeae91db32df94b0bf86eec9911ae5",
+    "semantic_hash": ""
+  },
+  "afiliacion.html": {
+    "mtime": 1784300969.3785262,
+    "ast_hash": "e158f02a02473579389746605dfc6e30",
+    "semantic_hash": ""
+  },
+  "bandeja.html": {
+    "mtime": 1784300969.3802793,
+    "ast_hash": "2cdda463ff8842e0434759f0f65bf5a4",
+    "semantic_hash": ""
+  },
+  "cargue.html": {
+    "mtime": 1784300969.3819892,
+    "ast_hash": "dba7d8e9748b5060f2e8cead789071c2",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1784300969.3838792,
+    "ast_hash": "f8888f589ae81c2a74167c341637cace",
+    "semantic_hash": ""
+  },
+  "jerarquia.html": {
+    "mtime": 1784300969.3861015,
+    "ast_hash": "4e04a84a78a22889c2a5e94b7fd01c86",
+    "semantic_hash": ""
+  },
+  "organismo-detalle.html": {
+    "mtime": 1784300969.3877819,
+    "ast_hash": "1194eb493ff4c03dd665da4d2808f8ae",
+    "semantic_hash": ""
+  },
+  "registro-publico.html": {
+    "mtime": 1784300969.3894277,
+    "ast_hash": "ac130c5a057f85c38e96bbfdaa427e72",
+    "semantic_hash": ""
+  },
+  "registro.html": {
+    "mtime": 1784300969.3910477,
+    "ast_hash": "94281fcdeed2fa4f94828b14c37d5b37",
+    "semantic_hash": ""
+  },
+  "versions/index.html": {
+    "mtime": 1784300090.7920673,
+    "ast_hash": "4e1f0a9fd8055549ccf571ff7db9e34a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/afiliacion.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "46fcae12d43e55328dba41964c7b263b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/bandeja.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "2a27287e32b68130ced6b77b94c0b023",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/cargue.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "ccfc6910a781ea8bc7ef9fe8a4b67413",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/index.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "50791def6d49ef6595293f415652239c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/jerarquia.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "96f4938bcec18e8ef6ff8997ae2554f6",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/organismo-detalle.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "9c5a8848bd9b51ee96d5aa8d7101c3bc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/registro-publico.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "2924779eaf4bf2c0b3fc313af5ae39e0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/registro.html": {
+    "mtime": 1784218602.0,
+    "ast_hash": "b428a435c83237b1c896055caad36b0d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/afiliacion.html": {
+    "mtime": 1784228093.7332194,
+    "ast_hash": "ac01785069eafe2e053d61bfb9b42b07",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/bandeja.html": {
+    "mtime": 1784228093.7334023,
+    "ast_hash": "096106a54848634b33253f145fae136c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/cargue.html": {
+    "mtime": 1784228093.7335908,
+    "ast_hash": "660cdb4d1cdb823774571c2ecf8028da",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/index.html": {
+    "mtime": 1784228093.7338495,
+    "ast_hash": "a9702e831b7bcbb766a5fa9ac6bcd59c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/jerarquia.html": {
+    "mtime": 1784228093.7342482,
+    "ast_hash": "f0e1e826f431b026888f28ffd8b6a625",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/organismo-detalle.html": {
+    "mtime": 1784228093.7344542,
+    "ast_hash": "f30977f6c50c41fab6f9d462e0b732ce",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/registro-publico.html": {
+    "mtime": 1784228093.7347534,
+    "ast_hash": "2cbed7e656e834d6d57668ae536b14a9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/registro.html": {
+    "mtime": 1784228093.734976,
+    "ast_hash": "4b80cc5f56b23cd045e483557a14a846",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/afiliacion.html": {
+    "mtime": 1784244122.0633416,
+    "ast_hash": "7b5f9b23ecdbaa0fab299e5112dde260",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/bandeja.html": {
+    "mtime": 1784244122.0635724,
+    "ast_hash": "b12a1991180f4aa6741d8f6893cde91b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/cargue.html": {
+    "mtime": 1784244122.0638428,
+    "ast_hash": "4a12952b6aac67b80a41c85716cca5e3",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/index.html": {
+    "mtime": 1784244122.0640812,
+    "ast_hash": "71622d9ef932b6ae7d17a213c6b4df5c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/jerarquia.html": {
+    "mtime": 1784244122.0644224,
+    "ast_hash": "4bb1dfc0164921cbe6e88f6cc269fcbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/organismo-detalle.html": {
+    "mtime": 1784244122.0646968,
+    "ast_hash": "0786ab7110719092a6fad3699ac6c38b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/registro-publico.html": {
+    "mtime": 1784244122.0648758,
+    "ast_hash": "30de8a478ffc4db001323ef8efc1ffc1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/registro.html": {
+    "mtime": 1784244122.065127,
+    "ast_hash": "1ab58807a4f0409022f4e488c48e9b92",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/afiliacion.html": {
+    "mtime": 1784246979.8256357,
+    "ast_hash": "36ac7d7b424f94c14974cc177677e95f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/bandeja.html": {
+    "mtime": 1784246979.8258219,
+    "ast_hash": "41532ce4ff7b10ae908476d5dfd13af0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/cargue.html": {
+    "mtime": 1784246979.8260128,
+    "ast_hash": "60a1c0ad428e92ca00a33d963c6135f2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/index.html": {
+    "mtime": 1784246979.8263192,
+    "ast_hash": "4dcbb1824e6241ec037d5f6268ce1e83",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/jerarquia.html": {
+    "mtime": 1784246979.8265674,
+    "ast_hash": "13bcb530f69277a45f792ee219df959c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/organismo-detalle.html": {
+    "mtime": 1784246979.8267968,
+    "ast_hash": "a30051bbada994e2e598ae2de3a6e8b5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/registro-publico.html": {
+    "mtime": 1784246979.8271887,
+    "ast_hash": "45604f596f76a2868d099b53a4ff1e7b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/registro.html": {
+    "mtime": 1784246979.827493,
+    "ast_hash": "cb8f3668bcf45450dca9c1dc966c5ad3",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/afiliacion.html": {
+    "mtime": 1784258908.8364744,
+    "ast_hash": "55499973939f83301f894c3bd918e991",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/bandeja.html": {
+    "mtime": 1784258908.8367124,
+    "ast_hash": "9255e73e2a9b97ab283a018197f8cb5f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/cargue.html": {
+    "mtime": 1784258908.8369036,
+    "ast_hash": "1d0641f80a9d9ee9df94e072083641f9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/index.html": {
+    "mtime": 1784258908.8371623,
+    "ast_hash": "a81252e3c4d05b9eefd61706f009b095",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/jerarquia.html": {
+    "mtime": 1784258908.837365,
+    "ast_hash": "cd552039200695d498affdab7d912d2f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/organismo-detalle.html": {
+    "mtime": 1784258908.83756,
+    "ast_hash": "15ddcf2adb54910f33d5684a96cc198f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/registro-publico.html": {
+    "mtime": 1784258908.8377604,
+    "ast_hash": "be294e770ddd8e367f397aabbf9a97be",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/registro.html": {
+    "mtime": 1784258908.8379264,
+    "ast_hash": "aaa325dc4f856684ad51294fa6fa6960",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/afiliacion.html": {
+    "mtime": 1784260915.4607964,
+    "ast_hash": "ca78e7922ab4f4903d1a6866cc06f87e",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/bandeja.html": {
+    "mtime": 1784260915.461414,
+    "ast_hash": "0bfe8b5c4532ba54ceaf7e8983e84aca",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/cargue.html": {
+    "mtime": 1784260915.4618037,
+    "ast_hash": "2b00cc49f9c1dd66107dbe89464c82d0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/index.html": {
+    "mtime": 1784260915.4622626,
+    "ast_hash": "1995ad316c9fb4400b677bfd10cbe9ab",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/jerarquia.html": {
+    "mtime": 1784260915.4626873,
+    "ast_hash": "4f7292aeb9790f0c6afbef0c5bbdcb63",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/organismo-detalle.html": {
+    "mtime": 1784260915.462999,
+    "ast_hash": "722058ca558a508bb781a98cea5574eb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/registro-publico.html": {
+    "mtime": 1784260915.463521,
+    "ast_hash": "7e20d5bb8302f3c3962c08d47510446b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/registro.html": {
+    "mtime": 1784260915.463901,
+    "ast_hash": "7c1e8ee1681562cbff7ab68920528823",
+    "semantic_hash": ""
+  },
+  "shared/logos/ministerio.svg": {
+    "mtime": 1784114361.5765312,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "shared/logos/naowee.svg": {
+    "mtime": 1784114361.5717509,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "shared/logos/suid.png": {
+    "mtime": 1784114361.5803678,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/logos/ministerio.svg": {
+    "mtime": 1784218602.0,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/logos/naowee.svg": {
+    "mtime": 1784218602.0,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.0/shared/logos/suid.png": {
+    "mtime": 1784218602.0,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/logos/ministerio.svg": {
+    "mtime": 1784228093.7387288,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/logos/naowee.svg": {
+    "mtime": 1784228093.7389405,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.2/shared/logos/suid.png": {
+    "mtime": 1784228093.7393372,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/logos/ministerio.svg": {
+    "mtime": 1784244122.068794,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/logos/naowee.svg": {
+    "mtime": 1784244122.0690372,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.3/shared/logos/suid.png": {
+    "mtime": 1784244122.069691,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/logos/ministerio.svg": {
+    "mtime": 1784246979.8313386,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/logos/naowee.svg": {
+    "mtime": 1784246979.8319144,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.4/shared/logos/suid.png": {
+    "mtime": 1784246979.8322976,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/logos/ministerio.svg": {
+    "mtime": 1784258908.841412,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/logos/naowee.svg": {
+    "mtime": 1784258908.8416905,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.5/shared/logos/suid.png": {
+    "mtime": 1784258908.8420644,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/logos/ministerio.svg": {
+    "mtime": 1784259954.002677,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/logos/naowee.svg": {
+    "mtime": 1784259954.0031195,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.6/shared/logos/suid.png": {
+    "mtime": 1784259954.0034873,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/afiliacion.js": {
+    "mtime": 1784290058.1233299,
+    "ast_hash": "e5baa98e9332350d851315aabbc0f7b9",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/bandeja.js": {
+    "mtime": 1784290058.12372,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/cargue.js": {
+    "mtime": 1784290058.1239614,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/deportista-detalle.js": {
+    "mtime": 1784290058.124491,
+    "ast_hash": "694229bb51c6f058741650df8cfdc7a4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/detalle.js": {
+    "mtime": 1784290058.125,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/estados.js": {
+    "mtime": 1784290058.1252687,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/naowee-footer.js": {
+    "mtime": 1784290058.1276357,
+    "ast_hash": "452c273b84cbd4f2ca5a75d1b301f3af",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/organismos-data.js": {
+    "mtime": 1784290058.1280882,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/permissions.js": {
+    "mtime": 1784290058.12862,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/registro-publico.js": {
+    "mtime": 1784290058.12918,
+    "ast_hash": "5cdd79f8052379bca99da604ed1af7ca",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/registro.js": {
+    "mtime": 1784290058.1295843,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/sidebar.js": {
+    "mtime": 1784290058.1300824,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/tour.js": {
+    "mtime": 1784290058.1305573,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/afiliacion.js": {
+    "mtime": 1784290058.1324904,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/bandeja.js": {
+    "mtime": 1784290058.132679,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/cargue.js": {
+    "mtime": 1784290058.1328373,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/deportista-detalle.js": {
+    "mtime": 1784290058.1332254,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/detalle.js": {
+    "mtime": 1784290058.133622,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/estados.js": {
+    "mtime": 1784290058.133783,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/naowee-footer.js": {
+    "mtime": 1784290058.1351745,
+    "ast_hash": "df3406856dd1350616c00e03c3e1ad68",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/organismos-data.js": {
+    "mtime": 1784290058.135401,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/permissions.js": {
+    "mtime": 1784290058.1358135,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/qr.js": {
+    "mtime": 1784290058.1360354,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/registro-publico.js": {
+    "mtime": 1784290058.1362293,
+    "ast_hash": "5cdd79f8052379bca99da604ed1af7ca",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/registro.js": {
+    "mtime": 1784290058.1364212,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/sidebar.js": {
+    "mtime": 1784290058.1368,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/tour.js": {
+    "mtime": 1784290058.1372313,
+    "ast_hash": "a6600994ce6eeb0a2b235c6811e8c019",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/afiliacion.html": {
+    "mtime": 1784290058.1214414,
+    "ast_hash": "ab93b4e6a2bd2393b0402498b9670e91",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/bandeja.html": {
+    "mtime": 1784290058.121644,
+    "ast_hash": "d0d570ed4f4baad7073822ab6b4f8447",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/cargue.html": {
+    "mtime": 1784290058.1218476,
+    "ast_hash": "5bdeaa9c5700dbf8f13ff823da7c46a2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/index.html": {
+    "mtime": 1784290058.1220996,
+    "ast_hash": "8017d97a2b943b34c0c905f1ebaadef2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/jerarquia.html": {
+    "mtime": 1784290058.1223328,
+    "ast_hash": "1fc54dd5f2c2b86ab84013a02b1d3efd",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/organismo-detalle.html": {
+    "mtime": 1784290058.1225424,
+    "ast_hash": "b63f65ff1b3849a05eb5e4182f692097",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/registro-publico.html": {
+    "mtime": 1784290058.1227148,
+    "ast_hash": "d559a8631a2846e6e4ea15fb5045f1ec",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/registro.html": {
+    "mtime": 1784290058.1229079,
+    "ast_hash": "8481b2d955bc51791d217e6e3b9e3bc2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/afiliacion.html": {
+    "mtime": 1784290058.1308804,
+    "ast_hash": "67f6e9f08bec550817451673426ad2e0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/bandeja.html": {
+    "mtime": 1784290058.1310542,
+    "ast_hash": "527f8fa2ed0a590412ac0649aba80234",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/cargue.html": {
+    "mtime": 1784290058.1312056,
+    "ast_hash": "c820bca582246a97d0bf56b3ddc0f733",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/index.html": {
+    "mtime": 1784290058.1314476,
+    "ast_hash": "f3264d4a8476da099df8a9ed16e87261",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/jerarquia.html": {
+    "mtime": 1784290058.1316526,
+    "ast_hash": "1d0877af6156767474e143887d84b6a7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/organismo-detalle.html": {
+    "mtime": 1784290058.131817,
+    "ast_hash": "902651590da690c3b668fe3bada20715",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/registro-publico.html": {
+    "mtime": 1784290058.1319678,
+    "ast_hash": "d5b565f41be51e29d619dad9f449e078",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/registro.html": {
+    "mtime": 1784290058.1321096,
+    "ast_hash": "0653e0e6f50ce4ee210659daf5d1e9b3",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/logos/ministerio.svg": {
+    "mtime": 1784290058.1263008,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/logos/naowee.svg": {
+    "mtime": 1784290058.1265795,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.7/shared/logos/suid.png": {
+    "mtime": 1784290058.127194,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/logos/ministerio.svg": {
+    "mtime": 1784290058.1343832,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/logos/naowee.svg": {
+    "mtime": 1784290058.1345809,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.8/shared/logos/suid.png": {
+    "mtime": 1784290058.1348178,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/afiliacion.js": {
+    "mtime": 1784291913.131971,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/bandeja.js": {
+    "mtime": 1784291913.1324267,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/cargue.js": {
+    "mtime": 1784291913.132674,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/deportista-detalle.js": {
+    "mtime": 1784291913.1332557,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/detalle.js": {
+    "mtime": 1784291913.1337962,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/estados.js": {
+    "mtime": 1784291913.1340709,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/naowee-footer.js": {
+    "mtime": 1784291913.136435,
+    "ast_hash": "8921b61b6cf0564ff4c4adfbb19876d2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/organismos-data.js": {
+    "mtime": 1784291913.1369169,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/permissions.js": {
+    "mtime": 1784291913.1374984,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/qr.js": {
+    "mtime": 1784291913.1377268,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/registro-publico.js": {
+    "mtime": 1784291913.1381395,
+    "ast_hash": "5cdd79f8052379bca99da604ed1af7ca",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/registro.js": {
+    "mtime": 1784291913.1385694,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/sidebar.js": {
+    "mtime": 1784291913.1391637,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/tour.js": {
+    "mtime": 1784291913.1399248,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/afiliacion.html": {
+    "mtime": 1784291913.1298943,
+    "ast_hash": "c1ebc344f2b79afd6ea0288e58da0bfa",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/bandeja.html": {
+    "mtime": 1784291913.1300628,
+    "ast_hash": "d79bcbedd25b534e97946f515a465709",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/cargue.html": {
+    "mtime": 1784291913.1302261,
+    "ast_hash": "c8e272eec8df09da982b069ade82b44f",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/index.html": {
+    "mtime": 1784291913.1304548,
+    "ast_hash": "428d74dbff97abe2a13ab770fb44adfc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/jerarquia.html": {
+    "mtime": 1784291913.1307101,
+    "ast_hash": "70bcf59dc97619f70d4ae7491b16fde4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/organismo-detalle.html": {
+    "mtime": 1784291913.1309915,
+    "ast_hash": "830a2ec3b2e1dec6a34654cba19828fc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/registro-publico.html": {
+    "mtime": 1784291913.1312892,
+    "ast_hash": "3e807e777c08aad99aca95e4fd5a6b6b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/registro.html": {
+    "mtime": 1784291913.1315439,
+    "ast_hash": "89696841e2d79f9893f65efc9cfe2f3e",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/logos/ministerio.svg": {
+    "mtime": 1784291913.1352527,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/logos/naowee.svg": {
+    "mtime": 1784291913.1355326,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.9/shared/logos/suid.png": {
+    "mtime": 1784291913.1359088,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/afiliacion.js": {
+    "mtime": 1784293564.915921,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/bandeja.js": {
+    "mtime": 1784293564.9163098,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/cargue.js": {
+    "mtime": 1784293564.9165413,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/deportista-detalle.js": {
+    "mtime": 1784293564.9171302,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/detalle.js": {
+    "mtime": 1784293564.9176812,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/estados.js": {
+    "mtime": 1784293564.9179385,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/naowee-footer.js": {
+    "mtime": 1784293564.920064,
+    "ast_hash": "6eb8efdff3baa563ccd6233519c1614e",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/organismos-data.js": {
+    "mtime": 1784293564.9206438,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/permissions.js": {
+    "mtime": 1784293564.9213712,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/qr.js": {
+    "mtime": 1784293564.9215906,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/registro-publico.js": {
+    "mtime": 1784293564.921826,
+    "ast_hash": "58a3a25f50b0cfded986fa7b9f7812dd",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/registro.js": {
+    "mtime": 1784293564.922329,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/sidebar.js": {
+    "mtime": 1784293564.9228377,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/tour.js": {
+    "mtime": 1784293564.9233975,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/afiliacion.html": {
+    "mtime": 1784293564.9146116,
+    "ast_hash": "c37a5c95df9700e17780e119e2cb76fa",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/bandeja.html": {
+    "mtime": 1784293564.914712,
+    "ast_hash": "6d2a1aac121801ffb6bb886425aaa735",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/cargue.html": {
+    "mtime": 1784293564.9148078,
+    "ast_hash": "89e949b046820b62a6068d621789a3ca",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/index.html": {
+    "mtime": 1784293564.9149983,
+    "ast_hash": "86149c4bed6f25308f3f87d758f54b68",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/jerarquia.html": {
+    "mtime": 1784293564.915133,
+    "ast_hash": "fcefdbeec2c8cb3159fe7fce4407ae0a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/organismo-detalle.html": {
+    "mtime": 1784293564.9152563,
+    "ast_hash": "d1dfc8244eb0248b16a5cc1c5871efc6",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/registro-publico.html": {
+    "mtime": 1784293564.91536,
+    "ast_hash": "94faba16413cbb0972e18b8b85817177",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/registro.html": {
+    "mtime": 1784293564.9154568,
+    "ast_hash": "37fe587da0ab376a116010275de7a631",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/logos/ministerio.svg": {
+    "mtime": 1784293564.918957,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/logos/naowee.svg": {
+    "mtime": 1784293564.91925,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.10/shared/logos/suid.png": {
+    "mtime": 1784293564.9196138,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/afiliacion.js": {
+    "mtime": 1784295523.0492284,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/bandeja.js": {
+    "mtime": 1784295523.0497127,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/cargue.js": {
+    "mtime": 1784295523.0499606,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/deportista-detalle.js": {
+    "mtime": 1784295523.0507824,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/detalle.js": {
+    "mtime": 1784295523.051334,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/estados.js": {
+    "mtime": 1784295523.0516028,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/naowee-footer.js": {
+    "mtime": 1784295523.0541937,
+    "ast_hash": "3b609e16549587df8d12908138a193ce",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/organismos-data.js": {
+    "mtime": 1784295523.0546598,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/permissions.js": {
+    "mtime": 1784295523.055372,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/qr.js": {
+    "mtime": 1784295523.0555868,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/registro-publico.js": {
+    "mtime": 1784295523.0559955,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/registro.js": {
+    "mtime": 1784295523.0566401,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/sidebar.js": {
+    "mtime": 1784295523.0572789,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/tour.js": {
+    "mtime": 1784295523.0578556,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/afiliacion.html": {
+    "mtime": 1784295523.0471113,
+    "ast_hash": "1b8b5ae4e80b94521e02f441ac14580a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/bandeja.html": {
+    "mtime": 1784295523.047325,
+    "ast_hash": "d33504bc2f7f84105166d06c09738460",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/cargue.html": {
+    "mtime": 1784295523.0475094,
+    "ast_hash": "2617e78a0cf398c1f9ba1740874d5d43",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/index.html": {
+    "mtime": 1784295523.0477893,
+    "ast_hash": "b1a69172a3f3512e172858703893804d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/jerarquia.html": {
+    "mtime": 1784295523.0480196,
+    "ast_hash": "a9a265175681fae701c970d435b783e3",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/organismo-detalle.html": {
+    "mtime": 1784295523.0482404,
+    "ast_hash": "877152ad765830c18dfdd4a2d71c5e05",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/registro-publico.html": {
+    "mtime": 1784295523.0484986,
+    "ast_hash": "eb3d777e11e3799edc737ef54abb27f2",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/registro.html": {
+    "mtime": 1784295523.0486972,
+    "ast_hash": "c4493f4521a55069deab63985017632b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/logos/ministerio.svg": {
+    "mtime": 1784295523.052806,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/logos/naowee.svg": {
+    "mtime": 1784295523.0533202,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.11/shared/logos/suid.png": {
+    "mtime": 1784295523.0537255,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/afiliacion.js": {
+    "mtime": 1784297017.8948338,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/bandeja.js": {
+    "mtime": 1784297017.8952076,
+    "ast_hash": "a7d2d37254c5804a49d2188f2ffd1fd1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/cargue.js": {
+    "mtime": 1784297017.89542,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/deportista-detalle.js": {
+    "mtime": 1784297017.8960247,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/detalle.js": {
+    "mtime": 1784297017.8965013,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/estados.js": {
+    "mtime": 1784297017.8967206,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/naowee-footer.js": {
+    "mtime": 1784297017.8994129,
+    "ast_hash": "f379388fe7aa6858b2eeac4aec59dafe",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/organismos-data.js": {
+    "mtime": 1784297017.899909,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/permissions.js": {
+    "mtime": 1784297017.9004753,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/qr.js": {
+    "mtime": 1784297017.9006982,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/registro-publico.js": {
+    "mtime": 1784297017.9010944,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/registro.js": {
+    "mtime": 1784297017.9015594,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/sidebar.js": {
+    "mtime": 1784297017.9020722,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/tour.js": {
+    "mtime": 1784297017.902584,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/afiliacion.html": {
+    "mtime": 1784297017.8929706,
+    "ast_hash": "88c8b92f395f915ca253734a8708bcc8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/bandeja.html": {
+    "mtime": 1784297017.8931453,
+    "ast_hash": "5b06954d01f8a3e33a382c84c182107e",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/cargue.html": {
+    "mtime": 1784297017.8933382,
+    "ast_hash": "15dee33b5288283a56a6e040859bb5f1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/index.html": {
+    "mtime": 1784297017.8935475,
+    "ast_hash": "c03321a5449bea08d35071a346cf7eee",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/jerarquia.html": {
+    "mtime": 1784297017.8937736,
+    "ast_hash": "a1c9f8a0670aa9ec1ab0bab89b5d0e28",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/organismo-detalle.html": {
+    "mtime": 1784297017.8940027,
+    "ast_hash": "7dc9b22335d192aa8711132199da2935",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/registro-publico.html": {
+    "mtime": 1784297017.894174,
+    "ast_hash": "aa65555d0e792ebe3ebcb65aa5b119dc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/registro.html": {
+    "mtime": 1784297017.8943257,
+    "ast_hash": "6c296df59eb0835a692e07fcaef0d25d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/logos/ministerio.svg": {
+    "mtime": 1784297017.898297,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/logos/naowee.svg": {
+    "mtime": 1784297017.8985574,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.12/shared/logos/suid.png": {
+    "mtime": 1784297017.8989081,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/afiliacion.js": {
+    "mtime": 1784298201.7610447,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/bandeja.js": {
+    "mtime": 1784298201.7614763,
+    "ast_hash": "0b86ea04dfadb3a593d15ee25dd47125",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/cargue.js": {
+    "mtime": 1784298201.7619855,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/deportista-detalle.js": {
+    "mtime": 1784298201.7628613,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/detalle.js": {
+    "mtime": 1784298201.7634516,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/estados.js": {
+    "mtime": 1784298201.7637272,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/naowee-footer.js": {
+    "mtime": 1784298201.766475,
+    "ast_hash": "c3735b3f0cbf05eae1065be3cab5dc81",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/organismos-data.js": {
+    "mtime": 1784298201.7669554,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/permissions.js": {
+    "mtime": 1784298201.76755,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/qr.js": {
+    "mtime": 1784298201.7677605,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/registro-publico.js": {
+    "mtime": 1784298201.7682197,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/registro.js": {
+    "mtime": 1784298201.769002,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/sidebar.js": {
+    "mtime": 1784298201.769634,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/tour.js": {
+    "mtime": 1784298201.770336,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/afiliacion.html": {
+    "mtime": 1784298201.7587783,
+    "ast_hash": "6fd07839702655b00911cff16678784a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/bandeja.html": {
+    "mtime": 1784298201.7589543,
+    "ast_hash": "09ee7b8773cb8f325b156d1ed409d9d6",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/cargue.html": {
+    "mtime": 1784298201.7591226,
+    "ast_hash": "142fec83bd1f871898fc65ef00283eef",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/index.html": {
+    "mtime": 1784298201.7594013,
+    "ast_hash": "9bc161314ccebd0c11fcf5296c472c47",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/jerarquia.html": {
+    "mtime": 1784298201.7596195,
+    "ast_hash": "3ac7b8303f0e6f172fdb860f0bb70b1a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/organismo-detalle.html": {
+    "mtime": 1784298201.7600226,
+    "ast_hash": "4af3f3d2c795927afed324e9d38d0b6c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/registro-publico.html": {
+    "mtime": 1784298201.760257,
+    "ast_hash": "9cf0b0743eb1dca10d5db706f7fae05a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/registro.html": {
+    "mtime": 1784298201.7604766,
+    "ast_hash": "0c3b1d173a6103141179ad87c083e9dd",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/logos/ministerio.svg": {
+    "mtime": 1784298201.765092,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/logos/naowee.svg": {
+    "mtime": 1784298201.7655559,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.13/shared/logos/suid.png": {
+    "mtime": 1784298201.765935,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/afiliacion.js": {
+    "mtime": 1784299447.4698281,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/bandeja.js": {
+    "mtime": 1784299447.4704626,
+    "ast_hash": "9623c5773f716dd24b7d72330e0f8746",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/cargue.js": {
+    "mtime": 1784299447.4706936,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/deportista-detalle.js": {
+    "mtime": 1784299447.4711907,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/detalle.js": {
+    "mtime": 1784299447.471824,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/estados.js": {
+    "mtime": 1784299447.4720526,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/naowee-footer.js": {
+    "mtime": 1784299447.474181,
+    "ast_hash": "dfe44cf688e78d5f46625d9a85ebf7fe",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/organismos-data.js": {
+    "mtime": 1784299447.4746892,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/permissions.js": {
+    "mtime": 1784299447.4751403,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/qr.js": {
+    "mtime": 1784299447.475349,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/registro-publico.js": {
+    "mtime": 1784299447.4757738,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/registro.js": {
+    "mtime": 1784299447.4763556,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/sidebar.js": {
+    "mtime": 1784299447.476778,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/tour.js": {
+    "mtime": 1784299447.4773,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/afiliacion.html": {
+    "mtime": 1784299447.4678745,
+    "ast_hash": "b484b6ce467f2b93ac54c77df2894b4c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/bandeja.html": {
+    "mtime": 1784299447.4680705,
+    "ast_hash": "fe3a5950b55d950ef0a0274cdd921091",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/cargue.html": {
+    "mtime": 1784299447.4682362,
+    "ast_hash": "c6a789e6d08dda82f5a46df46ec37262",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/index.html": {
+    "mtime": 1784299447.4684403,
+    "ast_hash": "ecaf8a22df8624dffb813e47833bd8aa",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/jerarquia.html": {
+    "mtime": 1784299447.46872,
+    "ast_hash": "e61d913e2ae196fd41078d9d6b0a3d30",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/organismo-detalle.html": {
+    "mtime": 1784299447.468935,
+    "ast_hash": "8d17c6ff34edc88655b3f9493ed9ef54",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/registro-publico.html": {
+    "mtime": 1784299447.469139,
+    "ast_hash": "63b3fe18f34593cd3ed73f03244a2579",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/registro.html": {
+    "mtime": 1784299447.4693012,
+    "ast_hash": "d8cadee59056a25093e98207db181325",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/logos/ministerio.svg": {
+    "mtime": 1784299447.4731336,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/logos/naowee.svg": {
+    "mtime": 1784299447.473362,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.14/shared/logos/suid.png": {
+    "mtime": 1784299447.4737256,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/afiliacion.js": {
+    "mtime": 1784300090.7942603,
+    "ast_hash": "75eaabf09e4d516a591c49595867fdcc",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/bandeja.js": {
+    "mtime": 1784300090.7946851,
+    "ast_hash": "9623c5773f716dd24b7d72330e0f8746",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/cargue.js": {
+    "mtime": 1784300090.7949157,
+    "ast_hash": "de57098666928a09f231f0af8fd417e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/deportista-detalle.js": {
+    "mtime": 1784300090.7953522,
+    "ast_hash": "6c418d3e9cabda03b95c45e948391fde",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/detalle.js": {
+    "mtime": 1784300090.79593,
+    "ast_hash": "5b88a83386a1c7be10f1d3f0f0a54308",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/estados.js": {
+    "mtime": 1784300090.7961628,
+    "ast_hash": "ce5b90a8c5ac9dbc6a1c26c076cefba1",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/naowee-footer.js": {
+    "mtime": 1784300090.7983968,
+    "ast_hash": "490b7a2800e693343fa42ee7b4f91c59",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/organismos-data.js": {
+    "mtime": 1784300090.7990096,
+    "ast_hash": "073459fadae15f841e10b07b88b244c7",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/permissions.js": {
+    "mtime": 1784300090.7995436,
+    "ast_hash": "fc9b20e023e3144778565a216757d55c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/qr.js": {
+    "mtime": 1784300090.7997515,
+    "ast_hash": "9d7c587798107d57a869f431e39a072c",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/registro-publico.js": {
+    "mtime": 1784300090.8001587,
+    "ast_hash": "938896208455e78e09bb2f4f35ec54bf",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/registro.js": {
+    "mtime": 1784300090.8006454,
+    "ast_hash": "f3949f261e4252be597610e2d2573ad8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/sidebar.js": {
+    "mtime": 1784300090.8011405,
+    "ast_hash": "da98ef5e6c8c64a76b7ef030569d8cbb",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/tour.js": {
+    "mtime": 1784300090.8015501,
+    "ast_hash": "5e111ef4c99b0ac3214acd752847eb2b",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/afiliacion.html": {
+    "mtime": 1784300090.7925322,
+    "ast_hash": "df0a6aa8cb0cc304254872175ad3ff98",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/bandeja.html": {
+    "mtime": 1784300090.7926986,
+    "ast_hash": "a326f010f71ddddb1a29571bdb539fd8",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/cargue.html": {
+    "mtime": 1784300090.792864,
+    "ast_hash": "f443c55c91a58223dcaed5f0df02c4df",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/index.html": {
+    "mtime": 1784300090.7930958,
+    "ast_hash": "030338d0779a14b0232384ca1963d82a",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/jerarquia.html": {
+    "mtime": 1784300090.7932832,
+    "ast_hash": "07efc15356df74b1ef5dd4334a4a3215",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/organismo-detalle.html": {
+    "mtime": 1784300090.793454,
+    "ast_hash": "dfa6f3f908620d8e8c3681333a65f2db",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/registro-publico.html": {
+    "mtime": 1784300090.7936635,
+    "ast_hash": "2ca53120e5c7644b14fa778fc4ae78e0",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/registro.html": {
+    "mtime": 1784300090.7938216,
+    "ast_hash": "28f0f1dbf1aca34fc335843e6a8a44d4",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/logos/ministerio.svg": {
+    "mtime": 1784300090.7970853,
+    "ast_hash": "4897fc3eca85dc6e9eb8240828c89e6d",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/logos/naowee.svg": {
+    "mtime": 1784300090.7975037,
+    "ast_hash": "02ce3d9d7699e989b8d1c624a93c53e5",
+    "semantic_hash": ""
+  },
+  "versions/v1.2.15/shared/logos/suid.png": {
+    "mtime": 1784300090.797842,
+    "ast_hash": "10e22c4791daa8fb4d7a7361086243a1",
+    "semantic_hash": ""
+  }
+}
