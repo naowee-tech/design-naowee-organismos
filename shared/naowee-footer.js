@@ -468,7 +468,37 @@ const MODULE_NAME = 'Organismos';
              + su PERFIL_EXTRA con categorías y edades variadas, incl. 4 menores)
              para que la pantalla ejercite búsqueda, paginación y los filtros
              condicionales de verdad. Cache-busters ?v=1.3.0. */
-const MODULE_VERSION = 'v1.3.0';
+/* v1.3.1 —  FIX del defecto que BLOQUEÓ la demo en la mesa del 2026-09-08
+             ("ahí la demo te bloqueó una parte, revísala" — Juan Manuel Armero;
+             "no me está dejando… sin este selector" — Doug, sobre el Sector).
+             CAUSA: `forms.css` pasa el menú del dropdown a `position:fixed`
+             dentro de `.reg-wizard` para que escape del `overflow:hidden` del
+             wizard. En fixed, el `top:calc(100% + 6px)` del DS deja de medir
+             "debajo del trigger" y pasa a ser el 100% del VIEWPORT → el menú se
+             renderizaba en top:906px (fuera de una pantalla de 900px), con
+             ancho de ventana completa. El campo parecía muerto: se abría
+             (borde accent + chevron rotado) pero sin opciones visibles, así que
+             no se podía elegir Sector y el wizard no dejaba avanzar.
+             `registro-publico.js` YA resolvía esto con un anchor(); `registro.js`
+             nunca lo implementó pese a compartir el CSS. FIX: port 1:1 de ese
+             anchor() a `mountDropdown` de registro.js — ancla left/width/top al
+             trigger, abre hacia arriba si no caben 240px abajo, acota maxHeight
+             al espacio real y reposiciona en scroll/resize (listeners retirados
+             al cerrar). Afecta a TODOS los dropdowns del registro interno
+             (sector, superior, deporte, depto) en los 4 tipos de organismo.
+             Verificado E2E: elegir Sector y avanzar a "Revisa y confirma".
+             DROPDOWNS DE «MIS DEPORTISTAS» AL DS: los filtros de Modalidad y
+             Categoría eran `<select>` nativos, así que el menú desplegado lo
+             pintaba el SISTEMA OPERATIVO (popup oscuro en macOS) y se salía de
+             la identidad Naowee (feedback Doug). Migrados a `.naowee-dropdown`
+             canónico con toggle `--open` en el wrapper, check en la opción
+             activa, cierre por clic-fuera y ESC. Un ÚNICO listener delegado en
+             document (la página re-renderiza en cada filtro; atarlo por render
+             acumularía listeners). Acotados a 168px con altura 40px para
+             alinear con el searchbox (§A3: el trigger del DS es width:100%).
+             La excepción "no toques los <select> nativos" no aplica: estos
+             filtros no manejan lógica core. Cache-busters ?v=1.3.1. */
+const MODULE_VERSION = 'v1.3.1';
 
 (function () {
   function mount() {

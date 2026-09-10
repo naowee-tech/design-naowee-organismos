@@ -60,7 +60,9 @@ if (root) {
     info:   '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
     chevL:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
     chevR:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    close:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+    close:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+    check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
   };
 
   /* Estado de vinculación — mapa semántico ÚNICO del módulo. */
@@ -150,19 +152,79 @@ if (root) {
     }).join('')}</div>`;
   }
 
-  /* Filtro CONDICIONAL (§P20): el select se renderiza SOLO si la dimensión
-     varía en el plantel. En un club de un solo deporte, un select de una
-     opción es inútil → se oculta y manda el buscador. */
-  function filtroSelect(id, label, vals, cur) {
+  /* Filtro CONDICIONAL (§P20): se renderiza SOLO si la dimensión varía en el
+     plantel. En un club de un solo deporte, un filtro de una opción es inútil
+     → se oculta y manda el buscador.
+
+     DROPDOWN CANÓNICO `.naowee-dropdown`, no `<select>` nativo: el menú de un
+     select lo pinta el SISTEMA OPERATIVO (popup oscuro en macOS), así que se
+     sale de la identidad Naowee en cuanto se despliega. Estos filtros no
+     manejan lógica core (no hay cascada ni motor detrás), así que convertirlos
+     es correcto — la excepción de «no toques los <select> nativos» aplica a
+     los que sí la manejan.
+     Toggle con la clase `--open` en el WRAPPER (regla dura del DS). */
+  function filtroDropdown(key, label, vals, cur) {
     if (vals.length <= 1) return '';
+    const opts = ['Todas', ...vals];
     return `
-      <span class="bj-filter">
-        <label class="bj-filter__lbl" for="${id}">${esc(label)}</label>
-        <select class="bj-filter__select" id="${id}">
-          <option value="Todas"${cur === 'Todas' ? ' selected' : ''}>Todas</option>
-          ${vals.map((v) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(v)}</option>`).join('')}
-        </select>
+      <span class="bj-filter dp-filter">
+        <span class="bj-filter__lbl" id="dpLbl-${key}">${esc(label)}</span>
+        <div class="naowee-dropdown dp-dd" data-dd="${key}">
+          <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"
+                  aria-expanded="false" aria-labelledby="dpLbl-${key}">
+            <span class="naowee-dropdown__value">${esc(cur)}</span>
+            <span class="naowee-dropdown__chevron">${I.chevron}</span>
+          </button>
+          <div class="naowee-dropdown__menu" role="listbox">
+            ${opts.map((v) => `
+              <div class="naowee-dropdown__opt${v === cur ? ' is-selected' : ''}" role="option"
+                   aria-selected="${v === cur}" data-value="${esc(v)}">
+                ${esc(v)}<span class="naowee-dropdown__opt-check">${I.check}</span>
+              </div>`).join('')}
+          </div>
+        </div>
       </span>`;
+  }
+
+  /* Aplica el valor elegido al filtro correspondiente. */
+  function setFiltro(key, valor) {
+    if (key === 'deporte') fDeporte = valor;
+    else if (key === 'modalidad') fModalidad = valor;
+    else if (key === 'categoria') fCategoria = valor;
+    page = 1;                                    /* §P19: reset al filtrar */
+    render();
+  }
+
+  /* Un ÚNICO listener delegado en document, registrado una sola vez: la
+     página re-renderiza en cada filtro, así que atar el cierre por
+     clic-fuera dentro de wire() acumularía un listener por render. */
+  let _ddWired = false;
+  function wireDropdowns() {
+    if (_ddWired) return;
+    _ddWired = true;
+    document.addEventListener('click', (e) => {
+      const opt = e.target.closest('.dp-dd .naowee-dropdown__opt');
+      if (opt) {
+        const dd = opt.closest('.dp-dd');
+        setFiltro(dd.getAttribute('data-dd'), opt.getAttribute('data-value'));
+        return;
+      }
+      const trigger = e.target.closest('.dp-dd .naowee-dropdown__trigger');
+      document.querySelectorAll('.dp-dd').forEach((dd) => {
+        const esSuyo = trigger && dd.contains(trigger);
+        const abrir = esSuyo && !dd.classList.contains('naowee-dropdown--open');
+        dd.classList.toggle('naowee-dropdown--open', !!abrir);
+        dd.querySelector('.naowee-dropdown__trigger')
+          ?.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+      });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('.dp-dd.naowee-dropdown--open').forEach((dd) => {
+        dd.classList.remove('naowee-dropdown--open');
+        dd.querySelector('.naowee-dropdown__trigger')?.setAttribute('aria-expanded', 'false');
+      });
+    });
   }
 
   const sortEs = (a, b) => a.localeCompare(b, 'es');
@@ -204,9 +266,9 @@ if (root) {
               <button type="button" class="naowee-searchbox__clear" id="dpClear" aria-label="Limpiar búsqueda">${I.close}</button>
             </div>
           </div>
-          ${filtroSelect('dpDeporte', 'Deporte', deportes, fDeporte)}
-          ${filtroSelect('dpModalidad', 'Modalidad', modalidades, fModalidad)}
-          ${filtroSelect('dpCategoria', 'Categoría', categorias, fCategoria)}
+          ${filtroDropdown('deporte', 'Deporte', deportes, fDeporte)}
+          ${filtroDropdown('modalidad', 'Modalidad', modalidades, fModalidad)}
+          ${filtroDropdown('categoria', 'Categoría', categorias, fCategoria)}
           <span class="bj-count">${view.length} de ${rows.length}</span>
         </div>
 
@@ -289,9 +351,7 @@ if (root) {
       query = ''; page = 1; render();
       document.getElementById('dpSearch')?.focus();
     });
-    document.getElementById('dpDeporte')?.addEventListener('change', (e) => { fDeporte = e.target.value; page = 1; render(); });
-    document.getElementById('dpModalidad')?.addEventListener('change', (e) => { fModalidad = e.target.value; page = 1; render(); });
-    document.getElementById('dpCategoria')?.addEventListener('change', (e) => { fCategoria = e.target.value; page = 1; render(); });
+    wireDropdowns();                             /* delegado, se ata una sola vez */
 
     document.querySelectorAll('[data-ficha]').forEach((b) => {
       b.addEventListener('click', () => {

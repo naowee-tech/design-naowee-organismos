@@ -644,13 +644,41 @@ function mountDropdown(el) {
     }
   }
 
+  /* Ancla el menú al trigger. IMPRESCINDIBLE: `forms.css` pasa el menú a
+     `position:fixed` dentro de `.reg-wizard` para que escape del
+     `overflow:hidden` del wizard — y en fixed el `top:calc(100% + 6px)` del DS
+     deja de medir "debajo del trigger" y pasa a ser el 100% del VIEWPORT, así
+     que el menú caía fuera de la pantalla y el campo parecía no responder
+     (bloqueó la demo del 2026-09-08 en el selector de Sector).
+     Port 1:1 del anchor() de registro-publico.js, que ya lo resolvía. */
+  function anchorDd() {
+    const r = trigger.getBoundingClientRect();
+    menu.style.left = r.left + 'px';
+    menu.style.width = r.width + 'px';
+    menu.style.right = 'auto';
+    const below = window.innerHeight - r.bottom;
+    const flipUp = below < 240 && r.top > below;      // abre hacia arriba si no cabe
+    const space = (flipUp ? r.top : below) - 16;
+    menu.style.maxHeight = Math.max(160, Math.min(300, space)) + 'px';
+    if (flipUp) { menu.style.top = 'auto'; menu.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
+    else { menu.style.bottom = 'auto'; menu.style.top = (r.bottom + 6) + 'px'; }
+  }
+
   function openDd() {
     document.querySelectorAll('.naowee-dropdown--open').forEach((o) => { if (o !== el) o.classList.remove('naowee-dropdown--open'); });
     buildMenu('');
     el.classList.add('naowee-dropdown--open');
     trigger.setAttribute('aria-expanded', 'true');
+    anchorDd();
+    window.addEventListener('scroll', anchorDd, true);   // sigue al campo al scrollear
+    window.addEventListener('resize', anchorDd);
   }
-  function closeDd() { el.classList.remove('naowee-dropdown--open'); trigger.setAttribute('aria-expanded', 'false'); }
+  function closeDd() {
+    el.classList.remove('naowee-dropdown--open');
+    trigger.setAttribute('aria-expanded', 'false');
+    window.removeEventListener('scroll', anchorDd, true);
+    window.removeEventListener('resize', anchorDd);
+  }
 
   trigger.addEventListener('click', (e) => { e.stopPropagation(); el.classList.contains('naowee-dropdown--open') ? closeDd() : openDd(); });
   menu.addEventListener('click', (e) => {
