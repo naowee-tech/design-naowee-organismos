@@ -54,9 +54,17 @@ const PERMS = {
   },
   deportistas: {
     MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R',
-    CLUB: 'R',           // sus afiliados
+    CLUB: 'RX',          // sus afiliados · X = desvincular (ORG-10, ver nota)
     DEPORTISTA: 'RU'     // el propio (nunca documento / fecha nac.)
   },
+  /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
+     DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
+     Nicolás Mosquera en la mesa del 2026-09-08. VA MÁS ALLÁ del handoff §11.2
+     y de la matriz oficial de negocio, que NO tienen columna de
+     desvinculación — pendiente de validar (P-04).
+     Alcance: solo sobre deportistas de SU propio club, con motivo obligatorio
+     y traza. No es borrado (sigue sin existir D): el deportista vuelve a
+     'autodeclarado' y puede re-afiliarse. */
   solicitudes: {
     MINDEPORTE: 'R',     // auditoría
     COMITE: '', FEDERACION: '', LIGA: '',

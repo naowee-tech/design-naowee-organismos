@@ -60,7 +60,7 @@ const I = {
 const TIER = { olimpico:{label:'Olímpico',ico:I.olimpico}, profesional:{label:'Profesional',ico:I.medal}, juvenil:{label:'Juvenil',ico:I.user}, amateur:{label:'Amateur',ico:I.shield} };
 const MEDAL_EMOJI = { Oro:'🥇', Plata:'🥈', Bronce:'🥉' };
 const DEPORTE_EMOJI = { Patinaje:'🛼', Natación:'🏊', Fútbol:'⚽', Ciclismo:'🚴', Atletismo:'🏃', Baloncesto:'🏀' };
-const SOL_EMOJI = { Enviada:I.send, Aprobada:I.check, Rechazada:I.x, Retirada:I.refresh };
+const SOL_EMOJI = { Enviada:I.send, Aprobada:I.check, Rechazada:I.x, Retirada:I.refresh, Desvinculado:I.x };
 const CLUB_EMOJI = '🛡️';
 
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -698,16 +698,20 @@ function solicitudesHTML() {
         <p class="naowee-empty-state__description">Cuando envíes una solicitud de afiliación a un club, aparecerá aquí con su estado y trazabilidad.</p>
       </div></div>`;
   }
-  const nodeCls = { Enviada:'enviada', Aprobada:'aprobada', Rechazada:'rechazada', Retirada:'retirada' };
+  const nodeCls = { Enviada:'enviada', Aprobada:'aprobada', Rechazada:'rechazada', Retirada:'retirada', Desvinculado:'rechazada' };
   const rows = mine.map((s) => {
     const club = getOrganismo(s.clubId);
     const fecha = s.resueltaFecha || s.fecha;
     const quien = s.responsable ? ` · por ${esc(s.responsable)}` : '';   // trazabilidad ORG-08 (quién confirmó)
-    const resuelta = s.estado === 'Aprobada' || s.estado === 'Rechazada';
+    const resuelta = s.estado === 'Aprobada' || s.estado === 'Rechazada' || s.estado === 'Desvinculado';
     const notif = resuelta ? ' · 🔔 notificado por email/app' : '';
-    const sub = s.estado === 'Rechazada' && s.motivo
-      ? `Rechazada · ${esc(fecha)}${quien}${notif} · Motivo: ${esc(s.motivo)}`
-      : `${s.estado} · ${esc(fecha)}${resuelta ? quien : ''}${notif}`;
+    /* Desvinculación por el club (ORG-10): el deportista debe ver QUIÉN lo
+       desvinculó y POR QUÉ — no basta con que desaparezca su club. */
+    const sub = s.tipo === 'desvinculacion'
+      ? `El club te desvinculó · ${esc(fecha)}${quien}${notif}${s.motivo ? ` · Motivo: ${esc(s.motivo)}` : ''}`
+      : s.estado === 'Rechazada' && s.motivo
+        ? `Rechazada · ${esc(fecha)}${quien}${notif} · Motivo: ${esc(s.motivo)}`
+        : `${s.estado} · ${esc(fecha)}${resuelta ? quien : ''}${notif}`;
     return `<div class="af-sol-row">
       <span class="af-sol-row__ico pf-tl__node--${nodeCls[s.estado] || 'enviada'}">${SOL_EMOJI[s.estado] || I.send}</span>
       <span class="af-sol-row__body"><span class="af-sol-row__nm">${esc(club ? club.nombre : s.clubId)}</span><span class="af-sol-row__sub">${sub}</span></span>

@@ -28,10 +28,11 @@
    (.dp-*) por override pattern: el DS no tiene stat-card (§33).
    ═══════════════════════════════════════════════════════════════ */
 import {
-  getOrganismo, deportistasOf, getDeportista, solicitudesDeClub
+  getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
+import { ROLES } from './sidebar.js';
 
 const root = document.getElementById('deportistasRoot');
 if (root) {
@@ -81,6 +82,18 @@ if (root) {
     `<div class="naowee-message naowee-message--${variant}"${style ? ` style="${style}"` : ''}><span class="naowee-message__icon">${icon}</span><div class="naowee-message__body"><p class="naowee-message__text">${html}</p></div></div>`;
 
   const club = scopeId ? getOrganismo(scopeId) : null;
+
+  /* ─── Desvinculación por el club (ORG-10) ───
+     Gateada por la matriz: solo si el rol tiene 'X' sobre deportistas. */
+  const puedeDesvincular = can(roleCode, 'X', 'deportistas');
+  const MOTIVOS_DESV = [
+    'Retiro voluntario del deportista',
+    'Inactividad · no continúa entrenando',
+    'Traslado a otro club',
+    'Incumplimiento del reglamento interno',
+    'Fin de vigencia de la afiliación',
+    'Otro (ver comentario)'
+  ];
 
   /* ─── Plantel: semilla delgada + perfil derivado (edad/categoría/medallas) ─── */
   function plantel() {
@@ -302,6 +315,9 @@ if (root) {
                     <td data-label="Estado">${estBadge(r.estado)}</td>
                     <td class="bj-row-action" data-label="">
                       <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-ficha="${esc(r.id)}">Ver ficha</button>
+                      ${puedeDesvincular && r.estado === 'vinculado'
+                        ? `<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small dp-btn-danger" data-desv="${esc(r.id)}">Desvincular</button>`
+                        : ''}
                     </td>
                   </tr>`).join('')}
               </tbody>
@@ -332,6 +348,118 @@ if (root) {
     wire();
   }
 
+  /* ─── Modal de desvinculación (ORG-10) ───
+     Acto con consecuencia real: el deportista pierde su cadena heredada. La
+     contención es la fricción —confirmación explícita + MOTIVO obligatorio—
+     y la traza, no un segundo visto bueno del deportista. */
+  function openDesvincular(id) {
+    const dep = getDeportista(id);
+    if (!dep) return;
+    const p = buildDeportistaDetalle(dep);
+    let motivo = '';
+    let comentario = '';
+
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay dp-modal-ov';
+    ov.innerHTML = `
+      <div class="reg-modal bj-modal bj-modal--sm dp-desv">
+        <div class="reg-modal__head">
+          <h3 class="reg-modal__title">Desvincular deportista</h3>
+          <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
+        </div>
+        <div class="reg-modal__body">
+          ${msg('caution', I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Quedará <strong>autodeclarado</strong> y perderá la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : 'liga')} · ${esc(p && p.federacionNombre ? p.federacionNombre : 'federación')}). Podrá volver a solicitar afiliación cuando quiera.`)}
+          <div class="dp-desv__field">
+            <span class="bj-filter__lbl" id="dpDesvLbl">Motivo de la desvinculación <span aria-hidden="true">*</span></span>
+            <div class="naowee-dropdown dp-desv__dd" id="dpDesvDd">
+              <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"
+                      aria-expanded="false" aria-labelledby="dpDesvLbl">
+                <span class="naowee-dropdown__value is-placeholder">Seleccione…</span>
+                <span class="naowee-dropdown__chevron">${I.chevron}</span>
+              </button>
+              <div class="naowee-dropdown__menu" role="listbox">
+                ${MOTIVOS_DESV.map((m) => `
+                  <div class="naowee-dropdown__opt" role="option" data-value="${esc(m)}">
+                    ${esc(m)}<span class="naowee-dropdown__opt-check">${I.check}</span>
+                  </div>`).join('')}
+              </div>
+            </div>
+            <p class="naowee-helper dp-desv__err" id="dpDesvErr" hidden>Selecciona un motivo para continuar.</p>
+          </div>
+          <div class="dp-desv__field" id="dpDesvComentWrap" hidden>
+            <label class="bj-filter__lbl" for="dpDesvComent">Comentario</label>
+            <textarea class="dp-desv__ta" id="dpDesvComent" rows="3"
+                      placeholder="Describe el motivo (queda en la trazabilidad)."></textarea>
+          </div>
+          <p class="bj-detail__note">El deportista recibe notificación por email y app, y el motivo queda registrado en su historial y en la auditoría del club.</p>
+        </div>
+        <div class="reg-modal__foot bj-modal__foot">
+          <button type="button" class="naowee-btn naowee-btn--mute" data-close>Cancelar</button>
+          <button type="button" class="naowee-btn bj-btn-danger" id="dpDesvOk">Desvincular</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+
+    const cerrar = () => {
+      if (ov.__closing) return;
+      ov.__closing = true;
+      ov.classList.remove('is-open');
+      setTimeout(() => ov.remove(), 340);
+      document.removeEventListener('keydown', onKey);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') cerrar(); };
+    ov.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', cerrar));
+    ov.addEventListener('click', (e) => { if (e.target === e.currentTarget) cerrar(); });
+    document.addEventListener('keydown', onKey);
+
+    /* Dropdown del motivo: contenido en el modal, con sus propios handlers
+       (el delegado global sirve a los filtros del toolbar, no a este). */
+    const dd = ov.querySelector('#dpDesvDd');
+    const val = dd.querySelector('.naowee-dropdown__value');
+    dd.querySelector('.naowee-dropdown__trigger').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abrir = !dd.classList.contains('naowee-dropdown--open');
+      dd.classList.toggle('naowee-dropdown--open', abrir);
+      dd.querySelector('.naowee-dropdown__trigger').setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    });
+    dd.querySelectorAll('.naowee-dropdown__opt').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        motivo = opt.getAttribute('data-value');
+        val.textContent = motivo;
+        val.classList.remove('is-placeholder');
+        dd.querySelectorAll('.naowee-dropdown__opt').forEach((o) => o.classList.toggle('is-selected', o === opt));
+        dd.classList.remove('naowee-dropdown--open');
+        ov.querySelector('#dpDesvErr').hidden = true;
+        /* «Otro» exige comentario para que la traza sirva de algo. */
+        ov.querySelector('#dpDesvComentWrap').hidden = !/^Otro/.test(motivo);
+      });
+    });
+    ov.addEventListener('click', (e) => {
+      if (!dd.contains(e.target)) dd.classList.remove('naowee-dropdown--open');
+    });
+
+    ov.querySelector('#dpDesvOk').addEventListener('click', () => {
+      comentario = (ov.querySelector('#dpDesvComent')?.value || '').trim();
+      if (!motivo || (/^Otro/.test(motivo) && !comentario)) {
+        ov.querySelector('#dpDesvErr').hidden = false;
+        ov.querySelector('#dpDesvErr').textContent = !motivo
+          ? 'Selecciona un motivo para continuar.'
+          : 'Describe el motivo en el comentario.';
+        dd.classList.add('naowee-shake');
+        setTimeout(() => dd.classList.remove('naowee-shake'), 500);
+        return;
+      }
+      const texto = /^Otro/.test(motivo) ? `${motivo}: ${comentario}` : motivo;
+      desvincularPorClub(id, { motivo: texto, responsable: (ROLES[roleCode] || {}).userName || '' });
+      cerrar();
+      render();
+      if (window.naoweeToast) {
+        window.naoweeToast(`${dep.nombre} quedó desvinculado de tu club.`, 'success');
+      }
+    });
+  }
+
   /* ─── Wiring ─── */
   function wire() {
     const search = document.getElementById('dpSearch');
@@ -358,6 +486,10 @@ if (root) {
         const id = b.getAttribute('data-ficha');
         window.location.href = `afiliacion.html?role=${encodeURIComponent(roleCode)}&id=${encodeURIComponent(id)}&from=deportistas`;
       });
+    });
+
+    document.querySelectorAll('[data-desv]').forEach((b) => {
+      b.addEventListener('click', () => openDesvincular(b.getAttribute('data-desv')));
     });
 
     document.querySelectorAll('#dpPager [data-pg]').forEach((b) => {

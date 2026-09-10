@@ -664,6 +664,57 @@ export function retirarAfiliacion(deportistaId, meta = {}) {
   return getDeportista(deportistaId);
 }
 
+/* ─── Desvinculación POR EL CLUB (ORG-10) ─────────────────────────────
+   El club da de baja a un deportista de su plantel. Es la contraparte de
+   `retirarAfiliacion` (que la inicia el DEPORTISTA) y responde la pregunta
+   que Nicolás Mosquera dejó abierta en la mesa del 2026-09-08.
+
+   MODELO: unilateral + motivo OBLIGATORIO + traza. No es bilateral a
+   propósito: exigir que el deportista confirme su propia baja dejaría al
+   club bloqueado si no responde. La contención es la fricción (confirmación
+   explícita + motivo) y la trazabilidad, no un segundo visto bueno.
+
+   ⚠️ DECISIÓN DE PRODUCTO (Doug, 2026-09-10) que VA MÁS ALLÁ de la matriz
+   oficial: esa matriz no tiene columna de desvinculación. Pendiente de
+   validar con negocio (P-04). Documentado, no silencioso.
+
+   Efectos: el deportista vuelve a 'autodeclarado' y PIERDE la cadena
+   heredada (liga/federación/comité se derivan del club). Las solicitudes
+   vivas se cierran. Queda un registro tipo 'desvinculacion' en el historial
+   del deportista —para que vea quién lo desvinculó y por qué— más la
+   entrada de auditoría del club. Es reversible: el deportista puede volver
+   a solicitar afiliación a este u otro club. */
+export function desvincularPorClub(deportistaId, meta = {}) {
+  const dep = getDeportista(deportistaId);
+  if (!dep || dep.estado !== 'vinculado' || !dep.clubId) return null;
+  const clubPrev = dep.clubId;
+
+  const list = readStore('solicitudes', []) || [];
+  /* Cierra lo que estuviera vivo (afiliación aprobada, baja en trámite). */
+  const cerradas = list.map((s) => (
+    s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada')
+      ? { ...s, estado: 'Retirada', resueltaFecha: _todayISO() }
+      : s
+  ));
+  /* Registro propio del acto, para el historial del deportista. */
+  const registro = {
+    id: 'SOL-' + String(cerradas.length + 1).padStart(3, '0') + '-DSV',
+    tipo: 'desvinculacion', deportistaId, clubId: clubPrev,
+    estado: 'Desvinculado', fecha: _todayISO(), resueltaFecha: _todayISO(),
+    motivo: meta.motivo || '', responsable: meta.responsable || ''
+  };
+  writeStore('solicitudes', [registro, ...cerradas]);
+
+  updateDeportista(deportistaId, { clubId: null, estado: 'autodeclarado' });
+  auditLog({
+    orgId: clubPrev, deportistaId, deportistaNombre: dep.nombre,
+    fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
+    accion: 'Deportista desvinculado', de: 'Vinculado', a: 'Autodeclarado',
+    motivo: meta.motivo || ''
+  });
+  return getDeportista(deportistaId);
+}
+
 /* Buscador de clubes para la afiliación (§5.2): SOLO clubes en estado Activo,
    por nombre o NIT, acento-insensible, MÍNIMO 3 caracteres, sin texto libre.
    <3 chars → array vacío (la UI muestra la pista). Copias inmutables. */

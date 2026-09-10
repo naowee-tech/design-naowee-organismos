@@ -130,6 +130,17 @@
         { sel: '[data-ficha]', body: '<b>Ver ficha</b> abre el <b>perfil del deportista</b> en modo consulta: identificación, documentos, carné y la <b>cadena heredada</b> club → liga → federación → comité (ORG-05). Solo puedes abrir los deportistas de tu propio club; las bajas se resuelven en <b>Solicitudes de deportistas</b>.' }
       ]
     },
+    'ORG-10': {
+      ph: '3 · Aprobación y delegación', page: 'deportistas.html', role: 'CLUB', demo: true,
+      title: 'Desvincular a un deportista del club',
+      purpose: 'El club da de baja a un afiliado de su plantel con motivo obligatorio y trazabilidad. Responde la pregunta que QA levantó en la mesa del 2026-09-08: hasta ahora solo el deportista podía retirarse.',
+      steps: [
+        { sel: '[data-desv]', body: 'La acción vive en la fila, discreta: <b>Desvincular</b>. Solo aparece sobre deportistas <b>Vinculados</b> de tu propio club.', click: true },
+        { sel: '.dp-desv .naowee-message', body: 'El modal declara la <b>consecuencia</b> antes de actuar: el deportista queda <b>autodeclarado</b> y pierde la cadena heredada (liga y federación). Es reversible: puede volver a solicitar afiliación.' },
+        { sel: '#dpDesvDd', body: 'El <b>motivo es obligatorio</b> — sin él no se puede confirmar. Si eliges «Otro», se exige además un comentario para que la traza sirva de algo.' },
+        { sel: '#dpDesvOk', body: 'Al confirmar: el deportista sale de tu plantel, recibe <b>notificación</b>, y el motivo queda en <b>su historial</b> («El club te desvinculó · por … · Motivo: …») y en la <b>auditoría</b> del club.' }
+      ]
+    },
     'ORG-07': {
       ph: '4 · Estados y trazabilidad', page: 'organismo-detalle.html', role: 'MINDEPORTE', demo: true, q: { id: 'FED-040' },
       title: 'Estados del organismo y trazabilidad',
@@ -141,7 +152,7 @@
       ]
     }
   };
-  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-07'];
+  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-10', 'ORG-07'];
 
   /* ── Estado ── */
   var curHu = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _spotFresh = false;

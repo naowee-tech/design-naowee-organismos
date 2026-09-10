@@ -498,7 +498,41 @@ const MODULE_NAME = 'Organismos';
              alinear con el searchbox (§A3: el trigger del DS es width:100%).
              La excepción "no toques los <select> nativos" no aplica: estos
              filtros no manejan lógica core. Cache-busters ?v=1.3.1. */
-const MODULE_VERSION = 'v1.3.1';
+/* v1.4.0 —  ORG-10 · DESVINCULACIÓN POR EL CLUB. Responde la pregunta que
+             Nicolás Mosquera dejó abierta en la mesa del 2026-09-08 («en caso
+             de que el club lo quiera quitar de la vinculación, ¿se puede hacer
+             o esto no está mapeado?»).
+             ⚠️ DECISIÓN DE PRODUCTO de Doug (2026-09-10) que VA MÁS ALLÁ de la
+             matriz oficial de negocio, que NO tiene columna de desvinculación.
+             Pendiente de validar con Danna/negocio (P-04). Documentado, no
+             silencioso: la nota está en permissions.js y en el analisis.
+             MODELO: unilateral + motivo OBLIGATORIO + traza. NO bilateral a
+             propósito — exigir que el deportista confirme su propia baja
+             dejaría al club bloqueado si no responde. La contención es la
+             fricción (confirmación explícita + motivo) y la trazabilidad.
+             Matriz: `deportistas[CLUB]` pasa de 'R' a 'RX'. Sigue sin existir
+             borrado duro: el deportista vuelve a 'autodeclarado' y puede
+             re-afiliarse (reversible).
+             Datos: nueva `desvincularPorClub(id, meta)` — cierra las
+             solicitudes vivas, deja un registro `tipo:'desvinculacion'` en el
+             historial DEL DEPORTISTA (para que vea quién y por qué, no solo
+             que su club desapareció) y audita contra el club.
+             UI: acción de fila discreta (mute con color de peligro solo en
+             hover; el peso está en el modal, no en la tabla), gateada por
+             `can(role,'X','deportistas')` y solo sobre Vinculados. Modal con
+             la CONSECUENCIA declarada antes de actuar (pierde liga y
+             federación), dropdown canónico de motivo (6 del catálogo) y
+             comentario exigido si es «Otro».
+             Lado deportista: el historial muestra «El club te desvinculó · por
+             … · Motivo: …» y el hero vuelve a Autodeclarado / Sin afiliación,
+             con «Asociar a club» disponible.
+             Tour: nueva HU ORG-10 (4 pasos) + ORDER. Verificado E2E: KPI 12→11,
+             override {clubId:null, estado:autodeclarado}, traza con responsable
+             y motivo, y el bloqueo sin motivo.
+             Fix de paso: `.dp-desv__field[hidden]` — un `display` de autor le
+             gana al `[hidden]{display:none}` del user-agent, así que el campo
+             de comentario oculto seguía visible. Cache-busters ?v=1.4.0. */
+const MODULE_VERSION = 'v1.4.0';
 
 (function () {
   function mount() {

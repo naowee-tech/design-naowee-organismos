@@ -80,6 +80,35 @@
   .dp-dd { flex: 1 1 auto; width: auto; }
 }
 
+/* ─────────────────── Desvinculación (ORG-10) ───────────────────
+   La acción destructiva NO grita desde la tabla: es un mute con color de
+   peligro solo al hover. El peso está en el modal, no en la fila. */
+.dp-btn-danger { color: var(--red); margin-left: 4px; }
+.dp-btn-danger:hover,
+.dp-btn-danger:focus-visible {
+  background: var(--red-bg); color: var(--red); outline: none;
+}
+.bj-row-action { white-space: nowrap; }
+
+.dp-desv .reg-modal__body { gap: 14px; }
+.dp-desv__field { display: flex; flex-direction: column; gap: 7px; }
+/* Un `display` de autor le gana al `[hidden]{display:none}` del user-agent,
+   así que el campo oculto seguía visible. Hay que anularlo explícitamente. */
+.dp-desv__field[hidden] { display: none; }
+.dp-desv__dd { width: 100%; }
+.dp-desv__err { color: var(--red); font-size: 12.5px; margin: 0; }
+.dp-desv__ta {
+  width: 100%; padding: 10px 12px; resize: vertical;
+  border: 1px solid var(--field-border-idle); border-radius: var(--radius-md);
+  background: var(--surface); font-family: inherit; font-size: 14px;
+  color: var(--text-primary);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+.dp-desv__ta:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(215, 64, 9, .12);
+}
+
 /* ─────────────────── Marca de menor de edad (celda de tabla) ─────────────────── */
 .dp-minor {
   display: inline-block; margin-left: 4px; padding: 1px 6px;
