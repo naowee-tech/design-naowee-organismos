@@ -532,7 +532,27 @@ const MODULE_NAME = 'Organismos';
              Fix de paso: `.dp-desv__field[hidden]` — un `display` de autor le
              gana al `[hidden]{display:none}` del user-agent, así que el campo
              de comentario oculto seguía visible. Cache-busters ?v=1.4.0. */
-const MODULE_VERSION = 'v1.4.0';
+/* v1.4.1 —  FIX · la ficha en MODO CONSULTA reventaba en blanco con un id
+             inexistente. `afiliacion.html?id=DEP-999` no mostraba «Fuera de
+             tu alcance»: lanzaba TypeError y dejaba el cuerpo VACÍO, sin
+             aviso y sin botón de volver.
+             Dos puntos de caída, ambos del modo consulta que entró en v1.3.0:
+             (1) `render()` leía `TIER[ATLETA.tier]` ANTES del gate de alcance,
+             y con un id que no resuelve `buildDeportistaDetalle` devuelve
+             null — el gate de abajo no se alcanzaba nunca;
+             (2) el `document.title` desreferenciaba ATLETA fuera de render().
+             Ambos blindados: el gate pasa a ser lo PRIMERO de render() y
+             cubre `!ATLETA`; el título comprueba ATLETA antes de leerlo.
+             DECISIÓN: un id inexistente se trata como «fuera de alcance», no
+             como «no encontrado». Responder «no existe» le confirmaría a un
+             organismo qué identificadores hay FUERA de su jurisdicción.
+             Hallado por la pasada adversarial del paquete Gherkin por rol
+             (analisis-organismos/gherkin-por-rol) — era el defecto más grave
+             de los 54 refutados. Verificado en navegador: CLUB+DEP-999 y
+             MINDEPORTE+DEP-999 pintan el aviso con «Volver al plantel», y las
+             fichas reales (DEPORTISTA titular, CLUB+DEP-013) sin regresión ni
+             errores en consola. Cache-busters ?v=1.4.1. */
+const MODULE_VERSION = 'v1.4.1';
 
 (function () {
   function mount() {

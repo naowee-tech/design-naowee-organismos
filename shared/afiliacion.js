@@ -207,16 +207,29 @@ function fueraDeAlcanceHTML() {
 
 /* ── Render principal ── */
 function render() {
-  const t = TIER[ATLETA.tier];
-  const st = affState();
-  const afiliado = st.key === 'vinculado' || st.key === 'baja';  // vínculo activo (baja = aún vinculado, en trámite)
-
-  /* Gate de alcance ANTES de pintar cualquier dato del deportista. */
-  if (esConsulta && !enJurisdiccion()) {
+  /* Gate de alcance ANTES DE TOCAR ATLETA — no solo antes de pintarlo.
+     Un id inexistente (?id=DEP-999) deja ATLETA en null: leer ATLETA.tier
+     arriba reventaba con TypeError y dejaba el cuerpo EN BLANCO, sin aviso y
+     sin botón de volver; este bloque no se alcanzaba nunca.
+     El id inexistente se trata como fuera de alcance A PROPÓSITO: si
+     respondiéramos «no existe» estaríamos confirmando, a un rol que consulta,
+     qué identificadores hay fuera de su jurisdicción. */
+  if (esConsulta && (!ATLETA || !enJurisdiccion())) {
     document.getElementById('pfRoot').innerHTML = fueraDeAlcanceHTML();
     document.getElementById('pfVolver')?.addEventListener('click', () => { window.location.href = volverHref(); });
     return;
   }
+
+  /* Titular con un id que no resuelve: tampoco puede reventar en blanco. */
+  if (!ATLETA) {
+    document.getElementById('pfRoot').innerHTML = fueraDeAlcanceHTML();
+    document.getElementById('pfVolver')?.addEventListener('click', () => { window.location.href = volverHref(); });
+    return;
+  }
+
+  const t = TIER[ATLETA.tier];
+  const st = affState();
+  const afiliado = st.key === 'vinculado' || st.key === 'baja';  // vínculo activo (baja = aún vinculado, en trámite)
 
   document.getElementById('pfRoot').innerHTML = `
     ${esConsulta ? `<div class="af-consulta-bar">${backBtnHTML()}${consultaBannerHTML()}</div>` : ''}
@@ -1064,10 +1077,12 @@ mountBackdrop();
 mountDemoSwitcher({ roleCode });
 /* El título tampoco revela el nombre de un deportista fuera de alcance
    (el gate del render bloquea el cuerpo; el <title> debe ser coherente). */
-document.title = !esConsulta
-  ? `Mi perfil — ${ATLETA.nombreCompleto}`
-  : enJurisdiccion()
-    ? `${ATLETA.nombreCompleto} — Ficha del deportista`
-    : 'Ficha fuera de tu alcance — Naowee Organismos';
+document.title = !ATLETA
+  ? 'Ficha fuera de tu alcance — Naowee Organismos'
+  : !esConsulta
+    ? `Mi perfil — ${ATLETA.nombreCompleto}`
+    : enJurisdiccion()
+      ? `${ATLETA.nombreCompleto} — Ficha del deportista`
+      : 'Ficha fuera de tu alcance — Naowee Organismos';
 render();
 setupModals();
