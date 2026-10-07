@@ -117,7 +117,7 @@ const deportesPorTipo = (t) => {
 const DOC_MENOR = '1098765432';
 /* Solo demo: documento que existe sin cuenta, creado por una institución en un evento. */
 const DOC_SIN_RECLAMAR = '1055512345';
-const SIN_RECLAMAR = { emailHint: 'ju••••••@co••••••.edu.co', origen: 'una institución educativa en Juegos Intercolegiados 2026' };
+const SIN_RECLAMAR = { emailHint: 'ju•••••z@colegiosanjose.edu.co' };
 const docConCuenta = (num) => allDeportistas().some((d) => String(d.numDoc) === String(num).trim()) || allOrganismos().some((o) => o.repLegal && String(o.repLegal.numDoc) === String(num).trim());
 const ROL_TXT = { ATHLETE: 'Deportista', LEGAL_GUARDIAN: 'Tutor', SUPPORT_STAFF: 'Personal deportivo' };
 const ENT_TXT = { federacion: 'Federación', liga: 'Liga', club: 'Club' };
@@ -294,7 +294,7 @@ function paneBasicos() {
 function unclaimedAlert() {
   return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
     <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
-    <p class="naowee-message__text">Lo creó ${esc(SIN_RECLAMAR.origen)} con el correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si ese correo es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
+    <p class="naowee-message__text">Está asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
     <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es mío</button></div>
   </div></div>`;
 }
@@ -694,10 +694,10 @@ const DEVNOTES = {
     { title: 'Se mantiene de producción', items: ['Documento CC / CE / PA. Con 7 dígitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los demás campos quedan bloqueados hasta verificar.', '<code>isMinor</code> → alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> → "Ya tienes una cuenta registrada" + Iniciar sesión.', 'Fecha de nacimiento: 18+ obligatorio, también para el tutor. "Rol específico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
     { title: 'Perfil existente sin reclamar (reconciliación)', items: [
       'Caso: el documento existe con <code>has_login=false</code> porque lo creó otro actor (una institución al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la búsqueda, no al final del formulario.',
-      'Se muestra el correo <b>enmascarado</b> y sin opción de editar. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
+      'Se muestra el correo <b>enmascarado</b> y sin opción de editar: dos primeras letras y la última del usuario y el dominio completo (<code>ju•••••z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra quién creó el registro: averiguarlo exige cruzar todos los eventos y no aporta para reconocer el correo. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
       'Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ahí queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contraseña.',
       '<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza teléfono, nacionalidad, ubicación, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemográfico se descartan sin avisar.',
-      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado y el origen del registro; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditoría con los valores anteriores.',
+      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditoría con los valores anteriores.',
       '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
     ] },
     { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
