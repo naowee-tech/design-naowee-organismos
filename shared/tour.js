@@ -24,27 +24,26 @@
       title: 'Registro de deportista (propio o por tutor)',
       purpose: 'Cualquier ciudadano se registra en el SUID sin iniciar sesión; si es menor de edad, lo registra su padre o tutor.',
       steps: [
-        { sel: '.reg-tipo-card[data-tipo="deportista"]', body: 'El formulario es <b>público</b> (sin autenticación). Elige <b>Deportista</b>.', click: true },
-        { sel: '#dd-modo, .reg-choice-group', body: 'Escoge <b>registro propio</b> (mayor de edad) o <b>a través de un padre/tutor</b>. Si la fecha de nacimiento indica menos de 18 años, el sistema exige el flujo por tutor.' },
-        { sel: '#rpFooter', body: 'Al avanzar se valida que tu <b>documento no esté ya registrado</b>, aceptas las políticas y recibes <b>notificación por email/SMS</b>.' }
+        { sel: '.ur-card[data-value="persona"]', body: 'El formulario es <b>público</b> (sin autenticación). Elige <b>Persona</b> y luego <b>Deportista</b>.', click: true },
+        { sel: '#rpFooter', body: 'En Básicos se consulta tu <b>documento</b>: si eres menor de edad, el registro lo completa tu padre, madre o tutor. Tu cuenta queda <b>activa</b> y apareces como deportista autodeclarado.' }
       ]
     },
     'HURU-03': {
       ph: '0 · Registro público de usuarios', page: 'registro-publico.html', role: 'MINDEPORTE',
       title: 'Registro de personal deportivo',
-      purpose: 'Entrenadores, profesores, médicos deportivos y demás personal se registran indicando su rol y adjuntando certificaciones.',
+      purpose: 'Entrenadores, médicos, delegados y demás personal se registran indicando su rol específico; la cuenta queda activa de inmediato.',
       steps: [
-        { sel: '.reg-tipo-card[data-tipo="personal"]', body: 'Elige <b>Personal deportivo</b>.', click: true },
-        { sel: '#rpFooter', body: 'En <b>Datos</b> seleccionas el <b>rol específico</b> (entrenador, profesor, médico…) y se valida tu documento; luego adjuntas tus <b>certificaciones</b> profesionales.' }
+        { sel: '.ur-card[data-value="persona"]', body: 'Elige <b>Persona</b> y luego <b>Personal deportivo</b>.', click: true },
+        { sel: '#rpFooter', body: 'En <b>Básicos</b> eliges tu <b>rol específico</b> (entrenador, médico, delegado…). Tu cuenta queda activa; el vínculo con un organismo lo pides después desde tu perfil.' }
       ]
     },
     'HURU-04': {
       ph: '0 · Registro público de usuarios', page: 'registro-publico.html', role: 'MINDEPORTE',
       title: 'Registro de entidad deportiva',
-      purpose: 'Un representante registra su club, liga, federación o escuela con la documentación legal; la entidad queda Preinscrita para aprobación.',
+      purpose: 'Un representante registra su federación, liga o club eligiendo su organismo superior; la entidad queda En revisión en la bandeja de ese superior.',
       steps: [
-        { sel: '.reg-tipo-card[data-tipo="entidad"]', body: 'Elige <b>Entidad deportiva</b>.', click: true },
-        { sel: '#rpFooter', body: 'Diligencias datos + representante + sede, adjuntas los <b>documentos de soporte</b> (existencia, representación, reconocimiento) y aceptas políticas → queda <b>Preinscrita</b> para su validación.' }
+        { sel: '.ur-card[data-value="entidad"]', body: 'Elige <b>Entidad</b> y luego Federación, Liga o Club.', click: true },
+        { sel: '#rpFooter', body: 'Eliges tu <b>organismo superior</b> (solo activos) y tus <b>deportes</b>, adjuntas documentos y la sede → queda <b>En revisión</b> en la bandeja de tu superior.' }
       ]
     },
     'ORG-01': {

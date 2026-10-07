@@ -1,23 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════
-   NAOWEE ORGANISMOS — FORMULARIO PÚBLICO DE REGISTRO (HURU-01..04)
-   Registro SIN autenticación previa. Selector de tipo de usuario y
-   wizard adaptativo de 4 pasos: Tipo · Datos · Documentos · Listo.
-     · Deportista (registro propio) — HURU-01
-     · Deportista vía padre/tutor (menor) — HURU-02
-     · Personal deportivo (rol + certificaciones) — HURU-03
-     · Entidad deportiva (docs de soporte → Preinscrito) — HURU-04
-   Criterios cubiertos: adapta por tipo, valida documento no registrado,
-   detecta edad <18 (bloquea registro autónomo → tutor), parentesco +
-   firma de consentimiento, rol específico + info profesional, docs de
-   soporte de entidad, checkbox de políticas obligatorio, notificación
-   email/SMS al éxito, nota de API registraduría, responsive.
-   Reusa .naowee-* de forms.css (stepper, textfield, dropdown, choice,
-   checkbox, file-uploader botón, message, success/confetti).
-   Datos demo efímeros en sessionStorage (prefijo naowee-organismos-).
+   NAOWEE ORGANISMOS — REGISTRO PÚBLICO (v1.5.0)
+   Réplica del flujo /user-register de suite-web-v2 (hoy en el servicio de
+   sports), ajustada a la jerarquía de organizaciones acordada con Negocio
+   (nao-docs PR #30–#32) para migrarlo al servicio de SUID:
+     · Persona → Deportista · Tutor · Personal deportivo. Cuenta activa de
+       inmediato, sin bandeja. Pasos: Básicos · Deportivos (solo deportista) ·
+       Sociodemográfico · Contacto.
+     · Entidad → Federación · Liga · Club. Elige organismo superior Activo y
+       deportes dentro de los del superior; queda En revisión en la bandeja de
+       su superior. Pasos: Básicos · Documentos · Sede y contacto.
+   Notas para devs (Solo demo) por paso: shared/devnotes.js.
    ═══════════════════════════════════════════════════════════════ */
-import { allDeportistas, allOrganismos, allPreinscritos, crearPreinscrito, activosDeTipo, comitePorSector } from './organismos-data.js';
+import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore } from './organismos-data.js';
+import { mountDevnotes } from './devnotes.js?v=1.5.0';
 
-/* ─── util ─── */
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const norm = (s) => [...String(s == null ? '' : s)].map((c) => c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()).join('');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,7 +25,6 @@ function applyMask(type, raw) {
   return String(raw);
 }
 function fileSizeFmt(b) { return b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
-function edadDe(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null; const hoy = new Date('2026-07-16'); let e = hoy.getFullYear() - (+m[1]); const mo = (hoy.getMonth() + 1) - (+m[2]); if (mo < 0 || (mo === 0 && hoy.getDate() < (+m[3]))) e--; return e; }
 
 const I = {
   chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
@@ -48,301 +43,723 @@ const I = {
   chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
 };
 
-/* ─── catálogos ─── */
-const TIPOS = [
-  { v: 'deportista', emoji: I.athlete, t: 'Deportista', d: 'Registro propio o a través de un padre/tutor (menor de edad).' },
-  { v: 'personal', emoji: I.staff, t: 'Personal deportivo', d: 'Entrenador, profesor, médico deportivo, delegado, coordinador, juez…' },
-  { v: 'entidad', emoji: I.entity, t: 'Entidad deportiva', d: 'Club, liga, federación o escuela. Queda Preinscrita para aprobación.' }
-];
-const MODOS = [
-  { v: 'propio', t: 'Registro propio', d: 'Soy mayor de edad y me registro yo mismo.' },
-  { v: 'tutor', t: 'A través de un padre/tutor', d: 'Registro a un menor de edad bajo mi tutela.' }
-];
-const VINCULOS = [{ v: 'Padre', t: 'Padre' }, { v: 'Madre', t: 'Madre' }, { v: 'Tutor', t: 'Tutor legal' }];
-const ROLES_PERSONAL = ['Entrenador', 'Profesor / Instructor', 'Médico deportivo', 'Fisioterapeuta', 'Delegado', 'Coordinador', 'Juez / Árbitro', 'Otro'];
-const ENT_TIPOS = [
-  { v: 'club-promotor', t: 'Club promotor', d: 'Club de formación / promoción deportiva.' },
-  { v: 'club-profesional', t: 'Club profesional', d: 'Club de rendimiento / profesional.' },
-  { v: 'liga', t: 'Liga departamental', d: 'Liga departamental o distrital por deporte.' },
-  { v: 'federacion', t: 'Federación', d: 'Federación deportiva nacional.' },
-  { v: 'escuela', t: 'Escuela deportiva', d: 'Escuela de formación deportiva.' }
-];
-const TIPOS_DOC = ['CC', 'TI', 'CE', 'PA'];
-const TIPODOC_LABEL = { CC: 'Cédula de ciudadanía (CC)', TI: 'Tarjeta de identidad (TI)', CE: 'Cédula de extranjería (CE)', PA: 'Pasaporte (PA)' };
-/* Municipios principales por departamento (demo). El campo Ciudad/Municipio se
-   carga dependiente del Departamento seleccionado. */
+const edadDe = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null; const hoy = new Date(); let e = hoy.getFullYear() - (+m[1]); const mo = (hoy.getMonth() + 1) - (+m[2]); if (mo < 0 || (mo === 0 && hoy.getDate() < (+m[3]))) e--; return e; };
+const edadTxt = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return ''; const hoy = new Date(); let meses = (hoy.getFullYear() - +m[1]) * 12 + (hoy.getMonth() + 1 - +m[2]); if (hoy.getDate() < +m[3]) meses--; return meses < 0 ? '' : `${Math.floor(meses / 12)} años ${meses % 12} meses`; };
+I.person = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1"/></svg>'; I.company = I.entity;
+I.guardian = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M2 21v-2a5 5 0 0 1 10 0v2"/><path d="M13 21v-1.5a4 4 0 0 1 8 0V21"/></svg>';
+I.trophy = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
+I.flag = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>';
+I.shield = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+I.spin = '<svg class="rp-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>';
+
+/* ═══════════════ Catálogos ═══════════════
+   Valores tal cual los devuelve staging (GET /catalogs/*) salvo donde se marca. */
+const opt = (arr) => arr.map((x) => (Array.isArray(x) ? { v: x[0], t: x[1] } : { v: x, t: x }));
+const CAT = {
+  tipoDoc: opt([['CC', 'CC'], ['CE', 'CE'], ['PA', 'PA']]),
+  sexo: opt([['H', 'Hombre'], ['M', 'Mujer']]),
+  nacionalidad: opt([['CO', 'Colombia'], ['VE', 'Venezuela'], ['EC', 'Ecuador'], ['PE', 'Perú'], ['BR', 'Brasil'], ['AR', 'Argentina'], ['MX', 'México'], ['US', 'Estados Unidos'], ['ES', 'España'], ['OT', 'Otro país']]),
+  rolApoyo: opt(['Asistente Técnico', 'Auxiliar Discapacidad', 'Delegado', 'Directivo', 'Docente/Asistente', 'Docente/Entrenador', 'Fisioterapeuta', 'Kinesiólogo', 'Médico', 'Otros', 'Preparador Físico', 'Preparador de Porteros', 'Utilero']),
+  tipoDeporte: opt([['CONJ', 'Conjunto'], ['IND', 'Individual'], ['PARA', 'Paradeporte']]),
+  genero: opt(['Femenino', 'Masculino', 'Transgénero', 'No binario', 'No aplica', 'Otra']),
+  orientacion: opt(['Agénero', 'Arromántico', 'Asexual', 'Bisexual', 'Gay', 'Heterosexual', 'Intersexual', 'Lesbiana', 'No aplica', 'Otra', 'Prefiero no decirlo', 'Queer', 'Transexual']),
+  discapacidad: opt(['Ninguna', 'Auditiva', 'Física', 'Intelectual (Cognitiva)', 'Múltiple', 'No aplica', 'Parálisis Cerebral', 'Prefiero no decirlo', 'Psicosocial', 'Sordo-Ceguera', 'Visual']),
+  etnia: opt([['NIN', 'Ninguna de las anteriores'], ['CAM', 'Comunidades campesinas'], ['ROM', 'Gitanos o Rrom'], ['AFRO', 'Negro(a) afrodescendiente afrocolombiano(a)'], ['NA', 'No aplica'], ['OTR', 'Otro'], ['PAL', 'Palenquero(a)'], ['PND', 'Prefiero no decirlo'], ['IND', 'Pueblos indígenas (IND)'], ['RAI', 'Raizales']]),
+  comunidad: opt(['Ninguno', 'Ambiká Pijao', 'Arhuacos', 'Awá', 'Emberá Chamí', 'Nasa', 'Wayuu', 'Zenú']),
+  victima: opt([['YES', 'Sí'], ['NO', 'No'], ['NA', 'No aplica'], ['PND', 'Prefiero no decirlo']]),
+  priorizacion: opt(['Mujeres en estado de embarazo', 'Personas adultas mayores', 'Periodistas', 'Niños niñas y adolescentes', 'Personas con Discapacidad', 'Veteranos de la fuerza pública', 'Ninguno']),
+  victimizacion: opt(['Ninguna', 'Abandono o despojo forzado de tierras', 'Acto terrorista / atentados / combates / enfrentamientos / hostigamientos', 'Amenaza', 'Homicidio masacre', 'Minas antipersonal, munición sin explotar, artefacto explosivo improvisado', 'Perdida de bienes muebles o inmuebles', 'Vinculación niños niñas adolescentes a actividades relacionadas con grupos armados']),
+  zona: opt([['U', 'Urbano'], ['R', 'Rural']]),
+  naturaleza: opt(['Pública', 'Privada', 'Mixta']),
+  tamano: opt(['Micro, pequeñas y medianas empresas', 'Grandes Empresas', 'Organizaciones sin ánimo de lucro', 'No aplica']),
+  sector: opt([['Olímpico', 'Olímpico'], ['Paralímpico', 'Paralímpico'], ['Sordolímpico', 'Sordolímpico']]),
+  ambito: opt([['departamental', 'Departamental'], ['distrital', 'Distrital']]),
+  tipoClub: opt([['promotor', 'Club promotor'], ['profesional', 'Club profesional'], ['escuela', 'Escuela deportiva']])
+};
 const MUNICIPIOS = {
-  'Antioquia': ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro', 'Apartadó', 'Turbo', 'Sabaneta', 'Caucasia', 'La Estrella'],
-  'Atlántico': ['Barranquilla', 'Soledad', 'Malambo', 'Sabanalarga', 'Puerto Colombia', 'Galapa', 'Baranoa'],
-  'Bogotá D.C.': ['Bogotá'],
-  'Bolívar': ['Cartagena', 'Magangué', 'Turbaco', 'El Carmen de Bolívar', 'Arjona', 'Mompox'],
-  'Boyacá': ['Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Paipa', 'Puerto Boyacá'],
-  'Caldas': ['Manizales', 'La Dorada', 'Chinchiná', 'Villamaría', 'Riosucio', 'Anserma'],
-  'Cundinamarca': ['Soacha', 'Facatativá', 'Zipaquirá', 'Chía', 'Girardot', 'Fusagasugá', 'Mosquera', 'Madrid', 'Funza', 'Cajicá'],
-  'Meta': ['Villavicencio', 'Acacías', 'Granada', 'Puerto López', 'Cumaral', 'Restrepo'],
-  'Nariño': ['Pasto', 'Tumaco', 'Ipiales', 'Túquerres', 'La Unión', 'Samaniego'],
-  'Risaralda': ['Pereira', 'Dosquebradas', 'Santa Rosa de Cabal', 'La Virginia', 'Marsella'],
-  'Santander': ['Bucaramanga', 'Floridablanca', 'Girón', 'Piedecuesta', 'Barrancabermeja', 'San Gil'],
-  'Tolima': ['Ibagué', 'Espinal', 'Melgar', 'Honda', 'Líbano', 'Chaparral'],
-  'Valle del Cauca': ['Cali', 'Buenaventura', 'Palmira', 'Tuluá', 'Cartago', 'Buga', 'Jamundí', 'Yumbo', 'Candelaria']
+  'Antioquia': ['Medellín', 'Bello', 'Itagüí', 'Envigado', 'Rionegro', 'Apartadó'], 'Atlántico': ['Barranquilla', 'Soledad', 'Malambo', 'Puerto Colombia'],
+  'Bogotá D.C.': ['Bogotá'], 'Bolívar': ['Cartagena', 'Magangué', 'Turbaco'], 'Boyacá': ['Tunja', 'Duitama', 'Sogamoso'], 'Caldas': ['Manizales', 'La Dorada', 'Chinchiná'],
+  'Cundinamarca': ['Soacha', 'Facatativá', 'Zipaquirá', 'Chía', 'Girardot', 'Fusagasugá'], 'Meta': ['Villavicencio', 'Acacías', 'Granada'], 'Nariño': ['Pasto', 'Tumaco', 'Ipiales'],
+  'Risaralda': ['Pereira', 'Dosquebradas', 'Santa Rosa de Cabal'], 'Santander': ['Bucaramanga', 'Floridablanca', 'Girón', 'Barrancabermeja'], 'Tolima': ['Ibagué', 'Espinal', 'Melgar'],
+  'Valle del Cauca': ['Cali', 'Buenaventura', 'Palmira', 'Tuluá', 'Cartago', 'Buga', 'Jamundí']
 };
-const DEPORTES = [...new Set(allOrganismos().filter((o) => o.tipo === 'federacion' && o.deporte && o.deporte !== '—').map((o) => o.deporte))].sort((a, b) => a.localeCompare(b, 'es'));
+const DEPTOS = Object.keys(MUNICIPIOS).sort((a, b) => a.localeCompare(b, 'es'));
 
-/* Documentos ya registrados (mock) para validar duplicidad por número (HURU-01/03). */
-const DOCS_REGISTRADOS = new Set([
-  ...allDeportistas().map((d) => String(d.numDoc)),
-  ...allOrganismos().map((o) => o.repLegal && o.repLegal.numDoc).filter(Boolean).map(String),
-  '1000000001', '79620001'
-]);
-function docRegistrado(num) { return DOCS_REGISTRADOS.has(String(num || '').trim()); }
-/* Dedup por NIT (HURU-05): una entidad ya registrada (en la jerarquía o en la cola
-   de preinscritos) no puede volver a registrarse por el formulario público. */
-function nitRegistrado(nit) {
-  const n = String(nit || '').replace(/\D/g, '');
-  if (n.length < 5) return false;
-  const same = (o) => String(o.nit || '').replace(/\D/g, '') === n;
-  try { return allOrganismos().some(same) || allPreinscritos().some(same); } catch (_) { return false; }
-}
-
-/* ─── estado ─── */
-/* Pasos del wizard (dinámicos por tipo). El flujo por TUTOR (HURU-02) usa la
-   secuencia EXIGIDA tutor → parentesco → menor (3 pasos de datos separados);
-   el resto de tipos usa Datos → Documentos. El último par ['listo',…] es la
-   pantalla de éxito (no tiene pane interactivo). */
-function stepDefs() {
-  return (STATE.tipo === 'deportista' && STATE.modo === 'tutor')
-    ? [['tipo', 'Tipo'], ['tutor', 'Padre/tutor'], ['parentesco', 'Parentesco'], ['menor', 'Menor'], ['listo', 'Listo']]
-    : [['tipo', 'Tipo'], ['datos', 'Datos'], ['docs', 'Documentos'], ['listo', 'Listo']];
-}
-const stepKey = () => (stepDefs()[STATE.step] || ['listo'])[0];
-const lastStep = () => stepDefs().length - 2;   // índice del último paso interactivo (antes de 'Listo')
-const STATE = {
-  step: 0, created: false, _armedStep: null,
-  tipo: null, modo: null, rol: '', entTipo: null,
-  d: {
-    tipoDoc: '', numDoc: '', nombres: '', apellidos: '', fechaNac: '', sexo: '', correo: '', telefono: '', deporte: '',
-    // tutor
-    vinculo: '', tutorTipoDoc: '', tutorDoc: '', tutorNombres: '', tutorCorreo: '', tutorTel: '', firma: false,
-    // personal
-    profesion: '', experiencia: '', tarjetaProf: '',
-    // entidad
-    nit: '', entNombre: '', repNombre: '', repDoc: '', repCorreo: '', depto: '', ciudad: '', superiorId: '', sector: '',
-    // docs (nombre de archivo)
-    docs: {},
-    aceptaPoliticas: false
-  }
+/* Deportes por federación (PR nao-docs #32): una federación gobierna uno o más
+   deportes del catálogo; un deporte pertenece a una sola federación. El seed solo
+   trae `deporte`; estas son las federaciones con varios deportes en catalog-ms. */
+const DEPORTES_POR_FED = {
+  'FED-038': ['Natación', 'Natación Artística', 'Polo Acuático'],
+  'FED-040': ['Patinaje', 'Patinaje Artístico', 'Patinaje de Velocidad']
 };
+const deportesDe = (org) => {
+  if (!org) return [];
+  if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes;
+  if (DEPORTES_POR_FED[org.id]) return DEPORTES_POR_FED[org.id];
+  return org.deporte && org.deporte !== '—' ? [org.deporte] : [];
+};
+const FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === 'federacion');
+/* Catálogo de deportes = unión de los deportes de las federaciones (demo; el real es GET /sports). */
+/* Solo demo: deportes del catálogo que aún no tienen federación, para poder probar el alta de una federación. */
+const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding'];
+const CATALOGO_DEPORTES = () => [...new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
+/* Dueño de cada deporte: federación existente que ya lo gobierna (bloquea duplicar). */
+const duenoDeporte = (dep, sector) => FEDERACIONES().find((f) => f.sector === sector && deportesDe(f).includes(dep) && !['Rechazado', 'Cancelado'].includes(f.estado));
+const CONJUNTO = ['Baloncesto', 'Balonmano', 'Béisbol', 'Fútbol', 'Fútbol de Salón', 'Hockey', 'Polo Acuático', 'Rugby', 'Softbol', 'Voleibol'];
+const deportesPorTipo = (t) => {
+  const all = CATALOGO_DEPORTES();
+  if (t === 'CONJ') return all.filter((d) => CONJUNTO.includes(d));
+  if (t === 'PARA') return ['Boccia', 'Goalball', 'Para Atletismo', 'Para Natación', 'Baloncesto en silla de ruedas'];
+  return all.filter((d) => !CONJUNTO.includes(d));
+};
+
+/* Documentos de la búsqueda simulada (Solo demo). */
+const DOC_MENOR = '1098765432';
+/* Solo demo: documento que existe sin cuenta, creado por una institución en un evento. */
+const DOC_SIN_RECLAMAR = '1055512345';
+const SIN_RECLAMAR = { emailHint: 'ju•••••z@colegiosanjose.edu.co' };
+const docConCuenta = (num) => allDeportistas().some((d) => String(d.numDoc) === String(num).trim()) || allOrganismos().some((o) => o.repLegal && String(o.repLegal.numDoc) === String(num).trim());
+const ROL_TXT = { ATHLETE: 'Deportista', LEGAL_GUARDIAN: 'Tutor', SUPPORT_STAFF: 'Personal deportivo' };
+const ENT_TXT = { federacion: 'Federación', liga: 'Liga', club: 'Club' };
+const SUPERIOR_TXT = { federacion: 'comité', liga: 'federación', club: 'liga' };
+/* Rol de la demo que ve la bandeja de cada superior (para el enlace del resultado). */
+const ROL_DE_ANCLA = { COC: 'COMITE', 'FED-040': 'FEDERACION', 'LIG-001': 'LIGA' };
+
+/* ═══════════════ Estado ═══════════════ */
+const blankD = () => ({
+  tipoDoc: 'CC', numDoc: '', nombre: '', segNombre: '', apellido: '', segApellido: '', fechaNac: '', rolApoyo: '', sexo: '', nacionalidad: 'CO',
+  tipoDeporte: '', deporte: '',
+  genero: '', orientacion: '', discapacidad: '', etnia: '', comunidad: '', victima: '', priorizacion: '', victimizacion: '',
+  depto: '', ciudad: '', zona: '', direccion: '', telefono: '', correo: '',
+  nit: '', entNombre: '', naturaleza: '', tamano: '', sector: '', superiorId: '', filtroDeporte: '', deportes: [], ambito: '', tipoClub: '',
+  repTipoDoc: 'CC', repDoc: '', repNombre: '', repApellido: '', repCorreo: '',
+  docs: {}, aceptaPoliticas: false, aceptaComunicaciones: false
+});
+const STATE = { step: 0, created: false, _armedStep: null, nature: null, role: null, entTipo: null, lookup: 'idle', nitLookup: 'idle', claim: null, result: null, d: blankD() };
 const root = () => document.getElementById('rpRoot');
+const isAthlete = () => STATE.role === 'ATHLETE';
+
+/* Pasos: [clave, etiqueta del stepper | null]. Selección de naturaleza y de rol no
+   llevan stepper (igual que /user-register). */
+function stepDefs() {
+  if (STATE.nature === 'entidad') return [['nature', null], ['enttipo', null], ['entbasicos', 'Básicos'], ['entdocs', 'Documentos'], ['contacto', 'Sede y contacto'], ['result', null]];
+  const s = [['nature', null], ['role', null], ['basicos', 'Básicos']];
+  if (isAthlete()) s.push(['deportivos', 'Deportivos']);
+  return s.concat([['socio', 'Sociodemográfico'], ['contacto', 'Contacto'], ['result', null]]);
+}
+const stepKey = () => (stepDefs()[STATE.step] || ['result'])[0];
+const lastStep = () => stepDefs().length - 2;
+
+const DD_RERENDER = {
+  depto: () => { STATE.d.ciudad = ''; },
+  tipoDeporte: () => { STATE.d.deporte = ''; },
+  etnia: () => { if (STATE.d.etnia !== 'IND') STATE.d.comunidad = ''; },
+  victima: () => { if (STATE.d.victima !== 'YES') STATE.d.victimizacion = ''; },
+  sector: () => { STATE.d.deportes = []; },
+  superiorId: () => { STATE.d.deportes = []; },
+  filtroDeporte: () => { STATE.d.superiorId = ''; STATE.d.deportes = []; },
+  tipoDoc: () => { STATE.lookup = 'idle'; },
+  fechaNac: () => {}
+};
 
 /* ═══════════════ Render ═══════════════ */
+const SELECT_STEPS = ['nature', 'role', 'enttipo'];
+const isSelectStep = () => SELECT_STEPS.includes(stepKey());
+I.arrowR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+I.arrowL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
+function header() {
+  const k = stepKey();
+  let title = 'Crear cuenta', sub = 'Comienza indicando si eres persona natural o entidad jurídica', crumb = '';
+  if (k === 'nature') {
+    /* primera pantalla: título y subtítulo fijos aunque ya haya selección */
+  } else if (STATE.nature === 'persona') {
+    sub = k === 'role' ? 'Regístrate como deportista, tutor o personal deportivo' : 'Regístrate con tu documento de identidad';
+    if (k !== 'role' && STATE.role) { title = `Registro como ${ROL_TXT[STATE.role]}`; crumb = ROL_TXT[STATE.role]; }
+  } else if (STATE.nature === 'entidad') {
+    sub = 'Registra tu federación, liga o club';
+    if (k !== 'enttipo' && STATE.entTipo) { title = `Registro como ${ENT_TXT[STATE.entTipo]}`; crumb = ENT_TXT[STATE.entTipo]; }
+  }
+  const center = isSelectStep();
+  return `<div class="ur-head${center ? ' ur-head--center' : ''}">
+      ${crumb ? `<div class="ur-crumbs">Registro ${I.chevR} ${esc(crumb)} ${I.chevR} <b>Formulario</b></div>` : ''}
+      <h1 class="ur-title">${esc(title)}</h1><p class="ur-sub">${esc(sub)}</p>
+    </div>
+    <div class="ur-devnote-wrap${center ? ' ur-devnote-wrap--center' : ''}"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${k}"></span></div>`;
+}
 function render() {
-  if (STATE.created) return renderSuccess();
+  if (STATE.created) return renderResult();
   root().innerHTML = `
     <div class="reg-wizard" id="rpWizard">
-      <div class="reg-stepper-wrap">
-        <div class="naowee-stepper naowee-stepper--distributed naowee-stepper--pulse" id="rpStepper"></div>
-        <div class="reg-stepper-mobile" id="rpStepperMobile"></div>
-      </div>
+      ${header()}
+      ${isSelectStep() ? '' : '<div class="ur-stepper" id="rpStepper"></div>'}
       <div class="reg-pane" id="rpPane"></div>
-      <div class="reg-footer" id="rpFooter"></div>
+      <div id="rpFooter"></div>
     </div>`;
   renderStepper(); renderPane(); renderFooter(); bindPane();
 }
-
 function renderStepper() {
-  const wrap = document.getElementById('rpStepper');
-  const defs = stepDefs();
-  let html = '';
-  defs.forEach(([, lbl], i) => {
-    if (i > 0) html += `<div class="naowee-stepper__connector ${i <= STATE.step ? 'naowee-stepper__connector--done' : ''}"></div>`;
-    const cls = i < STATE.step ? 'naowee-stepper__step--done' : (i === STATE.step ? 'naowee-stepper__step--active' : '');
-    html += `<div class="naowee-stepper__step ${cls}"><span class="naowee-stepper__number">${i < STATE.step ? I.check : (i + 1)}</span><span class="naowee-stepper__label">${lbl}</span></div>`;
-  });
-  wrap.innerHTML = html;
-  document.getElementById('rpStepperMobile').innerHTML = `Paso <strong>${STATE.step + 1}</strong> de ${defs.length} · ${(defs[STATE.step] || ['', ''])[1]}`;
+  const wrap = document.getElementById('rpStepper'); if (!wrap) return;
+  const labeled = stepDefs().filter(([, l]) => l);
+  const cur = labeled.findIndex(([k]) => k === stepKey());
+  wrap.innerHTML = labeled.map(([, lbl], i) => `${i > 0 ? `<span class="ur-step-line${i <= cur ? ' ur-step-line--done' : ''}"></span>` : ''}<div class="ur-step${i < cur ? ' ur-step--done' : i === cur ? ' ur-step--active' : ''}"><span class="ur-step__n">${i < cur ? I.check : i + 1}</span><span class="ur-step__l">${lbl}</span></div>`).join('');
 }
-
 function renderPane() {
-  const p = document.getElementById('rpPane');
+  const panes = { nature: paneNature, role: paneRole, basicos: paneBasicos, deportivos: paneDeportivos, socio: paneSocio, contacto: paneContacto, enttipo: paneEntTipo, entbasicos: paneEntBasicos, entdocs: paneEntDocs };
+  document.getElementById('rpPane').innerHTML = panes[stepKey()]();
+}
+function renderFooter() {
+  const f = document.getElementById('rpFooter');
   const k = stepKey();
-  if (k === 'tipo') p.innerHTML = paneTipo();
-  else if (k === 'datos') p.innerHTML = paneDatos();
-  else if (k === 'docs') p.innerHTML = paneDocs();
-  else if (k === 'tutor') p.innerHTML = paneTutor();
-  else if (k === 'parentesco') p.innerHTML = paneParentesco();
-  else if (k === 'menor') p.innerHTML = paneMenor();
+  const sel = k === 'nature' ? STATE.nature : k === 'role' ? STATE.role : k === 'enttipo' ? STATE.entTipo : true;
+  const label = k === 'role' ? 'Comenzar registro' : (STATE.step === lastStep() ? 'Crear cuenta' : 'Siguiente');
+  const back = STATE.step > 0 ? `<button type="button" class="ur-back" id="rpBack">${I.arrowL} Volver</button>` : '';
+  f.innerHTML = `<div class="ur-actions">${back}<button type="button" class="ur-btn${k === 'nature' ? ' ur-btn--block' : ''}" id="rpNext" ${sel ? '' : 'disabled'}>${label} ${k === 'nature' ? '' : I.arrowR}</button></div>
+    ${isSelectStep() ? '<p class="ur-legal"><a href="#" onclick="return false">Política de privacidad</a> y <a href="#" onclick="return false">Términos y condiciones</a></p>' : ''}`;
+  document.getElementById('rpNext').addEventListener('click', next);
+  document.getElementById('rpBack')?.addEventListener('click', () => { STATE._armedStep = null; STATE.step = Math.max(0, STATE.step - 1); render(); });
 }
 
-/* ── Paso 0 — tipo de usuario ── */
-function paneTipo() {
-  const cards = TIPOS.map((t) => `
-    <button type="button" class="reg-tipo-card ${STATE.tipo === t.v ? 'is-selected' : ''}" data-tipo="${t.v}">
-      <span class="reg-tipo-card__check">${I.check}</span>
-      <span class="reg-tipo-card__emoji">${t.emoji}</span>
-      <span class="reg-tipo-card__title">${t.t}</span>
-      <span class="reg-tipo-card__desc">${t.d}</span>
-    </button>`).join('');
-  const modo = STATE.tipo === 'deportista'
-    ? `<div class="rp-subchoice">${choiceGroup('modo', '¿Quién realiza el registro?', MODOS, STATE.modo, true)}</div>` : '';
-  return `
-    <h2 class="reg-pane__title">¿Qué tipo de usuario eres?</h2>
-    <p class="reg-pane__sub">Registro público del SUID — no necesitas iniciar sesión. Elige el tipo y el formulario se adapta a tu caso.</p>
-    <div class="reg-tipo-grid">${cards}</div>
-    ${modo}`;
+/* ── tarjetas (nwt-radio-card) ── */
+function cards(key, items, value) {
+  return `<div class="ur-cards">${items.map((t) => `
+    <button type="button" class="ur-card ${value === t.v ? 'is-selected' : ''}" data-card="${key}" data-value="${t.v}">
+      ${t.icon}<span class="ur-card__t">${t.t}</span><span class="ur-card__d">${t.d}</span>
+    </button>`).join('')}</div>`;
+}
+function paneNature() {
+  return cards('nature', [
+    { v: 'persona', icon: I.person, t: 'Persona', d: 'Natural' },
+    { v: 'entidad', icon: I.company, t: 'Entidad', d: 'Jurídica' }
+  ], STATE.nature);
+}
+function paneRole() {
+  return cards('role', [
+    { v: 'ATHLETE', icon: I.athlete, t: 'Ciudadano', d: 'Deportista' },
+    { v: 'LEGAL_GUARDIAN', icon: I.guardian, t: 'Padre', d: 'Tutor' },
+    { v: 'SUPPORT_STAFF', icon: I.staff, t: 'Personal', d: 'Deportivo' }
+  ], STATE.role);
+}
+function paneEntTipo() {
+  return `${cards('entTipo', [
+    { v: 'federacion', icon: I.trophy, t: 'Federación', d: 'Nacional' },
+    { v: 'liga', icon: I.flag, t: 'Liga', d: 'Departamental' },
+    { v: 'club', icon: I.shield, t: 'Club', d: 'Municipal' }
+  ], STATE.entTipo)}
+  ${msg('informative', '¿Eres un comité o un ente territorial?', 'Los comités los crea el Ministerio del Deporte. Los entes departamentales y municipales también los crea el Ministerio al invitarlos a sus eventos. No se registran por este formulario.')}`;
 }
 
-/* ── Paso 1 — datos (adaptativo) ── */
-/* ── Flujo por TUTOR (HURU-02): tutor → parentesco → menor, en 3 pasos ── */
-function paneTutor() {
-  const d = STATE.d;
-  return `
-    <h2 class="reg-pane__title">Datos del padre / tutor</h2>
-    <p class="reg-pane__sub">Un menor de edad no puede registrarse de forma autónoma: lo registra su padre, madre o tutor legal. Empecemos por tus datos.</p>
-    <form class="reg-form" id="rpForm">
-      ${choiceGroup('vinculo', 'Vínculo con el menor', VINCULOS, d.vinculo, true)}
-      <div class="reg-grid-2">
-        ${dd('tutorTipoDoc', 'Tipo de documento', TIPOS_DOC.map((v) => ({ v, t: TIPODOC_LABEL[v] })), d.tutorTipoDoc, true)}
-        ${tf({ id: 'f-tutorDoc', label: 'Número de documento del tutor', required: true, path: 'tutorDoc', value: d.tutorDoc, mask: 'numeric', maxLength: 12, placeholder: '10000123' })}
-        ${tf({ id: 'f-tutorNombres', label: 'Nombres y apellidos del tutor', required: true, path: 'tutorNombres', value: d.tutorNombres, placeholder: 'Ej: María Rojas' })}
-        ${tf({ id: 'f-tutorTel', label: 'Teléfono', required: true, path: 'tutorTel', value: d.tutorTel, mask: 'tel', maxLength: 18, type: 'tel', placeholder: '+57 300 123 4567' })}
-      </div>
-      ${tf({ id: 'f-tutorCorreo', label: 'Correo electrónico', required: true, path: 'tutorCorreo', value: d.tutorCorreo, mask: 'email', type: 'email', placeholder: 'tutor@correo.co' })}
-    </form>`;
+/* ── Persona · Básicos ── */
+function lookupBox() {
+  const st = STATE.lookup;
+  if (st === 'checking') return `<div class="rp-lookup">${I.spin} Consultando registro en la base de datos...</div>`;
+  if (st === 'ok' && STATE.claim) return `<div class="rp-lookup rp-lookup--ok">${I.check} Vas a reclamar tu perfil. Completa o corrige tus datos; el correo se mantiene.</div>`;
+  if (st === 'ok') return `<div class="rp-lookup rp-lookup--ok">${I.check} No encontramos registros previos. Por favor completa el formulario.</div>`;
+  return '';
 }
-function paneParentesco() {
-  const d = STATE.d;
-  const vinculoTxt = (VINCULOS.find((v) => v.v === d.vinculo) || {}).t || 'tutor legal';
-  return `
-    <h2 class="reg-pane__title">Documentación de parentesco</h2>
-    <p class="reg-pane__sub">Acredita tu vínculo (<strong>${esc(vinculoTxt)}</strong>) con el menor y firma el consentimiento. Formatos: PDF, JPG o PNG (simulado — no se sube ningún archivo).</p>
-    <div class="reg-form">
-      ${uploader({ id: 'parentesco', label: 'Documento de parentesco (registro civil / custodia)' })}
-      <div class="reg-section-label">Consentimiento</div>
-      <label class="naowee-checkbox" data-field="f-firma" id="f-firma"><input type="checkbox" ${d.firma ? 'checked' : ''} data-check="firma"><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">Firmo digitalmente el <strong>consentimiento</strong> como padre/tutor para el registro del menor. <strong>(Obligatorio)</strong></span></label>
+function paneBasicos() {
+  const d = STATE.d, st = STATE.lookup;
+  const locked = st !== 'ok';
+  const docField = `<div class="rp-doc" data-field="f-numDoc">
+      <label class="naowee-textfield__label naowee-textfield__label--required">Tipo de documento</label>
+      <div class="rp-doc__row">${ddInline('tipoDoc', CAT.tipoDoc, d.tipoDoc)}
+        <div class="naowee-textfield__input-wrap"><input id="f-numDoc" class="naowee-textfield__input" placeholder="# Documento" inputmode="numeric" value="${esc(d.numDoc)}" data-model="numDoc" data-mask="numeric" maxlength="12"></div></div>
+      ${lookupBox()}
+      <p class="rp-demo-hint">Solo demo · prueba <code>${DOC_MENOR}</code> (menor de edad), <code>${DOC_SIN_RECLAMAR}</code> (perfil sin reclamar) o <code>1144556778</code> (ya tiene cuenta).</p>
     </div>`;
-}
-function paneMenor() {
-  const d = STATE.d;
-  return `
-    <h2 class="reg-pane__title">Datos del menor de edad</h2>
-    <p class="reg-pane__sub">Registra al menor. El sistema valida que el documento no esté registrado y que la edad sea menor de 18 años.</p>
-    <form class="reg-form" id="rpForm">
+  if (st === 'minor') return `${isAthlete() ? minorInfo() : ''}<div class="reg-form">${docField}</div>${minorAlert('Por normativa, el registro debe completarlo su padre, madre o tutor legal.')}`;
+  if (st === 'hasLogin') return `<div class="reg-form">${docField}</div>${hasLoginAlert()}`;
+  if (st === 'unclaimed') return `<div class="reg-form">${docField}</div>${unclaimedAlert()}`;
+  if (st === 'notMine') return `<div class="reg-form">${docField}</div>${notMineAlert()}`;
+  const edad = edadDe(d.fechaNac);
+  const menorPorFecha = edad != null && edad < 18;
+  return `${isAthlete() ? minorInfo() : ''}
+    <form class="reg-form rp-form-wide${locked ? ' rp-locked' : ''}" onsubmit="return false">
+      ${docField}
       <div class="reg-grid-2">
-        ${dd('tipoDoc', 'Tipo de documento', TIPOS_DOC.map((v) => ({ v, t: TIPODOC_LABEL[v] })), d.tipoDoc, true)}
-        ${tf({ id: 'f-numDoc', label: 'Número de documento del menor', required: true, path: 'numDoc', value: d.numDoc, mask: 'numeric', maxLength: 12, placeholder: '1099887766' })}
-        ${tf({ id: 'f-nombres', label: 'Nombres', required: true, path: 'nombres', value: d.nombres, placeholder: 'Ej: Juan David' })}
-        ${tf({ id: 'f-apellidos', label: 'Apellidos', required: true, path: 'apellidos', value: d.apellidos, placeholder: 'Ej: Marín' })}
+        ${tf({ id: 'f-nombre', label: 'Nombre', required: true, path: 'nombre', value: d.nombre, placeholder: 'Primer nombre' })}
+        ${tf({ id: 'f-segNombre', label: 'Segundo nombre', path: 'segNombre', value: d.segNombre, placeholder: 'Segundo nombre' })}
+        ${tf({ id: 'f-apellido', label: 'Apellido', required: true, path: 'apellido', value: d.apellido, placeholder: 'Primer apellido' })}
+        ${tf({ id: 'f-segApellido', label: 'Segundo apellido', path: 'segApellido', value: d.segApellido, placeholder: 'Segundo apellido' })}
         ${dateField({ id: 'f-fechaNac', label: 'Fecha de nacimiento', required: true, path: 'fechaNac' })}
-        ${dd('deporte', 'Deporte', DEPORTES.map((v) => ({ v, t: v })), d.deporte, false, true)}
+        <div class="naowee-textfield"><label class="naowee-textfield__label">Edad</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" disabled value="${esc(edadTxt(d.fechaNac))}"></div></div>
+        ${STATE.role === 'SUPPORT_STAFF' ? dd('rolApoyo', 'Rol específico', CAT.rolApoyo, d.rolApoyo, true, true) : ''}
+        ${dd('sexo', 'Sexo', CAT.sexo, d.sexo, true)}
+        ${dd('nacionalidad', 'Nacionalidad', CAT.nacionalidad, d.nacionalidad, true, true)}
       </div>
-      <div class="rp-agehint" id="rpAgeHint"></div>
-    </form>
-    <div class="reg-form">
-      <div class="naowee-message naowee-message--informative"><span class="naowee-message__icon">${I.api}</span><div class="naowee-message__body"><p class="naowee-message__text"><strong>Integración externa (demo):</strong> el número de documento se validará contra la Registraduría / entidades externas vía API al procesar el registro.</p></div></div>
-      <div class="reg-section-label">Aceptación</div>
-      ${privacyCheck()}
-    </div>`;
-}
-
-/* ── Paso "Datos" (deportista propio · personal · entidad) ── */
-function paneDatos() {
-  const d = STATE.d;
-  if (STATE.tipo === 'deportista') {
-    return `
-      <h2 class="reg-pane__title">Tus datos de deportista</h2>
-      <p class="reg-pane__sub">Regístrate con tu documento de identidad. El sistema valida que no exista un registro previo con el mismo número.</p>
-      <form class="reg-form" id="rpForm">
-        <div class="reg-grid-2">
-          ${dd('tipoDoc', 'Tipo de documento', TIPOS_DOC.map((v) => ({ v, t: TIPODOC_LABEL[v] })), d.tipoDoc, true)}
-          ${tf({ id: 'f-numDoc', label: 'Número de documento', required: true, path: 'numDoc', value: d.numDoc, mask: 'numeric', maxLength: 12, placeholder: '1099887766' })}
-          ${tf({ id: 'f-nombres', label: 'Nombres', required: true, path: 'nombres', value: d.nombres, placeholder: 'Ej: Laura' })}
-          ${tf({ id: 'f-apellidos', label: 'Apellidos', required: true, path: 'apellidos', value: d.apellidos, placeholder: 'Ej: Gómez' })}
-          ${dateField({ id: 'f-fechaNac', label: 'Fecha de nacimiento', required: true, path: 'fechaNac' })}
-          ${dd('deporte', 'Deporte', DEPORTES.map((v) => ({ v, t: v })), d.deporte, false, true)}
-          ${tf({ id: 'f-correo', label: 'Correo electrónico', required: true, path: 'correo', value: d.correo, mask: 'email', type: 'email', placeholder: 'correo@correo.co' })}
-          ${tf({ id: 'f-telefono', label: 'Teléfono', required: true, path: 'telefono', value: d.telefono, mask: 'tel', maxLength: 18, type: 'tel', placeholder: '+57 300 123 4567' })}
-        </div>
-        <div class="rp-agehint" id="rpAgeHint"></div>
-      </form>`;
-  }
-  if (STATE.tipo === 'personal') {
-    return `
-      <h2 class="reg-pane__title">Datos del personal deportivo</h2>
-      <p class="reg-pane__sub">Selecciona tu rol e ingresa tu documento. El sistema valida que no exista un registro previo.</p>
-      <form class="reg-form" id="rpForm">
-        ${dd('rol', 'Rol específico', ROLES_PERSONAL.map((v) => ({ v, t: v })), STATE.rol, true)}
-        <div class="reg-grid-2">
-          ${dd('tipoDoc', 'Tipo de documento', TIPOS_DOC.map((v) => ({ v, t: TIPODOC_LABEL[v] })), d.tipoDoc, true)}
-          ${tf({ id: 'f-numDoc', label: 'Número de documento', required: true, path: 'numDoc', value: d.numDoc, mask: 'numeric', maxLength: 12, placeholder: '79123456' })}
-          ${tf({ id: 'f-nombres', label: 'Nombres', required: true, path: 'nombres', value: d.nombres, placeholder: 'Ej: Carlos' })}
-          ${tf({ id: 'f-apellidos', label: 'Apellidos', required: true, path: 'apellidos', value: d.apellidos, placeholder: 'Ej: Palacio' })}
-          ${tf({ id: 'f-correo', label: 'Correo electrónico', required: true, path: 'correo', value: d.correo, mask: 'email', type: 'email', placeholder: 'correo@correo.co' })}
-          ${tf({ id: 'f-telefono', label: 'Teléfono', required: true, path: 'telefono', value: d.telefono, mask: 'tel', maxLength: 18, type: 'tel', placeholder: '+57 300 123 4567' })}
-        </div>
-      </form>`;
-  }
-  // entidad
-  return `
-    <h2 class="reg-pane__title">Datos de la entidad</h2>
-    <p class="reg-pane__sub">Registra tu entidad deportiva. Quedará <strong>Preinscrita</strong> para su posterior validación por el ente competente.</p>
-    <form class="reg-form" id="rpForm">
-      <div class="reg-section-label">Tipo de entidad</div>
-      ${choiceGroup('entTipo', 'Tipo de entidad', ENT_TIPOS, STATE.entTipo, true)}
-      ${entSuperiorSection()}
-      <div class="reg-grid-2">
-        ${tf({ id: 'f-nit', label: 'NIT / RUT', required: true, path: 'nit', value: d.nit, mask: 'tel', maxLength: 13, placeholder: '900123456-7' })}
-        ${tf({ id: 'f-entNombre', label: 'Nombre de la entidad', required: true, path: 'entNombre', value: d.entNombre, placeholder: 'Ej: Club Deportivo …' })}
-      </div>
-      <div class="reg-section-label">Representante legal</div>
-      <div class="reg-grid-2">
-        ${tf({ id: 'f-repNombre', label: 'Nombres y apellidos', required: true, path: 'repNombre', value: d.repNombre, placeholder: 'Ej: Ana Torres' })}
-        ${tf({ id: 'f-repDoc', label: 'Número de documento', required: true, path: 'repDoc', value: d.repDoc, mask: 'numeric', maxLength: 12, placeholder: '10000123' })}
-      </div>
-      ${tf({ id: 'f-repCorreo', label: 'Correo del representante', required: true, path: 'repCorreo', value: d.repCorreo, mask: 'email', type: 'email', placeholder: 'representante@correo.co' })}
-      <div class="reg-section-label">Sede</div>
-      <div class="reg-grid-2">
-        ${dd('depto', 'Departamento', Object.keys(MUNICIPIOS).map((v) => ({ v, t: v })), d.depto, true, true)}
-        ${d.depto && MUNICIPIOS[d.depto]
-          ? dd('ciudad', 'Ciudad / Municipio', MUNICIPIOS[d.depto].map((c) => ({ v: c, t: c })), d.ciudad, true, true)
-          : `<div class="naowee-dropdown" data-field="dd-ciudad" style="opacity:.55;pointer-events:none">
-              <label class="naowee-dropdown__label naowee-dropdown__label--required">Ciudad / Municipio</label>
-              <button type="button" class="naowee-dropdown__trigger"><span class="naowee-dropdown__value is-placeholder">Elige el departamento primero</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
-              <div class="naowee-dropdown__menu"></div>
-            </div>`}
-      </div>
+      ${menorPorFecha && STATE.role !== 'LEGAL_GUARDIAN' ? minorAlert(`Encontramos que tiene ${edad} años y eres menor de edad. Por normativa, el registro debe completarlo su padre, madre o tutor legal.`) : ''}
+      ${menorPorFecha && STATE.role === 'LEGAL_GUARDIAN' ? msg('negative', 'Debes ser mayor de edad', 'El padre, madre o tutor que se registra debe tener 18 años o más.') : ''}
+      ${isAthlete() ? '' : consentChecks()}
     </form>`;
 }
-
-/* Sección del organismo SUPERIOR (dependiente del tipo de entidad). El registro
-   público captura a qué nivel superior se afilia, para el enrutamiento DESCENDENTE
-   de validación (club→Liga, liga→Federación, federación→sector/Comité) y ORG-06.
-   Se re-renderiza al cambiar el tipo de entidad. */
-function entSuperiorSection() {
-  const d = STATE.d, et = STATE.entTipo;
-  if (!et) return '';
-  if (et === 'federacion') {
-    return `<div class="reg-section-label">Sector y deporte</div>
-      <div class="reg-grid-2">
-        ${dd('sector', 'Sector', [{ v: 'Olímpico', t: 'Olímpico' }, { v: 'Paralímpico', t: 'Paralímpico' }, { v: 'Sordolímpico', t: 'Sordolímpico' }], d.sector, true)}
-        ${tf({ id: 'f-deporte', label: 'Deporte(s)', required: true, path: 'deporte', value: d.deporte, placeholder: 'Ej: Patinaje' })}
-      </div>`;
-  }
-  const supTipo = et === 'liga' ? 'federacion' : 'liga';
-  const supLabel = et === 'liga' ? 'Federación a la que perteneces' : 'Liga a la que te afilias';
-  const opts = activosDeTipo(supTipo).map((o) => ({ v: o.id, t: `${o.nombre}${o.deporte && o.deporte !== '—' ? ' · ' + o.deporte : ''}` }));
-  const inner = opts.length
-    ? dd('superiorId', supLabel, opts, d.superiorId, true, true)
-    : `<div class="naowee-message naowee-message--caution" style="margin:0"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__text">Aún no hay ${supTipo === 'federacion' ? 'federaciones' : 'ligas'} Activas para asociar. En modo demo, aprueba una desde la bandeja primero.</p></div></div>`;
-  return `<div class="reg-section-label">Organismo superior</div>${inner}`;
+function unclaimedAlert() {
+  return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
+    <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
+    <p class="naowee-message__text">Está asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es mío</button></div>
+  </div></div>`;
+}
+function notMineAlert() {
+  return `<div class="naowee-message naowee-message--caution rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
+    <p class="naowee-message__title">Escríbenos para cambiar el correo</p>
+    <p class="naowee-message__text">Por seguridad, el correo de un perfil existente no se cambia desde este formulario. Escribe a <strong>soporte@naowee.com</strong> con tu tipo y número de documento (${esc(STATE.d.tipoDoc)} ${esc(STATE.d.numDoc)}) y una foto de tu documento de identidad; verificamos que eres tú y actualizamos el correo.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-back" data-act="backToClaim">Volver</button></div>
+  </div></div>`;
+}
+function minorInfo() { return msg('informative', '', 'Si eres menor de edad, el registro debe realizarlo tu padre, madre o tutor.'); }
+function minorAlert(text) {
+  return `<div class="naowee-message naowee-message--caution rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__title">Deportista menor de edad detectado/a</p><p class="naowee-message__text">${esc(text)}</p>
+    <button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" data-act="asTutor" style="margin-top:10px">Continuar como padre/tutor</button></div></div>`;
+}
+function hasLoginAlert() {
+  return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__title">Ya tienes una cuenta registrada</p><p class="naowee-message__text">Hemos detectado que este número de documento ya está asociado a una cuenta. Inicia sesión o, si olvidaste tu contraseña, utiliza el enlace «¿Olvidaste tu contraseña?» para recuperarla.</p>
+    <a class="naowee-btn naowee-btn--loud naowee-btn--small" href="index.html" style="margin-top:10px">Iniciar sesión</a></div></div>`;
+}
+function consentChecks() {
+  return `<div class="rp-checks">
+    ${checkbox('aceptaPoliticas', 'f-politicas', 'He leído y acepto las <strong>Políticas de Privacidad</strong> y el uso de datos gubernamentales para verificación.')}
+    ${checkbox('aceptaComunicaciones', 'f-comunicaciones', 'Acepto recibir comunicaciones relacionadas con eventos y convocatorias.')}
+  </div>`;
+}
+function checkbox(model, id, html) {
+  return `<label class="naowee-checkbox" data-field="${id}" id="${id}"><input type="checkbox" ${STATE.d[model] ? 'checked' : ''} data-check="${model}"><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">${html}</span></label>`;
 }
 
+/* ── Persona · Deportivos (solo deportista) ── */
+function paneDeportivos() {
+  const d = STATE.d;
+  return `<form class="reg-form" onsubmit="return false">
+    ${dd('tipoDeporte', 'Tipo de deporte', CAT.tipoDeporte, d.tipoDeporte, true)}
+    ${d.tipoDeporte ? dd('deporte', 'Deporte', opt(deportesPorTipo(d.tipoDeporte)), d.deporte, true, true) : ddDisabled('Deporte')}
+    ${msg('informative', '', 'Quedarás registrado como <strong>deportista autodeclarado</strong>. Desde tu perfil podrás solicitar afiliación a uno o varios clubes.')}
+    ${consentChecks()}
+  </form>`;
+}
+
+/* ── Persona · Sociodemográfico ── */
+function paneSocio() {
+  const d = STATE.d;
+  return `<p class="reg-pane__sub">Completa tu información sociodemográfica</p>
+  <form class="reg-form rp-form-wide" onsubmit="return false"><div class="reg-grid-2">
+    ${dd('genero', 'Identidad de género', CAT.genero, d.genero, true)}
+    ${dd('orientacion', 'Orientación sexual', CAT.orientacion, d.orientacion, true)}
+    ${dd('discapacidad', 'Discapacidad', CAT.discapacidad, d.discapacidad, true)}
+    ${dd('etnia', 'Pertenencia étnica', CAT.etnia, d.etnia, true)}
+    ${d.etnia === 'IND' ? dd('comunidad', 'Comunidad indígena', CAT.comunidad, d.comunidad, true, true) : ''}
+    ${dd('victima', 'Víctima del conflicto armado', CAT.victima, d.victima, true)}
+    ${dd('priorizacion', 'Priorización', CAT.priorizacion, d.priorizacion, true)}
+    ${d.victima === 'YES' ? dd('victimizacion', 'Tipo de victimización', CAT.victimizacion, d.victimizacion, true) : ''}
+  </div></form>`;
+}
+
+/* ── Contacto (persona) · Sede y contacto (entidad) ── */
+function paneContacto() {
+  const d = STATE.d;
+  const ent = STATE.nature === 'entidad';
+  return `<form class="reg-form rp-form-wide" onsubmit="return false">
+    ${ent ? `<p class="reg-pane__sub">${STATE.entTipo === 'club' ? 'El municipio de la sede ubica al club en la jerarquía territorial.' : STATE.entTipo === 'liga' ? 'El departamento de la sede ubica a la liga en la jerarquía territorial.' : 'La federación es de cobertura nacional; indica la dirección de su sede.'}</p>` : ''}
+    <div class="reg-grid-2">
+      ${dd('depto', 'Departamento', opt(DEPTOS), d.depto, true, true)}
+      ${d.depto ? dd('ciudad', ent ? 'Municipio' : 'Ciudad', opt(MUNICIPIOS[d.depto] || []), d.ciudad, true, true) : ddDisabled(ent ? 'Municipio' : 'Ciudad')}
+      ${dd('zona', 'Zona', CAT.zona, d.zona, true)}
+      ${tf({ id: 'f-direccion', label: 'Dirección', required: true, path: 'direccion', value: d.direccion, placeholder: 'Ingresa tu dirección' })}
+      ${tf({ id: 'f-telefono', label: 'Telefono', required: true, path: 'telefono', value: d.telefono, mask: 'numeric', maxLength: 10, placeholder: '3001234567' })}
+    </div>
+    ${STATE.claim && !ent ? `<div class="naowee-textfield"><label class="naowee-textfield__label">Correo electrónico</label><div class="naowee-textfield__input-wrap rp-locked-field"><input class="naowee-textfield__input" disabled value="${esc(STATE.claim.emailHint)}"></div>
+      <p class="rp-inline-note">Es el correo de tu perfil y no se puede cambiar aquí. ¿No es tuyo? Escribe a <strong>soporte@naowee.com</strong>.</p></div>`
+    : `${msg('informative', '', 'Usaremos este correo electronico para notificaciones y verificación.')}
+    ${tf({ id: 'f-correo', label: 'Correo electrónico', required: true, path: 'correo', value: d.correo, mask: 'email', placeholder: 'nombre@correo.com' })}`}
+  </form>`;
+}
+
+/* ── Entidad · Básicos ── */
+function superiorOpts() {
+  const t = STATE.entTipo, d = STATE.d;
+  if (t === 'liga') return activosDeTipo('federacion').map((f) => ({ v: f.id, t: `${f.nombre} · ${deportesDe(f).join(', ')}` }));
+  if (t === 'club') return activosDeTipo('liga').filter((l) => !d.filtroDeporte || deportesDe(l).includes(d.filtroDeporte))
+    .map((l) => ({ v: l.id, t: `${l.nombre} · ${l.ubicacion?.depto || ''}` }));
+  return [];
+}
+function deportesPermitidos() {
+  const t = STATE.entTipo, d = STATE.d;
+  if (t === 'federacion') return d.sector ? CATALOGO_DEPORTES() : [];
+  return deportesDe(getOrganismo(d.superiorId));
+}
+function superiorSection() {
+  const t = STATE.entTipo, d = STATE.d;
+  if (t === 'federacion') {
+    const com = d.sector ? comitePorSector(d.sector) : null;
+    return `${dd('sector', 'Sector', CAT.sector, d.sector, true)}
+      ${com ? `<p class="rp-inline-note">${I.check} Tu federación quedará adscrita al <strong>${esc(com.nombre)}</strong>.</p>` : ''}`;
+  }
+  const ops = superiorOpts();
+  const filtro = t === 'club' ? dd('filtroDeporte', 'Deporte', opt([...new Set(activosDeTipo('liga').flatMap(deportesDe))].sort((a, b) => a.localeCompare(b, 'es'))), d.filtroDeporte, false, true) : '';
+  const lista = ops.length
+    ? dd('superiorId', t === 'liga' ? 'Federación a la que perteneces' : 'Liga a la que perteneces', ops, d.superiorId, true, true)
+    : `<div class="naowee-message naowee-message--caution" data-field="dd-superiorId"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__title">No encontramos tu ${SUPERIOR_TXT[t]}</p><p class="naowee-message__text">Solo aparecen organismos activos. Si tu ${SUPERIOR_TXT[t]} no está en la lista, escríbenos a <strong>soporte@naowee.com</strong> y lo escalamos al Ministerio del Deporte.</p></div></div>`;
+  return `${filtro}${lista}${ops.length ? `<p class="rp-inline-note">¿No aparece tu ${SUPERIOR_TXT[t]}? Escríbenos a <strong>soporte@naowee.com</strong> y lo escalamos al Ministerio del Deporte.</p>` : ''}`;
+}
+function deportesField() {
+  const d = STATE.d, t = STATE.entTipo;
+  const lista = deportesPermitidos();
+  if (!lista.length) return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label><p class="rp-inline-note">${t === 'federacion' ? 'Elige el sector para ver los deportes.' : `Elige tu ${SUPERIOR_TXT[t]} para ver sus deportes.`}</p></div>`;
+  const libres = t === 'federacion' ? lista.filter((dep) => !duenoDeporte(dep, d.sector)) : lista;
+  const ocupados = lista.length - libres.length;
+  const chips = libres.map((dep) => {
+    const on = d.deportes.includes(dep);
+    return `<button type="button" class="rp-chip${on ? ' is-on' : ''}" data-dep="${esc(dep)}">${on ? I.check : ''}${esc(dep)}</button>`;
+  }).join('') + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen federación en el sector ${esc(d.sector)}.</p>` : '');
+  return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label>
+    <p class="rp-inline-note">${t === 'federacion' ? 'Una federación puede gobernar varios deportes; cada deporte pertenece a una sola federación.' : `Elige entre los deportes de tu ${SUPERIOR_TXT[t]}.`}</p>
+    <div class="rp-chips">${chips}</div></div>`;
+}
+function nitBox() {
+  const st = STATE.nitLookup;
+  if (st === 'checking') return `<div class="rp-lookup">${I.spin} Consultando registro en la base de datos...</div>`;
+  if (st === 'ok') return `<div class="rp-lookup rp-lookup--ok">${I.check} No encontramos registros previos. Por favor completa el formulario.</div>`;
+  return '';
+}
+function paneEntBasicos() {
+  const d = STATE.d, st = STATE.nitLookup, t = STATE.entTipo;
+  const nit = `${tf({ id: 'f-nit', label: 'NIT', required: true, path: 'nit', value: d.nit, placeholder: '# Documento', mask: 'nit', maxLength: 11 })}${nitBox()}
+    <p class="rp-demo-hint">Solo demo · prueba <code>805010003-3</code> (en revisión) o <code>860077223-7</code> (ya tiene cuenta).</p>`;
+  if (st === 'pending') return `<div class="reg-form">${nit}</div><div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__title">Ya tienes una cuenta registrada</p><p class="naowee-message__text">Hemos detectado que este número de documento tiene pendiente un proceso de revisión por parte de su organismo superior. Te notificaremos por email cuando tu entidad sea aprobada o si requieres enviar documentación adicional.</p></div></div>`;
+  if (st === 'hasLogin') return `<div class="reg-form">${nit}</div>${hasLoginAlert()}`;
+  return `<form class="reg-form rp-form-wide${st !== 'ok' ? ' rp-locked' : ''}" onsubmit="return false">
+    ${nit}
+    <div class="reg-section-label">${t === 'federacion' ? 'Comité' : 'Organismo superior'}</div>
+    ${superiorSection()}
+    ${deportesField()}
+    <div class="reg-section-label">Datos de la entidad</div>
+    <div class="reg-grid-2">
+      ${tf({ id: 'f-entNombre', label: 'Nombre de la entidad', required: true, path: 'entNombre', value: d.entNombre, placeholder: t === 'club' ? 'Ej: Club Patín Cali' : t === 'liga' ? 'Ej: Liga de Patinaje del Valle' : 'Ej: Federación Colombiana de …' })}
+      ${t === 'liga' ? dd('ambito', 'Ámbito', CAT.ambito, d.ambito, true) : ''}
+      ${t === 'club' ? dd('tipoClub', 'Tipo de club', CAT.tipoClub, d.tipoClub, true) : ''}
+      ${dd('naturaleza', 'Naturaleza jurídica', CAT.naturaleza, d.naturaleza, true)}
+      ${dd('tamano', 'Tamaño de la organización', CAT.tamano, d.tamano, true)}
+    </div>
+    <div class="reg-section-label">Datos del representante legal</div>
+    <div class="reg-grid-2">
+      ${dd('repTipoDoc', 'Tipo de documento', CAT.tipoDoc, d.repTipoDoc, true)}
+      ${tf({ id: 'f-repDoc', label: 'Número de documento', required: true, path: 'repDoc', value: d.repDoc, mask: 'numeric', maxLength: 12 })}
+      ${tf({ id: 'f-repNombre', label: 'Nombre', required: true, path: 'repNombre', value: d.repNombre })}
+      ${tf({ id: 'f-repApellido', label: 'Apellido', required: true, path: 'repApellido', value: d.repApellido })}
+    </div>
+    ${tf({ id: 'f-repCorreo', label: 'Correo electrónico del representante', required: true, path: 'repCorreo', value: d.repCorreo, mask: 'email' })}
+  </form>`;
+}
+
+/* ── Entidad · Documentos ── */
+const DOCS_ENT = [{ id: 'rut', label: 'RUT', required: true }, { id: 'personeria', label: 'Certificado de personería juridica' }, { id: 'reconocimiento', label: 'Reconocimiento deportivo vigente' }];
+function paneEntDocs() {
+  return `${msg('informative', '', 'Los documentos deben ser legibles y firmados.')}
+    <div class="reg-form">${DOCS_ENT.map((doc) => uploader(doc).replace(doc.required ? '' : 'naowee-file-uploader__label--required', '')).join('')}
+    ${checkbox('aceptaPoliticas', 'f-politicas', 'Acepto políticas de privacidad y uso de datos gubernamentales')}</div>`;
+}
+
+/* ── dropdown compacto / deshabilitado ── */
+function ddInline(key, opts, value) { return dd(key, '', opts, value, false).replace('<label class="naowee-dropdown__label">', '<label class="naowee-dropdown__label" hidden>').replace('class="naowee-dropdown"', 'class="naowee-dropdown rp-dd-inline"'); }
+function ddDisabled(label) { return `<div class="naowee-dropdown is-disabled"><label class="naowee-dropdown__label naowee-dropdown__label--required">${esc(label)}</label><button type="button" class="naowee-dropdown__trigger" disabled><span class="naowee-dropdown__value is-placeholder">Seleccionar</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button></div>`; }
+function msg(variant, title, html) {
+  return `<div class="naowee-message naowee-message--${variant} rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">${title ? `<p class="naowee-message__title">${esc(title)}</p>` : ''}<p class="naowee-message__text">${html}</p></div></div>`;
+}
+
+/* ═══════════════ Eventos ═══════════════ */
+let _lookupT = null;
+function runLookup() {
+  clearTimeout(_lookupT);
+  const n = STATE.d.numDoc.trim();
+  const min = STATE.d.tipoDoc === 'CE' ? 6 : 7;
+  if (n.length < min) { if (STATE.lookup !== 'idle') { STATE.lookup = 'idle'; renderPane(); bindPane(); refocus('f-numDoc'); } return; }
+  STATE.lookup = 'checking'; renderPane(); bindPane(); refocus('f-numDoc');
+  _lookupT = setTimeout(() => {
+    STATE.claim = null;
+    STATE.lookup = n === DOC_MENOR ? 'minor' : n === DOC_SIN_RECLAMAR ? 'unclaimed' : docConCuenta(n) ? 'hasLogin' : 'ok';
+    renderPane(); bindPane(); refocus('f-numDoc');
+  }, 900);
+}
+let _nitT = null;
+function runNitLookup() {
+  clearTimeout(_nitT);
+  const n = STATE.d.nit.replace(/\D/g, '');
+  if (n.length < 9) { if (STATE.nitLookup !== 'idle') { STATE.nitLookup = 'idle'; renderPane(); bindPane(); refocus('f-nit'); } return; }
+  STATE.nitLookup = 'checking'; renderPane(); bindPane(); refocus('f-nit');
+  _nitT = setTimeout(() => {
+    const org = allOrganismos().find((o) => String(o.nit || '').replace(/\D/g, '') === n);
+    STATE.nitLookup = !org ? 'ok' : ['En revisión', 'Preinscrito', 'En corrección'].includes(org.estado) ? 'pending' : 'hasLogin';
+    renderPane(); bindPane(); refocus('f-nit');
+  }, 900);
+}
+function refocus(id) { const el = document.getElementById(id); if (el) { el.focus(); const v = el.value; try { el.setSelectionRange(v.length, v.length); } catch (_) {} } }
+const nitMask = (v) => { const n = v.replace(/\D/g, '').slice(0, 10); return n.length > 9 ? `${n.slice(0, 9)}-${n.slice(9)}` : n; };
+
+function bindPane() {
+  closeDatePicker();
+  root().querySelectorAll('input[data-model]').forEach((inp) => {
+    inp.addEventListener('input', () => {
+      if (inp.dataset.mask === 'nit') inp.value = nitMask(inp.value);
+      else if (inp.dataset.mask) inp.value = applyMask(inp.dataset.mask, inp.value);
+      STATE.d[inp.dataset.model] = inp.value;
+      clearFieldError(inp.closest('[data-field]'));
+      if (inp.dataset.model === 'numDoc') runLookup();
+      if (inp.dataset.model === 'nit') runNitLookup();
+    });
+  });
+  root().querySelectorAll('input[data-check]').forEach((cb) => cb.addEventListener('change', () => { STATE.d[cb.dataset.check] = cb.checked; cb.closest('[data-field]')?.classList.remove('naowee-checkbox--error'); }));
+  root().querySelectorAll('[data-card]').forEach((c) => c.addEventListener('click', () => {
+    const key = c.dataset.card, v = c.dataset.value;
+    if (key === 'nature') { if (STATE.nature !== v) { STATE.role = null; STATE.entTipo = null; } STATE.nature = v; }
+    if (key === 'role') STATE.role = v;
+    if (key === 'entTipo') { if (STATE.entTipo !== v) { STATE.d.superiorId = ''; STATE.d.sector = ''; STATE.d.deportes = []; STATE.d.filtroDeporte = ''; } STATE.entTipo = v; }
+    render();
+  }));
+  root().querySelectorAll('[data-dep]').forEach((b) => b.addEventListener('click', () => {
+    const dep = b.dataset.dep, list = STATE.d.deportes;
+    STATE.d.deportes = list.includes(dep) ? list.filter((x) => x !== dep) : [...list, dep];
+    renderPane(); bindPane();
+  }));
+  root().querySelector('[data-act="claim"]')?.addEventListener('click', () => { STATE.claim = { ...SIN_RECLAMAR }; STATE.lookup = 'ok'; renderPane(); bindPane(); });
+  root().querySelector('[data-act="notMine"]')?.addEventListener('click', () => { STATE.lookup = 'notMine'; renderPane(); bindPane(); });
+  root().querySelector('[data-act="backToClaim"]')?.addEventListener('click', () => { STATE.lookup = 'unclaimed'; renderPane(); bindPane(); });
+  root().querySelector('[data-act="asTutor"]')?.addEventListener('click', () => {
+    const keep = { tipoDoc: STATE.d.tipoDoc };
+    STATE.role = 'LEGAL_GUARDIAN'; STATE.lookup = 'idle'; STATE.d = { ...blankD(), ...keep };
+    render();
+  });
+  root().querySelectorAll('[data-dd]').forEach(mountDD);
+  root().querySelectorAll('[data-datefield]').forEach((f) => {
+    const trig = f.querySelector('.naowee-datepicker-field__input');
+    trig.addEventListener('click', () => openDatePicker(f));
+    trig.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDatePicker(f); } });
+  });
+  root().querySelectorAll('[data-doc-input]').forEach((inp) => inp.addEventListener('change', () => onFilePick(inp)));
+  root().querySelectorAll('[data-doc-remove]').forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); delete STATE.d.docs[b.dataset.docRemove]; renderPane(); bindPane(); }));
+  mountDevnotes(DEVNOTES, root());
+}
+/* El datepicker canónico llama ageHint() al elegir fecha: re-render para la edad y la alerta de menor. */
+function ageHint() {}
+
+/* ═══════════════ Validación ═══════════════ */
+function validate() {
+  const d = STATE.d, errs = [], k = stepKey();
+  const req = (id, ok, m, hard) => { if (!ok) errs.push({ field: id, kind: 'tf', msg: m, hard: !!hard }); };
+  const reqDd = (key) => { if (!d[key]) errs.push({ field: 'dd-' + key, kind: 'dd' }); };
+  const reqCheck = (id, model) => { if (!d[model]) errs.push({ field: id, kind: 'check', hard: true }); };
+  if (k === 'nature') return STATE.nature ? [] : [{ field: null, kind: 'grid' }];
+  if (k === 'role') return STATE.role ? [] : [{ field: null, kind: 'grid' }];
+  if (k === 'enttipo') return STATE.entTipo ? [] : [{ field: null, kind: 'grid' }];
+  if (k === 'basicos') {
+    if (STATE.lookup !== 'ok') return [{ field: 'f-numDoc', kind: 'tf', msg: 'Verifica el documento para continuar', hard: true }];
+    req('f-nombre', d.nombre.trim()); req('f-apellido', d.apellido.trim());
+    if (!d.fechaNac) errs.push({ field: 'f-fechaNac', kind: 'tf', msg: 'Debe seleccionar fecha para persona mayor de edad' });
+    const e = edadDe(d.fechaNac); if (e != null && e < 18) errs.push({ field: 'f-fechaNac', kind: 'tf', msg: 'Debe seleccionar fecha para persona mayor de edad', hard: true });
+    if (STATE.role === 'SUPPORT_STAFF') reqDd('rolApoyo');
+    reqDd('sexo'); reqDd('nacionalidad');
+    if (!isAthlete()) reqCheck('f-politicas', 'aceptaPoliticas');
+  }
+  if (k === 'deportivos') { reqDd('tipoDeporte'); if (!d.deporte) errs.push({ field: 'dd-deporte', kind: 'dd' }); reqCheck('f-politicas', 'aceptaPoliticas'); }
+  if (k === 'socio') {
+    ['genero', 'orientacion', 'discapacidad', 'etnia', 'victima', 'priorizacion'].forEach(reqDd);
+    if (d.etnia === 'IND') reqDd('comunidad');
+    if (d.victima === 'YES') reqDd('victimizacion');
+  }
+  if (k === 'contacto') {
+    reqDd('depto'); if (!d.ciudad) errs.push({ field: 'dd-ciudad', kind: 'dd' }); reqDd('zona');
+    req('f-direccion', d.direccion.trim());
+    req('f-telefono', /^\d{10}$/.test(d.telefono), 'El teléfono debe tener 10 dígitos');
+    if (!(STATE.claim && STATE.nature === 'persona')) req('f-correo', EMAIL_RE.test(d.correo), 'Ingresa un correo válido');
+  }
+  if (k === 'entbasicos') {
+    if (STATE.nitLookup !== 'ok') return [{ field: 'f-nit', kind: 'tf', msg: 'El NIT debe tener mínimo 9 dígitos', hard: true }];
+    if (STATE.entTipo === 'federacion') { if (!d.sector) errs.push({ field: 'dd-sector', kind: 'dd', hard: true }); }
+    else if (!d.superiorId) errs.push({ field: 'dd-superiorId', kind: 'dd', hard: true });
+    if (!d.deportes.length) errs.push({ field: 'f-deportes', kind: 'tf', msg: 'Elige al menos un deporte', hard: true });
+    req('f-entNombre', d.entNombre.trim());
+    if (STATE.entTipo === 'liga') reqDd('ambito');
+    if (STATE.entTipo === 'club') reqDd('tipoClub');
+    reqDd('naturaleza'); reqDd('tamano');
+    req('f-repDoc', d.repDoc.trim()); req('f-repNombre', d.repNombre.trim()); req('f-repApellido', d.repApellido.trim());
+    req('f-repCorreo', EMAIL_RE.test(d.repCorreo), 'Ingresa un correo válido');
+  }
+  if (k === 'entdocs') {
+    DOCS_ENT.filter((x) => x.required).forEach((doc) => { if (!d.docs[doc.id]) errs.push({ field: 'doc-' + doc.id, kind: 'file' }); });
+    reqCheck('f-politicas', 'aceptaPoliticas');
+  }
+  return errs;
+}
+function next() {
+  const errs = validate();
+  if (errs.length) {
+    shakeErrors(errs);
+    if (errs.some((e) => e.hard || e.kind === 'grid')) { STATE._armedStep = null; setFooterHint('Hay validaciones obligatorias que <strong>no se pueden omitir</strong>: documento verificado, edad, organismo superior, deportes o aceptación de políticas.', true); return; }
+    if (STATE._armedStep === STATE.step) { STATE._armedStep = null; advance(); return; }
+    STATE._armedStep = STATE.step;
+    setFooterHint('Faltan campos obligatorios — presiona <strong>“Siguiente”</strong> de nuevo para omitirlos (solo demo).', false);
+    return;
+  }
+  STATE._armedStep = null; advance();
+}
+function advance() { if (STATE.step < lastStep()) { STATE.step++; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; } submit(); }
+
+/* ═══════════════ Envío ═══════════════ */
+function submit() {
+  const d = STATE.d;
+  const nombre = [d.nombre, d.segNombre, d.apellido, d.segApellido].filter(Boolean).join(' ');
+  if (STATE.nature === 'persona') {
+    let id = null;
+    if (isAthlete()) {
+      const nuevos = readStore('deportistas-nuevos', []) || [];
+      id = `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`;
+      nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: '', correo: d.correo, clubId: null, estado: 'autodeclarado', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) });
+      writeStore('deportistas-nuevos', nuevos);
+    }
+    STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim };
+  } else {
+    const t = STATE.entTipo;
+    const parentId = t === 'federacion' ? comitePorSector(d.sector)?.id : d.superiorId;
+    const org = addOrganismo({
+      tipo: t, nombre: d.entNombre, nit: d.nit, sector: t === 'federacion' ? d.sector : getOrganismo(parentId)?.sector,
+      deporte: d.deportes[0], deportes: [...d.deportes], parentId, estado: 'En revisión', origen: 'autorregistro',
+      ...(t === 'liga' ? { ambito: d.ambito } : {}), ...(t === 'club' ? { tipoClub: d.tipoClub } : {}),
+      ...(t === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {}),
+      naturaleza: d.naturaleza, tamano: d.tamano,
+      repLegal: { tipoDoc: d.repTipoDoc, numDoc: d.repDoc, nombre: d.repNombre, apellido: d.repApellido, correo: d.repCorreo },
+      ubicacion: { depto: d.depto, ciudad: d.ciudad, zona: d.zona === 'R' ? 'Rural' : 'Urbana', direccion: d.direccion },
+      contacto: { telefono: d.telefono, correo: d.correo }, docs: { ...d.docs }
+    });
+    auditLog({ orgId: org.id, fecha: new Date().toISOString(), accion: 'Autorregistro', estado: 'En revisión', responsable: `${d.repNombre} ${d.repApellido}`.trim() || 'Representante legal', detalle: 'Registro público: queda en la bandeja de su organismo superior' });
+    STATE.result = { tipo: 'entidad', org, superior: getOrganismo(parentId) };
+  }
+  STATE.created = true; render(); window.scrollTo({ top: 0 });
+}
+
+/* ═══════════════ Resultado ═══════════════ */
+function renderResult() {
+  const r = STATE.result;
+  const persona = r.tipo === 'persona';
+  const sup = r.superior;
+  const esFed = !persona && r.org.tipo === 'federacion';
+  const rolBandeja = !persona && sup ? ROL_DE_ANCLA[sup.id] : null;
+  const siguiente = persona ? ({
+    Deportista: 'Desde tu perfil podrás solicitar afiliación a uno o varios clubes. Hasta que un club la confirme, apareces como deportista autodeclarado.',
+    Tutor: 'Desde tu perfil podrás registrar a tus hijos o menores a cargo con el documento de parentesco.',
+    'Personal deportivo': 'Desde tu perfil podrás solicitar vínculo a un club, liga, federación o comité.'
+  })[r.rol] : '';
+  root().innerHTML = `<div class="reg-success ur-result">
+    <div class="ur-devnote-wrap ur-devnote-wrap--center"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${persona ? 'resultPersona' : 'resultEntidad'}"></span></div>
+    <div class="ur-result__ava">${I.check}</div>
+    ${persona ? `
+      ${r.reclamado ? `<h1 class="ur-title">¡Perfil reclamado!</h1>
+      <p>Actualizamos tu perfil con los datos que ingresaste y activamos tu cuenta.</p>
+      <p>Enviamos el enlace para crear tu contraseña a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">¡Registro completado!</h1>
+      <p>¡Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
+      <p>¡Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmación.</p>`}
+      <div class="ur-profile"><strong>${esc(r.nombre)}</strong><span>${esc(r.rol)}${r.fechaNac ? ' · ' + esc(r.fechaNac.split('-').reverse().join('/')) : ''}</span></div>
+      ${msg('informative', '', esc(siguiente))}
+      ${msg('caution', '', 'Si no recibiste el correo, revisa bandeja de SPAM o solicita reenvío.')}
+      <div class="ur-actions"><a class="ur-btn ur-btn--block" href="index.html">Ir a Iniciar sesión</a></div>`
+    : `
+      <h1 class="ur-title">¡Solicitud enviada!</h1>
+      <p>Hemos recibido la solicitud de <strong>${esc(r.org.nombre)}</strong>. Queda <strong>en revisión</strong>.</p>
+      <div class="ur-checks">
+        <div>${I.check}<span><strong>Revisión por ${esFed ? 'el comité y el Ministerio del Deporte' : esc(sup?.nombre || 'tu organismo superior')}</strong>${esFed ? `El ${esc(sup?.nombre || 'comité')} y el Ministerio revisan tus documentos; la federación se activa con los dos avales.` : 'Revisa tus documentos y puede aprobar, devolver con motivo para que corrijas, o rechazar.'}</span></div>
+        <div>${I.check}<span><strong>Activación</strong>Te notificaremos por email cuando tu entidad sea aprobada. El representante legal recibe el acceso como administrador de la entidad.</span></div>
+      </div>
+      <div class="ur-profile"><strong>${esc(r.org.nombre)}</strong><span>${esc(ENT_TXT[r.org.tipo])} · ${esc((r.org.deportes || []).join(', '))} · superior: ${esc(sup?.nombre || '—')}</span></div>`}
+    <div class="ur-help"><b>💬 ¿NECESITAS AYUDA?</b>Si tienes dudas o problemas con la activación de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
+    <div class="ur-demo-links">
+      ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
+      ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo · bandeja de ${esc(sup.nombre)}</a>` : ''}
+      ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo · bandeja del Ministerio</a>' : ''}
+      ${persona ? '' : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo · ver en la jerarquía</a>'}
+      <button type="button" id="rpAnother">Registrar otro</button>
+    </div>
+  </div>`;
+  document.getElementById('rpAnother').addEventListener('click', () => location.reload());
+  mountDevnotes(DEVNOTES, root());
+}
+
+/* ═══════════════ Notas para devs (Solo demo) ═══════════════
+   Base: /user-register de suite-web-v2 (origin/staging ee186813). Cada nota dice qué
+   se mantiene, qué cambia con la jerarquía (nao-docs PR #30–#32) y qué valida el back. */
+const DEVNOTES = {
+  nature: { title: 'Selección de naturaleza', sections: [
+    { title: 'Migración', items: ['Hoy vive en <code>sports</code>: <code>/user-register/select-nature</code> (suite-web-v2). Pasa al servicio de SUID con las mismas rutas y el mismo shell (logo SUID, "¿Ya tienes una cuenta? Inicia sesión").', 'Sin cambios funcionales en esta pantalla: Persona (Natural) · Entidad (Jurídica).'] },
+    { title: 'Corregir al migrar', items: ['En la ruta de Entidad el header cae en "Crear cuenta" y el subtítulo de persona porque no se fija rol. Aquí el título sale de la naturaleza y del tipo de entidad.'] }
+  ] },
+  role: { title: 'Selección de rol (Persona)', sections: [
+    { title: 'Se mantiene', items: ['Tres roles: <code>ATHLETE</code>, <code>LEGAL_GUARDIAN</code>, <code>SUPPORT_STAFF</code>. Textos de tarjetas iguales a producción.'] },
+    { title: 'Regla de jerarquía', items: ['Las personas <b>no pasan por ninguna bandeja</b>: la cuenta queda activa de inmediato porque no pertenecen a ningún organismo todavía.', 'El vínculo con un organismo se pide después, desde el perfil (afiliación).'] }
+  ] },
+  basicos: { title: 'Básicos (Persona)', sections: [
+    { title: 'Se mantiene de producción', items: ['Documento CC / CE / PA. Con 7 dígitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los demás campos quedan bloqueados hasta verificar.', '<code>isMinor</code> → alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> → "Ya tienes una cuenta registrada" + Iniciar sesión.', 'Fecha de nacimiento: 18+ obligatorio, también para el tutor. "Rol específico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
+    { title: 'Perfil existente sin reclamar (reconciliación)', items: [
+      'Caso: el documento existe con <code>has_login=false</code> porque lo creó otro actor (una institución al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la búsqueda, no al final del formulario.',
+      'Se muestra el correo <b>enmascarado</b> y sin opción de editar: dos primeras letras y la última del usuario y el dominio completo (<code>ju•••••z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra quién creó el registro: averiguarlo exige cruzar todos los eventos y no aporta para reconocer el correo. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
+      'Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ahí queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contraseña.',
+      '<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza teléfono, nacionalidad, ubicación, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemográfico se descartan sin avisar.',
+      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditoría con los valores anteriores.',
+      '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
+    ] },
+    { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
+    { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; <code>1055512345</code> devuelve perfil sin reclamar; un documento del seed devuelve cuenta existente.'] }
+  ] },
+  deportivos: { title: 'Deportivos (solo deportista)', sections: [
+    { title: 'Se mantiene', items: ['Tipo de deporte (<code>/catalogs/sport_type</code>) → Deporte (<code>GET /sports?type=</code>). Se envía como <code>main_sport_code</code>.'] },
+    { title: 'Regla de jerarquía', items: ['Aquí <b>no se elige club</b>. El deportista queda autodeclarado y pide afiliación desde su perfil; puede estar en varios clubes, del mismo deporte o de deportes distintos (P-13).'] },
+    { title: 'Solo demo', items: ['La lista de deportes sale de las federaciones del seed; la real es el catálogo de catalog-ms.'] }
+  ] },
+  socio: { title: 'Sociodemográfico', sections: [
+    { title: 'Se mantiene sin cambios', items: ['Ocho catálogos con los valores de staging. "Comunidad indígena" solo con etnia <code>IND</code>; "Tipo de victimización" solo con víctima <code>YES</code>. Al ocultarse se limpian.'] }
+  ] },
+  contacto: { title: 'Contacto / Sede', sections: [
+    { title: 'Se mantiene', items: ['Departamento → Ciudad (<code>/locations/*</code>), Zona, Dirección con el modal estructurado de producción (aquí simplificado a un campo), Teléfono de 10 dígitos y correo.', 'Persona: llena <code>location</code>. <b>Corregir al migrar</b>: hoy también llena <code>birth_place</code> con la dirección de contacto.'] },
+    { title: 'Entidad: ubicación territorial', items: ['Club → municipio; liga → departamento; federación → sede nacional. Es atributo del organismo, no su padre: la aprobación sigue la cadena deportiva.', 'Reemplaza la regla actual que deriva <code>department_code</code>/<code>municipality_code</code> de <code>organization_type</code>.', 'La organización no tiene <code>zone</code>/<code>is_vereda</code> en user-auth-ms: agregarlo o quitar Zona del formulario de entidad.'] }
+  ] },
+  enttipo: { title: 'Tipo de entidad', sections: [
+    { title: 'Qué cambia vs producción', items: ['Hoy el tipo sale de <code>organization_level</code> (Nacional, Departamental, Municipal, Club) + "Tipo de entidad SND" + "Cobertura geográfica". Se reemplazan por <b>Federación · Liga · Club</b>; la cobertura se deriva del tipo.', 'Fuera del registro público: <b>Comité</b> (lo crea el Administrador Mindeporte y nace Activo) y <b>entes departamentales y municipales</b> (los crea el Ministerio al invitarlos a sus eventos, P-11).'] }
+  ] },
+  entbasicos: { title: 'Básicos (Entidad)', sections: [
+    { title: 'Se mantiene', items: ['NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisión → mensaje de revisión pendiente; con cuenta → Iniciar sesión.', 'Naturaleza jurídica, tamaño y representante legal. <b>Corregir al migrar</b>: hoy no se envía el apellido del representante.'] },
+    { title: 'Nuevo: organismo superior', items: ['Federación → elige sector y queda adscrita al comité del sector. Liga → elige federación. Club → filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).', 'La lista solo trae organismos <b>Activos</b>. Si el suyo no está: soporte, que escala al Ministerio (P-17).', 'En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden después como afiliación.'] },
+    { title: 'Nuevo: deportes', items: ['Lista de deportes del catálogo. Federación: del catálogo, sin repetir deportes que ya tiene otra federación del mismo sector. Liga: de su federación. Club: de su liga.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
+    { title: 'Contrato propuesto', items: ['<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.', 'El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> ⊆ deportes del superior, NIT único, un deporte en una sola federación.'] },
+    { title: 'Brecha con user-auth-ms (revisado 07-10-2026, rama staging)', items: [
+      '<b>Ya soportado</b> en <code>organizations_details</code>: NIT único, nombre, naturaleza jurídica, tamaño, representante (tipo y número de documento, nombre, correo), departamento, municipio, dirección, teléfono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.',
+      '<b>Tipo</b>: <code>organization_type</code> acepta <code>FEDERATION</code> y <code>CLUB</code>, pero no <code>LEAGUE</code>. No agregar otro valor al <code>oneof</code>: los tipos deben ser catálogo.',
+      '<b>Subordinación configurable</b>: comité → federación → liga → club es el esquema de SUID, no una regla del código. Cada proyecto declara su esquema con reglas (tipo padre, tipo hijo, varios padres, deporte compartido, quién aprueba). El alta y la bandeja leen las reglas; no preguntan por tipos concretos. Ver nao-docs, Modelo → Pendientes técnicos.',
+      '<b>Superior</b>: no hay relación entre organizaciones; el <code>HierarchyPath</code> del token ABAC es solo territorial (<code>/COL/{dpto}/{mun}/</code>). Como un club puede estar en varias ligas (P-20), se necesita una tabla de afiliación (hijo, padre, estado, vigencia), no una columna <code>parent_code</code>.',
+      '<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organización ↔ deporte, con un deporte en una sola federación por sector y cada nivel dentro de su superior.',
+      '<b>Sin campo</b>: ámbito de la liga (el catálogo <code>COVERAGE</code> no tiene Distrital), tipo de club, apellido del representante (hoy el front lo descarta).',
+      '<b>Estados que faltan</b>: En corrección (devuelto con motivo), Preinscrito (cargue masivo), Cancelado. Tampoco hay dónde guardar los dos avales de la federación (P-19).',
+      '<b>Revisor</b>: un <code>PENDING_REVIEW</code> no tiene revisor asignado; para que caiga en la bandeja del superior hace falta la relación de afiliación y una jurisdicción por jerarquía deportiva.',
+      '<b>Obligatorios que sobran</b>: el DTO público exige <code>coverage_code</code> y <code>snd_sector_entity_code</code>; volverlos opcionales o derivarlos del tipo.',
+      'Cada cambio se replica en el gateway (<code>internal/contracts/userAuthMs.go</code>) y en su Bruno.'
+    ] }
+  ] },
+  entdocs: { title: 'Documentos (Entidad)', sections: [
+    { title: 'Se mantiene', items: ['Requisitos desde <code>GET /documentation/processes/requirements/by-role?process_type=REGISTRATION&user_role=SPORTS_ORGANIZATION</code>: RUT obligatorio; personería y reconocimiento opcionales. Subida con <code>/files/public/presigned-upload</code> después de crear la cuenta.'] },
+    { title: 'Corregir al migrar', items: ['Hoy la subida corre en segundo plano y los errores se silencian: la entidad puede quedar en revisión sin documentos. Mostrar el error y permitir reintentar.'] },
+    { title: 'Pendiente', items: ['Requisitos por tipo de organismo (federación, liga, club) no están definidos; hoy son los mismos para todos.'] }
+  ] },
+  resultPersona: { title: 'Resultado (Persona)', sections: [
+    { title: 'Se mantiene', items: ['Textos de producción. Cuenta activa; el correo trae el enlace para crear la contraseña.'] },
+    { title: 'Nuevo', items: ['Siguiente paso según el rol: deportista → afiliación a uno o varios clubes; tutor → registrar menores; personal deportivo → vínculo con cualquier organismo (P-05).'] },
+    { title: 'Solo demo', items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".'] }
+  ] },
+  resultEntidad: { title: 'Resultado (Entidad)', sections: [
+    { title: 'Qué cambia vs producción', items: ['Hoy el título dice "¡Entidad pre-inscrita!". Preinscrito es el estado del cargue masivo; el autorregistro entra directo a <code>En revisión</code>, por eso aquí dice "¡Solicitud enviada!".', 'Hoy dice "Nuestro equipo verificará…" (revisión centralizada). Ahora revisa el <b>organismo superior</b>: la federación revisa la liga, la liga revisa el club.', 'Federación: el comité y el Ministerio, cada uno su aval. <b>Pendiente de confirmar</b> si esta doble validación existe (P-19).', 'Estado <code>En revisión</code> en la bandeja del superior; aprobar, devolver con motivo o rechazar. Al activarse, el representante legal es el administrador de la entidad (uno por organismo).'] },
+    { title: 'Solo demo', items: ['La entidad se guarda en la jerarquía bajo su superior. Para ver la bandeja: Liga de Patinaje del Valle (rol LIGA), Federación de Patinaje (rol FEDERACION) o COC (rol COMITE).'] }
+  ] }
+};
+
+/* ═══════════════ Helpers de campo, datepicker y errores (de la v1.4.1) ═══════════════ */
 /* ═══════════════ Datepicker canónico (componente del DS) ═══════════════
    Reemplaza el <input type=date> nativo. El valor vive en STATE.d[path] como
    'YYYY-MM-DD' (compatible con edadDe/validate). Popover fijo anclado al campo,
    con vistas día → mes → año para elegir fechas de nacimiento rápidamente. */
 const DP_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const DP_DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-const DP_HOY = new Date(2026, 6, 16);   // "hoy" del demo (constructor LOCAL para evitar corrimiento de zona horaria; coincide con edadDe)
+const DP_HOY = (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); })();
 const dpISO = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 const dpParse = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
 const dpFmt = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
@@ -353,7 +770,7 @@ function dateField(o) {
     <label class="naowee-datepicker-field__label${o.required ? ' naowee-datepicker-field__label--required' : ''}">${esc(o.label)}</label>
     <div class="naowee-datepicker-field__input" role="button" tabindex="0" aria-haspopup="dialog">
       <span class="naowee-datepicker-field__icon">${I.cal}</span>
-      <span class="naowee-datepicker-field__value${val ? '' : ' is-placeholder'}">${val ? esc(dpFmt(val)) : 'dd/mm/aaaa'}</span>
+      <span class="naowee-datepicker-field__value${val ? '' : ' is-placeholder'}">${val ? esc(dpFmt(val)) : 'DD/MM/AAAA'}</span>
       <span class="naowee-datepicker-field__chevron">${I.chevron}</span>
     </div>
   </div>`;
@@ -451,71 +868,6 @@ function openDatePicker(fieldEl) {
 }
 
 /* ── Paso 2 — documentos (adaptativo) + políticas ── */
-function docsDelTipo() {
-  if (STATE.tipo === 'deportista' && STATE.modo === 'tutor') return [
-    { id: 'parentesco', label: 'Documento de parentesco (registro civil / custodia)' }
-  ];
-  if (STATE.tipo === 'personal') {
-    const base = [{ id: 'cert', label: 'Certificaciones profesionales (título, licencia)' }];
-    if ((STATE.rol || '').startsWith('Médico') || (STATE.rol || '').startsWith('Fisio')) base.push({ id: 'tarjeta', label: 'Tarjeta profesional vigente' });
-    return base;
-  }
-  if (STATE.tipo === 'entidad') {
-    // Documentos DIFERENCIADOS por tipo de entidad (vocabulario canónico de la
-    // bandeja). Alineado a HURU-04 + ORG-04: TODO club/escuela requiere el
-    // reconocimiento del ente MUNICIPAL; las entidades reconocidas del SND
-    // (Federación/Liga) cargan además el peso legal (personería, estatutos,
-    // reconocimiento IVC, aval). Detalle fino a validar con Danna/negocio.
-    const D = {
-      existencia: 'Certificado de existencia y representación legal',
-      personeria: 'Certificado de personería jurídica',
-      estatutos: 'Estatutos vigentes',
-      reconocimiento: 'Reconocimiento deportivo (trámite IVC)',
-      reconocimientoMunicipal: 'Reconocimiento del ente municipal',
-      aval: 'Aval del Comité',
-      rut: 'RUT'
-    };
-    const POR_TIPO = {
-      'federacion':       ['personeria', 'estatutos', 'reconocimiento', 'aval', 'rut'],
-      'liga':             ['personeria', 'reconocimiento', 'rut'],
-      'club-profesional': ['existencia', 'reconocimientoMunicipal', 'rut'],
-      'club-promotor':    ['existencia', 'reconocimientoMunicipal'],
-      'escuela':          ['existencia', 'reconocimientoMunicipal']
-    };
-    return (POR_TIPO[STATE.entTipo] || ['existencia']).map((id) => ({ id, label: D[id] || id }));
-  }
-  return []; // deportista propio: sin adjuntos
-}
-function paneDocs() {
-  const d = STATE.d;
-  const docs = docsDelTipo();
-  let extra = '';
-  if (STATE.tipo === 'personal') {
-    extra = `<form class="reg-form" id="rpFormPro">
-      <div class="reg-section-label">Información profesional</div>
-      <div class="reg-grid-2">
-        ${tf({ id: 'f-profesion', label: 'Profesión / especialidad', required: true, path: 'profesion', value: d.profesion, placeholder: 'Ej: Entrenador de patinaje' })}
-        ${tf({ id: 'f-experiencia', label: 'Años de experiencia', required: false, path: 'experiencia', value: d.experiencia, mask: 'numeric', maxLength: 2, placeholder: '5' })}
-      </div>
-    </form>`;
-  }
-  const uploaders = docs.length
-    ? `<div class="reg-form">${docs.map(uploader).join('')}</div>`
-    : `<div class="naowee-message naowee-message--informative" style="margin:0 0 4px"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__text">Tu registro como deportista no requiere documentos de soporte. Revisa el resumen y acepta las políticas para finalizar.</p></div></div>`;
-  const api = `<div class="naowee-message naowee-message--informative"><span class="naowee-message__icon">${I.api}</span><div class="naowee-message__body"><p class="naowee-message__text"><strong>Integración externa (demo):</strong> el número de documento se validará contra la Registraduría / entidades externas vía API al procesar el registro.</p></div></div>`;
-  return `
-    <h2 class="reg-pane__title">${docs.length ? 'Documentos de soporte' : 'Confirmación'}</h2>
-    <p class="reg-pane__sub">${docs.length ? 'Adjunta los soportes requeridos. Formatos: PDF, JPG o PNG (simulado — no se sube ningún archivo).' : 'Último paso antes de enviar tu registro.'}</p>
-    <div class="reg-form">
-      ${extra}
-      ${uploaders}
-      ${api}
-      <div class="reg-section-label">Aceptación</div>
-      ${privacyCheck()}
-    </div>`;
-}
-
-/* ═══════════════ Helpers de campo (markup canónico) ═══════════════ */
 function tf(o) {
   const req = o.required ? ' naowee-textfield__label--required' : '';
   const attrs = [
@@ -534,7 +886,7 @@ function dd(key, label, opts, value, required, searchable) {
   return `<div class="naowee-dropdown" data-dd="${key}" data-field="dd-${key}" data-required="${required ? 1 : 0}" data-search="${searchable ? 1 : 0}" id="dd-${key}">
     <label class="naowee-dropdown__label${required ? ' naowee-dropdown__label--required' : ''}">${esc(label)}</label>
     <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false">
-      <span class="naowee-dropdown__value${sel ? '' : ' is-placeholder'}">${sel ? esc(sel.t) : 'Seleccione…'}</span>
+      <span class="naowee-dropdown__value${sel ? '' : ' is-placeholder'}">${sel ? esc(sel.t) : 'Seleccionar'}</span>
       <span class="naowee-dropdown__chevron">${I.chevron}</span>
     </button>
     <div class="naowee-dropdown__menu" role="listbox" data-opts='${esc(JSON.stringify(opts))}'></div>
@@ -564,74 +916,6 @@ function uploader(doc) {
     <div class="naowee-file-uploader__input-wrap">${inner}</div>
   </div>`;
 }
-function privacyCheck() {
-  return `<label class="naowee-checkbox" data-field="f-politicas" id="f-politicas">
-    <input type="checkbox" ${STATE.d.aceptaPoliticas ? 'checked' : ''} data-check="aceptaPoliticas">
-    <span class="naowee-checkbox__box">${I.check}</span>
-    <span class="naowee-checkbox__label">Acepto las políticas de tratamiento y privacidad de datos del SUID y el uso de datos gubernamentales. <strong>(Obligatorio)</strong></span>
-  </label>`;
-}
-
-/* ═══════════════ Footer ═══════════════ */
-function renderFooter() {
-  const f = document.getElementById('rpFooter');
-  const back = STATE.step > 0 ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="rpBack">Atrás</button>` : '<span></span>';
-  const last = STATE.step === lastStep();
-  f.innerHTML = `${back}<span class="reg-footer__spacer"></span>
-    <button type="button" class="naowee-btn naowee-btn--loud" id="rpNext">${STATE.step === 0 ? 'Comenzar' : (last ? 'Enviar registro' : 'Siguiente')}</button>`;
-  document.getElementById('rpNext').addEventListener('click', next);
-  document.getElementById('rpBack')?.addEventListener('click', () => { STATE._armedStep = null; STATE.step = Math.max(0, STATE.step - 1); render(); });
-}
-
-/* ═══════════════ Bind ═══════════════ */
-function bindPane() {
-  closeDatePicker();   // limpia cualquier popover de fecha huérfano en re-render
-  root().querySelectorAll('input[data-model]').forEach((inp) => {
-    inp.addEventListener('input', () => {
-      if (inp.dataset.mask) { const p = inp.selectionStart; inp.value = applyMask(inp.dataset.mask, inp.value); try { inp.setSelectionRange(p, p); } catch (_) {} }
-      STATE.d[inp.dataset.model] = inp.value;
-      clearFieldError(inp.closest('[data-field]'));
-      if (inp.dataset.model === 'numDoc') checkDup(inp);
-      if (inp.dataset.model === 'fechaNac') ageHint();
-    });
-  });
-  root().querySelectorAll('input[data-check]').forEach((cb) => cb.addEventListener('change', () => { STATE.d[cb.dataset.check] = cb.checked; clearFieldError(cb.closest('[data-field]')); }));
-  root().querySelectorAll('.reg-tipo-card').forEach((c) => c.addEventListener('click', () => { STATE.tipo = c.dataset.tipo; if (STATE.tipo !== 'deportista') STATE.modo = null; render(); }));
-  root().querySelectorAll('.reg-choice').forEach((ch) => ch.addEventListener('click', (e) => {
-    e.preventDefault();
-    const key = ch.dataset.choice, val = ch.dataset.value;
-    // Cambiar el tipo de entidad re-renderiza el pane: cambia la sección del superior
-    // (federación→sector/deporte · liga→federación · club/escuela→liga) y sus documentos.
-    if (key === 'entTipo') { STATE.entTipo = val; STATE.d.superiorId = ''; STATE.d.sector = ''; renderPane(); bindPane(); return; }
-    if (key === 'modo') STATE.modo = val; else STATE.d[key] = val;
-    ch.parentElement.querySelectorAll('.reg-choice').forEach((c) => c.classList.toggle('is-selected', c === ch));
-    ch.parentElement.classList.remove('is-error');
-    const cb = ch.querySelector('input'); if (cb) cb.checked = true;
-  }));
-  root().querySelectorAll('[data-dd]').forEach(mountDD);
-  root().querySelectorAll('[data-datefield]').forEach((f) => {
-    const trig = f.querySelector('.naowee-datepicker-field__input');
-    trig.addEventListener('click', () => openDatePicker(f));
-    trig.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDatePicker(f); } });
-  });
-  root().querySelectorAll('[data-doc-input]').forEach((inp) => inp.addEventListener('change', () => onFilePick(inp)));
-  root().querySelectorAll('[data-doc-remove]').forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); delete STATE.d.docs[b.dataset.docRemove]; renderPane(); bindPane(); }));
-  ageHint();
-}
-function checkDup(inp) {
-  const wrap = inp.closest('[data-field]');
-  if (inp.value.trim().length >= 6 && docRegistrado(inp.value)) fieldError(wrap, 'Este documento ya está registrado en el SUID.');
-}
-function ageHint() {
-  const box = document.getElementById('rpAgeHint'); if (!box) return;
-  const e = edadDe(STATE.d.fechaNac);
-  if (e == null) { box.innerHTML = ''; return; }
-  if (STATE.tipo === 'deportista' && STATE.modo === 'propio' && e < 18) {
-    box.innerHTML = `<div class="naowee-message naowee-message--caution"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__text">La fecha indica <strong>${e} años</strong> (menor de edad). Un menor no puede registrarse de forma autónoma: vuelve al paso 1 y elige <strong>“A través de un padre/tutor”</strong>.</p></div></div>`;
-  } else if (STATE.tipo === 'deportista' && STATE.modo === 'tutor' && e >= 18) {
-    box.innerHTML = `<div class="naowee-message naowee-message--caution"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__text">La fecha indica <strong>${e} años</strong> (mayor de edad). El registro por tutor es solo para menores; una persona mayor debe registrarse como <strong>“Registro propio”</strong>.</p></div></div>`;
-  } else { box.innerHTML = ''; }
-}
 function mountDD(el) {
   const key = el.dataset.dd;
   const opts = JSON.parse(el.querySelector('.naowee-dropdown__menu').dataset.opts || '[]');
@@ -639,7 +923,7 @@ function mountDD(el) {
   const trigger = el.querySelector('.naowee-dropdown__trigger');
   const valueEl = el.querySelector('.naowee-dropdown__value');
   const menu = el.querySelector('.naowee-dropdown__menu');
-  const cur = () => (key === 'rol' ? STATE.rol : STATE.d[key]);
+  const cur = () => STATE.d[key];
   function build(filter) {
     const q = norm(filter || '');
     const list = opts.filter((o) => !q || norm(o.t).includes(q));
@@ -679,9 +963,9 @@ function mountDD(el) {
   menu.addEventListener('click', (e) => {
     const opt = e.target.closest('.naowee-dropdown__opt'); if (!opt) return;
     const o = opts.find((x) => String(x.v) === opt.dataset.value); if (!o) return;
-    if (key === 'rol') STATE.rol = o.v; else STATE.d[key] = o.v;
+    STATE.d[key] = o.v;
     // Al cambiar el Departamento, el Municipio se recarga dependiente → re-render.
-    if (key === 'depto') { STATE.d.ciudad = ''; close(); renderPane(); bindPane(); return; }
+    if (DD_RERENDER[key]) { DD_RERENDER[key](); close(); renderPane(); bindPane(); return; }
     valueEl.textContent = o.t; valueEl.classList.remove('is-placeholder');
     el.classList.remove('naowee-dropdown--error'); close();
   });
@@ -707,79 +991,6 @@ function fieldError(el, msg) {
   }
 }
 function clearFieldError(el) { if (!el) return; el.classList.remove('naowee-textfield--error', 'naowee-file-uploader--error', 'naowee-checkbox--error', 'naowee-dropdown--error'); el.querySelector('.naowee-helper')?.remove(); el.querySelector('.reg-choice-group')?.classList.remove('is-error'); }
-
-function validate() {
-  const d = STATE.d, errs = [];
-  const reqTf = (id, ok, msg, hard) => { if (!ok) errs.push({ field: id, kind: 'tf', msg, hard: !!hard }); };
-  const reqDd = (key, hard) => errs.push({ field: 'dd-' + key, kind: 'dd', hard: !!hard });
-  const k = stepKey();
-  if (k === 'tipo') {
-    if (!STATE.tipo) return [{ field: null, kind: 'grid' }];
-    if (STATE.tipo === 'deportista' && !STATE.modo) errs.push({ field: 'dd-modo', kind: 'choice' });
-    return errs;
-  }
-  // ── Flujo por TUTOR (HURU-02): tutor → parentesco → menor ──
-  if (k === 'tutor') {
-    if (!d.vinculo) errs.push({ field: 'dd-vinculo', kind: 'choice' });
-    if (!d.tutorTipoDoc) reqDd('tutorTipoDoc');
-    reqTf('f-tutorDoc', d.tutorDoc.trim()); reqTf('f-tutorNombres', d.tutorNombres.trim());
-    reqTf('f-tutorTel', d.tutorTel.trim());
-    reqTf('f-tutorCorreo', EMAIL_RE.test(d.tutorCorreo), 'Ingresa un correo válido');
-    return errs;
-  }
-  if (k === 'parentesco') {
-    if (!d.docs['parentesco']) errs.push({ field: 'doc-parentesco', kind: 'file' });
-    if (!d.firma) errs.push({ field: 'f-firma', kind: 'check', hard: true });   // consentimiento = regla dura
-    return errs;
-  }
-  if (k === 'menor') {
-    if (!d.tipoDoc) reqDd('tipoDoc');
-    reqTf('f-numDoc', d.numDoc.trim());
-    if (d.numDoc.trim() && docRegistrado(d.numDoc)) reqTf('f-numDoc', false, 'Este documento ya está registrado en el SUID.', true);
-    reqTf('f-nombres', d.nombres.trim()); reqTf('f-apellidos', d.apellidos.trim());
-    reqTf('f-fechaNac', d.fechaNac.trim());
-    const e = edadDe(d.fechaNac); if (e != null && e >= 18) reqTf('f-fechaNac', false, 'El menor debe ser menor de 18 años.', true);
-    if (!d.aceptaPoliticas) errs.push({ field: 'f-politicas', kind: 'check', hard: true });
-    return errs;
-  }
-  // ── Flujo estándar (deportista propio · personal · entidad) ──
-  if (k === 'datos') {
-    if (STATE.tipo === 'deportista') {
-      if (!d.tipoDoc) reqDd('tipoDoc');
-      reqTf('f-numDoc', d.numDoc.trim());
-      if (d.numDoc.trim() && docRegistrado(d.numDoc)) reqTf('f-numDoc', false, 'Este documento ya está registrado en el SUID.', true);
-      reqTf('f-nombres', d.nombres.trim()); reqTf('f-apellidos', d.apellidos.trim());
-      reqTf('f-fechaNac', d.fechaNac.trim());
-      const e = edadDe(d.fechaNac); if (e != null && e < 18) reqTf('f-fechaNac', false, 'Menor de edad: usa el registro por padre/tutor.', true);
-      reqTf('f-correo', EMAIL_RE.test(d.correo), 'Ingresa un correo válido'); reqTf('f-telefono', d.telefono.trim());
-    } else if (STATE.tipo === 'personal') {
-      if (!STATE.rol) reqDd('rol');
-      if (!d.tipoDoc) reqDd('tipoDoc');
-      reqTf('f-numDoc', d.numDoc.trim());
-      if (d.numDoc.trim() && docRegistrado(d.numDoc)) reqTf('f-numDoc', false, 'Este documento ya está registrado en el SUID.', true);
-      reqTf('f-nombres', d.nombres.trim()); reqTf('f-apellidos', d.apellidos.trim());
-      reqTf('f-correo', EMAIL_RE.test(d.correo), 'Ingresa un correo válido'); reqTf('f-telefono', d.telefono.trim());
-    } else {
-      if (!STATE.entTipo) errs.push({ field: 'dd-entTipo', kind: 'choice' });
-      if (STATE.entTipo === 'federacion') { if (!d.sector) reqDd('sector', true); reqTf('f-deporte', d.deporte.trim()); }
-      else if (STATE.entTipo) { if (!d.superiorId) reqDd('superiorId', true); }
-      reqTf('f-nit', d.nit.trim());
-      if (d.nit.trim() && nitRegistrado(d.nit)) reqTf('f-nit', false, 'Este NIT ya está registrado en el SUID.', true);
-      reqTf('f-entNombre', d.entNombre.trim());
-      reqTf('f-repNombre', d.repNombre.trim()); reqTf('f-repDoc', d.repDoc.trim());
-      reqTf('f-repCorreo', EMAIL_RE.test(d.repCorreo), 'Ingresa un correo válido');
-      if (!d.depto) reqDd('depto'); if (!d.ciudad) reqDd('ciudad');
-    }
-    return errs;
-  }
-  if (k === 'docs') {
-    if (STATE.tipo === 'personal') reqTf('f-profesion', d.profesion.trim());
-    docsDelTipo().forEach((doc) => { if (!d.docs[doc.id]) errs.push({ field: 'doc-' + doc.id, kind: 'file' }); });
-    if (!d.aceptaPoliticas) errs.push({ field: 'f-politicas', kind: 'check', hard: true });
-    return errs;
-  }
-  return errs;
-}
 function shakeErrors(errs) {
   let first = null;
   errs.forEach((e) => {
@@ -795,129 +1006,12 @@ function shakeErrors(errs) {
   });
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
-function next() {
-  const errs = validate();
-  if (errs.length) {
-    shakeErrors(errs);
-    // Reglas DURAS de negocio (documento ya registrado, edad, aceptación de políticas,
-    // firma de consentimiento): NUNCA se omiten, ni con el bypass del 2º clic.
-    const hard = errs.filter((e) => e.hard);
-    if (hard.length) { STATE._armedStep = null; showHardHint(); return; }
-    // Conveniencia demo: al SEGUNDO "Siguiente" se omiten solo los campos VACÍOS.
-    if (STATE._armedStep === STATE.step) { STATE._armedStep = null; advance(); return; }
-    STATE._armedStep = STATE.step;
-    showBypassHint();
-    return;
-  }
-  STATE._armedStep = null;
-  advance();
-}
-function advance() {
-  if (STATE.step < lastStep()) { STATE.step++; render(); return; }
-  submit();
-}
 function setFooterHint(html, hard) {
   const footer = document.getElementById('rpFooter'); if (!footer) return;
   let hint = document.getElementById('rpBypassHint');
   if (!hint) { hint = document.createElement('div'); hint.id = 'rpBypassHint'; footer.insertBefore(hint, footer.firstChild); }
   hint.className = 'reg-footer__hint' + (hard ? ' reg-footer__hint--hard' : '');
   hint.innerHTML = `${I.bang}<span>${html}</span>`;
-}
-function showBypassHint() { setFooterHint('Faltan campos obligatorios — presiona <strong>“Siguiente”</strong> de nuevo para omitir (demo).', false); }
-function showHardHint() { setFooterHint('Hay validaciones obligatorias que <strong>no se pueden omitir</strong>: documento ya registrado, edad, aceptación de políticas o firma de consentimiento.', true); }
-
-/* ═══════════════ Envío + éxito ═══════════════ */
-function submit() {
-  persistPreinscrito();
-  STATE.created = true;
-  try { window.naoweeToast && window.naoweeToast('Registro enviado — notificación por email/SMS', 'success'); } catch (_) {}
-  render();
-}
-
-/* HURU-09: encola el registro en la cola de validación de la bandeja. Solo
-   personal + entidad requieren validación (los que la propia demo marca
-   "pendiente de validación" / "preinscrito"); el deportista queda de alta
-   autónoma (autodeclarado). Los documentos guardan solo el nombre de archivo
-   (mock, sin subida real). */
-function persistPreinscrito() {
-  if (STATE.tipo !== 'personal' && STATE.tipo !== 'entidad') return;
-  const d = STATE.d;
-  const docs = {};
-  Object.keys(d.docs || {}).forEach((k) => { docs[k] = { name: String(d.docs[k]).split(' · ')[0] }; });
-  if (STATE.tipo === 'personal') {
-    crearPreinscrito({
-      tipo: 'personal', subtipo: STATE.rol || 'Personal deportivo', rol: STATE.rol || '',
-      nombre: `${d.nombres} ${d.apellidos}`.trim() || 'Personal deportivo',
-      tipoDoc: d.tipoDoc, numDoc: d.numDoc, correo: d.correo, telefono: d.telefono,
-      profesion: d.profesion, experiencia: d.experiencia, deporte: d.deporte,
-      documentos: docs
-    });
-  } else {
-    const entLabel = (ENT_TIPOS.find((e) => e.v === STATE.entTipo) || {}).t || 'Entidad deportiva';
-    // orgTipo canónico + cadena jerárquica (para el enrutamiento descendente + ORG-06):
-    const orgTipo = STATE.entTipo === 'federacion' ? 'federacion' : STATE.entTipo === 'liga' ? 'liga' : 'club';
-    let parentId = '', deporte = d.deporte || '', sector = d.sector || '';
-    if (orgTipo === 'federacion') { const c = comitePorSector(sector); parentId = c ? c.id : 'COC'; }
-    else { const sup = allOrganismos().find((o) => o.id === d.superiorId); if (sup) { parentId = sup.id; deporte = sup.deporte || deporte; sector = sup.sector || sector; } }
-    crearPreinscrito({
-      tipo: 'entidad', subtipo: entLabel, entTipo: STATE.entTipo, orgTipo,
-      nombre: d.entNombre || 'Entidad deportiva',
-      nit: d.nit, correo: d.repCorreo,
-      depto: d.depto, ciudad: d.ciudad, deporte, sector, parentId,
-      repLegal: { nombre: d.repNombre, doc: d.repDoc, correo: d.repCorreo },
-      validacion: orgTipo === 'federacion' ? { mindeporte: 'pendiente', comite: 'pendiente' } : undefined,
-      documentos: docs
-    });
-  }
-}
-const TIPO_TXT = {
-  deportista: 'Deportista', personal: 'Personal deportivo', entidad: 'Entidad deportiva'
-};
-function resumenRegistro() {
-  const d = STATE.d;
-  if (STATE.tipo === 'entidad') return { nombre: d.entNombre || 'Entidad', meta: (ENT_TIPOS.find((e) => e.v === STATE.entTipo) || {}).t || 'Entidad', estado: 'Preinscrito' };
-  if (STATE.tipo === 'personal') return { nombre: `${d.nombres} ${d.apellidos}`.trim() || 'Personal', meta: STATE.rol || 'Personal deportivo', estado: 'Pendiente de validación' };
-  if (STATE.modo === 'tutor') return { nombre: `${d.nombres} ${d.apellidos}`.trim() || 'Menor', meta: `Deportista (menor) · tutor: ${d.tutorNombres || '—'}`, estado: 'Activo (registrado)' };
-  return { nombre: `${d.nombres} ${d.apellidos}`.trim() || 'Deportista', meta: 'Deportista · registro propio', estado: 'Activo (registrado)' };
-}
-function renderSuccess() {
-  const r = resumenRegistro();
-  const correo = STATE.d.correo || STATE.d.tutorCorreo || STATE.d.repCorreo || 'tu correo';
-  const esEntidad = STATE.tipo === 'entidad';
-  root().innerHTML = `
-    <div class="reg-wizard">
-      <div class="reg-stepper-wrap"><div class="naowee-stepper naowee-stepper--distributed" id="rpStepper"></div><div class="reg-stepper-mobile" id="rpStepperMobile"></div></div>
-      <div class="reg-success" id="rpSuccess">
-        <div class="reg-confetti" id="rpConfetti"></div>
-        <div class="reg-success__hero">
-          <div class="reg-success__check">${I.check}</div>
-          <h2 class="reg-success__title">¡Registro enviado con éxito!</h2>
-          <p class="reg-success__lead"><strong>${esc(r.nombre)}</strong> quedó en estado <strong>${esc(r.estado)}</strong>. ${esEntidad ? 'Un ente competente validará tu entidad; una vez aprobada podrás <strong>inscribir tu personal y deportistas</strong>.' : 'Tu registro fue creado en el Registro Único del SUID.'}</p>
-          <div class="naowee-message naowee-message--positive" style="max-width:480px;margin:0 auto">
-            <span class="naowee-message__icon">${I.mail}</span>
-            <div class="naowee-message__body"><p class="naowee-message__text">Enviamos una <strong>notificación por email/SMS</strong> a ${esc(correo)} confirmando el registro y los siguientes pasos.</p></div>
-          </div>
-          <div class="reg-receipt">
-            <div class="reg-receipt__head"><span class="reg-receipt__ava reg-receipt__ava--${STATE.tipo}">${STATE.tipo === 'entidad' ? I.entity : STATE.tipo === 'personal' ? I.staff : I.athlete}</span>
-              <div><div class="reg-receipt__name">${esc(r.nombre)}</div><div class="reg-receipt__meta">${esc(r.meta)}</div></div></div>
-            <div class="reg-receipt__rows">
-              ${receiptRow(I.check, 'Tipo', TIPO_TXT[STATE.tipo], 'info')}
-              ${receiptRow(I.bang, 'Estado', r.estado, /activo/i.test(r.estado) ? 'ok' : 'warn')}
-              ${receiptRow(I.mail, 'Notificación', 'Email / SMS enviada', 'ok')}
-            </div>
-          </div>
-          <div class="reg-success__actions">
-            <a class="naowee-btn naowee-btn--loud" href="index.html">Volver al inicio</a>
-            <button type="button" class="naowee-btn naowee-btn--mute" id="rpAnother">Registrar otro</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  const wrap = document.getElementById('rpStepper');
-  wrap.innerHTML = stepDefs().map(([, lbl], i) => `${i > 0 ? '<div class="naowee-stepper__connector naowee-stepper__connector--done"></div>' : ''}<div class="naowee-stepper__step naowee-stepper__step--done"><span class="naowee-stepper__number">${I.check}</span><span class="naowee-stepper__label">${lbl}</span></div>`).join('');
-  document.getElementById('rpStepperMobile').innerHTML = 'Registro completado';
-  document.getElementById('rpAnother').addEventListener('click', () => { location.reload(); });
-  fireConfetti();
 }
 function receiptRow(ico, k, v, tone) { return `<div class="reg-receipt__row"><span class="reg-receipt__ico${tone ? ' reg-receipt__ico--' + tone : ''}">${ico}</span><span class="reg-receipt__k">${esc(k)}</span><span class="reg-receipt__v">${esc(v)}</span></div>`; }
 function fireConfetti() {
@@ -927,6 +1021,7 @@ function fireConfetti() {
   for (let i = 0; i < 28; i++) html += `<span class="reg-confetti__bit" style="left:${Math.round((i * 37) % 100)}%;background:${cols[i % cols.length]};animation-delay:${(i % 7) * 60}ms"></span>`;
   c.innerHTML = html;
 }
+
 
 /* ═══════════════ Arranque ═══════════════ */
 render();
