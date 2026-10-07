@@ -45,7 +45,7 @@ const I = {
 
 const edadDe = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return null; const hoy = new Date(); let e = hoy.getFullYear() - (+m[1]); const mo = (hoy.getMonth() + 1) - (+m[2]); if (mo < 0 || (mo === 0 && hoy.getDate() < (+m[3]))) e--; return e; };
 const edadTxt = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return ''; const hoy = new Date(); let meses = (hoy.getFullYear() - +m[1]) * 12 + (hoy.getMonth() + 1 - +m[2]); if (hoy.getDate() < +m[3]) meses--; return meses < 0 ? '' : `${Math.floor(meses / 12)} años ${meses % 12} meses`; };
-I.person = I.athlete; I.company = I.entity;
+I.person = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1"/></svg>'; I.company = I.entity;
 I.guardian = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="6" r="3"/><circle cx="17" cy="9" r="2.2"/><path d="M2 21v-2a5 5 0 0 1 10 0v2"/><path d="M13 21v-1.5a4 4 0 0 1 8 0V21"/></svg>';
 I.trophy = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>';
 I.flag = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>';
