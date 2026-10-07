@@ -133,6 +133,7 @@
   .ur .rp-doc__row .naowee-dropdown__trigger { padding: 0 10px 0 14px; gap: 4px; }
   .ur .rp-doc__row .naowee-dropdown__value { overflow: visible; text-overflow: clip; }
   .ur .rp-doc__row > * { min-width: 0; }
+  .ur .rp-doc__row .naowee-textfield__input { min-width: 0; width: 100%; }
   .ur .rp-doc__row .naowee-textfield__input-wrap { width: auto; }
   .ur .rp-doc__row .naowee-dropdown__trigger { border: 0; border-right: 1px solid var(--ur-line); border-radius: 8px 0 0 8px; }
   .ur .rp-doc__row .naowee-textfield__input-wrap { border: 0; border-radius: 0 8px 8px 0; }
@@ -191,12 +192,13 @@
     .ur-title { font-size: var(--naowee-font-size-28, 28px); line-height: 34px; }
     .ur .reg-grid-2 { grid-template-columns: 1fr; }
     .ur-btn--block { width: 100%; }
-    /* tarjetas: con 3 opciones pasan a filas (ícono · texto · radio) */
+    /* tarjetas: con 3 opciones pasan a filas (ícono · texto · radio); con 2 también bajo 480px (ver abajo) */
     .ur-cards:has(> :nth-child(3)) { grid-auto-flow: row; grid-auto-columns: auto; }
     .ur-cards:has(> :nth-child(3)) .ur-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--naowee-spacing-gap-xtiny); align-items: center; padding-right: 48px; }
     .ur-cards:has(> :nth-child(3)) .ur-card svg { grid-row: 1 / span 2; margin: 0; }
     .ur-cards:has(> :nth-child(3)) .ur-card::after { top: 50%; transform: translateY(-50%); }
     .ur:has(.ur-cards) .rp-alert { margin-top: 0; }
+    .ur-foot { padding-bottom: 128px; }
     /* pastilla de versión de la demo: compacta para que no se corte */
     .naowee-footer__text, .naowee-footer__text + .naowee-footer__sep { display: none; }
     /* formulario en móvil */
@@ -211,6 +213,28 @@
     .ur-actions:has(.ur-back) .ur-btn { flex: 1; min-width: 0; }
     .rp-doc__row { grid-template-columns: 84px 1fr; }
   }
+  @media (max-width: 480px) {
+    .ur-cards { grid-auto-flow: row; grid-auto-columns: auto; }
+    .ur-cards .ur-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--naowee-spacing-gap-xtiny); align-items: center; padding-right: 48px; }
+    .ur-cards .ur-card svg { grid-row: 1 / span 2; margin: 0; }
+    .ur-cards .ur-card::after { top: 50%; transform: translateY(-50%); }
+    .ur-top p { max-width: none; white-space: nowrap; }
+  }
+  @media (max-width: 360px) {
+    .ur-top { padding: 0 12px; height: 60px; }
+    .ur-top img { height: 36px; }
+    .ur-top__q { display: none; }
+    .ur-main { padding-left: 12px; padding-right: 12px; }
+    .ur-title { font-size: var(--naowee-font-size-24, 24px); line-height: 30px; }
+    .ur-card { padding: 12px 44px 12px 12px; }
+    .ur-cards .ur-card svg { width: 40px; height: 40px; padding: 8px; }
+    .ur-card::after { right: 12px; }
+    .ur-crumbs { flex-wrap: wrap; row-gap: 2px; }
+    .ur-actions:has(.ur-back) { flex-wrap: wrap; }
+    .ur-actions:has(.ur-back) .ur-btn { flex-basis: 100%; order: -1; }
+    .ur-actions:has(.ur-back) .ur-back { margin: 0 auto; }
+    .ur .rp-doc__row { grid-template-columns: 76px 1fr; }
+  }
   @media (min-width: 601px) and (max-width: 900px) {
     .ur-main { align-items: flex-start; padding-top: var(--naowee-spacing-padding-medium); }
   }
@@ -220,7 +244,7 @@
 
 <header class="ur-top">
   <a href="index.html" style="text-decoration:none"><img src="shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
-  <p>¿Ya tienes una cuenta? <a href="index.html">Inicia sesión</a></p>
+  <p><span class="ur-top__q">¿Ya tienes una cuenta?</span> <a href="index.html">Inicia sesión</a></p>
 </header>
 
 <main class="ur-main"><div id="rpRoot" class="ur"></div></main>
