@@ -115,6 +115,9 @@ const deportesPorTipo = (t) => {
 
 /* Documentos de la búsqueda simulada (Solo demo). */
 const DOC_MENOR = '1098765432';
+/* Solo demo: documento que existe sin cuenta, creado por una institución en un evento. */
+const DOC_SIN_RECLAMAR = '1055512345';
+const SIN_RECLAMAR = { emailHint: 'ju••••••@co••••••.edu.co', origen: 'una institución educativa en Juegos Intercolegiados 2026' };
 const docConCuenta = (num) => allDeportistas().some((d) => String(d.numDoc) === String(num).trim()) || allOrganismos().some((o) => o.repLegal && String(o.repLegal.numDoc) === String(num).trim());
 const ROL_TXT = { ATHLETE: 'Deportista', LEGAL_GUARDIAN: 'Tutor', SUPPORT_STAFF: 'Personal deportivo' };
 const ENT_TXT = { federacion: 'Federación', liga: 'Liga', club: 'Club' };
@@ -132,7 +135,7 @@ const blankD = () => ({
   repTipoDoc: 'CC', repDoc: '', repNombre: '', repApellido: '', repCorreo: '',
   docs: {}, aceptaPoliticas: false, aceptaComunicaciones: false
 });
-const STATE = { step: 0, created: false, _armedStep: null, nature: null, role: null, entTipo: null, lookup: 'idle', nitLookup: 'idle', result: null, d: blankD() };
+const STATE = { step: 0, created: false, _armedStep: null, nature: null, role: null, entTipo: null, lookup: 'idle', nitLookup: 'idle', claim: null, result: null, d: blankD() };
 const root = () => document.getElementById('rpRoot');
 const isAthlete = () => STATE.role === 'ATHLETE';
 
@@ -249,6 +252,7 @@ function paneEntTipo() {
 function lookupBox() {
   const st = STATE.lookup;
   if (st === 'checking') return `<div class="rp-lookup">${I.spin} Consultando registro en la base de datos...</div>`;
+  if (st === 'ok' && STATE.claim) return `<div class="rp-lookup rp-lookup--ok">${I.check} Vas a reclamar tu perfil. Completa o corrige tus datos; el correo se mantiene.</div>`;
   if (st === 'ok') return `<div class="rp-lookup rp-lookup--ok">${I.check} No encontramos registros previos. Por favor completa el formulario.</div>`;
   return '';
 }
@@ -260,10 +264,12 @@ function paneBasicos() {
       <div class="rp-doc__row">${ddInline('tipoDoc', CAT.tipoDoc, d.tipoDoc)}
         <div class="naowee-textfield__input-wrap"><input id="f-numDoc" class="naowee-textfield__input" placeholder="# Documento" inputmode="numeric" value="${esc(d.numDoc)}" data-model="numDoc" data-mask="numeric" maxlength="12"></div></div>
       ${lookupBox()}
-      <p class="rp-demo-hint">Solo demo · prueba <code>${DOC_MENOR}</code> (menor de edad) o <code>1144556778</code> (ya tiene cuenta).</p>
+      <p class="rp-demo-hint">Solo demo · prueba <code>${DOC_MENOR}</code> (menor de edad), <code>${DOC_SIN_RECLAMAR}</code> (perfil sin reclamar) o <code>1144556778</code> (ya tiene cuenta).</p>
     </div>`;
   if (st === 'minor') return `${isAthlete() ? minorInfo() : ''}<div class="reg-form">${docField}</div>${minorAlert('Por normativa, el registro debe completarlo su padre, madre o tutor legal.')}`;
   if (st === 'hasLogin') return `<div class="reg-form">${docField}</div>${hasLoginAlert()}`;
+  if (st === 'unclaimed') return `<div class="reg-form">${docField}</div>${unclaimedAlert()}`;
+  if (st === 'notMine') return `<div class="reg-form">${docField}</div>${notMineAlert()}`;
   const edad = edadDe(d.fechaNac);
   const menorPorFecha = edad != null && edad < 18;
   return `${isAthlete() ? minorInfo() : ''}
@@ -284,6 +290,20 @@ function paneBasicos() {
       ${menorPorFecha && STATE.role === 'LEGAL_GUARDIAN' ? msg('negative', 'Debes ser mayor de edad', 'El padre, madre o tutor que se registra debe tener 18 años o más.') : ''}
       ${isAthlete() ? '' : consentChecks()}
     </form>`;
+}
+function unclaimedAlert() {
+  return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
+    <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
+    <p class="naowee-message__text">Lo creó ${esc(SIN_RECLAMAR.origen)} con el correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si ese correo es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es mío</button></div>
+  </div></div>`;
+}
+function notMineAlert() {
+  return `<div class="naowee-message naowee-message--caution rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
+    <p class="naowee-message__title">Escríbenos para cambiar el correo</p>
+    <p class="naowee-message__text">Por seguridad, el correo de un perfil existente no se cambia desde este formulario. Escribe a <strong>soporte@naowee.com</strong> con tu tipo y número de documento (${esc(STATE.d.tipoDoc)} ${esc(STATE.d.numDoc)}) y una foto de tu documento de identidad; verificamos que eres tú y actualizamos el correo.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-back" data-act="backToClaim">Volver</button></div>
+  </div></div>`;
 }
 function minorInfo() { return msg('informative', '', 'Si eres menor de edad, el registro debe realizarlo tu padre, madre o tutor.'); }
 function minorAlert(text) {
@@ -344,8 +364,10 @@ function paneContacto() {
       ${tf({ id: 'f-direccion', label: 'Dirección', required: true, path: 'direccion', value: d.direccion, placeholder: 'Ingresa tu dirección' })}
       ${tf({ id: 'f-telefono', label: 'Telefono', required: true, path: 'telefono', value: d.telefono, mask: 'numeric', maxLength: 10, placeholder: '3001234567' })}
     </div>
-    ${msg('informative', '', 'Usaremos este correo electronico para notificaciones y verificación.')}
-    ${tf({ id: 'f-correo', label: 'Correo electrónico', required: true, path: 'correo', value: d.correo, mask: 'email', placeholder: 'nombre@correo.com' })}
+    ${STATE.claim && !ent ? `<div class="naowee-textfield"><label class="naowee-textfield__label">Correo electrónico</label><div class="naowee-textfield__input-wrap rp-locked-field"><input class="naowee-textfield__input" disabled value="${esc(STATE.claim.emailHint)}"></div>
+      <p class="rp-inline-note">Es el correo de tu perfil y no se puede cambiar aquí. ¿No es tuyo? Escribe a <strong>soporte@naowee.com</strong>.</p></div>`
+    : `${msg('informative', '', 'Usaremos este correo electronico para notificaciones y verificación.')}
+    ${tf({ id: 'f-correo', label: 'Correo electrónico', required: true, path: 'correo', value: d.correo, mask: 'email', placeholder: 'nombre@correo.com' })}`}
   </form>`;
 }
 
@@ -450,7 +472,8 @@ function runLookup() {
   if (n.length < min) { if (STATE.lookup !== 'idle') { STATE.lookup = 'idle'; renderPane(); bindPane(); refocus('f-numDoc'); } return; }
   STATE.lookup = 'checking'; renderPane(); bindPane(); refocus('f-numDoc');
   _lookupT = setTimeout(() => {
-    STATE.lookup = n === DOC_MENOR ? 'minor' : docConCuenta(n) ? 'hasLogin' : 'ok';
+    STATE.claim = null;
+    STATE.lookup = n === DOC_MENOR ? 'minor' : n === DOC_SIN_RECLAMAR ? 'unclaimed' : docConCuenta(n) ? 'hasLogin' : 'ok';
     renderPane(); bindPane(); refocus('f-numDoc');
   }, 900);
 }
@@ -494,6 +517,9 @@ function bindPane() {
     STATE.d.deportes = list.includes(dep) ? list.filter((x) => x !== dep) : [...list, dep];
     renderPane(); bindPane();
   }));
+  root().querySelector('[data-act="claim"]')?.addEventListener('click', () => { STATE.claim = { ...SIN_RECLAMAR }; STATE.lookup = 'ok'; renderPane(); bindPane(); });
+  root().querySelector('[data-act="notMine"]')?.addEventListener('click', () => { STATE.lookup = 'notMine'; renderPane(); bindPane(); });
+  root().querySelector('[data-act="backToClaim"]')?.addEventListener('click', () => { STATE.lookup = 'unclaimed'; renderPane(); bindPane(); });
   root().querySelector('[data-act="asTutor"]')?.addEventListener('click', () => {
     const keep = { tipoDoc: STATE.d.tipoDoc };
     STATE.role = 'LEGAL_GUARDIAN'; STATE.lookup = 'idle'; STATE.d = { ...blankD(), ...keep };
@@ -540,7 +566,7 @@ function validate() {
     reqDd('depto'); if (!d.ciudad) errs.push({ field: 'dd-ciudad', kind: 'dd' }); reqDd('zona');
     req('f-direccion', d.direccion.trim());
     req('f-telefono', /^\d{10}$/.test(d.telefono), 'El teléfono debe tener 10 dígitos');
-    req('f-correo', EMAIL_RE.test(d.correo), 'Ingresa un correo válido');
+    if (!(STATE.claim && STATE.nature === 'persona')) req('f-correo', EMAIL_RE.test(d.correo), 'Ingresa un correo válido');
   }
   if (k === 'entbasicos') {
     if (STATE.nitLookup !== 'ok') return [{ field: 'f-nit', kind: 'tf', msg: 'El NIT debe tener mínimo 9 dígitos', hard: true }];
@@ -586,7 +612,7 @@ function submit() {
       nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: '', correo: d.correo, clubId: null, estado: 'autodeclarado', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) });
       writeStore('deportistas-nuevos', nuevos);
     }
-    STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: d.correo };
+    STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim };
   } else {
     const t = STATE.entTipo;
     const parentId = t === 'federacion' ? comitePorSector(d.sector)?.id : d.superiorId;
@@ -622,9 +648,11 @@ function renderResult() {
     <div class="ur-devnote-wrap ur-devnote-wrap--center"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${persona ? 'resultPersona' : 'resultEntidad'}"></span></div>
     <div class="ur-result__ava">${I.check}</div>
     ${persona ? `
-      <h1 class="ur-title">¡Registro completado!</h1>
+      ${r.reclamado ? `<h1 class="ur-title">¡Perfil reclamado!</h1>
+      <p>Actualizamos tu perfil con los datos que ingresaste y activamos tu cuenta.</p>
+      <p>Enviamos el enlace para crear tu contraseña a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">¡Registro completado!</h1>
       <p>¡Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
-      <p>¡Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmación.</p>
+      <p>¡Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmación.</p>`}
       <div class="ur-profile"><strong>${esc(r.nombre)}</strong><span>${esc(r.rol)}${r.fechaNac ? ' · ' + esc(r.fechaNac.split('-').reverse().join('/')) : ''}</span></div>
       ${msg('informative', '', esc(siguiente))}
       ${msg('caution', '', 'Si no recibiste el correo, revisa bandeja de SPAM o solicita reenvío.')}
@@ -664,8 +692,16 @@ const DEVNOTES = {
   ] },
   basicos: { title: 'Básicos (Persona)', sections: [
     { title: 'Se mantiene de producción', items: ['Documento CC / CE / PA. Con 7 dígitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los demás campos quedan bloqueados hasta verificar.', '<code>isMinor</code> → alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> → "Ya tienes una cuenta registrada" + Iniciar sesión.', 'Fecha de nacimiento: 18+ obligatorio, también para el tutor. "Rol específico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
+    { title: 'Perfil existente sin reclamar (reconciliación)', items: [
+      'Caso: el documento existe con <code>has_login=false</code> porque lo creó otro actor (una institución al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la búsqueda, no al final del formulario.',
+      'Se muestra el correo <b>enmascarado</b> y sin opción de editar. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
+      'Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ahí queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contraseña.',
+      '<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza teléfono, nacionalidad, ubicación, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemográfico se descartan sin avisar.',
+      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado y el origen del registro; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditoría con los valores anteriores.',
+      '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
+    ] },
     { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
-    { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; un documento del seed devuelve cuenta existente.'] }
+    { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; <code>1055512345</code> devuelve perfil sin reclamar; un documento del seed devuelve cuenta existente.'] }
   ] },
   deportivos: { title: 'Deportivos (solo deportista)', sections: [
     { title: 'Se mantiene', items: ['Tipo de deporte (<code>/catalogs/sport_type</code>) → Deporte (<code>GET /sports?type=</code>). Se envía como <code>main_sport_code</code>.'] },
