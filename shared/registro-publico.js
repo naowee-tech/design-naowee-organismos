@@ -167,7 +167,9 @@ I.arrowL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 function header() {
   const k = stepKey();
   let title = 'Crear cuenta', sub = 'Comienza indicando si eres persona natural o entidad jurídica', crumb = '';
-  if (STATE.nature === 'persona') {
+  if (k === 'nature') {
+    /* primera pantalla: título y subtítulo fijos aunque ya haya selección */
+  } else if (STATE.nature === 'persona') {
     sub = k === 'role' ? 'Regístrate como deportista, tutor o personal deportivo' : 'Regístrate con tu documento de identidad';
     if (k !== 'role' && STATE.role) { title = `Registro como ${ROL_TXT[STATE.role]}`; crumb = ROL_TXT[STATE.role]; }
   } else if (STATE.nature === 'entidad') {
@@ -209,7 +211,7 @@ function renderFooter() {
   const label = k === 'role' ? 'Comenzar registro' : (STATE.step === lastStep() ? 'Crear cuenta' : 'Siguiente');
   const back = STATE.step > 0 ? `<button type="button" class="ur-back" id="rpBack">${I.arrowL} Volver</button>` : '';
   f.innerHTML = `<div class="ur-actions">${back}<button type="button" class="ur-btn${k === 'nature' ? ' ur-btn--block' : ''}" id="rpNext" ${sel ? '' : 'disabled'}>${label} ${k === 'nature' ? '' : I.arrowR}</button></div>
-    ${isSelectStep() ? '<p class="ur-legal"><a href="#" onclick="return false">Politica de privacidad</a> y <a href="#" onclick="return false">Términos y condiciones</a></p>' : ''}`;
+    ${isSelectStep() ? '<p class="ur-legal"><a href="#" onclick="return false">Política de privacidad</a> y <a href="#" onclick="return false">Términos y condiciones</a></p>' : ''}`;
   document.getElementById('rpNext').addEventListener('click', next);
   document.getElementById('rpBack')?.addEventListener('click', () => { STATE._armedStep = null; STATE.step = Math.max(0, STATE.step - 1); render(); });
 }
