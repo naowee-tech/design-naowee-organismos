@@ -9,74 +9,157 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="shared/tokens.css?v=1.4.1">
-<link rel="stylesheet" href="shared/components.css?v=1.4.1">
-<link rel="stylesheet" href="shared/forms.css?v=1.4.1">
-<link rel="stylesheet" href="shared/naowee-footer.css?v=1.4.1">
+<link rel="stylesheet" href="shared/tokens.css?v=1.5.0">
+<link rel="stylesheet" href="shared/components.css?v=1.5.0">
+<link rel="stylesheet" href="shared/forms.css?v=1.5.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=1.5.0">
+<link rel="stylesheet" href="shared/devnotes.css?v=1.5.0">
 
 <style>
-  body {
-    background:
-      radial-gradient(1200px 600px at 85% -10%, rgba(255, 117, 0, .08), transparent 60%),
-      radial-gradient(900px 500px at -5% 110%, rgba(0, 43, 91, .08), transparent 55%),
-      linear-gradient(180deg, #f8f9fc 0%, #eef0f7 100%);
-    min-height: 100vh; padding: 40px 24px 96px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--text-primary);
-  }
-  .rp-wrap { max-width: 880px; width: 100%; margin: 0 auto; }
-  .rp-masthead { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
-  .rp-masthead__logos { display: flex; align-items: center; gap: 12px; }
-  .rp-masthead__logos img { height: 38px; width: auto; display: block; }
-  .rp-masthead__sep { width: 1px; height: 28px; background: var(--border-dark); }
-  .rp-back-wrap { margin-bottom: 14px; }
-  .rp-hero { margin-bottom: 22px; }
-  .rp-hero .eyebrow { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--naranja); margin-bottom: 10px; }
-  .rp-hero h1 { font-size: clamp(24px, 3.2vw, 34px); font-weight: 800; line-height: 1.1; letter-spacing: -.8px; color: var(--azul); margin: 0 0 10px; }
-  .rp-hero p { font-size: 15px; line-height: 1.55; color: var(--text-secondary); margin: 0; max-width: 640px; }
-  .rp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 28px; box-shadow: var(--shadow-card); }
-  /* micro-overrides del módulo público */
-  .rp-subchoice { margin-top: 22px; }
-  .rp-agehint:empty { display: none; }
-  .rp-agehint { margin-top: 8px; }
+  /* v1.5.0 · réplica visual de /user-register (suite-web-v2, staging) */
+  :root { --ur-text: #282834; --ur-sub: #646587; --ur-muted: #9c9ebf; --ur-line: #9c9ebf; --ur-card: #8788ab;
+          --ur-accent: #d74009; --ur-link: #005be6; --ur-crumb: #006aff; --ur-disabled-bg: #d0d4e6; --ur-field-off: #f3f4f9; --ur-info-bg: #cdf3fb; }
+  html, body { margin: 0; background: #fff; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ur-text); min-height: 100vh; display: flex; flex-direction: column; }
+  .ur-top { display: flex; align-items: flex-start; justify-content: space-between; padding: 32px 38px 0; }
+  .ur-top img { height: 58px; width: auto; display: block; }
+  .ur-top p { margin: 6px 0 0; font-size: 14px; color: var(--ur-sub); text-align: right; max-width: 200px; }
+  .ur-top a, .ur-link-accent { color: var(--ur-accent); font-weight: 700; text-decoration: underline; }
+  .ur-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 16px 64px; }
+  .ur-foot { text-align: center; font-size: 13px; color: #8788ab; padding: 0 0 72px; }
+  .ur-foot strong { color: #646587; }
+
+  .ur { width: 100%; max-width: 400px; --field-h: 38px; }
+  .ur--wide { max-width: 508px; }
+  .ur .reg-wizard, .ur .reg-success { background: none; border: 0; box-shadow: none; padding: 0; overflow: visible; }
+  .ur .reg-pane { padding: 0; }
+  .ur-head { margin-bottom: 24px; }
+  .ur-head--center { text-align: center; }
+  .ur-crumbs { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 14px; color: var(--ur-text); }
+  .ur-crumbs svg { width: 14px; height: 14px; }
+  .ur-crumbs b { color: var(--ur-crumb); font-weight: 600; }
+  .ur-head__row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .ur-head--center .ur-head__row { justify-content: center; }
+  .ur-title { font-size: 32px; font-weight: 700; line-height: 1.12; margin: 0 0 12px; letter-spacing: -.4px; }
+  .ur-sub { font-size: 16px; color: var(--ur-sub); margin: 0; }
+  .ur-devnote-wrap { display: flex; justify-content: flex-end; margin: -8px 0 12px; }
+  .ur-head--center + .ur-devnote-wrap, .ur-devnote-wrap--center { justify-content: center; }
+
+  /* stepper */
+  .ur-stepper { display: flex; align-items: flex-start; justify-content: space-between; margin: 0 0 28px; }
+  .ur-step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none; }
+  .ur-step__n { width: 24px; height: 24px; border-radius: 50%; background: var(--ur-sub); color: #fff; font-size: 12px; font-weight: 600; display: grid; place-items: center; }
+  .ur-step__n svg { width: 12px; height: 12px; }
+  .ur-step--active .ur-step__n, .ur-step--done .ur-step__n { background: var(--ur-accent); }
+  .ur-step__l { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .ur-step-line { flex: 1; height: 3px; border-radius: 2px; background: #d0d4e6; margin: 11px 10px 0; min-width: 24px; }
+  .ur-step-line--done { background: var(--ur-accent); }
+
+  /* tarjetas (nwt-radio-card) */
+  .ur-cards { display: flex; justify-content: center; gap: 16px; margin: 32px 0 48px; flex-wrap: wrap; }
+  .ur-card { width: 88px; height: 88px; border: 1px solid var(--ur-card); border-radius: 12px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font: inherit; padding: 6px; }
+  .ur-card svg { width: 24px; height: 24px; color: var(--ur-accent); margin-bottom: 4px; }
+  .ur-card__t { font-size: 12px; font-weight: 600; color: var(--ur-text); }
+  .ur-card__d { font-size: 10px; color: var(--ur-muted); }
+  .ur-card.is-selected { border: 2px solid var(--ur-accent); box-shadow: 0 0 0 4px rgba(215, 64, 9, .14); }
+  .ur-card:hover { border-color: var(--ur-accent); }
+
+  /* botones */
+  .ur-actions { display: flex; justify-content: center; align-items: center; gap: 24px; margin-top: 40px; }
+  .ur-btn { height: 38px; min-width: 153px; padding: 0 20px; border-radius: 8px; border: 0; background: var(--ur-accent); color: #fff; font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none; }
+  .ur-btn--block { width: 305px; height: 48px; }
+  .ur-btn:disabled, .ur-btn.is-disabled { background: var(--ur-disabled-bg); color: var(--ur-muted); cursor: not-allowed; }
+  .ur-btn svg, .ur-back svg { width: 16px; height: 16px; }
+  .ur-back { background: none; border: 0; color: var(--ur-accent); font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; }
+  .ur-legal { text-align: center; font-size: 14px; margin-top: 40px; color: var(--ur-text); }
+  .ur-legal a { color: var(--ur-link); font-weight: 600; text-decoration: underline; }
+  .ur .reg-footer__hint { margin: 16px 0 0; }
+
+  /* campos (nwt-*) */
+  .ur .reg-form { max-width: none; gap: 14px; }
+  .ur .reg-grid-2 { gap: 14px 14px; }
+  .ur .reg-section-label { font-size: 12px; color: var(--ur-sub); margin: 10px 0 0; }
+  .ur .naowee-textfield__label, .ur .naowee-dropdown__label, .ur .naowee-datepicker-field__label, .ur .naowee-file-uploader__label { font-size: 14px; font-weight: 400; color: var(--ur-text); padding-left: 6px; }
+  .ur .naowee-textfield__input-wrap, .ur .naowee-dropdown__trigger, .ur .naowee-datepicker-field__input { height: 38px; min-height: 38px; border: 1px solid var(--ur-line); border-radius: 8px; background: #fff; box-shadow: none; }
+  .ur .naowee-textfield__input, .ur .naowee-dropdown__value, .ur .naowee-datepicker-field__value { font-size: 14px; }
+  .ur .naowee-dropdown__value.is-placeholder, .ur .naowee-textfield__input::placeholder, .ur .naowee-datepicker-field__value.is-placeholder { color: var(--ur-muted); }
+  .ur .naowee-textfield__input:disabled { background: transparent; }
+  .ur .naowee-textfield:has(input:disabled) .naowee-textfield__input-wrap { background: var(--ur-field-off); }
+  .ur .naowee-message { border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+  .ur .naowee-message--informative { background: var(--ur-info-bg); border-color: transparent; }
+  .ur .naowee-message__text { font-size: 14px; }
+  .ur .naowee-checkbox__label { font-size: 14px; }
+
+  /* documento + consulta */
+  .ur .rp-doc__row { display: grid; grid-template-columns: 76px 1fr; gap: 0; border: 1px solid var(--ur-text); border-radius: 8px; overflow: visible; }
+  .ur .rp-doc__row .naowee-dropdown__trigger { border: 0; border-right: 1px solid var(--ur-line); border-radius: 8px 0 0 8px; }
+  .ur .rp-doc__row .naowee-textfield__input-wrap { border: 0; border-radius: 0 8px 8px 0; }
+  .ur .rp-doc .naowee-dropdown__label[hidden] { display: none; }
+  .rp-lookup { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--ur-sub); }
+  .rp-lookup svg { width: 16px; height: 16px; flex: none; }
+  .rp-lookup--ok { color: #1f8923; }
+  .rp-spin { animation: rp-spin .8s linear infinite; }
+  @keyframes rp-spin { to { transform: rotate(360deg); } }
+  .rp-demo-hint { margin: 6px 0 0; font-size: 12px; color: #8a5a00; }
+  .rp-demo-hint code { background: #fff8e6; border: 1px dashed #d9a441; border-radius: 4px; padding: 0 4px; }
+  .rp-locked > *:not(.rp-doc):not([data-field="f-nit"]):not(.rp-lookup):not(.rp-demo-hint) { pointer-events: none; }
+  .rp-locked .naowee-textfield__input-wrap, .rp-locked .naowee-dropdown__trigger, .rp-locked .naowee-datepicker-field__input { background: var(--ur-field-off); }
+  .rp-locked > *:not(.rp-doc):not([data-field="f-nit"]):not(.rp-lookup):not(.rp-demo-hint) .naowee-textfield__input-wrap,
+  .rp-locked > *:not(.rp-doc):not([data-field="f-nit"]) .naowee-dropdown__trigger { background: var(--ur-field-off); }
+  .rp-locked [data-field="f-nit"] .naowee-textfield__input-wrap, .rp-locked .rp-doc .naowee-textfield__input-wrap, .rp-locked .rp-doc .naowee-dropdown__trigger { background: #fff; }
+  .rp-alert { margin-top: 16px; }
+  .rp-inline-note { display: flex; align-items: center; gap: 6px; margin: 4px 0 0 6px; font-size: 13px; color: var(--ur-sub); }
+  .rp-inline-note svg { width: 14px; height: 14px; color: #1f8923; }
+  .rp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .rp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--ur-line); background: #fff; font: inherit; font-size: 13px; color: var(--ur-text); cursor: pointer; }
+  .rp-chip svg { width: 14px; height: 14px; }
+  .rp-chip.is-on { border-color: var(--ur-accent); background: rgba(215, 64, 9, .08); color: var(--ur-accent); font-weight: 600; }
+  .rp-chip:disabled { opacity: .5; cursor: not-allowed; }
+  .rp-checks { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .naowee-dropdown.is-disabled .naowee-dropdown__trigger { background: var(--ur-field-off); }
+
+  /* resultado */
+  .ur-result { text-align: center; }
+  .ur-result__ava { width: 64px; height: 64px; border-radius: 50%; background: #e3f6e4; color: #1f8923; display: grid; place-items: center; margin: 0 auto 18px; }
+  .ur-result__ava svg { width: 30px; height: 30px; }
+  .ur-result p { color: var(--ur-sub); font-size: 15px; line-height: 1.5; margin: 0 0 10px; }
+  .ur-profile { border: 1px solid #e2e4ef; border-radius: 12px; padding: 14px 16px; text-align: left; margin: 18px 0; }
+  .ur-profile strong { display: block; font-size: 15px; color: var(--ur-text); }
+  .ur-profile span { font-size: 13px; color: var(--ur-sub); }
+  .ur-checks { text-align: left; display: flex; flex-direction: column; gap: 12px; margin: 22px 0; }
+  .ur-checks div { display: flex; gap: 10px; }
+  .ur-checks svg { width: 18px; height: 18px; color: #1f8923; flex: none; margin-top: 2px; }
+  .ur-checks strong { display: block; font-size: 14px; color: var(--ur-text); }
+  .ur-checks span { font-size: 13px; color: var(--ur-sub); }
+  .ur-help { margin-top: 28px; font-size: 13px; color: var(--ur-sub); }
+  .ur-help b { display: block; font-size: 12px; letter-spacing: .5px; color: var(--ur-text); margin-bottom: 4px; }
+  .ur-demo-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; padding-top: 14px; border-top: 1px dashed #d9a441; }
+  .ur-demo-links a, .ur-demo-links button { font-size: 12px; color: #8a5a00; background: #fff8e6; border: 1px dashed #d9a441; border-radius: 999px; padding: 4px 10px; text-decoration: none; cursor: pointer; font-family: inherit; }
+
   @media (max-width: 600px) {
-    body { padding: 24px 14px 90px; }
-    .rp-card { padding: 20px 16px; }
-    .rp-masthead { flex-wrap: wrap; }
+    .ur-top { padding: 20px 16px 0; }
+    .ur-top img { height: 44px; }
+    .ur-title { font-size: 26px; }
+    .ur .reg-grid-2 { grid-template-columns: 1fr; }
+    .ur-step__l { display: none; }
+    .ur-btn--block { width: 100%; }
   }
 </style>
 </head>
 <body>
 
-<div class="rp-wrap">
-  <div class="rp-back-wrap">
-    <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" onclick="window.location.href='index.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Volver al inicio</button>
-  </div>
-  <header class="rp-masthead">
-    <div class="rp-masthead__logos">
-      <img src="shared/logos/ministerio.svg" alt="Ministerio del Deporte">
-      <div class="rp-masthead__sep"></div>
-      <img src="shared/logos/suid.png" alt="SUID">
-    </div>
-  </header>
+<header class="ur-top">
+  <a href="index.html" style="text-decoration:none"><img src="shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
+  <p>¿Ya tienes una cuenta? <a href="index.html">Inicia sesión</a></p>
+</header>
 
-  <section class="rp-hero">
-    <span class="eyebrow">Registro público · SUID</span>
-    <h1>Regístrate en el Sistema Único de Información del Deporte</h1>
-    <p>
-      Formulario público — no necesitas iniciar sesión. Regístrate como deportista
-      (propio o a través de un padre/tutor), como personal deportivo o como entidad
-      deportiva; el formulario se adapta a tu caso.
-    </p>
-  </section>
+<main class="ur-main"><div id="rpRoot" class="ur"></div></main>
 
-  <div class="rp-card">
-    <div id="rpRoot"></div>
-  </div>
-</div>
+<footer class="ur-foot">Hecho by <strong>Naowee</strong></footer>
 
-<script type="module" src="shared/registro-publico.js?v=1.4.1"></script>
-<script src="shared/naowee-footer.js?v=1.4.1"></script>
-<script src="shared/tour.js?v=1.4.1"></script>
+<script type="module" src="shared/registro-publico.js?v=1.5.0"></script>
+<script src="shared/naowee-footer.js?v=1.5.0"></script>
+<script src="shared/tour.js?v=1.5.0"></script>
 
 </body>
 </html>

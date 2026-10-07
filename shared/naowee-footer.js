@@ -552,7 +552,24 @@ const MODULE_NAME = 'Organismos';
              MINDEPORTE+DEP-999 pintan el aviso con «Volver al plantel», y las
              fichas reales (DEPORTISTA titular, CLUB+DEP-013) sin regresión ni
              errores en consola. Cache-busters ?v=1.4.1. */
-const MODULE_VERSION = 'v1.4.1';
+/* v1.5.0 —  REGISTRO PÚBLICO = /user-register de producción + jerarquía.
+             registro-publico.html replica el flujo y el estilo de
+             /user-register de suite-web-v2 (hoy en el servicio de sports),
+             que se migra al servicio de SUID, ajustado a las decisiones de
+             jerarquía (nao-docs PR #30–#32):
+             · Persona (deportista, tutor, personal deportivo): cuenta activa
+               de inmediato, sin bandeja; el deportista queda autodeclarado.
+               Búsqueda por documento, menor → «Continuar como padre/tutor».
+             · Entidad: solo Federación, Liga o Club. Elige superior Activo
+               (comité por sector, federación, o liga filtrada por deporte) y
+               deportes dentro de los del superior; un deporte, una federación.
+               Queda En revisión en la bandeja de su superior (federación:
+               Comité + Ministerio). Ya no pasa por la cola del Ministerio.
+             · Notas para devs por paso (shared/devnotes.{js,css}, patrón
+               wz-devnote de incentivos con secciones de sorteo).
+             Recorridos HURU-01/03/04 apuntan a las tarjetas nuevas.
+             Cache-busters ?v=1.5.0. */
+const MODULE_VERSION = 'v1.5.0';
 
 (function () {
   function mount() {
