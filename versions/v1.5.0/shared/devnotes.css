@@ -1,0 +1,32 @@
+/* SOLO DEMO · notas para devs (patrón wz-devnote de la demo de incentivos, con secciones como sorteo).
+   Uso: <span class="wz-devnote" tabindex="0" role="button" data-devnote="clave"></span> + mountDevnotes(registro). */
+/* SOLO DEMO · nota de validaciones para devs */
+.wz-devnote-row{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.wz-devnote-row .wz-subtitle, .wz-devnote-row .wz-pane__title{ margin-bottom: 0; }
+.wz-devnote-row{ margin-bottom: 10px; }
+.wz-devnote{
+  position: relative; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px; border-radius: 999px;
+  border: 1px dashed #d9a441; background: #fff8e6;
+  font-size: 12px; font-weight: 600; color: #8a5a00; cursor: help;
+}
+.wz-devnote:focus-visible{ outline: 2px solid var(--naowee-color-text-accent, #d74009); outline-offset: 2px; }
+.wz-devnote__pop{
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 1200;
+  width: 420px; max-width: 80vw; max-height: 60vh; overflow: auto;
+  padding: 14px 16px; border-radius: 12px;
+  background: #282834; color: #fff;
+  font-size: 12.5px; font-weight: 400; line-height: 1.45;
+  box-shadow: 0 12px 32px rgba(40,40,52,.28);
+  opacity: 0; visibility: hidden; transition: opacity .15s;
+}
+.wz-devnote:hover .wz-devnote__pop, .wz-devnote:focus .wz-devnote__pop, .wz-devnote:focus-within .wz-devnote__pop{ opacity: 1; visibility: visible; }
+.wz-devnote__head{ display: block; font-weight: 700; margin-bottom: 8px; }
+.wz-devnote__head em{ font-weight: 400; opacity: .7; }
+.wz-devnote__sec + .wz-devnote__sec{ margin-top: 10px; }
+.wz-devnote__sec-title{ font-weight: 700; color: #ffd27a; margin-bottom: 4px; }
+.wz-devnote__pop ul{ margin: 0; padding-left: 16px; }
+.wz-devnote__pop li + li{ margin-top: 3px; }
+.wz-devnote .naowee-badge{ font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: #ffe7b3; color: #7a4d00; font-weight: 700; }
+.wz-devnote__pop b{ color: #ffd27a; font-weight: 600; }
+.wz-devnote__pop code{ font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; background: rgba(255,255,255,.1); padding: 0 4px; border-radius: 4px; }
