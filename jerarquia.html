@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="shared/tokens.css?v=1.5.0">
 <link rel="stylesheet" href="shared/shell.css?v=1.5.0">
 <link rel="stylesheet" href="shared/components.css?v=1.5.0">
+<link rel="stylesheet" href="shared/devnotes.css?v=1.5.0">
 <link rel="stylesheet" href="shared/jerarquia.css?v=1.5.0">
 <link rel="stylesheet" href="shared/naowee-footer.css?v=1.5.0">
 </head>
@@ -24,6 +25,7 @@
     <div class="page">
       <div class="page-inner">
         <div class="page-head">
+          <span class="wz-devnote" tabindex="0" role="button" data-devnote="jerarquia"></span>
           <h1 class="page-head__title">Jerarquía del Sistema Nacional del Deporte</h1>
           <p class="page-head__sub">Explora los organismos deportivos encadenados jerárquicamente, nivel por nivel. Cada rol ve únicamente su jurisdicción (subárbol).</p>
         </div>
@@ -34,7 +36,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor" stroke="none"/></svg>
           </span>
           <div class="naowee-message__body">
-            <p class="naowee-message__text" id="scopeNoteText">Toca un organismo para ver lo que contiene, y «Abrir detalles» para abrir su ficha. Las acciones de aprobación (aprobar / rechazar / corrección) se realizan desde la Bandeja.</p>
+            <p class="naowee-message__text" id="scopeNoteText">Toca un organismo para ver lo que contiene, y «Ver detalles» para abrir su ficha. Las acciones de aprobación (aprobar / rechazar / corrección) se realizan desde la Bandeja.</p>
           </div>
         </div>
 
@@ -98,6 +100,7 @@
   } from './shared/organismos-data.js';
   import { ESTADOS } from './shared/estados.js';
   import { scopeFor } from './shared/permissions.js';
+  import { mountDevnotes } from './shared/devnotes.js?v=1.5.0';
 
   seedDemoData();
   const roleCode = getRoleFromQuery();
@@ -380,7 +383,7 @@
       ? `<button type="button" class="jq-item__open" data-id="${esc(node.id)}" data-depth="${depth}"${hasKids ? ` aria-pressed="${selected}"` : ''}>${inner}</button>`
       : `<div class="jq-item__open jq-item__open--static">${inner}</div>`;
     const foot = isOrg
-      ? `<a class="jq-item__detail${hasKids ? '' : ' jq-item__detail--leaf'}" href="${detailUrl(node.id)}" aria-label="Abrir detalles de ${esc(node.name)}">Abrir detalles</a>`
+      ? `<a class="jq-item__detail${hasKids ? '' : ' jq-item__detail--leaf'}" href="${detailUrl(node.id)}" aria-label="Ver detalles de ${esc(node.name)}">Ver detalles</a>`
       : (node.tipo === 'deportista'
         ? `<a class="jq-item__detail jq-item__detail--leaf" href="${fichaUrl(node.id)}" aria-label="Ver ficha de ${esc(node.name)}">Ver ficha</a>`
         : '');
@@ -409,9 +412,28 @@
   const SLIDE = { duration: 280, easing: 'cubic-bezier(.22,.8,.3,1)' };
   let animateNext = false;
 
+  /* Scroll animado (600ms) de la lista hasta `to`; sin animación con prefers-reduced-motion */
+  function scrollListTo(list, to) {
+    const max = list.scrollHeight - list.clientHeight;
+    const target = Math.max(0, Math.min(to, max));
+    const from = list.scrollTop;
+    if (REDUCED || Math.abs(target - from) < 2) { list.scrollTop = target; return; }
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / 600);
+      list.scrollTop = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
   function renderColumns() {
     const before = new Map();
-    tree.querySelectorAll('.jq-col').forEach((c) => before.set(c.dataset.depth, c.getBoundingClientRect().left));
+    const prevScroll = new Map();
+    tree.querySelectorAll('.jq-col').forEach((c) => {
+      before.set(c.dataset.depth, c.getBoundingClientRect().left);
+      prevScroll.set(c.dataset.depth, c.querySelector('.jq-col__list')?.scrollTop || 0);
+    });
     const levels = levelsFor(path);
     const cols = colsFor();
     const first = Math.max(0, levels.length - cols);
@@ -420,10 +442,11 @@
     tree.innerHTML = levels.slice(first).map((lv, i) => columnHtml(lv, first + i)).join('');
     // en móvil, la columna nueva arranca arriba; en el resto, el scroll es propio de cada columna
     tree.querySelectorAll('.jq-col__list').forEach((l) => {
-      l.scrollTop = 0;
+      const d = l.closest('.jq-col').dataset.depth;
+      l.scrollTop = prevScroll.get(d) || 0;   // conserva el scroll de las columnas que ya estaban
       // el seleccionado sube al tope de su columna (si está entre los últimos, el scroll lo frena solo)
       const sel = l.querySelector('.jq-item.is-selected');
-      if (sel) l.scrollTop = sel.getBoundingClientRect().top - l.getBoundingClientRect().top;
+      if (sel) scrollListTo(l, l.scrollTop + sel.getBoundingClientRect().top - l.getBoundingClientRect().top);
     });
     if (animateNext && !REDUCED && before.size) slideColumns(before);
     animateNext = false;
@@ -528,6 +551,38 @@
   }).observe(treeCard);
 
   applyView();   // estado inicial
+
+  /* ─── Notas para devs (solo demo) ─── */
+  mountDevnotes({ jerarquia: { title: 'Jerarquía SND · cómo funciona por dentro', sections: [
+    { title: 'Alcance por rol', items: [
+      '<code>scopeFor(rol)</code> da el organismo ancla; el árbol es su subárbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.',
+      'Un rol nunca se ve a sí mismo ni a sus ancestros: la primera columna arranca en los hijos de su ancla. DEPORTISTA ve solo su cadena hasta el club (<code>minimalChain</code>, sin contadores heredados).',
+      'Es una vista de <strong>solo lectura</strong>: aprobar, rechazar o corregir vive en la Bandeja.'
+    ] },
+    { title: 'Relación con el sidebar', items: [
+      '<code>nivelesForRole(rol)</code> (shared/sidebar.js) define los niveles que cuelgan de «Jerarquía SND»; cada subítem abre esta página con <code>?nivel=</code>.',
+      'El nivel pedido es la <strong>raíz</strong> de la primera columna (lista plana de ese tipo). Si <code>?nivel=</code> no está permitido para el rol, cae al primero permitido.',
+      'El ítem activo del sidebar se fija al nivel de entrada y <strong>no sigue</strong> a las columnas que el usuario abre o cierra.',
+      'Con un solo nivel debajo (rol CLUB) no hay jerarquía que explorar: <code>jerarquiaItems</code> no pinta la entrada.'
+    ] },
+    { title: 'Columnas y estado', items: [
+      'Todo el estado de navegación es <code>path</code>: ids abiertos, uno por columna. <code>levelsFor(path)</code> deriva las columnas; abrir un ítem = <code>path.slice(0, depth).concat(id)</code>.',
+      'Se entra sin nada abierto (<code>path = []</code>): solo la primera lista, hasta que el usuario abre un nivel.',
+      'Visibles: 3 columnas (≥900px), 2 (≥560px) o 1 en móvil (<code>colsFor</code>, sobre el ancho de la tarjeta, no del viewport). Las demás viven en <code>path</code>; un ResizeObserver recalcula.',
+      'Las columnas anteriores bajan a opacidad .8 y escala de grises (<code>filter: grayscale</code>, no <code>mix-blend-mode</code>, porque ese no se anima) y recuperan color y opacidad 1 con hover o foco; la transición dura .6s; el ítem seleccionado sube al tope de su columna con scroll animado de 600ms (<code>scrollListTo</code>, ease-out; las columnas que ya estaban conservan su scroll al re-renderizar).',
+      'Animación de empuje con Web Animations (<code>slideColumns</code>); se omite con <code>prefers-reduced-motion</code>.'
+    ] },
+    { title: 'Botones de cada fila', items: [
+      '<strong>Fila</strong> (botón): abre el siguiente nivel con <code>aria-pressed</code>. Solo es botón si tiene hijos (o viene de resultados); si no, es estática.',
+      '<strong>Chevron</strong>: aparece solo con hijos; en hover <strong>del propio botón</strong> (no de toda la fila; solo ≥1024px) o foco de la fila se despliega «Ver &lt;siguiente nivel&gt;» (<code>CHILD_LABEL</code>).',
+      '<strong>Ver detalles</strong>: organismos → <code>organismo-detalle.html?id=</code>. <strong>Ver ficha</strong>: deportistas → <code>afiliacion.html?id=…&amp;from=jerarquia</code>; el «Volver» de la ficha honra <code>from</code>.',
+      '<strong>X</strong> de la columna: cierra esa columna y las de su derecha (<code>data-close</code>) con animación de salida; es la única forma de subir de nivel en móvil.'
+    ] },
+    { title: 'Búsqueda y filtro', items: [
+      'Con texto o estado activo el árbol se reemplaza por una lista plana de coincidencias con su ruta de ancestros (<code>renderResults</code>, depth −1). Búsqueda sin tildes (<code>norm</code>) por nombre, NIT/documento o deporte.',
+      'Al elegir un resultado se limpian los filtros y se reconstruye <code>path</code> con sus ancestros (<code>ancestorIds</code>) para ubicarlo; un rol con ancla recorta su propia raíz.'
+    ] }
+  ] } });
 </script>
 <script src="shared/naowee-footer.js?v=1.5.0"></script>
 <script src="shared/tour.js?v=1.5.0"></script>

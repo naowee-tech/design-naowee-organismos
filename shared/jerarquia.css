@@ -49,7 +49,7 @@
 .jq-toolbar {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
 }
-.jq-toolbar .naowee-searchbox { flex: 1 1 260px; }
+.jq-toolbar .naowee-searchbox { flex: 1 1 260px; max-width: none; }
 .jq-toolbar .naowee-dropdown { flex: 0 0 auto; width: 200px; }
 .jq-toolbar__actions { display: flex; gap: 8px; flex-shrink: 0; }
 
@@ -82,12 +82,12 @@
 .jq-cols { display: flex; overflow: hidden; height: min(560px, 68vh); min-height: 320px; }
 .jq-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid #eef0f6; transition: opacity .2s ease; }
 /* En columnas anteriores solo se atenúa lo que no es de la ruta (vuelve al pasar el mouse) */
-.jq-col:not(:last-child) .jq-item:not(.is-selected) { opacity: .55; transition: opacity .2s ease; }
-.jq-col:not(:last-child) .jq-item:not(.is-selected):hover, .jq-col:not(:last-child) .jq-item:not(.is-selected):focus-within { opacity: 1; }
+.jq-col:not(:last-child) .jq-item:not(.is-selected) { opacity: .8; filter: grayscale(1); transition: opacity .6s ease, filter .6s ease; }
+.jq-col:not(:last-child) .jq-item:not(.is-selected):hover, .jq-col:not(:last-child) .jq-item:not(.is-selected):focus-within { opacity: 1; filter: none; }
 .jq-col:last-child { border-right: none; }
 .jq-col__head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 10px 14px; min-height: 56px; box-sizing: border-box; border-bottom: 1px solid var(--border); background: var(--th-bg);
+  margin: 0 0 10px; padding: 10px 14px; min-height: 56px; box-sizing: border-box; border-bottom: 1px solid var(--border); background: var(--th-bg);
 }
 .jq-col__headtext { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .jq-col__kicker { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
@@ -104,6 +104,13 @@
 .jq-col__close svg { width: 14px; height: 14px; }
 .jq-col__list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 0; display: flex; flex-direction: column; }
 
+/* Scrollbar fina (4px) dentro del árbol: columnas y contenedor */
+.jq-cols, .jq-col__list { scrollbar-width: thin; scrollbar-color: var(--border-dark) transparent; }
+.jq-cols::-webkit-scrollbar, .jq-col__list::-webkit-scrollbar { width: 4px; height: 4px; }
+.jq-cols::-webkit-scrollbar-track, .jq-col__list::-webkit-scrollbar-track { background: transparent; }
+.jq-cols::-webkit-scrollbar-thumb, .jq-col__list::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 2px; }
+.jq-cols::-webkit-scrollbar-thumb:hover, .jq-col__list::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
 /* Resultados de búsqueda/filtro: un solo listado plano */
 .jq-results { max-height: min(560px, 68vh); display: flex; }
 .jq-col__list > li { border-bottom: 1px solid #eef0f6; }
@@ -111,7 +118,7 @@
 .jq-col__list > li:nth-child(even) .jq-item:not(.is-selected):not(.is-flash) { background: #fdfcfc; }
 .jq-col__list > li:nth-child(even) .jq-item:not(.is-selected):not(.is-flash):hover { background: #f6f4f2; }
 
-/* Fila: la celda abre el siguiente panel; «Abrir detalles» abre la ficha */
+/* Fila: la celda abre el siguiente panel; «Ver detalles» abre la ficha */
 .jq-item { position: relative; height: 92px; box-sizing: border-box; transition: background var(--duration-fast); }
 .jq-item:hover { background: #f6f4f2; }
 .jq-item.is-selected { background: #fde3d6; box-shadow: inset 3px 0 0 var(--accent); }
@@ -123,7 +130,7 @@
 }
 button.jq-item__open:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .25); }
 .jq-item__open--static { cursor: default; }
-/* «Abrir detalles» arriba a la derecha; el chevron es un icon button con fondo, abajo a la derecha */
+/* «Ver detalles» arriba a la derecha; el chevron es un icon button con fondo, abajo a la derecha */
 .jq-item__detail {
   position: absolute; right: 12px; top: 12px; font-size: 12px; font-weight: 600; line-height: 1.3;
   color: var(--accent); text-decoration: none; border-radius: var(--radius-sm); padding: 0 2px;
@@ -133,10 +140,11 @@ button.jq-item__open:focus-visible { outline: none; box-shadow: inset 0 0 0 3px 
 .jq-item__end { position: absolute; right: 12px; bottom: 12px; min-width: 28px; height: 28px; padding: 0 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: var(--accent); transition: background var(--duration-fast); }
 .jq-item__end:empty { display: none; }
 .jq-item__open:hover .jq-item__end { background: #b8340a; }
-/* Etiqueta «Ver <siguiente nivel>» que se despliega a la izquierda del chevron al pasar el cursor */
+/* Etiqueta «Ver <siguiente nivel>» que se despliega a la izquierda del chevron al pasar el cursor sobre el botón */
 .jq-item__lbl { max-width: 0; margin-right: 0; opacity: 0; overflow: hidden; white-space: nowrap; color: #fff; font-size: 12px; font-weight: 600; transition: max-width .25s ease, margin-right .25s ease, opacity .2s ease; }
-.jq-item__open:hover .jq-item__lbl, .jq-item__open:focus-visible .jq-item__lbl { max-width: 110px; margin-right: 6px; opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .jq-item__lbl { transition: none; } }
+.jq-item__open:focus-visible .jq-item__lbl { max-width: 110px; margin-right: 6px; opacity: 1; }
+@media (min-width: 1024px) { .jq-item__end:hover .jq-item__lbl { max-width: 110px; margin-right: 6px; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .jq-item__lbl, .jq-col .jq-item { transition: none !important; } }
 .jq-item__chev { flex: none; width: 16px; height: 16px; color: #fff; }
 .jq-item:not(.jq-item--deportista) .jq-node__title { padding-right: 100px; }
 .jq-item:hover .jq-item__trail { font-size: 11.5px; color: var(--text-secondary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -160,7 +168,7 @@ button.jq-item__open:focus-visible { outline: none; box-shadow: inset 0 0 0 3px 
 .jq-node__sub { font-size: 12px; color: var(--text-secondary); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jq-node__sub .jq-node__type { font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px; font-size: 10px; }
 
-/* Contadores heredados: una sola línea; el espacio de la derecha es del «Abrir detalles» */
+/* Contadores heredados: una sola línea; el espacio de la derecha es del «Ver detalles» */
 .jq-node__counts {
   display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px 44px 0 0;
   font-size: 12px; color: var(--text-secondary); font-feature-settings: 'tnum';
