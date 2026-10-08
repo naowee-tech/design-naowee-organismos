@@ -26,6 +26,7 @@ const ICONS = {
   id:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
   users:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
 };
+ICONS.level = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>';
 export function getIcon(name) { return ICONS[name] || ''; }
 
 /* ─── Roles del módulo (6 niveles de la jerarquía SND) ───
@@ -81,37 +82,55 @@ export const ROLES = {
    La bandeja (bandeja.html) cambia de etiqueta por rol (Bandeja de
    aprobaciones / Mis federaciones / Mis ligas / Mis clubes / Solicitudes
    de deportistas) pero comparte página. */
+/* Jerarquía SND con un subítem por nivel: cada uno abre las columnas con ese nivel ya abierto. */
+const NIVELES_JERARQUIA = [['comite', 'Comités'], ['federacion', 'Federaciones'], ['liga', 'Ligas'], ['club', 'Clubes'], ['deportista', 'Deportistas']];
+/* Cada rol ve los niveles que tiene debajo (Mindeporte, todos); nunca a sí mismo ni a sus ancestros. */
+const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista' };
+export function nivelesForRole(code) {
+  const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
+  return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
+}
+const jerarquiaItems = (code) => {
+  const hijos = nivelesForRole(code);
+  // Con un solo nivel debajo (club → deportistas) no hay jerarquía que explorar: sin entrada (SUV DC-036/038)
+  if (hijos.length === 1) return [];
+  return [
+    { id: 'jerarquia', label: 'Jerarquía SND', icon: 'sitemap', route: 'jerarquia.html' },
+    ...hijos.map(({ id, label }) => ({ id: `jerarquia-${id}`, label, icon: 'level', route: `jerarquia.html?nivel=${id}`, child: true }))
+  ];
+};
+
 const MENU_BY_ROLE = {
   MINDEPORTE: [
-    { section: null,        items: [{ id: 'jerarquia', label: 'Jerarquía SND',           icon: 'sitemap',  route: 'jerarquia.html' }] },
+    { section: null,        items: jerarquiaItems('MINDEPORTE') },
     { section: 'GESTIÓN',   items: [
         { id: 'bandeja',   label: 'Bandeja de aprobaciones', icon: 'inbox',    route: 'bandeja.html' },
         { id: 'registro',  label: 'Registro de organismo',   icon: 'filePlus', route: 'registro.html' }
     ] }
   ],
   COMITE: [
-    { section: null,        items: [{ id: 'jerarquia', label: 'Jerarquía SND',           icon: 'sitemap',  route: 'jerarquia.html' }] },
+    { section: null,        items: jerarquiaItems('COMITE') },
     { section: 'MI SECTOR', items: [
         { id: 'bandeja',   label: 'Mis federaciones',        icon: 'inbox',    route: 'bandeja.html' },
         { id: 'cargue',    label: 'Cargue masivo',           icon: 'upload',   route: 'cargue.html' }
     ] }
   ],
   FEDERACION: [
-    { section: null,        items: [{ id: 'jerarquia', label: 'Jerarquía SND',           icon: 'sitemap',  route: 'jerarquia.html' }] },
+    { section: null,        items: jerarquiaItems('FEDERACION') },
     { section: 'MIS LIGAS', items: [
         { id: 'bandeja',   label: 'Mis ligas',               icon: 'inbox',    route: 'bandeja.html' },
         { id: 'cargue',    label: 'Cargue masivo',           icon: 'upload',   route: 'cargue.html' }
     ] }
   ],
   LIGA: [
-    { section: null,          items: [{ id: 'jerarquia', label: 'Jerarquía SND',         icon: 'sitemap',  route: 'jerarquia.html' }] },
+    { section: null,          items: jerarquiaItems('LIGA') },
     { section: 'MIS CLUBES',  items: [
         { id: 'bandeja',   label: 'Mis clubes',              icon: 'inbox',    route: 'bandeja.html' },
         { id: 'cargue',    label: 'Cargue masivo',           icon: 'upload',   route: 'cargue.html' }
     ] }
   ],
   CLUB: [
-    { section: null,          items: [{ id: 'jerarquia', label: 'Jerarquía SND',         icon: 'sitemap',  route: 'jerarquia.html' }] },
+    { section: null,          items: jerarquiaItems('CLUB') },
     /* «Mis deportistas» (ORG-09) primero: es el plantel ya afiliado — el
        estado permanente del club. La bandeja es el trabajo pendiente. */
     { section: 'DEPORTISTAS', items: [
@@ -167,7 +186,7 @@ function renderSection(section, activeId, roleCode) {
 }
 
 function renderRow(item, activeId, roleCode) {
-  const isActive = item.id === activeId;
+  const isActive = item.id === activeId || (item.id === 'jerarquia' && String(activeId).startsWith('jerarquia-'));
   const href = hrefForItem(item, roleCode);
   const tag = href ? 'a' : 'div';
   const hrefAttr = href ? ` href="${href}"` : '';
