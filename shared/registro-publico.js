@@ -12,7 +12,7 @@
    Notas para devs (Solo demo) por paso: shared/devnotes.js.
    ═══════════════════════════════════════════════════════════════ */
 import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore } from './organismos-data.js';
-import { mountDevnotes } from './devnotes.js?v=1.5.0';
+import { mountDevnotes } from './devnotes.js?v=1.6.0';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const norm = (s) => [...String(s == null ? '' : s)].map((c) => c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()).join('');
