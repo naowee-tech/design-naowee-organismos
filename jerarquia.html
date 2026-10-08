@@ -382,7 +382,13 @@
       </section>`;
   }
 
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SLIDE = { duration: 280, easing: 'cubic-bezier(.22,.8,.3,1)' };
+  let animateNext = false;
+
   function renderColumns() {
+    const before = new Map();
+    tree.querySelectorAll('.jq-col').forEach((c) => before.set(c.dataset.depth, c.getBoundingClientRect().left));
     const levels = levelsFor(path);
     const cols = colsFor();
     const first = Math.max(0, levels.length - cols);
@@ -395,6 +401,24 @@
       // el seleccionado sube al tope de su columna (si está entre los últimos, el scroll lo frena solo)
       const sel = l.querySelector('.jq-item.is-selected');
       if (sel) l.scrollTop = sel.getBoundingClientRect().top - l.getBoundingClientRect().top;
+    });
+    if (animateNext && !REDUCED && before.size) slideColumns(before);
+    animateNext = false;
+  }
+
+  /* Todo se empuja: al abrir, el conjunto se desplaza a la izquierda; al cerrar, a la derecha */
+  function slideColumns(before) {
+    const maxBefore = Math.max(...[...before.keys()].map(Number));
+    tree.querySelectorAll('.jq-col').forEach((c) => {
+      const d = c.dataset.depth;
+      const w = c.getBoundingClientRect().width;
+      if (before.has(d)) {
+        const dx = before.get(d) - c.getBoundingClientRect().left;
+        if (Math.abs(dx) > 1) c.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], SLIDE);
+      } else {
+        const from = Number(d) > maxBefore ? w : -w;
+        c.animate([{ transform: `translateX(${from}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], SLIDE);
+      }
     });
   }
 
@@ -424,6 +448,7 @@
   }
 
   function setPath(next, focusId, moveFocus) {
+    animateNext = true;
     path = next;
     flashId = null;
     applyView();
@@ -437,7 +462,10 @@
     const closeBtn = e.target.closest('[data-close]');
     if (closeBtn) {   // cierra esta columna (y las de su derecha, que dependen de ella)
       const d = Number(closeBtn.dataset.close);
-      setPath(path.slice(0, d - 1), path[d - 1], false);
+      const out = [...tree.querySelectorAll('.jq-col')].filter((c) => Number(c.dataset.depth) >= d);
+      const done = () => setPath(path.slice(0, d - 1), path[d - 1], false);
+      if (REDUCED || !out.length) { done(); return; }
+      Promise.all(out.map((c) => c.animate([{ transform: 'none', opacity: 1 }, { transform: `translateX(${c.offsetWidth}px)`, opacity: 0 }], { duration: 200, easing: 'ease-in', fill: 'forwards' }).finished)).then(done);
       return;
     }
     const item = e.target.closest('button.jq-item__open');
