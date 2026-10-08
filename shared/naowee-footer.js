@@ -569,7 +569,29 @@ const MODULE_NAME = 'Organismos';
                wz-devnote de incentivos con secciones de sorteo).
              Recorridos HURU-01/03/04 apuntan a las tarjetas nuevas.
              Cache-busters ?v=1.5.0. */
-const MODULE_VERSION = 'v1.5.0';
+/* v1.6.0 —  PERFIL MULTI-ROL (perfil.html + shared/perfil.js +
+             shared/perfil-persona.css). Una persona, varias facetas
+             (deportista · tutor legal · personal de apoyo) en UN perfil:
+             variante A del concurso de diseño (secciones por rol en la
+             navegación) dentro del shell, con las correcciones de los jueces
+             y los injertos de B y C:
+             · Persona nueva PERSONA (Laura Gómez) en ROLES, selector y switcher.
+             · Biometría como tira compacta, solo deportista y solo en Perfil
+               y secciones de deportista. Badges de la nav = solo pendiente.
+             · Tarjeta «Pendientes» accionable en vez de «Mis roles y vínculos».
+             · Trayectoria con «Último resultado» + medallero (de C); Mis
+               menores en una tarjeta con filas, «Agregar rol» contextual y
+               «Cancelar solicitud» por fila (de B).
+             · Visor (quién mira): propio, organismo (CLUB/LIGA/FEDERACION,
+               solo lectura, jurisdicción, Aprobar/Rechazar/Desvincular sobre
+               lo suyo, estado fuera de jurisdicción), Ministerio (Consulta de
+               usuario, alias ?modo=consulta) y Comité (?visor=comite, único
+               que ve Análisis cualitativo).
+             · El sidebar del shell arranca en riel en esta página.
+             · «Mis deportistas» del club enlaza el perfil de Laura.
+             · Notas para devs por sección (inventario de suite-mf-profile).
+             Cache-busters ?v=1.6.0. */
+const MODULE_VERSION = 'v1.6.0';
 
 (function () {
   function mount() {
