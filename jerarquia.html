@@ -90,7 +90,7 @@
 <script type="module">
   import {
     getRoleFromQuery, ROLES,
-    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher
+    mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher, nivelesForRole
   } from './shared/sidebar.js';
   import {
     seedDemoData, getOrganismo, childrenOf, allDeportistas,
@@ -103,7 +103,13 @@
   const roleCode = getRoleFromQuery();
   const role = ROLES[roleCode];
 
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'jerarquia' });
+  /* Nivel de entrada (subítems del sidebar): con él las columnas abren ya posicionadas */
+  const NIVELES = ['comite', 'federacion', 'liga', 'club', 'deportista'];
+  const nivelQ = new URLSearchParams(window.location.search).get('nivel');
+  const permitidos = nivelesForRole(roleCode).map((n) => n.id);   // solo los niveles de su rol
+  const nivel = permitidos.includes(nivelQ) ? nivelQ : permitidos[0];
+
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: `jerarquia-${nivel}` });
   mountHeader({ headerEl: document.getElementById('topHeader'), role });
   mountBackdrop();
   mountDemoSwitcher({ roleCode });
@@ -311,8 +317,25 @@
     return out;
   };
 
+  /* Se parte solo de la raíz: cada nivel se abre al tocar, de uno en uno */
   const fullRoots = roots;
-  let path = [];   // se parte solo de la raíz: cada nivel se abre al tocar
+  const PLURAL = { comite: 'Comités', federacion: 'Federaciones', liga: 'Ligas', club: 'Clubes', deportista: 'Deportistas' };
+
+  /* Admin: la primera columna es el nivel pedido (lista plana). Con alcance: se entra
+     sin nada abierto: solo la lista hasta que el usuario abra un nivel. */
+  function entryState() {
+    if (roleCode === 'DEPORTISTA') {   // su cadena, hasta el club
+      return { list: fullRoots, ids: [] };
+    }
+    // Lo que está debajo de mí: el rol no se ve a sí mismo; el nivel elegido en el sidebar es la raíz
+    const base = roleCode === 'MINDEPORTE' ? fullRoots : fullRoots.flatMap((n) => n.children);
+    const collect = (list) => list.flatMap((n) => (n.tipo === nivel ? [n] : []).concat(collect(n.children)));
+    const list = collect(base);
+    return { list, ids: [] };   // se entra con la lista sola; el usuario abre cada nivel
+  }
+  const entry = entryState();
+  roots = entry.list;
+  let path = entry.ids;
   let flashId = null;
 
   const tree = document.getElementById('tree');
@@ -366,9 +389,9 @@
 
   function columnHtml(level, depth) {
     const parent = level.parent;
-    const kickerLabel = parent ? CHILD_LABEL[parent.tipo] : ({ comite: 'Comités', federacion: 'Federaciones', liga: 'Ligas', club: 'Clubes', deportista: 'Deportistas' })[level.nodes[0] ? level.nodes[0].tipo : 'comite'];
+    const kickerLabel = parent ? CHILD_LABEL[parent.tipo] : PLURAL[level.nodes[0] ? level.nodes[0].tipo : nivel];
     const kicker = `${kickerLabel}<span class="jq-col__count">${level.nodes.length}</span>`;
-    const title = parent ? parent.name : (roleCode === 'MINDEPORTE' ? 'Sistema Nacional del Deporte' : 'Inicio');
+    const title = parent ? parent.name : (roleCode === 'MINDEPORTE' ? 'Sistema Nacional del Deporte' : (fullRoots[0] ? fullRoots[0].name : 'Inicio'));
     const btnClose = depth > 0
       ? `<button type="button" class="jq-col__close" data-close="${depth}" aria-label="Cerrar ${esc(title)}" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>` : '';
     const actions = btnClose;
@@ -478,7 +501,10 @@
       searchInput.value = ''; searchBox.classList.remove('naowee-searchbox--has-value');
       currentEstado = 'todos'; estadoValue.textContent = 'Todos los estados';
       estadoMenu.querySelectorAll('.naowee-dropdown__opt').forEach((o) => o.classList.toggle('is-selected', o.dataset.value === 'todos'));
-      path = node.children.length ? anc.concat(node.id) : anc;
+        const own = roleCode !== 'MINDEPORTE' && roleCode !== 'DEPORTISTA' ? fullRoots[0] : null;
+      const trail = node.children.length ? anc.concat(node.id) : anc;
+      if (own && node.id !== own.id) { roots = own.children; path = trail.filter((id) => id !== own.id); }   // sin verme a mí
+      else { roots = fullRoots; path = trail; }
       flashId = node.id;
       applyView();
       tree.querySelector(`.jq-item__open[data-id="${CSS.escape(node.id)}"]`)?.focus({ preventScroll: true });
