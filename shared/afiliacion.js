@@ -100,6 +100,7 @@ function enJurisdiccion() {
 /* Ruta de retorno: honra `from` (§19) para cerrar el loop de navegación. */
 function volverHref() {
   if (desde === 'deportistas') return `deportistas.html?role=${encodeURIComponent(roleCode)}`;
+  if (desde === 'jerarquia') return `jerarquia.html?role=${encodeURIComponent(roleCode)}`;
   if (desde === 'bandeja') return `bandeja.html?role=${encodeURIComponent(roleCode)}`;
   return `deportistas.html?role=${encodeURIComponent(roleCode)}`;
 }
