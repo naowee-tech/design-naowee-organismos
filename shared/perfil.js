@@ -122,10 +122,11 @@ const viewer = resolveViewer();
 const own = viewer.kind === 'own';
 const third = !own;
 const canEdit = viewer.kind === 'own' || viewer.kind === 'admin';
-const personaRoles = (() => {
+const parseRoles = () => {
   const r = (qs().get('roles') || ALL_ROLES.join(',')).split(',').map((s) => s.trim()).filter((s) => ALL_ROLES.includes(s));
   return r.length ? r : ALL_ROLES.slice();
-})();
+};
+let personaRoles = parseRoles();
 const scope = viewer.orgId ? new Set([viewer.orgId, ...subtreeOf(viewer.orgId).map((o) => o.id)]) : null;
 const orgName = viewer.orgId ? (getOrganismo(viewer.orgId)?.nombre || 'tu organismo') : '';
 
@@ -207,6 +208,7 @@ function pendientes() {
 /* ─── Render ─── */
 let root;
 const DEPORTISTA_SECS = ['perfil', 'trayectoria', 'afiliaciones', 'analisis'];
+/* (la biometría vive en la franja del encabezado y solo sale en estas secciones) */
 const devnote = (k) => `<span class="wz-devnote" tabindex="0" role="button" data-devnote="${k}"></span>`;
 
 function render() {
@@ -229,12 +231,12 @@ function render() {
   }
   root.innerHTML = `
     ${renderTop()}
+    ${renderExamples()}
     ${renderHeader()}
-    <div class="mp-layout${state.section === 'perfil' ? ' mp-layout--rail-first' : ''}">
+    <div class="mp-layout">
       ${renderNav(secs)}
       ${renderPicker(secs)}
-      <div class="mp-content" id="mpContent">${renderSection(state.section)}</div>
-      ${renderRail()}
+      <div class="mp-content" id="mpContent">${state.section === 'perfil' ? renderPendientes() : ''}${renderSection(state.section)}</div>
     </div>`;
   bind();
   root.querySelectorAll('[data-tabs]').forEach((t) => { if (scrollTabs[t.dataset.tabs]) t.scrollLeft = scrollTabs[t.dataset.tabs]; });
@@ -298,6 +300,15 @@ function renderHeader() {
         <div><dt>Municipio</dt><dd>${P.muni}</dd></div>
         <div class="mp-hstrip__mail"><dt>Correo</dt><dd>${P.correo}</dd></div>
       </dl>
+      ${vr.includes('deportista') && DEPORTISTA_SECS.includes(state.section) ? `
+        <div class="mp-hbio" role="group" aria-label="Biometría, actualizada el 15/09/2026">
+          <span class="mp-hbio__t">Biometría</span>
+          <dl class="mp-bio">
+            <div><dt>Altura</dt><dd>166 cm</dd></div><div><dt>Peso</dt><dd>58 kg</dd></div>
+            <div><dt>Sangre</dt><dd>O+</dd></div><div><dt>IMC</dt><dd>21,0</dd></div>
+          </dl>
+          <span class="mp-hbio__d">Act. 15/09/2026</span>
+        </div>` : ''}
     </section>`;
 }
 
@@ -338,34 +349,37 @@ function renderPicker(secs) {
     </div>`;
 }
 
-function renderRail() {
-  const cards = [];
-  if (has('deportista') && DEPORTISTA_SECS.includes(state.section)) {
-    cards.push(`
-      <section class="mp-card mp-rcard" aria-labelledby="mpBio">
-        <h3 id="mpBio">Biometría <small>Act. 15/09/2026</small></h3>
-        <p class="mp-bio" aria-label="Altura 166 cm, peso 58 kg, tipo de sangre O+, IMC 21,0">
-          <span aria-hidden="true" title="Altura"><b>166</b> cm</span><span aria-hidden="true" title="Peso"><b>58</b> kg</span><span aria-hidden="true" title="Tipo de sangre"><b>O+</b></span><span aria-hidden="true" title="Índice de masa corporal">IMC <b>21,0</b></span>
-        </p>
-      </section>`);
-  }
+/* Pendientes: bloque compacto arriba del contenido (solo perfil propio). */
+function renderPendientes() {
   const pend = pendientes();
-  if (pend.length) {
-    cards.push(`
-      <section class="mp-card mp-rcard" aria-labelledby="mpPend">
-        <h3 id="mpPend">Pendientes <small>${pend.length}</small></h3>
-        <ul class="mp-pendl">
-          ${pend.map((p) => `
-            <li><div><strong>${esc(p.t)}</strong><span class="mp-pendl__sub">${esc(p.sub)}</span></div>
-              <div class="mp-pendl__acts">${pill(p.estado)}
-                ${p.act === 'cancel'
-                  ? `<button class="mp-link" type="button" data-cancel="${p.kind}:${p.id}">Cancelar solicitud</button>`
-                  : `<button class="mp-link" type="button" data-go="${p.go}">Ver</button>`}</div></li>`).join('')}
-        </ul>
-        <div class="mp-rcard__foot">${devnote('pendientes')}</div>
-      </section>`);
-  }
-  return `<aside class="mp-rail" aria-label="Resumen"${cards.length ? '' : ' hidden'}>${cards.join('')}</aside>`;
+  if (!pend.length) return '';
+  const MAX = 3;
+  const shown = state.pendOpen ? pend : pend.slice(0, MAX);
+  return `
+    <section class="mp-card mp-pend-card" aria-labelledby="mpPend">
+      <div class="mp-pend-card__h"><h2 id="mpPend">Pendientes <span class="mp-pend-card__n">· ${pend.length}</span></h2>${devnote('pendientes')}</div>
+      <ul class="mp-pendl">
+        ${shown.map((p) => `
+          <li><div class="mp-pendl__tx"><strong>${esc(p.t)}</strong><span class="mp-pendl__sub">${esc(p.sub)}</span></div>
+            ${pill(p.estado)}
+            ${p.act === 'cancel'
+              ? `<button class="mp-link" type="button" data-cancel="${p.kind}:${p.id}">Cancelar solicitud</button>`
+              : `<button class="mp-link" type="button" data-go="${p.go}">Ver</button>`}</li>`).join('')}
+      </ul>
+      ${pend.length > MAX ? `<button class="mp-link mp-pend-card__more" type="button" data-pend-toggle aria-expanded="${!!state.pendOpen}">${state.pendOpen ? 'Ver menos' : `Ver ${pend.length - MAX} más`}</button>` : ''}
+    </section>`;
+}
+
+/* Solo demo: ejemplos de una persona con uno o varios roles (perfil propio). */
+const EJEMPLOS = [['deportista,tutor,apoyo', 'Multi-rol'], ['deportista', 'Solo deportista'], ['tutor', 'Solo tutor legal'], ['apoyo', 'Solo personal de apoyo']];
+function renderExamples() {
+  if (!own) return '';
+  const cur = personaRoles.join(',');
+  return `
+    <div class="mp-demo" role="group" aria-label="Solo demo: ver ejemplo">
+      <span class="naowee-badge">Solo demo</span><span class="mp-demo__l">Ver ejemplo:</span>
+      <div class="mp-demo__seg">${EJEMPLOS.map(([v, l]) => `<button type="button" data-ejemplo="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>
+    </div>`;
 }
 
 function secHead({ group, id, title, desc, acts = '', note }) {
@@ -665,6 +679,16 @@ function bind() {
     state.activa = !state.activa; render(); toast(state.activa ? 'Cuenta activada.' : 'Cuenta inactivada.');
   }));
   root.querySelectorAll('[data-addrole]').forEach((b) => b.addEventListener('click', openAddRole));
+  root.querySelector('[data-pend-toggle]')?.addEventListener('click', () => { state.pendOpen = !state.pendOpen; render(); root.querySelector('[data-pend-toggle]')?.focus(); });
+  root.querySelectorAll('[data-ejemplo]').forEach((b) => b.addEventListener('click', () => {
+    const u = qs();
+    if (b.dataset.ejemplo === ALL_ROLES.join(',')) u.delete('roles'); else u.set('roles', b.dataset.ejemplo);
+    history.replaceState(null, '', '?' + u.toString());
+    personaRoles = parseRoles();
+    state.editing = null;
+    render();
+    root.querySelector(`[data-ejemplo="${b.dataset.ejemplo}"]`)?.focus();
+  }));
   root.querySelectorAll('[data-soon]').forEach((b) => b.addEventListener('click', () => toast(`${b.dataset.soon}: disponible en una próxima fase de la demo.`)));
 }
 
@@ -747,7 +771,7 @@ const DEVNOTES = {
   ] },
   perfil: { title: 'Perfil · datos personales', sections: [
     { title: 'Hoy en el perfil migrado', items: ['Datos de <code>GET /v1/user/{code}</code>; guardado con <code>PATCH /v1/user/{code}</code> enviando <code>individual_data</code> (permiso <code>user:update_athlete</code>).', 'Ya muestra secciones por <code>roles.includes(...)</code> (multi-rol listo para gating), pero la etiqueta del encabezado usa <code>roles[0]</code>. Las vistas viejas (perfil propio y "Consulta de usuario") usan <code>roles[0]</code> en todo.', 'La biometría sale a cualquiera, vacía si no es deportista.'] },
-    { title: 'Qué cambia', items: ['Encabezado con todos los roles como chips (sin selector de rol). Datos comunes una sola vez: «Son los mismos para todos tus roles».', 'Biometría como tira compacta, solo con rol deportista y solo en Perfil y en las secciones de deportista.', '«Editar» es un botón secundario neutro; el naranja queda para lo activo y «Agregar rol».'] },
+    { title: 'Qué cambia', items: ['Encabezado con todos los roles como chips (sin selector de rol). Datos comunes una sola vez: «Son los mismos para todos tus roles».', 'Biometría como grupo compacto en la franja del encabezado, solo con rol deportista y solo en Perfil y en las secciones de deportista.', '«Editar» es un botón secundario neutro; el naranja queda para lo activo y «Agregar rol».'] },
     { title: 'Qué falta en el back', items: ['Nada para los datos; el encabezado debe leer <code>roles[]</code> completo en vez de <code>roles[0]</code>.'] }
   ] },
   trayectoria: { title: 'Trayectoria', sections: [
@@ -776,8 +800,8 @@ const DEVNOTES = {
     { title: 'Qué falta en el back', items: ['Entidad de vínculo persona–organismo (estado, fechas, quién aprueba) y rol de apoyo multi-valor.'] }
   ] },
   pendientes: { title: 'Pendientes', sections: [
-    { title: 'Hoy en el perfil migrado', items: ['No existe. El riel tenía Biometría y «Rol / Principal».'] },
-    { title: 'Qué cambia', items: ['Reemplaza a «Mis roles y vínculos» (repetía los roles por tercera vez). Solo lista lo que espera algo, con su acción; sin pendientes no se muestra. Solo en el perfil propio.'] },
+    { title: 'Hoy en el perfil migrado', items: ['No existe. El riel derecho tenía Biometría y «Rol / Principal».'] },
+    { title: 'Qué cambia', items: ['Reemplaza a «Mis roles y vínculos» (repetía los roles por tercera vez). Bloque compacto arriba de los datos: solo lo que espera algo, una fila por pendiente con su acción; se colapsa si son más de 3 y sin pendientes no se muestra. Solo en el perfil propio.'] },
     { title: 'Qué falta en el back', items: ['Se arma con las afiliaciones, los vínculos y los menores; no necesita endpoint propio si esos tres existen.'] }
   ] },
   consulta: { title: 'Consulta de usuario (administrador)', sections: [

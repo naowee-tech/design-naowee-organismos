@@ -576,9 +576,12 @@ const MODULE_NAME = 'Organismos';
              navegación) dentro del shell, con las correcciones de los jueces
              y los injertos de B y C:
              · Persona nueva PERSONA (Laura Gómez) en ROLES, selector y switcher.
-             · Biometría como tira compacta, solo deportista y solo en Perfil
-               y secciones de deportista. Badges de la nav = solo pendiente.
-             · Tarjeta «Pendientes» accionable en vez de «Mis roles y vínculos».
+             · Biometría como grupo compacto en la franja del encabezado, solo
+               deportista y solo en Perfil y secciones de deportista. Badges de
+               la nav = solo pendiente. Columna izquierda = solo la nav (sticky).
+             · Bloque «Pendientes» accionable arriba de los datos (una fila por
+               pendiente, colapsable) en vez de «Mis roles y vínculos».
+             · Solo demo: «Ver ejemplo» multi-rol / un solo rol (?roles=).
              · Trayectoria con «Último resultado» + medallero (de C); Mis
                menores en una tarjeta con filas, «Agregar rol» contextual y
                «Cancelar solicitud» por fila (de B).
