@@ -60,7 +60,8 @@ export function resolveViewer() {
   else if (ORG_ROLES.includes(role)) { kind = 'org'; shellRole = role; }
   else if (comite) { kind = 'comite'; shellRole = 'COMITE'; }
   const orgId = kind === 'org' ? scopeFor(role) : null;
-  return { kind, shellRole, orgId, analisis: comite };
+  /* Análisis cualitativo: solo Comité Olímpico y ROOT; nunca el Ministerio ni otro organismo. */
+  return { kind, shellRole, orgId, analisis: kind === 'comite' };
 }
 
 /* ─── Datos de la persona (brief) ─── */
@@ -131,7 +132,7 @@ const scope = viewer.orgId ? new Set([viewer.orgId, ...subtreeOf(viewer.orgId).m
 const orgName = viewer.orgId ? (getOrganismo(viewer.orgId)?.nombre || 'tu organismo') : '';
 
 const state = {
-  section: qs().get('seccion') || 'perfil',
+  section: (qs().get('seccion') === 'analisis' && !resolveViewer().analisis) ? 'perfil' : (qs().get('seccion') || 'perfil'),
   tab: { perfil: 'datos', tray: 'tr', eval: 0 },
   editing: null,
   activa: true,
