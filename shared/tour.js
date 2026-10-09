@@ -236,6 +236,7 @@
     });
     p.innerHTML = html;
     document.body.appendChild(b); document.body.appendChild(p);
+    var ds = document.getElementById('demoSwitcher'); if (ds) p.insertBefore(ds, p.querySelector('.tt-panel-sub'));
     var sw = p.querySelector('#ttDevSwitch');
     sw.onclick = function (e) { e.stopPropagation(); var show = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', show ? 'true' : 'false'); applyDevnotes(!show); };
     p.querySelectorAll('.tt-item').forEach(function (it) {

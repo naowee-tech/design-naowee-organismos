@@ -598,6 +598,7 @@ const MODULE_VERSION = 'v1.6.0';
 
 (function () {
   function mount() {
+    return; // DC-062: sin pastilla de derechos en las demos
     if (document.querySelector('.naowee-footer')) return;
     const year = new Date().getFullYear();
     const el = document.createElement('div');
