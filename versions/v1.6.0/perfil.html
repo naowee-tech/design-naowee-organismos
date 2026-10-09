@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil — Naowee Organismos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/naowee-ds-tokens.css?v=1.6.0">
+<link rel="stylesheet" href="shared/tokens.css?v=1.6.0">
+<link rel="stylesheet" href="shared/shell.css?v=1.6.0">
+<link rel="stylesheet" href="shared/components.css?v=1.6.0">
+<link rel="stylesheet" href="shared/perfil-persona.css?v=1.6.0">
+<link rel="stylesheet" href="shared/devnotes.css?v=1.6.0">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=1.6.0">
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner">
+        <div id="perfilRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { ROLES, mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher } from './shared/sidebar.js';
+  import { seedDemoData } from './shared/organismos-data.js';
+  seedDemoData();
+  const { resolveViewer, mountPerfil } = await import('./shared/perfil.js?v=1.6.0');
+  /* El shell muestra a QUIEN MIRA (visor), no a la persona del perfil. */
+  const viewer = resolveViewer();
+  const roleCode = viewer.shellRole;
+  const activeId = roleCode === 'PERSONA' ? 'perfil' : roleCode === 'CLUB' ? 'deportistas' : null;
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId });
+  /* En escritorio el sidebar del shell arranca en riel de íconos: así la
+     navegación agrupada del perfil es la única vertical expandida. No se
+     escribe la preferencia guardada; si la persona lo expande, sí queda. */
+  if (window.matchMedia('(min-width: 1024px)').matches) document.getElementById('naoweeSidebar')?.classList.add('collapsed');
+  mountHeader({ headerEl: document.getElementById('topHeader'), role: ROLES[roleCode] });
+  mountBackdrop();
+  mountDemoSwitcher({ roleCode });
+  mountPerfil(document.getElementById('perfilRoot'));
+</script>
+<script src="shared/naowee-footer.js?v=1.6.0"></script>
+<script src="shared/tour.js?v=1.6.0"></script>
+
+</body>
+</html>

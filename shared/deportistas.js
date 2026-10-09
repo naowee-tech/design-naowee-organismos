@@ -279,6 +279,16 @@ if (root) {
         : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. Registra deportistas y asócialos a la cadena de organismos que tienes debajo.`,
         'margin-bottom:16px')}
 
+      ${esClub && club && club.id === 'CLU-001' ? `
+        <div class="naowee-card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:16px">
+          <span aria-hidden="true" style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;background:#0e749022;color:#0e7490;font-weight:700;font-size:13px">LG</span>
+          <div style="flex:1;min-width:200px">
+            <div class="bj-org__name">Laura Gómez · deportista y entrenadora</div>
+            <div class="bj-org__sub">Afiliada a tu club como deportista y con un vínculo solicitado como personal de apoyo. Perfil multi-rol (v1.6.0).</div>
+          </div>
+          <a class="naowee-btn naowee-btn--mute naowee-btn--small" href="perfil.html?role=CLUB&persona=laura&from=${encodeURIComponent('deportistas.html?role=CLUB')}">Ver perfil</a>
+        </div>` : ''}
+
       ${kpis(rows)}
 
       <div class="naowee-card bj-panel">

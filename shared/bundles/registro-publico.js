@@ -193,7 +193,7 @@
     return { ...record };
   }
 
-  // shared/devnotes.js?v=1.5.0
+  // shared/devnotes.js?v=1.6.0
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;

@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const entries = {
   index: 'shared/entries/index.js', bandeja: 'shared/entries/bandeja.js', deportistas: 'shared/entries/deportistas.js',
   cargue: 'shared/entries/cargue.js', registro: 'shared/entries/registro.js', 'organismo-detalle': 'shared/entries/organismo-detalle.js',
-  jerarquia: 'shared/entries/jerarquia.js', afiliacion: 'shared/afiliacion.js', 'registro-publico': 'shared/registro-publico.js'
+  jerarquia: 'shared/entries/jerarquia.js', perfil: 'shared/entries/perfil.js', afiliacion: 'shared/afiliacion.js', 'registro-publico': 'shared/registro-publico.js'
 };
 esbuild.build({
   entryPoints: Object.fromEntries(Object.entries(entries).map(([k, v]) => [k, path.join(root, v)])),

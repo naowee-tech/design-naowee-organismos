@@ -28,6 +28,7 @@
   function homeForRole(code) {
     if (code === "CLUB") return "bandeja.html";
     if (code === "DEPORTISTA") return "afiliacion.html";
+    if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
   function hrefForItem(item, roleCode2) {
@@ -369,6 +370,7 @@
         check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
         refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
         id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
+        user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
         users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
       };
       ICONS.user = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
@@ -453,6 +455,20 @@
           short: "Gestiona su afiliaci\xF3n a un club deportivo",
           group: "Personas",
           deportistaId: "DEP-001"
+        },
+        /* v1.6.0 · perfil multi-rol: una persona con varias facetas
+           (deportista + tutora legal + personal de apoyo) en un solo perfil. */
+        PERSONA: {
+          code: "PERSONA",
+          label: "Persona multi-rol",
+          userName: "Laura G\xF3mez",
+          userEmail: "laura.gomez@correo.co",
+          userDoc: "CC 1.032.987.456",
+          org: "\u2014",
+          avatar: "LG",
+          color: "#0e7490",
+          short: "Deportista, tutora legal y entrenadora: un solo perfil",
+          group: "Personas"
         }
       };
       NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
@@ -532,6 +548,9 @@
             { id: "afiliacion-notif", label: "Notificaciones", icon: "bell", route: "afiliacion.html?sec=notif" },
             { id: "afiliacion-seguridad", label: "Seguridad", icon: "shield", route: "afiliacion.html?sec=seguridad" }
           ] }
+        ],
+        PERSONA: [
+          { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
         ]
       };
       _toastTimer = null;
@@ -542,7 +561,7 @@
         { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
         { label: "Cabezas de sector", codes: ["COMITE"] },
         { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
-        { label: "Personas", codes: ["DEPORTISTA"] }
+        { label: "Personas", codes: ["DEPORTISTA", "PERSONA"] }
       ];
     }
   });
@@ -1453,6 +1472,16 @@
             esClub ? `Deportistas con afiliaci\xF3n <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : "tu club")}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club \u2192 liga \u2192 federaci\xF3n \u2192 comit\xE9) que el deportista recibi\xF3 al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliaci\xF3n y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode2)}">Solicitudes de deportistas</a>.` : `Deportistas vinculados a clubes de tu jurisdicci\xF3n${club ? ` (<strong>${esc(club.nombre)}</strong> y su sub\xE1rbol)` : ""}. Registra deportistas y as\xF3cialos a la cadena de organismos que tienes debajo.`,
             "margin-bottom:16px"
           )}
+
+      ${esClub && club && club.id === "CLU-001" ? `
+        <div class="naowee-card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;margin-bottom:16px">
+          <span aria-hidden="true" style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;background:#0e749022;color:#0e7490;font-weight:700;font-size:13px">LG</span>
+          <div style="flex:1;min-width:200px">
+            <div class="bj-org__name">Laura G\xF3mez \xB7 deportista y entrenadora</div>
+            <div class="bj-org__sub">Afiliada a tu club como deportista y con un v\xEDnculo solicitado como personal de apoyo. Perfil multi-rol (v1.6.0).</div>
+          </div>
+          <a class="naowee-btn naowee-btn--mute naowee-btn--small" href="perfil.html?role=CLUB&persona=laura&from=${encodeURIComponent("deportistas.html?role=CLUB")}">Ver perfil</a>
+        </div>` : ""}
 
       ${kpis(rows)}
 
