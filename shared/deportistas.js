@@ -28,7 +28,8 @@
    (.dp-*) por override pattern: el DS no tiene stat-card (§33).
    ═══════════════════════════════════════════════════════════════ */
 import {
-  getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub
+  getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub,
+  childrenOf, ancestorsOf, registrarDeportista, asociarDeportista, faltaAsociar
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
@@ -41,6 +42,7 @@ if (root) {
   const scopeId = scopeFor(roleCode);
   const puedeVer = can(roleCode, 'R', 'deportistas');
   const esClub = roleCode === 'CLUB';
+  const puedeCrear = can(roleCode, 'C', 'deportistas');
 
   /* ─── Utilidades ─── */
   const esc = (s) => String(s == null ? '' : s)
@@ -63,12 +65,16 @@ if (root) {
     chevR:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
     close:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
     chevron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+    link:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.7-1.7"/></svg>',
+    plus:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
     check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
   };
 
   /* Estado de vinculación — mapa semántico ÚNICO del módulo. */
-  const EST_VARIANT = { vinculado: 'positive', autodeclarado: 'neutral' };
-  const EST_LABEL = { vinculado: 'Vinculado', autodeclarado: 'Autodeclarado' };
+  const EST_VARIANT = { vinculado: 'positive', autodeclarado: 'neutral', registrado: 'caution' };
+  const EST_LABEL = { vinculado: 'Vinculado', autodeclarado: 'Autodeclarado', registrado: 'Sin asociar' };
+  const NIVEL_LBL = { federacion: 'federación', liga: 'liga', club: 'club' };
   const estBadge = (e) => `<span class="naowee-badge naowee-badge--${EST_VARIANT[e] || 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(EST_LABEL[e] || e)}</span>`;
 
   /* Categoría (tier) = dimensión distinta al estado → NO compite en color:
@@ -98,9 +104,10 @@ if (root) {
   /* ─── Plantel: semilla delgada + perfil derivado (edad/categoría/medallas) ─── */
   function plantel() {
     return deportistasOf(scopeId).map((d) => {
-      const p = buildDeportistaDetalle(d);
+      let p = null;
+      try { p = buildDeportistaDetalle(d); } catch (_) { /* registrado sin perfil derivado */ }
       return {
-        id: d.id, nombre: d.nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc,
+        faltan: faltaAsociar(d), id: d.id, nombre: d.nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc,
         deporte: d.deporte, modalidad: d.modalidad || '—', estado: d.estado,
         edad: p ? p.edad : null, cat: p ? p.tierLabel : '—',
         emoji: p ? p.deporteEmoji : '🏅', medallas: p ? p.medalleria.length : 0
@@ -141,6 +148,12 @@ if (root) {
       { k: 'ok', ico: I.medal, val: conMedalla, lbl: 'Con medallería registrada' },
       { k: menores ? 'warn' : 'neutral', ico: I.minor, val: menores, lbl: menores === 1 ? 'Menor de edad' : 'Menores de edad', sub: menores ? 'Requieren consentimiento del tutor' : '' }
     ];
+    const sinAsociar = rows.filter((r) => r.estado === 'registrado').length;
+    if (puedeCrear && !esClub) {
+      tiles.push({ k: sinAsociar ? 'warn' : 'neutral', ico: I.link, val: sinAsociar,
+        lbl: sinAsociar === 1 ? 'Pendiente de asociar' : 'Pendientes de asociar',
+        sub: sinAsociar ? 'Completa su cadena de organismos' : '' });
+    }
     /* Solicitudes por confirmar SOLO para el club: es su bandeja (ORG-08). */
     if (esClub && scopeId) {
       const pend = solicitudesDeClub(scopeId).filter((s) => s.estado === 'Enviada').length;
@@ -262,8 +275,8 @@ if (root) {
 
     root.innerHTML = `
       ${msg('informative', I.info, esClub
-        ? `Deportistas con afiliación <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club → liga → federación → comité) que el deportista recibió al ser aprobado (ORG-05). Esta vista es de <strong>consulta</strong>: las afiliaciones y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode)}">Solicitudes de deportistas</a>.`
-        : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. Vista de <strong>consulta</strong> heredada de la jerarquía.`,
+        ? `Deportistas con afiliación <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club → liga → federación → comité) que el deportista recibió al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliación y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode)}">Solicitudes de deportistas</a>.`
+        : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. Registra deportistas y asócialos a la cadena de organismos que tienes debajo.`,
         'margin-bottom:16px')}
 
       ${kpis(rows)}
@@ -282,7 +295,6 @@ if (root) {
           ${filtroDropdown('deporte', 'Deporte', deportes, fDeporte)}
           ${filtroDropdown('modalidad', 'Modalidad', modalidades, fModalidad)}
           ${filtroDropdown('categoria', 'Categoría', categorias, fCategoria)}
-          <span class="bj-count">${view.length} de ${rows.length}</span>
         </div>
 
         ${pageRows.length ? `
@@ -312,8 +324,9 @@ if (root) {
                     </td>
                     <td data-label="Categoría">${catBadge(r.cat)}</td>
                     <td class="cg-table__nit" data-label="Edad">${r.edad != null ? `${r.edad} años` : '—'}${r.edad != null && r.edad < 18 ? ` <span class="dp-minor" title="Menor de edad — requiere consentimiento del tutor">menor</span>` : ''}</td>
-                    <td data-label="Estado">${estBadge(r.estado)}</td>
+                    <td data-label="Estado">${estBadge(r.estado)}${r.faltan.length ? `<div class="bj-org__sub dp-falta">Falta: ${esc(r.faltan.map((n) => NIVEL_LBL[n]).join(' → '))}</div>` : ''}</td>
                     <td class="bj-row-action" data-label="">
+                      ${r.faltan.length && puedeCrear ? `<button type="button" class="naowee-btn naowee-btn--small" data-asoc="${esc(r.id)}">Completar asociación</button>` : ''}
                       <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-ficha="${esc(r.id)}">Ver ficha</button>
                       ${puedeDesvincular && r.estado === 'vinculado'
                         ? `<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small dp-btn-danger" data-desv="${esc(r.id)}">Desvincular</button>`
@@ -345,7 +358,19 @@ if (root) {
                 : 'Todavía no hay deportistas vinculados a clubes de tu jurisdicción.'))}
       </div>`;
 
+    pintarAcciones();
     wire();
+  }
+
+  /* Acciones en el encabezado, a la derecha del título (fuera del re-render de la tabla). */
+  function pintarAcciones() {
+    const box = document.getElementById('dpActions');
+    if (!box || !puedeCrear || box.querySelector('#dpNuevo')) return;
+    box.insertAdjacentHTML('beforeend', `
+      <button type="button" class="naowee-btn naowee-btn--quiet" id="dpMasivo">${I.upload}Cargue masivo de deportistas</button>
+      <button type="button" class="naowee-btn naowee-btn--loud" id="dpNuevo">${I.plus}Registrar deportista</button>`);
+    document.getElementById('dpNuevo').addEventListener('click', () => openRegistro());
+    document.getElementById('dpMasivo').addEventListener('click', openMasivo);
   }
 
   /* ─── Modal de desvinculación (ORG-10) ───
@@ -460,6 +485,148 @@ if (root) {
     });
   }
 
+  /* ─── Registrar → Asociar (dos momentos, visibles en el modal) ───
+     Lo de arriba del actor viene fijo; lo de abajo se elige en cascada. */
+  const DEPORTES = ['Patinaje', 'Natación', 'Fútbol', 'Ciclismo'];
+  const NIVELES_ABAJO = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [] };
+  const TIPO_LBL = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
+
+  function openRegistro(depId) {
+    const actor = getOrganismo(scopeId);
+    if (!actor) return;
+    const existente = depId ? getDeportista(depId) : null;
+    const abajo = NIVELES_ABAJO[actor.tipo] || [];
+    const fijos = [...ancestorsOf(actor.id).reverse(), actor];
+    const st = {
+      step: existente ? 2 : 1, id: existente ? existente.id : null, err: '',
+      d: { nombre: '', tipoDoc: 'CC', numDoc: '', deporte: DEPORTES[0], correo: '' },
+      sel: { ...((existente && existente.asocParcial) || {}) }
+    };
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay dp-modal-ov';
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    const cerrar = () => {
+      ov.classList.remove('is-open');
+      setTimeout(() => ov.remove(), 340);
+      document.removeEventListener('keydown', onKey);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') cerrar(); };
+    document.addEventListener('keydown', onKey);
+
+    const opciones = (tipo) => {
+      const padre = tipo === 'federacion' ? actor.id : tipo === 'liga' ? (st.sel.federacionId || (actor.tipo === 'federacion' ? actor.id : null)) : (st.sel.ligaId || (actor.tipo === 'liga' ? actor.id : null));
+      return padre ? childrenOf(padre).filter((o) => o.tipo === tipo && o.estado === 'Activo') : [];
+    };
+    const dd = (key, tipo) => {
+      const ops = opciones(tipo);
+      const cur = ops.find((o) => o.id === st.sel[`${tipo}Id`]);
+      return `<div class="dp-desv__field">
+        <span class="bj-filter__lbl">${TIPO_LBL[tipo]}</span>
+        <div class="naowee-dropdown dp-desv__dd" data-dd="${tipo}">
+          <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"${ops.length ? '' : ' disabled'}>
+            <span class="naowee-dropdown__value${cur ? '' : ' is-placeholder'}">${esc(cur ? cur.nombre : (ops.length ? 'Seleccione…' : 'Elige primero el nivel anterior'))}</span>
+            <span class="naowee-dropdown__chevron">${I.chevron}</span>
+          </button>
+          <div class="naowee-dropdown__menu" role="listbox">
+            ${ops.map((o) => `<div class="naowee-dropdown__opt${cur && cur.id === o.id ? ' is-selected' : ''}" role="option" data-value="${esc(o.id)}">${esc(o.nombre)}<span class="naowee-dropdown__opt-check">${I.check}</span></div>`).join('')}
+          </div>
+        </div></div>`;
+    };
+    const campo = (id, label, val, type) => `<div class="dp-desv__field">
+      <label class="bj-filter__lbl" for="${id}">${label} <span aria-hidden="true">*</span></label>
+      <div class="naowee-textfield"><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="${id}" type="${type || 'text'}" value="${esc(val)}"></div></div></div>`;
+
+    function draw() {
+      const pasos = ['Registro', 'Asociación'].map((t, i) => {
+        const n = i + 1; const estado = st.step > n ? 'done' : st.step === n ? 'on' : '';
+        return `<li class="dp-step ${estado ? `dp-step--${estado}` : ''}"><span class="dp-step__n">${estado === 'done' ? I.check : n}</span>${t}</li>`;
+      }).join('<li class="dp-step__sep" aria-hidden="true"></li>');
+      const nombre = existente ? existente.nombre : st.d.nombre;
+      ov.innerHTML = `
+      <div class="reg-modal bj-modal bj-modal--overflow dp-desv">
+        <div class="reg-modal__head">
+          <h3 class="reg-modal__title">${existente ? 'Completar asociación' : 'Registrar deportista'}</h3>
+          <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
+        </div>
+        <div class="reg-modal__body">
+          <ol class="dp-steps">${pasos}</ol>
+          ${st.step === 1 ? `
+            ${campo('rdNombre', 'Nombre completo', st.d.nombre)}
+            ${campo('rdDoc', 'Número de documento', st.d.numDoc)}
+            ${campo('rdCorreo', 'Correo electrónico', st.d.correo, 'email')}
+            <div class="dp-desv__field"><span class="bj-filter__lbl">Deporte</span>
+              <div class="naowee-dropdown dp-desv__dd" data-dd="deporte"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">${esc(st.d.deporte)}</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
+              <div class="naowee-dropdown__menu" role="listbox">${DEPORTES.map((x) => `<div class="naowee-dropdown__opt${x === st.d.deporte ? ' is-selected' : ''}" role="option" data-value="${x}">${x}<span class="naowee-dropdown__opt-check">${I.check}</span></div>`).join('')}</div></div></div>
+            <p class="bj-detail__note">Momento 1 de 2: el deportista queda registrado. Luego lo asocias a la cadena de organismos (puedes dejarlo para después).</p>`
+          : `
+            ${msg('informative', I.info, `Momento 2 de 2: asocia a <strong>${esc(nombre)}</strong>. Lo de arriba ya viene de dónde entraste y no se cambia.`)}
+            <div class="dp-chain">${fijos.map((o) => `<span class="dp-chain__chip" title="Fijo: según tu organismo">${esc(TIPO_LBL[o.tipo])} · ${esc(o.nombre)}</span>`).join('')}</div>
+            ${abajo.map((t) => dd(t, t)).join('') || '<p class="bj-detail__note">Como club, el deportista queda asociado a tu club automáticamente.</p>'}`}
+          ${st.err ? `<p class="naowee-helper dp-desv__err">${esc(st.err)}</p>` : ''}
+        </div>
+        <div class="reg-modal__foot bj-modal__foot">
+          <button type="button" class="naowee-btn naowee-btn--mute" data-close>${st.step === 2 ? 'Asociar después' : 'Cancelar'}</button>
+          <button type="button" class="naowee-btn" id="rdOk">${st.step === 1 ? 'Registrar y continuar' : 'Guardar asociación'}</button>
+        </div>
+      </div>`;
+    }
+
+    ov.addEventListener('click', (e) => {
+      if (e.target === ov || e.target.closest('[data-close]')) {
+        if (st.id) render();
+        cerrar(); return;
+      }
+      const opt = e.target.closest('.naowee-dropdown__opt');
+      const trg = e.target.closest('.naowee-dropdown__trigger');
+      if (opt) {
+        const key = opt.closest('[data-dd]').getAttribute('data-dd'); const v = opt.getAttribute('data-value');
+        if (key === 'deporte') st.d.deporte = v;
+        else { st.sel[`${key}Id`] = v; if (key === 'federacion') { delete st.sel.ligaId; delete st.sel.clubId; } if (key === 'liga') delete st.sel.clubId; }
+        leer(); draw(); return;
+      }
+      ov.querySelectorAll('.naowee-dropdown').forEach((d) => {
+        const abre = trg && d.contains(trg) && !d.classList.contains('naowee-dropdown--open');
+        d.classList.toggle('naowee-dropdown--open', !!abre);
+      });
+      if (e.target.closest('#rdOk')) avanzar();
+    });
+    const leer = () => {
+      if (st.step !== 1) return;
+      st.d.nombre = ov.querySelector('#rdNombre')?.value.trim() ?? st.d.nombre;
+      st.d.numDoc = ov.querySelector('#rdDoc')?.value.trim() ?? st.d.numDoc;
+      st.d.correo = ov.querySelector('#rdCorreo')?.value.trim() ?? st.d.correo;
+    };
+    function avanzar() {
+      leer(); st.err = '';
+      if (st.step === 1) {
+        if (!st.d.nombre || !st.d.numDoc || !/.+@.+\..+/.test(st.d.correo)) { st.err = 'Completa nombre, documento y un correo válido.'; draw(); return; }
+        const dep = registrarDeportista(st.d, actor.id);
+        st.id = dep.id; st.step = 2;
+        if (!abajo.length) { render(); cerrar(); toast(`${dep.nombre} quedó registrado y asociado a tu club.`); return; }
+        render(); draw(); return;
+      }
+      const falta = abajo.filter((t) => !st.sel[`${t}Id`]);
+      const dep = asociarDeportista(st.id, st.sel);
+      render(); cerrar();
+      toast(falta.length ? `${dep.nombre}: asociación parcial, falta ${falta.map((t) => NIVEL_LBL[t]).join(' y ')}.` : `${dep.nombre} quedó asociado.`);
+    }
+    draw();
+  }
+  const toast = (t) => { if (window.naoweeToast) window.naoweeToast(t, 'success'); };
+
+  /* Cargue masivo de deportistas: entrada lista, la carga llega después. */
+  function openMasivo() {
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay dp-modal-ov';
+    ov.innerHTML = `<div class="reg-modal bj-modal bj-modal--sm"><div class="reg-modal__head"><h3 class="reg-modal__title">Cargue masivo de deportistas</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button></div>
+      <div class="reg-modal__body">${msg('informative', I.info, 'Próximamente: subirás una plantilla .xlsx con los deportistas y la asociación quedará como segundo paso, igual que en el registro manual.')}</div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn" data-close>Entendido</button></div></div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) { ov.classList.remove('is-open'); setTimeout(() => ov.remove(), 340); } });
+  }
+
   /* ─── Wiring ─── */
   function wire() {
     const search = document.getElementById('dpSearch');
@@ -488,6 +655,9 @@ if (root) {
       });
     });
 
+    document.querySelectorAll('[data-asoc]').forEach((b) => {
+      b.addEventListener('click', () => openRegistro(b.getAttribute('data-asoc')));
+    });
     document.querySelectorAll('[data-desv]').forEach((b) => {
       b.addEventListener('click', () => openDesvincular(b.getAttribute('data-desv')));
     });

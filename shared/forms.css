@@ -576,8 +576,7 @@
 /* Panel unificado: searchbox + count + tabs + tabla en una sola card. */
 .bj-panel { padding: 0; overflow: hidden; }
 .bj-panel__bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px 12px; }
-.bj-search { flex: 1 1 240px; min-width: 200px; max-width: 420px; }
-.bj-count { font-size: 12.5px; color: var(--text-secondary); margin-left: auto; white-space: nowrap; }
+.bj-search { flex: 1 1 240px; min-width: 200px; }
 .bj-tabs { padding: 0 8px; }
 /* La tabla dentro de un panel sin padding necesita aire: el header gris redondeado
    debe respirar respecto al divisor de los tabs (patrón table-card establecido). */
@@ -714,7 +713,6 @@
 
 @media (max-width: 760px) {
   .bj-panel__bar { align-items: stretch; }
-  .bj-count { margin-left: 0; }
   .bj-kv { grid-template-columns: 1fr; gap: 2px 0; }
   .bj-kv__row dt { margin-top: 8px; }
   .bj-actions { justify-content: stretch; }

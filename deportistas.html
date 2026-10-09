@@ -25,10 +25,14 @@
     <header class="top-header" id="topHeader"></header>
     <div class="page">
       <div class="page-inner">
-        <div class="page-head">
-          <span class="wz-devnote" tabindex="0" role="button" data-devnote="clubTitulo" style="display:none"></span>
-          <h1 class="page-head__title" id="pageTitle">Mis deportistas</h1>
-          <p class="page-head__sub" id="pageSub">Plantel con afiliación confirmada a tu club. Consulta la ficha de cada deportista y la cadena que heredó al ser aprobado.</p>
+        <div class="page-head dp-head">
+          <div class="dp-head__txt">
+            <h1 class="page-head__title" id="pageTitle">Mis deportistas</h1>
+            <p class="page-head__sub" id="pageSub">Plantel con afiliación confirmada a tu club. Consulta la ficha de cada deportista y la cadena que heredó al ser aprobado.</p>
+          </div>
+          <div class="dp-head__actions" id="dpActions">
+            <span class="wz-devnote" tabindex="0" role="button" data-devnote="clubTitulo" style="display:none"></span>
+          </div>
         </div>
         <div id="deportistasRoot"></div>
       </div>
@@ -36,39 +40,8 @@
   </div>
 </div>
 
-<script type="module">
-  import { getRoleFromQuery, ROLES, getMenuForRole, mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher } from './shared/sidebar.js';
-  import { seedDemoData, getOrganismo } from './shared/organismos-data.js';
-  import { scopeFor } from './shared/permissions.js';
-  import { mountDevnotes } from './shared/devnotes.js?v=1.5.0';
-  seedDemoData();
-  const roleCode = getRoleFromQuery();
-  const role = ROLES[roleCode];
-  /* H1 según la etiqueta del ítem para ese rol (el club lo ve como
-     «Mis deportistas»; un rol superior, como su plantel jurisdiccional). */
-  getMenuForRole(roleCode).forEach((s) => s.items.forEach((it) => {
-    if (it.id === 'deportistas') document.getElementById('pageTitle').textContent = it.label;
-  }));
-  if (roleCode === 'CLUB') {
-    const club = getOrganismo(scopeFor(roleCode));
-    if (club) document.getElementById('pageTitle').textContent = club.nombre;
-    document.querySelector('[data-devnote="clubTitulo"]').style.display = '';
-    mountDevnotes({ clubTitulo: { title: 'Título con el nombre del club', items: [
-      'El rol CLUB ve el nombre de su club como título (antes «Mis deportistas»); roles superiores conservan la etiqueta del menú.',
-      'Dato: <code>organismo.nombre</code> del organismo en el alcance del rol (<code>scopeFor</code>).'
-    ] } });
-  }
-  if (roleCode !== 'CLUB') {
-    document.getElementById('pageSub').textContent =
-      'Deportistas vinculados a clubes de tu jurisdicción, heredados de la jerarquía. Vista de consulta.';
-  }
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'deportistas' });
-  mountHeader({ headerEl: document.getElementById('topHeader'), role });
-  mountBackdrop();
-  mountDemoSwitcher({ roleCode });
-  /* El módulo se auto-arranca al importar (render por jurisdicción). */
-  import('./shared/deportistas.js?v=1.5.0');
-</script>
+<script src="shared/bundles/deportistas.js"></script>
+
 <script src="shared/naowee-footer.js?v=1.5.0"></script>
 <script src="shared/tour.js?v=1.5.0"></script>
 

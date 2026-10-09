@@ -487,3 +487,7 @@
   .af-consulta-bar { gap: 10px; }
   .af-consulta-msg { flex: 1 1 100%; }
 }
+
+/* Deportista: sin nav interna (las secciones están en el sidebar) */
+.pf-grid--nonav { grid-template-columns: 1fr 264px; }
+@media (max-width: 1080px) { .pf-grid--nonav { grid-template-columns: 1fr; } }

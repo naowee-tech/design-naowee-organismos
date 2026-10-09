@@ -34,17 +34,8 @@
   </div>
 </div>
 
-<script type="module">
-  import { getRoleFromQuery, ROLES, mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher } from './shared/sidebar.js';
-  const roleCode = getRoleFromQuery();
-  const role = ROLES[roleCode];
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'registro' });
-  mountHeader({ headerEl: document.getElementById('topHeader'), role });
-  mountBackdrop();
-  mountDemoSwitcher({ roleCode });
-  /* El wizard se auto-arranca al importar el módulo (seedDemoData + offerDraft). */
-  import('./shared/registro.js?v=1.5.0');
-</script>
+<script src="shared/bundles/registro.js"></script>
+
 <script src="shared/naowee-footer.js?v=1.5.0"></script>
 <script src="shared/tour.js?v=1.5.0"></script>
 

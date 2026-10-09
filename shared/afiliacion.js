@@ -106,7 +106,9 @@ function volverHref() {
 }
 
 let ATLETA = buildDeportistaDetalle(getDeportista(DEP_ID));
-let activeSec = 'resumen';
+const SECCIONES = ['resumen', 'documentos', 'carne', 'miclub', 'solicitudes', 'eventos', 'historial', 'config', 'notif', 'seguridad'];
+/* Deportista: cada sección es una página (?sec=) listada en el sidebar; el resto de roles conserva la nav interna */
+let activeSec = !esConsulta && SECCIONES.includes(params.get('sec')) ? params.get('sec') : 'resumen';
 let activeTab = 'datos';
 let activeHist = 'trayectoria';
 
@@ -263,13 +265,13 @@ function render() {
       </div>
     </section>
 
-    <div class="pf-grid">
-      <nav class="pf-nav" id="pfNav">${navGroups().map((g) => `<div class="pf-nav__group">${g.label}</div>${g.items.map(navItem).join('')}`).join('')}</nav>
+    <div class="pf-grid${esConsulta ? '' : ' pf-grid--nonav'}">
+      ${esConsulta ? `<nav class="pf-nav" id="pfNav">${navGroups().map((g) => `<div class="pf-nav__group">${g.label}</div>${g.items.map(navItem).join('')}`).join('')}</nav>` : ''}
       <div class="pf-panel" id="pfPanel"></div>
       <aside class="pf-aside">${asideHTML()}</aside>
     </div>`;
 
-  document.getElementById('pfNav').addEventListener('click', (e) => {
+  document.getElementById('pfNav')?.addEventListener('click', (e) => {
     const b = e.target.closest('.pf-nav__item'); if (!b) return;
     activeSec = b.dataset.sec; syncNav(); renderPanel();
   });
@@ -293,6 +295,19 @@ function affStatePillHTML(st) {
 function navItem(s) {
   const end = s.badge ? `<span class="pf-nav__badge pf-nav__badge--${/^\d+$/.test(s.badge) ? 'count' : 'new'}">${s.badge}</span>` : s.alert ? `<span class="pf-nav__alert">!</span>` : '';
   return `<button type="button" class="pf-nav__item ${s.id === activeSec ? 'is-active' : ''}" data-sec="${s.id}">${s.icon}<span>${s.label}</span>${end}</button>`;
+}
+/* Deportista: la sección activa vive en la URL y en el sidebar (cambia sin recargar tras una solicitud) */
+function syncSecChrome() {
+  if (esConsulta) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('sec', activeSec);
+  window.history.replaceState(null, '', url);
+  document.querySelectorAll('.nav-row[data-id^="afiliacion-"]').forEach((r) => {
+    const on = r.dataset.id === `afiliacion-${activeSec}`;
+    r.classList.toggle('active', on);
+    r.querySelector('.active-bar')?.remove();
+    if (on) r.insertAdjacentHTML('afterbegin', '<span class="active-bar" aria-hidden="true"></span>');
+  });
 }
 function syncNav() { document.querySelectorAll('.pf-nav__item').forEach((b) => b.classList.toggle('is-active', b.dataset.sec === activeSec)); }
 
@@ -320,6 +335,7 @@ function bioTile(ico, l, v, c) { return `<div class="pf-bio-tile pf-bio-tile--${
 /* ── Panel central por sección ── */
 function renderPanel() {
   const p = document.getElementById('pfPanel');
+  syncSecChrome();
   const dispatch = { resumen: resumenHTML, documentos: documentosHTML, carne: carneHTML, miclub: miclubHTML, solicitudes: solicitudesHTML, eventos: eventosHTML, historial: historialHTML, config: configHTML, notif: notifHTML, seguridad: seguridadHTML };
   p.innerHTML = (dispatch[activeSec] || resumenHTML)();
   bindPanel();
@@ -1072,7 +1088,7 @@ seedDemoData();
 seedAfiliacionesDemo(getDemoMode());
 /* En consulta el activo del sidebar es «Mis deportistas» (el organismo llegó
    desde ahí); el ítem 'afiliacion' solo existe en el menú del deportista. */
-mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: esConsulta ? 'deportistas' : 'afiliacion' });
+mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: esConsulta ? 'deportistas' : `afiliacion-${activeSec}` });
 mountHeader({ headerEl: document.getElementById('topHeader'), role });
 mountBackdrop();
 mountDemoSwitcher({ roleCode });

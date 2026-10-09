@@ -320,9 +320,50 @@ export function deportistasOf(orgId) {
   const self = getOrganismo(orgId);
   if (self && self.tipo === 'club') clubIds.add(self.id);
   subtreeOf(orgId).forEach((o) => { if (o.tipo === 'club') clubIds.add(o.id); });
+  const orgIds = new Set([orgId, ...subtreeOf(orgId).map((o) => o.id)]);
   return allDeportistas()
-    .filter((d) => d.clubId && clubIds.has(d.clubId))
+    .filter((d) => (d.clubId && clubIds.has(d.clubId)) || (!d.clubId && [d.registradoPor, d.asocParcial?.federacionId, d.asocParcial?.ligaId].some((x) => x && orgIds.has(x))))
     .map((d) => ({ ...d }));
+}
+
+/* ─── Registro por organismo (2 momentos: registro → asociación) ───
+   Sin club el deportista queda 'registrado' (pendiente); al asociar pasa a 'vinculado'. */
+const NIVEL_ORDEN = ['comite', 'federacion', 'liga', 'club'];
+
+/* Niveles que aún faltan por asociar, desde el actor hacia abajo. */
+export function faltaAsociar(d) {
+  if (!d || d.clubId) return [];
+  const actor = getOrganismo(d.registradoPor);
+  const par = d.asocParcial || {};
+  const hecho = par.ligaId ? 'liga' : par.federacionId ? 'federacion' : actor ? actor.tipo : 'comite';
+  return NIVEL_ORDEN.slice(Math.max(NIVEL_ORDEN.indexOf(hecho), 0) + 1);
+}
+
+export function registrarDeportista(datos, actorOrgId) {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const actor = getOrganismo(actorOrgId);
+  const esClub = actor && actor.tipo === 'club';
+  const dep = {
+    modalidad: '', ...datos,
+    id: `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`,
+    clubId: esClub ? actor.id : null,
+    estado: esClub ? 'vinculado' : 'registrado',
+    registradoPor: actorOrgId, origen: 'organismo', fechaRegistro: _todayISO()
+  };
+  nuevos.push(dep);
+  writeStore('deportistas-nuevos', nuevos);
+  auditLog({ orgId: actorOrgId, fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, accion: 'Registro de deportista' });
+  return dep;
+}
+
+/* `cadena` = { federacionId?, ligaId?, clubId? }. Con clubId queda vinculado; sin él, parcial. */
+export function asociarDeportista(id, cadena) {
+  const { clubId = null, ...parcial } = cadena || {};
+  const dep = updateDeportista(id, clubId
+    ? { clubId, estado: 'vinculado', asocParcial: null }
+    : { asocParcial: { ...(getDeportista(id)?.asocParcial || {}), ...parcial } });
+  auditLog({ orgId: clubId || dep.registradoPor, fecha: _todayISO(), deportistaId: id, deportistaNombre: dep.nombre, accion: clubId ? 'Asociación de deportista' : 'Asociación parcial' });
+  return dep;
 }
 
 /* Contadores heredados del subárbol de `orgId`:
