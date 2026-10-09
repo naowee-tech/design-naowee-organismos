@@ -23,7 +23,6 @@ import {
   seedTrazabilidadDemo
 } from './organismos-data.js';
 import { can, scopeFor, isGlobalScope } from './permissions.js';
-import { mountDevnotes } from './devnotes.js';
 import { estadoBadgeVariant } from './estados.js';
 
 const params = new URLSearchParams(window.location.search);
@@ -102,14 +101,8 @@ function emptyState(title, desc) {
   return `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${I.inbox}</span><p class="naowee-empty-state__title">${esc(title)}</p><p class="naowee-empty-state__description">${esc(desc)}</p></div>`;
 }
 function backBtnHtml() {
-  return `<div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${I.back}Volver</button><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>`;
+  return `<div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${I.back}Volver</button></div>`;
 }
-const DEVNOTES = { detalle: { title: 'Ficha de organismo · navegación', items: [
-  'Orden en la ficha: breadcrumb de ancestros (<code>breadcrumbHtml</code>) arriba y «Volver» debajo; en los estados de error «Volver» va solo.',
-  '«Volver» (<code>goBack</code>): si hay historial interno hace <code>history.back()</code> y conserva el estado de la jerarquía; si se llegó directo, va a <code>?from=</code> (solo <code>nombre.html</code>, validado por regex) o al inicio del rol.',
-  'Entra desde «Ver detalles» de <code>jerarquia.html</code> (<code>?id=&amp;role=</code>). El alcance se valida con <code>scopeFor</code>: fuera de jurisdicción muestra «sin acceso», sin datos.',
-  'Solo lectura: si el organismo está «En revisión» y el rol puede aprobar, enlaza a la Bandeja; las acciones no viven aquí.'
-] } };
 function goBack() {
   const target = fromParam && /^[a-z-]+\.html$/.test(fromParam)
     ? `${fromParam}?role=${roleCode}`
@@ -334,8 +327,8 @@ function panelFor(tab, o) {
 
 function renderProfile(o) {
   let active = 'info';
-  root.innerHTML = `${breadcrumbHtml(o)}
-    ${backBtnHtml()}
+  root.innerHTML = `${backBtnHtml()}
+    ${breadcrumbHtml(o)}
     ${heroHtml(o)}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
@@ -371,4 +364,3 @@ const o = id ? getOrganismo(id) : null;
 if (!o) renderNotFound();
 else if (!inJurisdiction(id)) renderNoAccess(o);
 else renderProfile(o);
-mountDevnotes(DEVNOTES);

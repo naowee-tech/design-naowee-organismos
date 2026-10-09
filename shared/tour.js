@@ -16,14 +16,6 @@
   if (qs('embed') === '1' || document.body.getAttribute('data-embed') === '1') return;
 
   var MODE_KEY = 'naowee-organismos-demo-mode';
-  /* Switch del panel: oculta las notas para devs (.wz-devnote) en todas las pantallas. */
-  var DEVNOTES_KEY = 'naowee-organismos-hide-devnotes';
-  function devnotesHidden() { try { return localStorage.getItem(DEVNOTES_KEY) === '1'; } catch (e) { return false; } }
-  function applyDevnotes(hidden) {
-    document.documentElement.classList.toggle('org-hide-devnotes', hidden);
-    try { localStorage.setItem(DEVNOTES_KEY, hidden ? '1' : '0'); } catch (e) {}
-  }
-  document.documentElement.classList.toggle('org-hide-devnotes', devnotesHidden());
 
   /* ── Catálogo de tours por HU (las 8 historias del visual mapping) ── */
   var TOURS = {
@@ -195,15 +187,6 @@
       '.tt-panel.open{display:block;}' +
       '.tt-panel-h{font-size:13px;font-weight:800;color:var(--text-primary,#282834);padding:8px 10px 2px;}' +
       '.tt-panel-sub{font-size:11px;color:var(--text-secondary,#646587);padding:0 10px 8px;line-height:1.4;}' +
-      '.org-hide-devnotes .wz-devnote{display:none!important;}' +
-      '.tt-sw-row{display:flex;align-items:center;gap:12px;margin:2px 4px 6px;padding:10px;border:1px solid var(--border,#e7e9f3);border-radius:12px;background:#fafbfd;}' +
-      '.tt-sw-t{font-size:12.5px;font-weight:700;color:var(--text-primary,#282834);line-height:1.3;}' +
-      '.tt-sw-s{font-size:11px;color:var(--text-secondary,#646587);line-height:1.35;margin-top:1px;}' +
-      '.tt-sw{margin-left:auto;flex:none;position:relative;width:40px;height:22px;border-radius:999px;border:0;padding:0;cursor:pointer;background:#c4c8dc;transition:background .15s;}' +
-      '.tt-sw span{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(20,22,38,.3);transition:transform .15s;}' +
-      '.tt-sw[aria-checked="true"]{background:var(--accent,#d74009);}' +
-      '.tt-sw[aria-checked="true"] span{transform:translateX(18px);}' +
-      '.tt-sw:focus-visible{outline:2px solid var(--accent,#d74009);outline-offset:2px;}' +
       '.tt-grp{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary,#9aa3af);padding:12px 10px 4px;}' +
       '.tt-item{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;padding:8px 10px;border-radius:10px;text-align:left;font-family:inherit;}' +
       '.tt-item:hover{background:var(--accent-bg,#fff3e6);}' +
@@ -225,8 +208,6 @@
     var groups = {}, gOrder = [];
     ORDER.forEach(function (h) { var t = TOURS[h]; if (!groups[t.ph]) { groups[t.ph] = []; gOrder.push(t.ph); } groups[t.ph].push(h); });
     var html = '<div class="tt-panel-h">Recorrido guiado por historia de usuario</div>'
-      + '<div class="tt-sw-row"><div><div class="tt-sw-t">Notas para devs</div><div class="tt-sw-s">Muestra u oculta las etiquetas «Solo demo».</div></div>'
-      + '<button type="button" class="tt-sw" id="ttDevSwitch" role="switch" aria-label="Notas para devs" aria-checked="' + (devnotesHidden() ? 'false' : 'true') + '"><span></span></button></div>'
       + '<div class="tt-panel-sub">Cada paso indica la tarea, su propósito y dónde hacer clic. Cambia de rol y de pantalla solo.</div>';
     gOrder.forEach(function (ph) {
       html += '<div class="tt-grp">' + ph + '</div>';
@@ -236,8 +217,6 @@
     });
     p.innerHTML = html;
     document.body.appendChild(b); document.body.appendChild(p);
-    var sw = p.querySelector('#ttDevSwitch');
-    sw.onclick = function (e) { e.stopPropagation(); var show = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', show ? 'true' : 'false'); applyDevnotes(!show); };
     p.querySelectorAll('.tt-item').forEach(function (it) {
       it.onclick = function (e) { e.stopPropagation(); togglePanel(false); start(it.dataset.hu); };
     });

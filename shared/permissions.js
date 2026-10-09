@@ -53,9 +53,8 @@ const PERMS = {
     DEPORTISTA: 'R'      // solo buscar clubes Activos (se acota en la UI de afiliación)
   },
   deportistas: {
-    MINDEPORTE: 'R',
-    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar y asociar hacia abajo
-    CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
+    MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R',
+    CLUB: 'RX',          // sus afiliados · X = desvincular (ORG-10, ver nota)
     DEPORTISTA: 'RU'     // el propio (nunca documento / fecha nac.)
   },
   /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
@@ -77,7 +76,7 @@ const PERMS = {
     COMITE: 'CR',        // federaciones
     FEDERACION: 'CR',    // ligas
     LIGA: 'CR',          // clubes
-    CLUB: '',            // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
+    CLUB: '',            // pregunta abierta #1 (quién carga deportistas)
     DEPORTISTA: ''
   },
   auditoria: {

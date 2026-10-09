@@ -218,8 +218,6 @@
 .naowee-message__body { flex: 1; min-width: 0; }
 .naowee-message__title { font-size: 16px; font-weight: 700; line-height: 20px; margin: 0 0 2px; }
 .naowee-message__text { font-size: 14px; font-weight: 400; line-height: 18px; margin: 0; }
-/* Sin aire debajo: la nota se ajusta al texto, sin importar qué hoja le ponga margen a los <p>. */
-.naowee-message__body > :last-child { margin-bottom: 0; }
 .naowee-message--informative { background: var(--naowee-color-feedback-fill-informative-quiet); }
 .naowee-message--informative .naowee-message__icon { background: var(--naowee-color-feedback-fill-informative-loud); }
 .naowee-message--positive { background: var(--naowee-color-feedback-fill-positive-quiet); }

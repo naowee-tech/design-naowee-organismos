@@ -65,10 +65,11 @@ También se auto-arranca con `?tour=ORG-NN`.
 
 ## Cómo correr
 
-Doble clic en `index.html`: no necesita servidor. Cada página carga un script
-clásico de `shared/bundles/` (generado). Tras editar `shared/*.js` o
-`shared/entries/*.js`, regenera con `node scripts/build.cjs` (usa el esbuild de
-`sdk-frontend-react`).
+```bash
+cd naowee-organismos
+python3 -m http.server 4320
+# abrir http://localhost:4320/index.html
+```
 
 `index.html` es el selector de perfil (landing sin shell). Desde ahí se entra a
 cada rol; el switcher inferior permite cambiar de perfil, alternar **modo demo**
