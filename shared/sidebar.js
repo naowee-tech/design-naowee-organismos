@@ -221,6 +221,9 @@ export function personaDe(roleCode) {
   return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
 }
 
+/* Identidad por defecto de cada rol (antes de aplicar persona o contexto), para el cambio de perfil. */
+const ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k, { userName: r.userName, org: r.org }]));
+
 /* La persona y el organismo del contexto activo reemplazan a los de la ficha del rol. */
 (function aplicarContexto() {
   try {
@@ -436,6 +439,7 @@ export function mountHeader({ headerEl, role }) {
             </span>
           </div>
         </div>
+        ${perfilesDemoHtml(role.code)}
       </div>
     </div>
   `;
@@ -539,11 +543,27 @@ function mountContexto(role) {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dd.classList.contains('naowee-dropdown--open')) { set(false); trg.focus(); } });
 }
 
+/* Solo demo: cambiar de perfil también desde el chip (el usuario no lo encontraba dentro del
+   panel «Recorrido por HU»). Mismas personas que el switcher; limpia persona y contexto. */
+const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'afiliacion.html', PERSONA: 'perfil.html' };
+function perfilesDemoHtml(actual) {
+  const codes = ['MINDEPORTE', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  return `<div class="profile-dd__sep"></div>
+    <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
+    ${codes.map((c) => { const r = ROLES[c]; const def = ROLE_DEFAULT[c] || r;
+      return `<a class="profile-dd__item profile-dd__item--role profile-dd__perfil${c === actual && r.userName === def.userName ? ' is-current' : ''}" href="${HOME_DEMO[c] || 'jerarquia.html'}?role=${c}" data-perfil-chip="${c}">
+        <span class="role-meta"><span>${def.userName}</span><small>${r.label}${def.org && def.org !== '—' ? ' · ' + def.org : ''}</small></span>
+      </a>`; }).join('')}`;
+}
+
 function bindHeaderEvents(headerEl) {
   const switcher = headerEl.querySelector('#profileSwitcher');
   const trigger = headerEl.querySelector('#userChipTrigger');
   const burger = headerEl.querySelector('#headerBurger');
   if (burger) burger.addEventListener('click', openDrawer);
+  headerEl.querySelectorAll('[data-perfil-chip]').forEach((a) => a.addEventListener('click', () => {
+    try { [PERSONA_KEY, ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
+  }));
   if (!switcher || !trigger) return;
   const toggle = (e) => { e.stopPropagation(); switcher.classList.toggle('open'); };
   trigger.addEventListener('click', toggle);

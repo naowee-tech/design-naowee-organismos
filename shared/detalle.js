@@ -117,7 +117,7 @@ const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por d
     'Sin <code>?id</code>, el administrador abre su propio organismo. Si no está <strong>Activo</strong> su menú se reduce a «Mi organismo» (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.',
     'Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qué pasó, el motivo con quién y cuándo (último cambio en la trazabilidad), qué le toca, lo que puede y no puede hacer y el recorrido.',
     'Preinscrito, En corrección y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisión</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.',
-    'Solo demo: «Entrar como …» desde la bandeja del superior o después de un cargue masivo simula el acceso que le llega por correo al organismo. Su administrador es el representante legal.'
+    'Solo demo: «Entrar como …» (en esta ficha si el organismo no está Activo, en la bandeja del superior y después de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene «Cambiar de perfil».'
   ] },
   { title: 'Sanciones del Ministerio (Fase 1)', items: [
     'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
@@ -178,6 +178,7 @@ function breadcrumbHtml(o) {
 const ROLES_ORG = ['COMITE', 'FEDERACION', 'LIGA', 'CLUB'];
 const esPropio = (o) => ROLES_ORG.includes(roleCode) && o.id === scopeFor(roleCode);
 const conBloqueEstado = (o) => esPropio(o) && o.estado !== 'Activo';
+const ROL_DE_TIPO = { federacion: 'FEDERACION', liga: 'LIGA', club: 'CLUB' };   // solo demo: «Entrar como»
 
 function heroHtml(o) {
   const metaParts = [`NIT <b>${esc(o.nit)}</b>`];
@@ -201,6 +202,7 @@ function heroHtml(o) {
       </div>
       <div class="od-hero__actions">
         ${roleCode === 'MINDEPORTE' || esPropio(o) ? '' : `<span class="od-ro" title="Perfil de solo lectura — las acciones viven en la Bandeja">${I.lock} Solo lectura</span>`}
+        ${!esPropio(o) && o.estado !== 'Activo' && ROL_DE_TIPO[o.tipo] ? `<a class="naowee-btn naowee-btn--quiet naowee-btn--small" title="Solo demo: simula el acceso del administrador de este organismo" href="organismo-detalle.html?role=${ROL_DE_TIPO[o.tipo]}&org=${encodeURIComponent(o.id)}&como=org">Entrar como este organismo</a>` : ''}
         ${bandejaLink}
       </div>
     </div>`;

@@ -424,6 +424,7 @@
     const p = PERSONAS[id];
     return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
   }
+  var ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k, { userName: r.userName, org: r.org }]));
   (function aplicarContexto() {
     try {
       const code = new URLSearchParams(window.location.search).get("role");

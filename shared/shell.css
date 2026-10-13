@@ -566,3 +566,8 @@ body > .demo-role-switcher--inline { display: none; }
 }
 @media (min-width: 601px) { .ctx-dd__short { display: none; } }
 .bj-en-nombre { margin: 0; padding: 10px 24px; border-top: 1px solid var(--border); background: var(--bg-soft); }
+/* Solo demo: cambio de perfil dentro del chip de usuario */
+.profile-dd__demo { display: flex; align-items: center; gap: 8px; padding: 8px 12px 4px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.profile-dd__perfil { text-decoration: none; }
+.profile-dd__perfil.is-current { background: var(--bg-soft); }
+.profile-dd--identity-only { max-height: calc(100vh - 90px); overflow-y: auto; }

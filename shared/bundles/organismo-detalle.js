@@ -854,6 +854,7 @@
             </span>
           </div>
         </div>
+        ${perfilesDemoHtml(role3.code)}
       </div>
     </div>
   `;
@@ -947,11 +948,29 @@
       }
     });
   }
+  function perfilesDemoHtml(actual) {
+    const codes = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    return `<div class="profile-dd__sep"></div>
+    <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
+    ${codes.map((c) => {
+      const r = ROLES[c];
+      const def = ROLE_DEFAULT[c] || r;
+      return `<a class="profile-dd__item profile-dd__item--role profile-dd__perfil${c === actual && r.userName === def.userName ? " is-current" : ""}" href="${HOME_DEMO[c] || "jerarquia.html"}?role=${c}" data-perfil-chip="${c}">
+        <span class="role-meta"><span>${def.userName}</span><small>${r.label}${def.org && def.org !== "\u2014" ? " \xB7 " + def.org : ""}</small></span>
+      </a>`;
+    }).join("")}`;
+  }
   function bindHeaderEvents(headerEl) {
     const switcher = headerEl.querySelector("#profileSwitcher");
     const trigger = headerEl.querySelector("#userChipTrigger");
     const burger = headerEl.querySelector("#headerBurger");
     if (burger) burger.addEventListener("click", openDrawer);
+    headerEl.querySelectorAll("[data-perfil-chip]").forEach((a) => a.addEventListener("click", () => {
+      try {
+        [PERSONA_KEY, ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
+      } catch (_) {
+      }
+    }));
     if (!switcher || !trigger) return;
     const toggle = (e) => {
       e.stopPropagation();
@@ -1121,7 +1140,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "sidebar.js"() {
       init_permissions();
@@ -1331,6 +1350,7 @@
       };
       PERSONA_KEY = "naowee-organismos-persona";
       PERSONA_POR_ROL = { LIGA: "sandra" };
+      ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k, { userName: r.userName, org: r.org }]));
       (function aplicarContexto() {
         try {
           const code = new URLSearchParams(window.location.search).get("role");
@@ -1358,6 +1378,7 @@
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
       COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
       NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
+      HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "afiliacion.html", PERSONA: "perfil.html" };
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -1690,6 +1711,7 @@
       </div>
       <div class="od-hero__actions">
         ${roleCode === "MINDEPORTE" || esPropio(o2) ? "" : `<span class="od-ro" title="Perfil de solo lectura \u2014 las acciones viven en la Bandeja">${I.lock} Solo lectura</span>`}
+        ${!esPropio(o2) && o2.estado !== "Activo" && ROL_DE_TIPO[o2.tipo] ? `<a class="naowee-btn naowee-btn--quiet naowee-btn--small" title="Solo demo: simula el acceso del administrador de este organismo" href="organismo-detalle.html?role=${ROL_DE_TIPO[o2.tipo]}&org=${encodeURIComponent(o2.id)}&como=org">Entrar como este organismo</a>` : ""}
         ${bandejaLink}
       </div>
     </div>`;
@@ -1861,7 +1883,7 @@
     var _a;
     (_a = document.getElementById("odBack")) == null ? void 0 : _a.addEventListener("click", goBack);
   }
-  var params, roleCode, role, id, fromParam, root, esc2, cap2, EMOJI, TYPE_LABEL, RECURSO_BY_TIPO, COBERTURA_BY_TIPO, DOC_LABELS, I, MESES2, DEVNOTES, ROLES_ORG, esPropio, conBloqueEstado, seg, TABS, o;
+  var params, roleCode, role, id, fromParam, root, esc2, cap2, EMOJI, TYPE_LABEL, RECURSO_BY_TIPO, COBERTURA_BY_TIPO, DOC_LABELS, I, MESES2, DEVNOTES, ROLES_ORG, esPropio, conBloqueEstado, ROL_DE_TIPO, seg, TABS, o;
   var init_detalle = __esm({
     "detalle.js"() {
       init_sidebar();
@@ -1912,7 +1934,7 @@
           "Sin <code>?id</code>, el administrador abre su propio organismo. Si no est\xE1 <strong>Activo</strong> su men\xFA se reduce a \xABMi organismo\xBB (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.",
           "Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qu\xE9 pas\xF3, el motivo con qui\xE9n y cu\xE1ndo (\xFAltimo cambio en la trazabilidad), qu\xE9 le toca, lo que puede y no puede hacer y el recorrido.",
           "Preinscrito, En correcci\xF3n y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisi\xF3n</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.",
-          "Solo demo: \xABEntrar como \u2026\xBB desde la bandeja del superior o despu\xE9s de un cargue masivo simula el acceso que le llega por correo al organismo. Su administrador es el representante legal."
+          "Solo demo: \xABEntrar como \u2026\xBB (en esta ficha si el organismo no est\xE1 Activo, en la bandeja del superior y despu\xE9s de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene \xABCambiar de perfil\xBB."
         ] },
         { title: "Sanciones del Ministerio (Fase 1)", items: [
           "Solo el Ministerio ve \xABEstado y sanciones\xBB (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acci\xF3n definitiva.",
@@ -1924,6 +1946,7 @@
       ROLES_ORG = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
       esPropio = (o2) => ROLES_ORG.includes(roleCode) && o2.id === scopeFor(roleCode);
       conBloqueEstado = (o2) => esPropio(o2) && o2.estado !== "Activo";
+      ROL_DE_TIPO = { federacion: "FEDERACION", liga: "LIGA", club: "CLUB" };
       seg = (n, s, p) => `<span class="od-count"><b>${n}</b> ${n === 1 ? s : p}</span>`;
       TABS = [
         ["info", "Informaci\xF3n"],
