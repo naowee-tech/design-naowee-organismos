@@ -1,5 +1,5 @@
 (() => {
-  // ../front/DEMO/naowee-organismos/shared/organismos-data.js
+  // organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -565,7 +565,7 @@
     writeStore("solicitudes", list);
   }
 
-  // ../front/DEMO/naowee-organismos/shared/permissions.js
+  // permissions.js
   var ACCIONES = Object.freeze({
     CREAR: "C",
     LEER: "R",
@@ -594,7 +594,8 @@
       LIGA: "R",
       CLUB: "R",
       DEPORTISTA: "R",
-      TERRITORIAL: "R"
+      TERRITORIAL: "R",
+      MINISTRO: "R"
     },
     federaciones: {
       MINDEPORTE: "RAS",
@@ -606,7 +607,8 @@
       LIGA: "R",
       CLUB: "R",
       DEPORTISTA: "R",
-      TERRITORIAL: "R"
+      TERRITORIAL: "R",
+      MINISTRO: "R"
     },
     ligas: {
       MINDEPORTE: "RS",
@@ -619,7 +621,8 @@
       // la propia
       CLUB: "R",
       DEPORTISTA: "R",
-      TERRITORIAL: "R"
+      TERRITORIAL: "R",
+      MINISTRO: "R"
     },
     clubes: {
       MINDEPORTE: "RS",
@@ -633,7 +636,8 @@
       // el propio
       DEPORTISTA: "R",
       // solo buscar clubes Activos (se acota en la UI de afiliación)
-      TERRITORIAL: "R"
+      TERRITORIAL: "R",
+      MINISTRO: "R"
     },
     deportistas: {
       MINDEPORTE: "R",
@@ -645,8 +649,9 @@
       // sus afiliados · X = desvincular (ORG-10, ver nota)
       DEPORTISTA: "RU",
       // el propio (nunca documento / fecha nac.)
-      TERRITORIAL: "CR"
+      TERRITORIAL: "CR",
       // registra autodeclarados y propone club (P-12); no aprueba
+      MINISTRO: "R"
     },
     /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
        DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -666,7 +671,8 @@
       // las dirigidas a su club (ORG-05, único aprobador)
       DEPORTISTA: "CRX",
       // crea / ve estado / retira las propias
-      TERRITORIAL: ""
+      TERRITORIAL: "",
+      MINISTRO: "R"
     },
     cargue: {
       MINDEPORTE: "R",
@@ -680,7 +686,8 @@
       CLUB: "",
       // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
       DEPORTISTA: "",
-      TERRITORIAL: ""
+      TERRITORIAL: "",
+      MINISTRO: "R"
     },
     auditoria: {
       MINDEPORTE: "R",
@@ -689,7 +696,8 @@
       LIGA: "R",
       CLUB: "R",
       DEPORTISTA: "R",
-      TERRITORIAL: "R"
+      TERRITORIAL: "R",
+      MINISTRO: "R"
     }
   };
   function can(role2, accion, recurso) {
@@ -761,10 +769,10 @@
     return null;
   }
   function isGlobalScope(role2) {
-    return scopeFor(role2) === null && role2 === "MINDEPORTE";
+    return scopeFor(role2) === null && (role2 === "MINDEPORTE" || role2 === "MINISTRO");
   }
 
-  // ../front/DEMO/naowee-organismos/shared/sidebar.js
+  // sidebar.js
   var COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
   var ICONS = {
     sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
@@ -865,6 +873,20 @@
       group: "Personas",
       deportistaId: "DEP-001"
     },
+    /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+       deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+    MINISTRO: {
+      code: "MINISTRO",
+      label: "Ministro (consulta)",
+      userName: "Despacho del Ministro",
+      userEmail: "despacho@mindeporte.demo.co",
+      userDoc: "Cuenta institucional",
+      org: "Ministerio del Deporte",
+      avatar: "DM",
+      color: "#334155",
+      short: "Consulta todo el SND sin aprobar, sancionar ni crear",
+      group: "Rector\xEDa"
+    },
     /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
        deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
     TERRITORIAL: {
@@ -896,7 +918,7 @@
   };
   var NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
   var NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
-  var NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
+  var NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
   function nivelesForRole(code) {
     const nivel = code === "TERRITORIAL" && (territorioDe(code) || {}).municipio ? "liga" : NIVEL_PROPIO[code];
     const propio = NIVEL_JERARQUIA_IDX(nivel);
@@ -928,7 +950,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -939,7 +961,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -950,7 +972,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -960,7 +982,7 @@
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
@@ -971,6 +993,12 @@
     ],
     PERSONA: [
       { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+    ],
+    MINISTRO: [
+      { section: null, items: jerarquiaItems("MINISTRO") },
+      { section: "CONSULTA", items: [
+        { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+      ] }
     ],
     TERRITORIAL: [
       { section: null, items: jerarquiaItems("TERRITORIAL") },
@@ -1311,7 +1339,7 @@
   }
   var HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
   function perfilesDemoHtml(actual) {
-    const codes = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    const codes = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => {
@@ -1375,7 +1403,7 @@
   }
   var esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var ROLE_GROUPS = [
-    { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
+    { label: "Rector\xEDa", codes: ["MINDEPORTE", "MINISTRO"] },
     { label: "Territorio", codes: ["TERRITORIAL"] },
     { label: "Cabezas de sector", codes: ["COMITE"] },
     { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
@@ -1514,7 +1542,7 @@
     });
   }
 
-  // ../front/DEMO/naowee-organismos/shared/deportista-detalle.js
+  // deportista-detalle.js
   var MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   var TIER_LABEL = { olimpico: "Ol\xEDmpico", profesional: "Profesional", juvenil: "Juvenil", amateur: "Amateur" };
   var DOC_LABEL = { CC: "C\xE9dula de ciudadan\xEDa", TI: "Tarjeta de identidad", CE: "C\xE9dula de extranjer\xEDa", PA: "Pasaporte" };
@@ -1763,7 +1791,7 @@
     };
   }
 
-  // ../front/DEMO/naowee-organismos/shared/qr.js
+  // qr.js
   var Ecc = {
     LOW: { ordinal: 0, formatBits: 1 },
     MEDIUM: { ordinal: 1, formatBits: 0 },
@@ -2273,7 +2301,7 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${dim}" height="${dim}" fill="${light}"/><path d="${path}" fill="${dark}"/></svg>`;
   }
 
-  // ../front/DEMO/naowee-organismos/shared/afiliacion.js
+  // afiliacion.js
   var I = {
     id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M5 16c.8-1.5 2.3-2.5 4-2.5s3.2 1 4 2.5"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',

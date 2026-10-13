@@ -14,6 +14,13 @@
   seedDemoData();
   const roleCode = getRoleFromQuery();
   const role = ROLES[roleCode];
+  /* Ven todo el SND: el Administrador del Ministerio y el Ministro (consulta, P-01). */
+  const VE_TODO = roleCode === 'MINDEPORTE' || roleCode === 'MINISTRO';
+  /* Quien solo consulta no tiene bandeja: el aviso no lo manda allá. */
+  if (roleCode === 'MINISTRO' || roleCode === 'TERRITORIAL') {
+    const nota = document.getElementById('scopeNoteText');
+    if (nota) nota.textContent = 'Toca un organismo para ver lo que contiene, y «Ver detalles» para abrir su ficha. Tu rol es de consulta: no apruebas ni sancionas.';
+  }
 
   /* Nivel de entrada (subítems del sidebar): con él las columnas abren ya posicionadas */
   const NIVELES = ['comite', 'federacion', 'liga', 'club', 'deportista'];
@@ -143,7 +150,7 @@
   }
 
   function scopeInfo() {
-    if (roleCode === 'MINDEPORTE') return { emoji: '🇨🇴', label: 'Jurisdicción · rectoría del SND', name: 'Sistema Nacional del Deporte' };
+    if (VE_TODO) return { emoji: '🇨🇴', label: roleCode === 'MINISTRO' ? 'Consulta · todo el SND' : 'Jurisdicción · rectoría del SND', name: 'Sistema Nacional del Deporte' };
     if (territorioDe(roleCode)) { const t = territorioDe(roleCode); return { emoji: '📍', label: `${t.municipio ? 'Municipio' : 'Departamento'} · tu territorio`, name: nombreTerritorio(t) }; }
     if (roleCode === 'DEPORTISTA') {
       const dep = allDeportistas().find((d) => d.id === scope);
@@ -170,7 +177,7 @@
         { val: orgs.filter((o) => o.tipo === 'club').length, lbl: 'Clubes', accent: !!t.municipio }, { val: deportistasDeTerritorio(t).length, lbl: 'Deportistas' }];
     }
     const c = countDescendants(scope);
-    if (roleCode === 'MINDEPORTE') {
+    if (VE_TODO) {
       return [
         { val: childrenOf(null).length, lbl: 'Comités', accent: true },
         { val: c.federaciones, lbl: 'Federaciones' }, { val: c.ligas, lbl: 'Ligas' },
@@ -254,7 +261,7 @@
       return { list: fullRoots, ids: [] };
     }
     // Lo que está debajo de mí: el rol no se ve a sí mismo; el nivel elegido en el sidebar es la raíz
-    const base = roleCode === 'MINDEPORTE' ? fullRoots : fullRoots.flatMap((n) => n.children);
+    const base = VE_TODO ? fullRoots : fullRoots.flatMap((n) => n.children);
     const collect = (list) => list.flatMap((n) => (n.tipo === nivel ? [n] : []).concat(collect(n.children)));
     const list = collect(base);
     return { list, ids: [] };   // se entra con la lista sola; el usuario abre cada nivel
@@ -317,7 +324,7 @@
     const parent = level.parent;
     const kickerLabel = parent ? CHILD_LABEL[parent.tipo] : PLURAL[level.nodes[0] ? level.nodes[0].tipo : nivel];
     const kicker = `${kickerLabel}<span class="jq-col__count">${level.nodes.length}</span>`;
-    const title = parent ? parent.name : (roleCode === 'MINDEPORTE' ? 'Sistema Nacional del Deporte' : (fullRoots[0] ? fullRoots[0].name : 'Inicio'));
+    const title = parent ? parent.name : (VE_TODO ? 'Sistema Nacional del Deporte' : (fullRoots[0] ? fullRoots[0].name : 'Inicio'));
     const btnClose = depth > 0
       ? `<button type="button" class="jq-col__close" data-close="${depth}" aria-label="Cerrar ${esc(title)}" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>` : '';
     const actions = btnClose;
@@ -447,7 +454,7 @@
       searchInput.value = ''; searchBox.classList.remove('naowee-searchbox--has-value');
       currentEstado = 'todos'; estadoValue.textContent = 'Todos los estados';
       estadoMenu.querySelectorAll('.naowee-dropdown__opt').forEach((o) => o.classList.toggle('is-selected', o.dataset.value === 'todos'));
-        const own = roleCode !== 'MINDEPORTE' && roleCode !== 'DEPORTISTA' ? fullRoots[0] : null;
+        const own = !VE_TODO && roleCode !== 'DEPORTISTA' ? fullRoots[0] : null;
       const trail = node.children.length ? anc.concat(node.id) : anc;
       if (own && node.id !== own.id) { roots = own.children; path = trail.filter((id) => id !== own.id); }   // sin verme a mí
       else { roots = fullRoots; path = trail; }

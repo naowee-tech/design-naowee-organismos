@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // ../front/DEMO/naowee-organismos/shared/estados.js
+  // estados.js
   var init_estados = __esm({
-    "../front/DEMO/naowee-organismos/shared/estados.js"() {
+    "estados.js"() {
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/organismos-data.js
+  // organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -383,7 +383,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, _todayISO, _norm, TER_PREFIX, territorioId, nombreTerritorio, enTerritorio;
   var init_organismos_data = __esm({
-    "../front/DEMO/naowee-organismos/shared/organismos-data.js"() {
+    "organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -546,7 +546,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/permissions.js
+  // permissions.js
   function can(role2, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -606,7 +606,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
-    "../front/DEMO/naowee-organismos/shared/permissions.js"() {
+    "permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -636,7 +636,8 @@
           LIGA: "R",
           CLUB: "R",
           DEPORTISTA: "R",
-          TERRITORIAL: "R"
+          TERRITORIAL: "R",
+          MINISTRO: "R"
         },
         federaciones: {
           MINDEPORTE: "RAS",
@@ -648,7 +649,8 @@
           LIGA: "R",
           CLUB: "R",
           DEPORTISTA: "R",
-          TERRITORIAL: "R"
+          TERRITORIAL: "R",
+          MINISTRO: "R"
         },
         ligas: {
           MINDEPORTE: "RS",
@@ -661,7 +663,8 @@
           // la propia
           CLUB: "R",
           DEPORTISTA: "R",
-          TERRITORIAL: "R"
+          TERRITORIAL: "R",
+          MINISTRO: "R"
         },
         clubes: {
           MINDEPORTE: "RS",
@@ -675,7 +678,8 @@
           // el propio
           DEPORTISTA: "R",
           // solo buscar clubes Activos (se acota en la UI de afiliación)
-          TERRITORIAL: "R"
+          TERRITORIAL: "R",
+          MINISTRO: "R"
         },
         deportistas: {
           MINDEPORTE: "R",
@@ -687,8 +691,9 @@
           // sus afiliados · X = desvincular (ORG-10, ver nota)
           DEPORTISTA: "RU",
           // el propio (nunca documento / fecha nac.)
-          TERRITORIAL: "CR"
+          TERRITORIAL: "CR",
           // registra autodeclarados y propone club (P-12); no aprueba
+          MINISTRO: "R"
         },
         /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
            DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -708,7 +713,8 @@
           // las dirigidas a su club (ORG-05, único aprobador)
           DEPORTISTA: "CRX",
           // crea / ve estado / retira las propias
-          TERRITORIAL: ""
+          TERRITORIAL: "",
+          MINISTRO: "R"
         },
         cargue: {
           MINDEPORTE: "R",
@@ -722,7 +728,8 @@
           CLUB: "",
           // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
           DEPORTISTA: "",
-          TERRITORIAL: ""
+          TERRITORIAL: "",
+          MINISTRO: "R"
         },
         auditoria: {
           MINDEPORTE: "R",
@@ -731,7 +738,8 @@
           LIGA: "R",
           CLUB: "R",
           DEPORTISTA: "R",
-          TERRITORIAL: "R"
+          TERRITORIAL: "R",
+          MINISTRO: "R"
         }
       };
       SCOPE = {
@@ -748,7 +756,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/sidebar.js
+  // sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -1038,7 +1046,7 @@
     });
   }
   function perfilesDemoHtml(actual) {
-    const codes = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    const codes = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => {
@@ -1232,7 +1240,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "../front/DEMO/naowee-organismos/shared/sidebar.js"() {
+    "sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1332,6 +1340,20 @@
           group: "Personas",
           deportistaId: "DEP-001"
         },
+        /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+           deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+        MINISTRO: {
+          code: "MINISTRO",
+          label: "Ministro (consulta)",
+          userName: "Despacho del Ministro",
+          userEmail: "despacho@mindeporte.demo.co",
+          userDoc: "Cuenta institucional",
+          org: "Ministerio del Deporte",
+          avatar: "DM",
+          color: "#334155",
+          short: "Consulta todo el SND sin aprobar, sancionar ni crear",
+          group: "Rector\xEDa"
+        },
         /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
            deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
         TERRITORIAL: {
@@ -1363,7 +1385,7 @@
       };
       NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
       NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
-      NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
+      NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
       jerarquiaItems = (code) => {
         const hijos = nivelesForRole(code);
         if (hijos.length === 1) return [];
@@ -1390,7 +1412,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         FEDERACION: [
           { section: null, items: jerarquiaItems("FEDERACION") },
@@ -1401,7 +1423,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         LIGA: [
           { section: null, items: jerarquiaItems("LIGA") },
@@ -1412,7 +1434,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         CLUB: [
           { section: null, items: jerarquiaItems("CLUB") },
@@ -1422,7 +1444,7 @@
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
             { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
         DEPORTISTA: [
@@ -1433,6 +1455,12 @@
         ],
         PERSONA: [
           { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+        ],
+        MINISTRO: [
+          { section: null, items: jerarquiaItems("MINISTRO") },
+          { section: "CONSULTA", items: [
+            { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+          ] }
         ],
         TERRITORIAL: [
           { section: null, items: jerarquiaItems("TERRITORIAL") },
@@ -1496,7 +1524,7 @@
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
       ROLE_GROUPS = [
-        { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
+        { label: "Rector\xEDa", codes: ["MINDEPORTE", "MINISTRO"] },
         { label: "Territorio", codes: ["TERRITORIAL"] },
         { label: "Cabezas de sector", codes: ["COMITE"] },
         { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
@@ -1505,7 +1533,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/deportista-detalle.js
+  // deportista-detalle.js
   function seedFromDoc(numDoc) {
     let h = 2166136261 >>> 0;
     const s = String(numDoc || "");
@@ -1615,7 +1643,7 @@
   }
   var MESES, TIER_LABEL, DOC_LABEL, DEPORTE_EMOJI, SANGRES, PERFIL_EXTRA;
   var init_deportista_detalle = __esm({
-    "../front/DEMO/naowee-organismos/shared/deportista-detalle.js"() {
+    "deportista-detalle.js"() {
       init_organismos_data();
       MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
       TIER_LABEL = { olimpico: "Ol\xEDmpico", profesional: "Profesional", juvenil: "Juvenil", amateur: "Amateur" };
@@ -1760,11 +1788,11 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/deportistas.js
+  // deportistas.js
   var deportistas_exports = {};
   var root;
   var init_deportistas = __esm({
-    "../front/DEMO/naowee-organismos/shared/deportistas.js"() {
+    "deportistas.js"() {
       init_organismos_data();
       init_permissions();
       init_deportista_detalle();
@@ -2455,12 +2483,12 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/entries/deportistas.js
+  // entries/deportistas.js
   init_sidebar();
   init_organismos_data();
   init_permissions();
 
-  // ../front/DEMO/naowee-organismos/shared/devnotes.js
+  // devnotes.js
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -2474,7 +2502,7 @@
     });
   }
 
-  // ../front/DEMO/naowee-organismos/shared/entries/deportistas.js
+  // entries/deportistas.js
   seedDemoData();
   var roleCode = getRoleFromQuery();
   var role = ROLES[roleCode];

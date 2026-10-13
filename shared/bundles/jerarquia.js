@@ -1,5 +1,5 @@
 (() => {
-  // ../front/DEMO/naowee-organismos/shared/estados.js
+  // estados.js
   var ESTADOS = [
     "Preinscrito",
     "En revisi\xF3n",
@@ -24,7 +24,7 @@
     return BADGE_VARIANT[estado] || "neutral";
   }
 
-  // ../front/DEMO/naowee-organismos/shared/organismos-data.js
+  // organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -431,7 +431,7 @@
     return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubes.has(c)) || !d.clubIds.length && d.registradoPor === tid);
   }
 
-  // ../front/DEMO/naowee-organismos/shared/permissions.js
+  // permissions.js
   var ACCIONES = Object.freeze({
     CREAR: "C",
     LEER: "R",
@@ -513,7 +513,7 @@
     return null;
   }
 
-  // ../front/DEMO/naowee-organismos/shared/sidebar.js
+  // sidebar.js
   var COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
   var ICONS = {
     sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
@@ -614,6 +614,20 @@
       group: "Personas",
       deportistaId: "DEP-001"
     },
+    /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+       deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+    MINISTRO: {
+      code: "MINISTRO",
+      label: "Ministro (consulta)",
+      userName: "Despacho del Ministro",
+      userEmail: "despacho@mindeporte.demo.co",
+      userDoc: "Cuenta institucional",
+      org: "Ministerio del Deporte",
+      avatar: "DM",
+      color: "#334155",
+      short: "Consulta todo el SND sin aprobar, sancionar ni crear",
+      group: "Rector\xEDa"
+    },
     /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
        deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
     TERRITORIAL: {
@@ -645,7 +659,7 @@
   };
   var NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
   var NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
-  var NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
+  var NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
   function nivelesForRole(code) {
     const nivel2 = code === "TERRITORIAL" && (territorioDe(code) || {}).municipio ? "liga" : NIVEL_PROPIO[code];
     const propio = NIVEL_JERARQUIA_IDX(nivel2);
@@ -677,7 +691,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -688,7 +702,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -699,7 +713,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -709,7 +723,7 @@
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
@@ -720,6 +734,12 @@
     ],
     PERSONA: [
       { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+    ],
+    MINISTRO: [
+      { section: null, items: jerarquiaItems("MINISTRO") },
+      { section: "CONSULTA", items: [
+        { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+      ] }
     ],
     TERRITORIAL: [
       { section: null, items: jerarquiaItems("TERRITORIAL") },
@@ -1060,7 +1080,7 @@
   }
   var HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
   function perfilesDemoHtml(actual) {
-    const codes = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    const codes = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => {
@@ -1124,7 +1144,7 @@
   }
   var esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var ROLE_GROUPS = [
-    { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
+    { label: "Rector\xEDa", codes: ["MINDEPORTE", "MINISTRO"] },
     { label: "Territorio", codes: ["TERRITORIAL"] },
     { label: "Cabezas de sector", codes: ["COMITE"] },
     { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
@@ -1263,7 +1283,7 @@
     });
   }
 
-  // ../front/DEMO/naowee-organismos/shared/devnotes.js
+  // devnotes.js
   function mountDevnotes(registry, root = document) {
     root.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -1277,10 +1297,15 @@
     });
   }
 
-  // ../front/DEMO/naowee-organismos/shared/entries/jerarquia.js
+  // entries/jerarquia.js
   seedDemoData();
   var roleCode = getRoleFromQuery();
   var role = ROLES[roleCode];
+  var VE_TODO = roleCode === "MINDEPORTE" || roleCode === "MINISTRO";
+  if (roleCode === "MINISTRO" || roleCode === "TERRITORIAL") {
+    const nota = document.getElementById("scopeNoteText");
+    if (nota) nota.textContent = "Toca un organismo para ver lo que contiene, y \xABVer detalles\xBB para abrir su ficha. Tu rol es de consulta: no apruebas ni sancionas.";
+  }
   var nivelQ = new URLSearchParams(window.location.search).get("nivel");
   var permitidos = nivelesForRole(roleCode).map((n) => n.id);
   var nivel = permitidos.includes(nivelQ) ? nivelQ : permitidos[0];
@@ -1392,7 +1417,7 @@
       </div>`;
   }
   function scopeInfo() {
-    if (roleCode === "MINDEPORTE") return { emoji: "\u{1F1E8}\u{1F1F4}", label: "Jurisdicci\xF3n \xB7 rector\xEDa del SND", name: "Sistema Nacional del Deporte" };
+    if (VE_TODO) return { emoji: "\u{1F1E8}\u{1F1F4}", label: roleCode === "MINISTRO" ? "Consulta \xB7 todo el SND" : "Jurisdicci\xF3n \xB7 rector\xEDa del SND", name: "Sistema Nacional del Deporte" };
     if (territorioDe(roleCode)) {
       const t = territorioDe(roleCode);
       return { emoji: "\u{1F4CD}", label: `${t.municipio ? "Municipio" : "Departamento"} \xB7 tu territorio`, name: nombreTerritorio(t) };
@@ -1427,7 +1452,7 @@
       ];
     }
     const c = countDescendants(scope);
-    if (roleCode === "MINDEPORTE") {
+    if (VE_TODO) {
       return [
         { val: childrenOf(null).length, lbl: "Comit\xE9s", accent: true },
         { val: c.federaciones, lbl: "Federaciones" },
@@ -1511,7 +1536,7 @@
     if (roleCode === "DEPORTISTA") {
       return { list: fullRoots, ids: [] };
     }
-    const base = roleCode === "MINDEPORTE" ? fullRoots : fullRoots.flatMap((n) => n.children);
+    const base = VE_TODO ? fullRoots : fullRoots.flatMap((n) => n.children);
     const collect = (list2) => list2.flatMap((n) => (n.tipo === nivel ? [n] : []).concat(collect(n.children)));
     const list = collect(base);
     return { list, ids: [] };
@@ -1563,7 +1588,7 @@
     const parent = level.parent;
     const kickerLabel = parent ? CHILD_LABEL[parent.tipo] : PLURAL[level.nodes[0] ? level.nodes[0].tipo : nivel];
     const kicker = `${kickerLabel}<span class="jq-col__count">${level.nodes.length}</span>`;
-    const title = parent ? parent.name : roleCode === "MINDEPORTE" ? "Sistema Nacional del Deporte" : fullRoots[0] ? fullRoots[0].name : "Inicio";
+    const title = parent ? parent.name : VE_TODO ? "Sistema Nacional del Deporte" : fullRoots[0] ? fullRoots[0].name : "Inicio";
     const btnClose = depth > 0 ? `<button type="button" class="jq-col__close" data-close="${depth}" aria-label="Cerrar ${esc(title)}" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>` : "";
     const actions = btnClose;
     return `
@@ -1690,7 +1715,7 @@
       currentEstado = "todos";
       estadoValue.textContent = "Todos los estados";
       estadoMenu.querySelectorAll(".naowee-dropdown__opt").forEach((o) => o.classList.toggle("is-selected", o.dataset.value === "todos"));
-      const own = roleCode !== "MINDEPORTE" && roleCode !== "DEPORTISTA" ? fullRoots[0] : null;
+      const own = !VE_TODO && roleCode !== "DEPORTISTA" ? fullRoots[0] : null;
       const trail = node.children.length ? anc.concat(node.id) : anc;
       if (own && node.id !== own.id) {
         roots = own.children;

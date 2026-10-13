@@ -1125,6 +1125,26 @@ export function cambiarEstadoUsuario(id, estado, meta = {}) {
   return { ...list[i] };
 }
 
+/* ─── Eventos asociados al organismo (roles-y-permisos · Jurisdicción) ───
+   El subárbol de un organismo incluye los eventos asociados a él y a lo que cuelga de él: el COC
+   ve los del Ciclo Olímpico aunque los cree Naowee. Hoy events-lite asocia el evento a una
+   organización global «Comité Olímpico Colombiano»; debe apuntar al nodo del SND (pendiente técnico). */
+const EVENTOS = [
+  { id: 'EV-01', nombre: 'Juegos Panamericanos Lima 2027', tipo: 'Ciclo Olímpico', organismoId: 'COC', creadoPor: 'Naowee', desde: '2027-07-23', hasta: '2027-08-08', sede: 'Lima, Perú', deportes: ['Patinaje de Velocidad', 'Natación', 'Atletismo', 'Ciclismo'], inscritos: 412, estado: 'Inscripciones abiertas' },
+  { id: 'EV-02', nombre: 'Juegos Olímpicos Los Ángeles 2028', tipo: 'Ciclo Olímpico', organismoId: 'COC', creadoPor: 'Naowee', desde: '2028-07-14', hasta: '2028-07-30', sede: 'Los Ángeles, EE. UU.', deportes: ['Natación', 'Atletismo', 'Ciclismo', 'Levantamiento de Pesas'], inscritos: 0, estado: 'En preparación' },
+  { id: 'EV-03', nombre: 'Campeonato Nacional de Patinaje de Velocidad 2026', tipo: 'Campeonato nacional', organismoId: 'FED-040', creadoPor: 'Federación Colombiana de Patinaje', desde: '2026-11-12', hasta: '2026-11-16', sede: 'Cali, Valle del Cauca', deportes: ['Patinaje de Velocidad'], inscritos: 186, estado: 'Inscripciones abiertas' },
+  { id: 'EV-04', nombre: 'Válida Departamental de Patinaje · Cali', tipo: 'Válida departamental', organismoId: 'LIG-001', creadoPor: 'Liga de Patinaje del Valle', desde: '2026-10-25', hasta: '2026-10-26', sede: 'Patinódromo Mundialista, Cali', deportes: ['Patinaje'], inscritos: 74, estado: 'Inscripciones abiertas' },
+  { id: 'EV-05', nombre: 'Festival Interclubes Patín Cali', tipo: 'Festival de club', organismoId: 'CLU-001', creadoPor: 'Club Patín Cali', desde: '2026-12-06', hasta: '2026-12-06', sede: 'Cali, Valle del Cauca', deportes: ['Patinaje'], inscritos: 38, estado: 'Programado' },
+  { id: 'EV-06', nombre: 'Campeonato Nacional de Natación Interligas 2026', tipo: 'Campeonato nacional', organismoId: 'FED-038', creadoPor: 'Federación Colombiana de Natación', desde: '2026-12-01', hasta: '2026-12-05', sede: 'Medellín, Antioquia', deportes: ['Natación'], inscritos: 233, estado: 'Programado' },
+  { id: 'EV-07', nombre: 'Campeonato Nacional de Para Natación 2026', tipo: 'Campeonato nacional', organismoId: 'FED-P02', creadoPor: 'Federación Colombiana de Para Natación', desde: '2026-11-20', hasta: '2026-11-22', sede: 'Bogotá D.C.', deportes: ['Para Natación'], inscritos: 61, estado: 'Programado' }
+];
+/* Eventos de la jurisdicción de un organismo: los suyos y los de su subárbol. null = todo el SND. */
+export function eventosDe(orgId) {
+  if (orgId === null || orgId === undefined) return EVENTOS.map((e) => ({ ...e }));
+  const ids = new Set([orgId, ...subtreeOf(orgId).map((o) => o.id)]);
+  return EVENTOS.filter((e) => ids.has(e.organismoId)).map((e) => ({ ...e }));
+}
+
 /* Buscador de clubes para la afiliación (§5.2): SOLO clubes en estado Activo,
    por nombre o NIT, acento-insensible, MÍNIMO 3 caracteres, sin texto libre.
    <3 chars → array vacío (la UI muestra la pista). Copias inmutables. */

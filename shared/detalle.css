@@ -246,3 +246,4 @@ a.od-child:hover { border-color: var(--field-border-hover); background: var(--bg
 .od-ligas__list small { font-size: 12.5px; color: var(--text-secondary); }
 .od-ligas__pick { flex: 1; min-width: 220px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.od-ev__note { font-size: 13px; color: var(--text-secondary); margin: 0 0 12px; }

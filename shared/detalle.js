@@ -20,7 +20,7 @@ import { getRoleFromQuery, ROLES, homeForRole } from './sidebar.js';
 import {
   getOrganismo, childrenOf, subtreeOf, ancestorsOf,
   countDescendants, deportistasOf, allAudit, allDeportistas,
-  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga, organismosDeTerritorio
+  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga, organismosDeTerritorio, eventosDe
 } from './organismos-data.js';
 import { can, scopeFor, isGlobalScope, territorioDe } from './permissions.js';
 import { mountDevnotes } from './devnotes.js';
@@ -123,6 +123,13 @@ const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por d
     'Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qué pasó, el motivo con quién y cuándo (último cambio en la trazabilidad), qué le toca, lo que puede y no puede hacer y el recorrido.',
     'Preinscrito, En corrección y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisión</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.',
     'Solo demo: «Entrar como …» (en esta ficha si el organismo no está Activo, en la bandeja del superior y después de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene «Cambiar de perfil».'
+  ] },
+  { title: 'Eventos asociados', items: [
+    'La pestaña <strong>Eventos</strong> lista los eventos asociados al organismo y a su subárbol: el Comité Olímpico ve los del Ciclo Olímpico aunque los cree Naowee; la federación, los de sus ligas y clubes. Solo consulta: se gestionan en el módulo de eventos.',
+    'Pendiente técnico: hoy events-lite asocia el evento a una organización global «Comité Olímpico Colombiano»; debe apuntar al nodo del SND para que la jurisdicción funcione.'
+  ] },
+  { title: 'Ministro (P-01, propuesta)', items: [
+    'Rol de consulta anclado a la raíz: ve toda la jerarquía, las fichas, los eventos y los deportistas, sin aprobar, sancionar, cargar ni crear usuarios. Lo crea Naowee. Negocio debe confirmar si es un rol distinto del Administrador del Ministerio (P-01).'
   ] },
   { title: 'Sanciones del Ministerio (Fase 1)', items: [
     'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
@@ -364,12 +371,29 @@ function histPanel(o) {
   return `<div class="od-block">${rows}</div>`;
 }
 
+/* Eventos asociados al organismo y a su subárbol (el COC ve los del Ciclo Olímpico). Solo consulta. */
+function eventosPanel(o) {
+  const evs = eventosDe(o.id).sort((a, b) => a.desde.localeCompare(b.desde));
+  if (!evs.length) return emptyState('Sin eventos asociados', 'Ningún evento está asociado a este organismo ni a los que dependen de él.');
+  const propio = (e) => e.organismoId === o.id;
+  return `<p class="od-ev__note">Eventos asociados a ${esc(o.nombre)} y a los organismos que dependen de él. Se consultan aquí; se gestionan en el módulo de eventos.</p>
+    <div class="cg-table-wrap"><table class="cg-table bj-table"><thead><tr><th>Evento</th><th>Fechas</th><th>Asociado a</th><th>Estado</th></tr></thead><tbody>
+    ${evs.map((e) => `<tr>
+      <td data-label="Evento"><div class="bj-org"><span class="bj-org__emoji">${e.tipo === 'Ciclo Olímpico' ? '🏅' : '🏁'}</span><div><div class="bj-org__name">${esc(e.nombre)}</div><div class="bj-org__sub">${esc(e.tipo)} · ${esc(e.sede)} · ${esc(e.deportes.join(', '))}</div></div></div></td>
+      <td data-label="Fechas" class="cg-table__nit">${esc(fmtDate(e.desde))}${e.hasta !== e.desde ? ' – ' + esc(fmtDate(e.hasta)) : ''}</td>
+      <td data-label="Asociado a"><div class="bj-org__name" style="font-weight:500">${propio(e) ? 'Este organismo' : esc((getOrganismo(e.organismoId) || {}).nombre || e.organismoId)}</div><div class="bj-org__sub">Lo creó ${esc(e.creadoPor)} · ${e.inscritos} inscritos</div></td>
+      <td data-label="Estado"><span class="naowee-badge naowee-badge--${e.estado === 'Inscripciones abiertas' ? 'positive' : 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(e.estado)}</span></td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
 /* ─── Tabs ─── */
 const TABS = [
   ['info', 'Información'],
   ['rep', 'Representante legal'],
   ['docs', 'Documentos'],
   ['hier', 'Jerarquía'],
+  ['eventos', 'Eventos'],
   ['hist', 'Historial']
 ];
 function panelFor(tab, o) {
@@ -377,11 +401,12 @@ function panelFor(tab, o) {
   if (tab === 'docs') return docsPanel(o);
   if (tab === 'hier') return hierPanel(o);
   if (tab === 'hist') return histPanel(o);
+  if (tab === 'eventos') return eventosPanel(o);
   return infoPanel(o);
 }
 
 function renderProfile(o) {
-  let active = 'info';
+  let active = TABS.some(([t]) => t === params.get('tab')) ? params.get('tab') : 'info';
   root.innerHTML = `${esPropio(o) ? '' : breadcrumbHtml(o)}
     ${esPropio(o) ? '<div class="od-back"><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>' : backBtnHtml()}
     ${conBloqueEstado(o) ? estadoPropioHtml(o, roleCode) : ''}

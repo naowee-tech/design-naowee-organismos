@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // ../front/DEMO/naowee-organismos/shared/estados.js
+  // estados.js
   var init_estados = __esm({
-    "../front/DEMO/naowee-organismos/shared/estados.js"() {
+    "estados.js"() {
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/organismos-data.js
+  // organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -289,7 +289,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, SIN_FEDERACION, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
   var init_organismos_data = __esm({
-    "../front/DEMO/naowee-organismos/shared/organismos-data.js"() {
+    "organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -450,7 +450,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/permissions.js
+  // permissions.js
   function contextoDe(role3) {
     if (!TIPO_DE_ROL[role3]) return null;
     const valido = (id) => {
@@ -504,7 +504,7 @@
   }
   var ACCIONES, RECURSOS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
-    "../front/DEMO/naowee-organismos/shared/permissions.js"() {
+    "permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -538,7 +538,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/sidebar.js
+  // sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -828,7 +828,7 @@
     });
   }
   function perfilesDemoHtml(actual) {
-    const codes = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    const codes = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => {
@@ -1022,7 +1022,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "../front/DEMO/naowee-organismos/shared/sidebar.js"() {
+    "sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1122,6 +1122,20 @@
           group: "Personas",
           deportistaId: "DEP-001"
         },
+        /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+           deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+        MINISTRO: {
+          code: "MINISTRO",
+          label: "Ministro (consulta)",
+          userName: "Despacho del Ministro",
+          userEmail: "despacho@mindeporte.demo.co",
+          userDoc: "Cuenta institucional",
+          org: "Ministerio del Deporte",
+          avatar: "DM",
+          color: "#334155",
+          short: "Consulta todo el SND sin aprobar, sancionar ni crear",
+          group: "Rector\xEDa"
+        },
         /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
            deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
         TERRITORIAL: {
@@ -1153,7 +1167,7 @@
       };
       NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
       NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
-      NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
+      NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
       jerarquiaItems = (code) => {
         const hijos = nivelesForRole(code);
         if (hijos.length === 1) return [];
@@ -1180,7 +1194,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         FEDERACION: [
           { section: null, items: jerarquiaItems("FEDERACION") },
@@ -1191,7 +1205,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         LIGA: [
           { section: null, items: jerarquiaItems("LIGA") },
@@ -1202,7 +1216,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         CLUB: [
           { section: null, items: jerarquiaItems("CLUB") },
@@ -1212,7 +1226,7 @@
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
             { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
         DEPORTISTA: [
@@ -1223,6 +1237,12 @@
         ],
         PERSONA: [
           { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+        ],
+        MINISTRO: [
+          { section: null, items: jerarquiaItems("MINISTRO") },
+          { section: "CONSULTA", items: [
+            { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+          ] }
         ],
         TERRITORIAL: [
           { section: null, items: jerarquiaItems("TERRITORIAL") },
@@ -1286,7 +1306,7 @@
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
       ROLE_GROUPS = [
-        { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
+        { label: "Rector\xEDa", codes: ["MINDEPORTE", "MINISTRO"] },
         { label: "Territorio", codes: ["TERRITORIAL"] },
         { label: "Cabezas de sector", codes: ["COMITE"] },
         { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
@@ -1295,7 +1315,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/registro.js
+  // registro.js
   var registro_exports = {};
   function freshData() {
     return {
@@ -2447,7 +2467,7 @@
   }
   var I, TIPO_META, TIPO_SINGULAR, SECTORES, TIPO_DOC, ZONAS, AMBITOS, TIPOS_CLUB, TIPOS_VIA, LETRAS_VIA, DEPARTAMENTOS, DEPORTES, PRECARGA_TIPO, STEP_LABELS, STEPS_POR_ORGANISMO, DOCS_POR_TIPO, roleCode, role, DRAFT_KEY, STATE, created, COMPLETAR, esc, norm, EMAIL_RE, saveTimer, root;
   var init_registro = __esm({
-    "../front/DEMO/naowee-organismos/shared/registro.js"() {
+    "registro.js"() {
       init_organismos_data();
       init_sidebar();
       I = {
@@ -2536,7 +2556,7 @@
     }
   });
 
-  // ../front/DEMO/naowee-organismos/shared/entries/registro.js
+  // entries/registro.js
   init_sidebar();
   var roleCode2 = getRoleFromQuery();
   var role2 = ROLES[roleCode2];

@@ -88,6 +88,15 @@ export const ROLES = {
     color: '#0e7490', short: 'Gestiona su afiliación a un club deportivo',
     group: 'Personas', deportistaId: 'DEP-001'
   },
+  /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+     deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+  MINISTRO: {
+    code: 'MINISTRO', label: 'Ministro (consulta)',
+    userName: 'Despacho del Ministro', userEmail: 'despacho@mindeporte.demo.co',
+    userDoc: 'Cuenta institucional', org: 'Ministerio del Deporte', avatar: 'DM',
+    color: '#334155', short: 'Consulta todo el SND sin aprobar, sancionar ni crear',
+    group: 'Rectoría'
+  },
   /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
      deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
   TERRITORIAL: {
@@ -116,7 +125,7 @@ export const ROLES = {
 const NIVELES_JERARQUIA = [['comite', 'Comités'], ['federacion', 'Federaciones'], ['liga', 'Ligas'], ['club', 'Clubes'], ['deportista', 'Deportistas']];
 /* Cada rol ve los niveles que tiene debajo (Mindeporte, todos); nunca a sí mismo ni a sus ancestros. */
 const NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
-const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista', TERRITORIAL: 'federacion' };
+const NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista', TERRITORIAL: 'federacion' };
 export function nivelesForRole(code) {
   /* El encargado municipal no tiene ligas en su territorio: sus niveles empiezan en clubes. */
   const nivel = code === 'TERRITORIAL' && (territorioDe(code) || {}).municipio ? 'liga' : NIVEL_PROPIO[code];
@@ -151,7 +160,7 @@ const MENU_BY_ROLE = {
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
     ] },
-    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   FEDERACION: [
     { section: null,        items: jerarquiaItems('FEDERACION') },
@@ -162,7 +171,7 @@ const MENU_BY_ROLE = {
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
     ] },
-    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   LIGA: [
     { section: null,          items: jerarquiaItems('LIGA') },
@@ -173,7 +182,7 @@ const MENU_BY_ROLE = {
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
     ] },
-    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   CLUB: [
     { section: null,          items: jerarquiaItems('CLUB') },
@@ -183,7 +192,7 @@ const MENU_BY_ROLE = {
         { id: 'deportistas', label: 'Mis deportistas',            icon: 'users', route: 'deportistas.html' },
         { id: 'bandeja',     label: 'Solicitudes de deportistas', icon: 'inbox', route: 'bandeja.html' }
     ] },
-    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
   DEPORTISTA: [
@@ -194,6 +203,12 @@ const MENU_BY_ROLE = {
   ],
   PERSONA: [
     { section: null,          items: [{ id: 'perfil',     label: 'Mi perfil',            icon: 'user',     route: 'perfil.html' }] }
+  ],
+  MINISTRO: [
+    { section: null,          items: jerarquiaItems('MINISTRO') },
+    { section: 'CONSULTA',    items: [
+        { id: 'deportistas', label: 'Deportistas', icon: 'users', route: 'deportistas.html' }
+    ] }
   ],
   TERRITORIAL: [
     { section: null,          items: jerarquiaItems('TERRITORIAL') },
@@ -564,7 +579,7 @@ function mountContexto(role) {
    panel «Recorrido por HU»). Mismas personas que el switcher; limpia persona y contexto. */
 const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'perfil.html', PERSONA: 'perfil.html' };
 function perfilesDemoHtml(actual) {
-  const codes = ['MINDEPORTE', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  const codes = ['MINDEPORTE', 'MINISTRO', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
   return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => { const r = ROLES[c]; const def = ROLE_DEFAULT[c] || r;
@@ -625,7 +640,7 @@ export function getDemoMode() {
 /* Persona multi-rol: visible solo en local (file:// o localhost), oculta en la publicación. */
 export const esLocal = () => location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const ROLE_GROUPS = [
-  { label: 'Rectoría',          codes: ['MINDEPORTE'] },
+  { label: 'Rectoría',          codes: ['MINDEPORTE', 'MINISTRO'] },
   { label: 'Territorio',        codes: ['TERRITORIAL'] },
   { label: 'Cabezas de sector', codes: ['COMITE'] },
   { label: 'Organismos',        codes: ['FEDERACION', 'LIGA', 'CLUB'] },

@@ -32,14 +32,16 @@ const PERMS = {
     MINDEPORTE: 'CRUS',  // único creador (ORG-01)
     COMITE: 'RU',        // el propio
     FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
-    TERRITORIAL: 'R'
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   federaciones: {
     MINDEPORTE: 'RAS',   // A = su mitad de la doble validación
     COMITE: 'CRA',       // C pre-registro/cargue · A = su mitad — solo su sector
     FEDERACION: 'RU',    // la propia
     LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
-    TERRITORIAL: 'R'
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   ligas: {
     MINDEPORTE: 'RS',    // S* supuesto
@@ -47,7 +49,8 @@ const PERMS = {
     FEDERACION: 'CRA',   // las suyas
     LIGA: 'RU',          // la propia
     CLUB: 'R', DEPORTISTA: 'R',
-    TERRITORIAL: 'R'
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   clubes: {
     MINDEPORTE: 'RS',    // S* supuesto
@@ -56,14 +59,16 @@ const PERMS = {
     LIGA: 'CRA',         // los suyos
     CLUB: 'RU',          // el propio
     DEPORTISTA: 'R',      // solo buscar clubes Activos (se acota en la UI de afiliación)
-    TERRITORIAL: 'R'
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   deportistas: {
     MINDEPORTE: 'R',
     COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar autodeclarados y proponer club (P-07)
     CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
     DEPORTISTA: 'RU',     // el propio (nunca documento / fecha nac.)
-    TERRITORIAL: 'CR'   // registra autodeclarados y propone club (P-12); no aprueba
+    TERRITORIAL: 'CR',   // registra autodeclarados y propone club (P-12); no aprueba
+    MINISTRO: 'R'
   },
   /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
      DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -78,7 +83,8 @@ const PERMS = {
     COMITE: '', FEDERACION: '', LIGA: '',
     CLUB: 'RA',          // las dirigidas a su club (ORG-05, único aprobador)
     DEPORTISTA: 'CRX',    // crea / ve estado / retira las propias
-    TERRITORIAL: ''
+    TERRITORIAL: '',
+    MINISTRO: 'R'
   },
   cargue: {
     MINDEPORTE: 'R',     // historial global*
@@ -87,11 +93,13 @@ const PERMS = {
     LIGA: 'CR',          // clubes
     CLUB: '',            // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
     DEPORTISTA: '',
-    TERRITORIAL: ''
+    TERRITORIAL: '',
+    MINISTRO: 'R'
   },
   auditoria: {
     MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
-    TERRITORIAL: 'R'
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   }
 };
 
@@ -170,5 +178,5 @@ function getOrganismoByCiudad(ciudad) {
 }
 
 export function isGlobalScope(role) {
-  return scopeFor(role) === null && role === 'MINDEPORTE';
+  return scopeFor(role) === null && (role === 'MINDEPORTE' || role === 'MINISTRO');
 }
