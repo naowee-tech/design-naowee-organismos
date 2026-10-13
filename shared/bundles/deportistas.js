@@ -259,16 +259,15 @@
       </a>`;
     };
     const listHtml = ROLE_GROUPS.map((g) => {
-      const items = g.codes.map((c) => ROLES[c]).filter(Boolean).map(renderItem).join("");
+      const items = g.codes.filter((c) => c !== "PERSONA" || esLocal()).map((c) => ROLES[c]).filter(Boolean).map(renderItem).join("");
       if (!items) return "";
       return `<div class="demo-role-switcher__group-label">${g.label}</div>${items}`;
     }).join("");
     const root2 = document.createElement("div");
-    root2.className = "demo-role-switcher";
+    root2.className = "demo-role-switcher demo-role-switcher--inline";
     root2.id = "demoSwitcher";
     root2.innerHTML = `
     <button class="demo-role-switcher__toggle" id="demoSwitcherToggle" type="button" aria-haspopup="true" aria-expanded="false">
-      <span class="demo-role-switcher__badge">DEMO</span>
       <span class="demo-role-switcher__avatar" style="background:${current.color}22;color:${current.color}">${current.avatar || "OR"}</span>
       <span>Cambiar perfil</span>
       <span class="demo-role-switcher__chev">${getIcon("chevron")}</span>
@@ -289,7 +288,9 @@
       </div>
     </div>
   `;
-    document.body.appendChild(root2);
+    const tourPanel = document.getElementById("ttPanel");
+    if (tourPanel) tourPanel.insertBefore(root2, tourPanel.querySelector(".tt-panel-sub"));
+    else document.body.appendChild(root2);
     bindDemoSwitcher(root2);
   }
   function bindDemoSwitcher(root2) {
@@ -356,7 +357,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, MODE_KEY, TOUR_KEY, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "shared/sidebar.js"() {
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -557,6 +558,7 @@
       _tooltipEl = null;
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
+      esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
       ROLE_GROUPS = [
         { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
         { label: "Cabezas de sector", codes: ["COMITE"] },

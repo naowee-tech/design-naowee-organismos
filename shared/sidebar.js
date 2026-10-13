@@ -426,6 +426,8 @@ export function getDemoMode() {
 }
 
 /* Roles agrupados por nivel de la jerarquía SND (handoff). */
+/* Persona multi-rol: visible solo en local (file:// o localhost), oculta en la publicación. */
+export const esLocal = () => location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const ROLE_GROUPS = [
   { label: 'Rectoría',          codes: ['MINDEPORTE'] },
   { label: 'Cabezas de sector', codes: ['COMITE'] },
@@ -461,17 +463,16 @@ export function mountDemoSwitcher({ roleCode }) {
   };
 
   const listHtml = ROLE_GROUPS.map((g) => {
-    const items = g.codes.map((c) => ROLES[c]).filter(Boolean).map(renderItem).join('');
+    const items = g.codes.filter((c) => c !== 'PERSONA' || esLocal()).map((c) => ROLES[c]).filter(Boolean).map(renderItem).join('');
     if (!items) return '';
     return `<div class="demo-role-switcher__group-label">${g.label}</div>${items}`;
   }).join('');
 
   const root = document.createElement('div');
-  root.className = 'demo-role-switcher';
+  root.className = 'demo-role-switcher demo-role-switcher--inline';
   root.id = 'demoSwitcher';
   root.innerHTML = `
     <button class="demo-role-switcher__toggle" id="demoSwitcherToggle" type="button" aria-haspopup="true" aria-expanded="false">
-      <span class="demo-role-switcher__badge">DEMO</span>
       <span class="demo-role-switcher__avatar" style="background:${current.color}22;color:${current.color}">${current.avatar || 'OR'}</span>
       <span>Cambiar perfil</span>
       <span class="demo-role-switcher__chev">${getIcon('chevron')}</span>
@@ -492,7 +493,10 @@ export function mountDemoSwitcher({ roleCode }) {
       </div>
     </div>
   `;
-  document.body.appendChild(root);
+  /* DC-063: vive dentro del panel «Recorrido por HU» (expandible); sin panel, queda oculto. */
+  const tourPanel = document.getElementById('ttPanel');
+  if (tourPanel) tourPanel.insertBefore(root, tourPanel.querySelector('.tt-panel-sub'));
+  else document.body.appendChild(root);
   bindDemoSwitcher(root);
 }
 

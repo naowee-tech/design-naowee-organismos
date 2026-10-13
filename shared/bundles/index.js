@@ -203,10 +203,11 @@
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
+  var esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   // shared/entries/index.js
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  var order = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", "PERSONA"];
+  var order = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
   var CTA = {
     MINDEPORTE: "Abrir jerarqu\xEDa",
     COMITE: "Abrir jerarqu\xEDa",

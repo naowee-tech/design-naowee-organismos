@@ -501,3 +501,14 @@ body.has-mobile-drawer-open .shell-backdrop { opacity: 1; pointer-events: auto; 
     transition-duration: .001ms !important;
   }
 }
+
+/* Cambiar perfil dentro del panel del recorrido (DC-063): expandible en línea */
+body > .demo-role-switcher--inline { display: none; }
+.demo-role-switcher--inline { position: static; transform: none; margin: 4px 0 8px; }
+.demo-role-switcher--inline .demo-role-switcher__toggle { width: 100%; box-shadow: none; }
+.demo-role-switcher--inline .demo-role-switcher__toggle:hover { transform: none; box-shadow: none; }
+.demo-role-switcher--inline .demo-role-switcher__chev { margin-left: auto; }
+.demo-role-switcher--inline .demo-role-switcher__panel {
+  position: static; transform: none; width: auto; max-height: 0; border: 0; box-shadow: none;
+}
+.demo-role-switcher--inline.is-open .demo-role-switcher__panel { transform: none; max-height: 340px; margin-top: 6px; border: 1px solid var(--border); }
