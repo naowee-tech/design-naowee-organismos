@@ -990,10 +990,12 @@ export function asociarAutodeclarado(depId, clubId, meta = {}) {
   return r;
 }
 /* Autodeclarados que un club puede buscar y asociar (no menores: a un menor lo afilia su tutor). */
-export function buscarAutodeclarados(query) {
+export function buscarAutodeclarados(query, deportes) {
   const q = _norm(String(query || '').trim());
   if (q.length < 3) return [];
-  return allDeportistas().filter((d) => d.estado === 'autodeclarado' && !d.tutorId && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
+  /* Solo de los deportes del club: un ciclista no entra a un club de patinaje. */
+  return allDeportistas().filter((d) => d.estado === 'autodeclarado' && !d.tutorId && (!deportes || deportes.includes(d.deporte))
+    && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
 }
 
 /* Club → otra liga de sus deportes (P-20): el club pide y esa liga aprueba solo el vínculo. */

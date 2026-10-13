@@ -651,10 +651,10 @@ if (root) {
     const res = ov.querySelector('#asRes'); const inp = ov.querySelector('#asBusca'); const ok = ov.querySelector('#asOk');
     const pinta = () => {
       const q = inp.value.trim();
-      const items = buscarAutodeclarados(q).slice(0, 8);
+      const items = buscarAutodeclarados(q, club ? club.deportes : null).slice(0, 8);
       res.innerHTML = q.length < 3 ? '<p class="bj-detail__note">Escribe al menos 3 caracteres.</p>'
         : items.length ? items.map((d) => `<button type="button" class="dp-as-opt${sel === d.id ? ' is-sel' : ''}" data-id="${esc(d.id)}"><strong>${esc(d.nombre)}</strong><span>${esc(d.tipoDoc)} ${esc(d.numDoc)} · ${esc(d.deporte)}</span></button>`).join('')
-        : '<p class="bj-detail__note">No hay autodeclarados con ese nombre o documento.</p>';
+        : `<p class="bj-detail__note">No hay autodeclarados de ${esc(club ? club.deporte : 'tus deportes')} con ese nombre o documento.</p>`;
       res.querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { sel = b.dataset.id; ok.disabled = false; pinta(); }));
     };
     inp.addEventListener('input', () => { sel = null; ok.disabled = true; pinta(); });

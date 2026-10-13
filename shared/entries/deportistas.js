@@ -17,7 +17,8 @@
     mountDevnotes({ clubTitulo: { title: 'Plantel del club', items: [
       'El rol CLUB ve el nombre de su club como título; roles superiores conservan la etiqueta del menú.',
       'Con multi-afiliación, el plantel son los deportistas con afiliación Vinculada a este club. Si también están en otro club se indica en la fila.',
-      '<strong>Desvincular</strong> termina solo la afiliación a este club (P-04, decisión de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.'
+      '<strong>Desvincular</strong> termina solo la afiliación a este club (P-04, decisión de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.',
+      '<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya está en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club.'
     ] } });
   }
   if (roleCode !== 'CLUB') {

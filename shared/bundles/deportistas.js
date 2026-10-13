@@ -367,10 +367,10 @@
     auditLog({ orgId: clubId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : "", responsable: meta.responsable || "", rol: "CLUB", accion: "Deportista asociado por el club", de: "Autodeclarado", a: "Vinculado", notif: true });
     return r;
   }
-  function buscarAutodeclarados(query) {
+  function buscarAutodeclarados(query, deportes) {
     const q = _norm(String(query || "").trim());
     if (q.length < 3) return [];
-    return allDeportistas().filter((d) => d.estado === "autodeclarado" && !d.tutorId && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
+    return allDeportistas().filter((d) => d.estado === "autodeclarado" && !d.tutorId && (!deportes || deportes.includes(d.deporte)) && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, _norm;
   var init_organismos_data = __esm({
@@ -2216,8 +2216,8 @@
           const ok = ov.querySelector("#asOk");
           const pinta = () => {
             const q = inp.value.trim();
-            const items = buscarAutodeclarados(q).slice(0, 8);
-            res.innerHTML = q.length < 3 ? '<p class="bj-detail__note">Escribe al menos 3 caracteres.</p>' : items.length ? items.map((d) => `<button type="button" class="dp-as-opt${sel === d.id ? " is-sel" : ""}" data-id="${esc(d.id)}"><strong>${esc(d.nombre)}</strong><span>${esc(d.tipoDoc)} ${esc(d.numDoc)} \xB7 ${esc(d.deporte)}</span></button>`).join("") : '<p class="bj-detail__note">No hay autodeclarados con ese nombre o documento.</p>';
+            const items = buscarAutodeclarados(q, club ? club.deportes : null).slice(0, 8);
+            res.innerHTML = q.length < 3 ? '<p class="bj-detail__note">Escribe al menos 3 caracteres.</p>' : items.length ? items.map((d) => `<button type="button" class="dp-as-opt${sel === d.id ? " is-sel" : ""}" data-id="${esc(d.id)}"><strong>${esc(d.nombre)}</strong><span>${esc(d.tipoDoc)} ${esc(d.numDoc)} \xB7 ${esc(d.deporte)}</span></button>`).join("") : `<p class="bj-detail__note">No hay autodeclarados de ${esc(club ? club.deporte : "tus deportes")} con ese nombre o documento.</p>`;
             res.querySelectorAll("[data-id]").forEach((b) => b.addEventListener("click", () => {
               sel = b.dataset.id;
               ok.disabled = false;
@@ -2402,7 +2402,8 @@
     mountDevnotes({ clubTitulo: { title: "Plantel del club", items: [
       "El rol CLUB ve el nombre de su club como t\xEDtulo; roles superiores conservan la etiqueta del men\xFA.",
       "Con multi-afiliaci\xF3n, el plantel son los deportistas con afiliaci\xF3n Vinculada a este club. Si tambi\xE9n est\xE1n en otro club se indica en la fila.",
-      "<strong>Desvincular</strong> termina solo la afiliaci\xF3n a este club (P-04, decisi\xF3n de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado."
+      "<strong>Desvincular</strong> termina solo la afiliaci\xF3n a este club (P-04, decisi\xF3n de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.",
+      "<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya est\xE1 en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club."
     ] } });
   }
   if (roleCode !== "CLUB") {
