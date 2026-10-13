@@ -1,5 +1,5 @@
 (() => {
-  // shared/organismos-data.js
+  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -193,7 +193,7 @@
     return { ...record };
   }
 
-  // shared/devnotes.js?v=1.6.0
+  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/devnotes.js?v=1.7.0
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -207,7 +207,7 @@
     });
   }
 
-  // shared/registro-publico.js
+  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/registro-publico.js
   var esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]);
   var norm = (s) => [...String(s == null ? "" : s)].map((c) => c.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()).join("");
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -312,7 +312,7 @@
   var FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === "federacion");
   var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"];
   var CATALOGO_DEPORTES = () => [.../* @__PURE__ */ new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
-  var duenoDeporte = (dep, sector) => FEDERACIONES().find((f) => f.sector === sector && deportesDe(f).includes(dep) && !["Rechazado", "Cancelado"].includes(f.estado));
+  var duenoDeporte = (dep) => FEDERACIONES().find((f) => deportesDe(f).includes(dep) && !["Rechazado", "Cancelado"].includes(f.estado));
   var CONJUNTO = ["Baloncesto", "Balonmano", "B\xE9isbol", "F\xFAtbol", "F\xFAtbol de Sal\xF3n", "Hockey", "Polo Acu\xE1tico", "Rugby", "Softbol", "Voleibol"];
   var deportesPorTipo = (t) => {
     const all = CATALOGO_DEPORTES();
@@ -597,8 +597,8 @@
   function unclaimedAlert() {
     return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
     <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
-    <p class="naowee-message__text">Est\xE1 asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
-    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es m\xEDo</button></div>
+    <p class="naowee-message__text">Est\xE1 asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, activa tu cuenta: te enviamos a ese correo el enlace para crear tu contrase\xF1a y, al entrar, revisas y actualizas tus datos desde tu perfil.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Activar mi cuenta</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es m\xEDo</button></div>
   </div></div>`;
   }
   function notMineAlert() {
@@ -703,7 +703,7 @@
     const chips = libres.map((dep) => {
       const on = d.deportes.includes(dep);
       return `<button type="button" class="rp-chip${on ? " is-on" : ""}" data-dep="${esc(dep)}">${on ? I.check : ""}${esc(dep)}</button>`;
-    }).join("") + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen federaci\xF3n en el sector ${esc(d.sector)}.</p>` : "");
+    }).join("") + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen una federaci\xF3n.</p>` : "");
     return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label>
     <p class="rp-inline-note">${t === "federacion" ? "Una federaci\xF3n puede gobernar varios deportes; cada deporte pertenece a una sola federaci\xF3n." : `Elige entre los deportes de tu ${SUPERIOR_TXT[t]}.`}</p>
     <div class="rp-chips">${chips}</div></div>`;
@@ -966,10 +966,10 @@
       bindPane();
     }));
     (_a = root().querySelector('[data-act="claim"]')) == null ? void 0 : _a.addEventListener("click", () => {
-      STATE.claim = { ...SIN_RECLAMAR };
-      STATE.lookup = "ok";
-      renderPane();
-      bindPane();
+      STATE.result = { tipo: "persona", reclamado: true, nombre: "Tu perfil", rol: ROL_TXT[STATE.role], doc: `${STATE.d.tipoDoc} ${STATE.d.numDoc}`, correo: SIN_RECLAMAR.emailHint };
+      STATE.created = true;
+      render();
+      window.scrollTo({ top: 0 });
     });
     (_b = root().querySelector('[data-act="notMine"]')) == null ? void 0 : _b.addEventListener("click", () => {
       STATE.lookup = "notMine";
@@ -1177,14 +1177,14 @@
     <div class="ur-devnote-wrap ur-devnote-wrap--center"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${persona ? "resultPersona" : "resultEntidad"}"></span></div>
     <div class="ur-result__ava">${I.check}</div>
     ${persona ? `
-      ${r.reclamado ? `<h1 class="ur-title">\xA1Perfil reclamado!</h1>
-      <p>Actualizamos tu perfil con los datos que ingresaste y activamos tu cuenta.</p>
+      ${r.reclamado ? `<h1 class="ur-title">\xA1Cuenta activada!</h1>
+      <p>Activamos la cuenta del perfil que ya exist\xEDa con tu documento.</p>
       <p>Enviamos el enlace para crear tu contrase\xF1a a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">\xA1Registro completado!</h1>
       <p>\xA1Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
       <p>\xA1Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmaci\xF3n.</p>`}
       <div class="ur-profile"><div class="ur-profile__head"><strong>${esc(r.nombre)}</strong><span class="ur-badge">Cuenta activa</span></div>
         ${profileRows([["Rol", r.rol], ["Documento", r.doc], ["Fecha de nacimiento", r.fechaNac ? r.fechaNac.split("-").reverse().join("/") : ""], ["Deporte", r.deporte], ["Correo", r.correo], ["Tel\xE9fono", r.telefono], ["Ubicaci\xF3n", r.ubicacion]])}</div>
-      ${msg("informative", "", esc(siguiente))}
+      ${msg("informative", "", esc(r.reclamado ? "Al entrar, revisa tus datos y actual\xEDzalos desde tu perfil. Si no tienes acceso a ese correo, escribe a soporte@naowee.com." : siguiente))}
       ${msg("caution", "", "Si no recibiste el correo, revisa bandeja de SPAM o solicita reenv\xEDo.")}
       <div class="ur-actions"><a class="ur-btn ur-btn--block" href="index.html">Ir a Iniciar sesi\xF3n</a></div>` : `
       <h1 class="ur-title">\xA1Solicitud enviada!</h1>
@@ -1220,10 +1220,11 @@
       { title: "Se mantiene de producci\xF3n", items: ["Documento CC / CE / PA. Con 7 d\xEDgitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los dem\xE1s campos quedan bloqueados hasta verificar.", '<code>isMinor</code> \u2192 alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> \u2192 "Ya tienes una cuenta registrada" + Iniciar sesi\xF3n.', 'Fecha de nacimiento: 18+ obligatorio, tambi\xE9n para el tutor. "Rol espec\xEDfico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
       { title: "Perfil existente sin reclamar (reconciliaci\xF3n)", items: [
         "Caso: el documento existe con <code>has_login=false</code> porque lo cre\xF3 otro actor (una instituci\xF3n al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la b\xFAsqueda, no al final del formulario.",
-        'Se muestra el correo <b>enmascarado</b> y sin opci\xF3n de editar: dos primeras letras y la \xFAltima del usuario y el dominio completo (<code>ju\u2022\u2022\u2022\u2022\u2022z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra qui\xE9n cre\xF3 el registro: averiguarlo exige cruzar todos los eventos y no aporta para reconocer el correo. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es m\xEDo" lleva a soporte, que verifica identidad y cambia el correo.',
-        "Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ah\xED queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contrase\xF1a.",
-        "<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza tel\xE9fono, nacionalidad, ubicaci\xF3n, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemogr\xE1fico se descartan sin avisar.",
-        "<b>Cambios de back</b>: (1) la b\xFAsqueda devuelve <code>email_hint</code> enmascarado; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditor\xEDa con los valores anteriores.",
+        "Se muestra el correo <b>enmascarado</b> y sin opci\xF3n de editar: dos primeras letras y la \xFAltima del usuario y el dominio completo (<code>ju\u2022\u2022\u2022\u2022\u2022z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra qui\xE9n cre\xF3 el registro.",
+        "<b>Regla (decisi\xF3n 2026-10-09, Juan Manuel Armero y Daniel Pizarro, DEP-545)</b>: \xABActivar mi cuenta\xBB <b>solo activa la cuenta</b> y env\xEDa al correo guardado el enlace para crear la contrase\xF1a. En el registro <b>no se editan datos</b>: reclamar con solo el documento y dejar editar permit\xEDa que cualquiera con la c\xE9dula de otra persona cambiara su perfil. Los datos se actualizan despu\xE9s de entrar, desde el perfil. Queda <code>has_login=true</code> con el mismo <code>user_code</code>.",
+        '"Ese correo no es m\xEDo" lleva a soporte, que verifica identidad y cambia el correo.',
+        "<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el mismo correo guardado (si escribe otro, 409 <code>document_registered_different_email</code>) y actualiza parte de los datos. Ya hay una primera implementaci\xF3n en staging que se ajusta a la regla (ver DEP-550).",
+        "<b>Cambios de back</b>: (1) la b\xFAsqueda devuelve <code>email_hint</code> enmascarado; (2) reclamar sin enviar correo, usando el guardado, y sin actualizar datos; (3) el reclamo queda en auditor\xEDa.",
         "<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, tel\xE9fono, direcci\xF3n, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>."
       ] },
       { title: "Menores (pendiente P-21)", items: ["Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio tambi\xE9n puede, se agrega en el registro asistido, no aqu\xED."] },
@@ -1248,14 +1249,14 @@
       { title: "Se mantiene", items: ["NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisi\xF3n \u2192 mensaje de revisi\xF3n pendiente; con cuenta \u2192 Iniciar sesi\xF3n.", "Naturaleza jur\xEDdica, tama\xF1o y representante legal. <b>Corregir al migrar</b>: hoy no se env\xEDa el apellido del representante."] },
       { title: "Solo demo", items: ["La b\xFAsqueda de NIT est\xE1 simulada: <code>805010003-3</code> devuelve en revisi\xF3n y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la b\xFAsqueda; el que no tiene registro adem\xE1s deja el formulario lleno para poder dar Siguiente."] },
       { title: "Nuevo: organismo superior", items: ["Federaci\xF3n \u2192 elige sector y queda adscrita al comit\xE9 del sector. Liga \u2192 elige federaci\xF3n. Club \u2192 filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).", "La lista solo trae organismos <b>Activos</b>. Si el suyo no est\xE1: soporte, que escala al Ministerio (P-17).", "En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden despu\xE9s como afiliaci\xF3n."] },
-      { title: "Nuevo: deportes", items: ["Lista de deportes del cat\xE1logo. Federaci\xF3n: del cat\xE1logo, sin repetir deportes que ya tiene otra federaci\xF3n del mismo sector. Liga: de su federaci\xF3n. Club: de su liga.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
+      { title: "Nuevo: deportes", items: ["Lista de deportes del cat\xE1logo. Federaci\xF3n: del cat\xE1logo, sin repetir deportes que ya tiene otra federaci\xF3n. <b>Un deporte pertenece a una sola federaci\xF3n en todo el sistema</b>, sin importar el comit\xE9 (decisi\xF3n 2026-10-09, Daniel Pizarro, DEP-545). Liga: de su federaci\xF3n. Club: de su liga.", "Sin carga hist\xF3rica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio env\xEDe el listado.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
       { title: "Contrato propuesto", items: ["<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.", "El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> \u2286 deportes del superior, NIT \xFAnico, un deporte en una sola federaci\xF3n."] },
       { title: "Brecha con user-auth-ms (revisado 07-10-2026, rama staging)", items: [
         "<b>Ya soportado</b> en <code>organizations_details</code>: NIT \xFAnico, nombre, naturaleza jur\xEDdica, tama\xF1o, representante (tipo y n\xFAmero de documento, nombre, correo), departamento, municipio, direcci\xF3n, tel\xE9fono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.",
         "<b>Tipo</b>: <code>organization_type</code> acepta <code>FEDERATION</code> y <code>CLUB</code>, pero no <code>LEAGUE</code>. No agregar otro valor al <code>oneof</code>: los tipos deben ser cat\xE1logo.",
         "<b>Subordinaci\xF3n configurable</b>: comit\xE9 \u2192 federaci\xF3n \u2192 liga \u2192 club es el esquema de SUID, no una regla del c\xF3digo. Cada proyecto declara su esquema con reglas (tipo padre, tipo hijo, varios padres, deporte compartido, qui\xE9n aprueba). El alta y la bandeja leen las reglas; no preguntan por tipos concretos. Ver nao-docs, Modelo \u2192 Pendientes t\xE9cnicos.",
         "<b>Superior</b>: no hay relaci\xF3n entre organizaciones; el <code>HierarchyPath</code> del token ABAC es solo territorial (<code>/COL/{dpto}/{mun}/</code>). Como un club puede estar en varias ligas (P-20), se necesita una tabla de afiliaci\xF3n (hijo, padre, estado, vigencia), no una columna <code>parent_code</code>.",
-        "<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organizaci\xF3n \u2194 deporte, con un deporte en una sola federaci\xF3n por sector y cada nivel dentro de su superior.",
+        "<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organizaci\xF3n \u2194 deporte, con un deporte en una sola federaci\xF3n en todo el sistema y cada nivel dentro de su superior.",
         "<b>Sin campo</b>: \xE1mbito de la liga (el cat\xE1logo <code>COVERAGE</code> no tiene Distrital), tipo de club, apellido del representante (hoy el front lo descarta).",
         "<b>Estados que faltan</b>: En correcci\xF3n (devuelto con motivo), Preinscrito (cargue masivo), Cancelado. Tampoco hay d\xF3nde guardar los dos avales de la federaci\xF3n (P-19).",
         "<b>Revisor</b>: un <code>PENDING_REVIEW</code> no tiene revisor asignado; para que caiga en la bandeja del superior hace falta la relaci\xF3n de afiliaci\xF3n y una jurisdicci\xF3n por jerarqu\xEDa deportiva.",
@@ -1270,7 +1271,7 @@
     ] },
     resultPersona: { title: "Resultado (Persona)", sections: [
       { title: "Se mantiene", items: ["Textos de producci\xF3n. Cuenta activa; el correo trae el enlace para crear la contrase\xF1a."] },
-      { title: "Nuevo", items: ["Siguiente paso seg\xFAn el rol: deportista \u2192 afiliaci\xF3n a uno o varios clubes; tutor \u2192 registrar menores; personal deportivo \u2192 v\xEDnculo con cualquier organismo (P-05)."] },
+      { title: "Nuevo", items: ["Siguiente paso seg\xFAn el rol: deportista \u2192 afiliaci\xF3n a uno o varios clubes; tutor \u2192 registrar menores; personal deportivo \u2192 v\xEDnculo con cualquier organismo (P-05).", "Perfil reclamado: \xAB\xA1Cuenta activada!\xBB, sin datos del formulario; la persona actualiza sus datos desde el perfil al entrar (decisi\xF3n 2026-10-09)."] },
       { title: "Solo demo", items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".', 'Los enlaces "Solo demo" al pie de la pantalla tambi\xE9n se ocultan con el switch de notas para devs (queda "Registrar otro").'] }
     ] },
     resultEntidad: { title: "Resultado (Entidad)", sections: [

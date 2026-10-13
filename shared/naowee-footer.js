@@ -613,7 +613,17 @@ const MODULE_NAME = 'Organismos';
                enlace directo perfil.html?role=PERSONA sigue funcionando.
              Main revierte el revert ba7b08e para recuperar el trabajo.
              Cache-busters ?v=1.7.0. */
-const MODULE_VERSION = 'v1.7.0';
+/* v1.7.1 —  REGISTRO PÚBLICO alineado a las decisiones del 2026-10-09
+             (DEP-545, Juan Manuel Armero y Daniel Pizarro):
+             · Reclamar un perfil existente ("Activar mi cuenta") solo activa la
+               cuenta y envía el acceso al correo guardado: no pasa por el
+               formulario y el resultado es «¡Cuenta activada!». Los datos se
+               actualizan desde el perfil al entrar.
+             · Un deporte pertenece a una sola federación en todo el sistema,
+               sin importar el comité (antes se validaba por sector).
+             · Notas para devs actualizadas (sin carga histórica en esta entrega).
+             Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+const MODULE_VERSION = 'v1.7.1';
 
 (function () {
   function mount() {
