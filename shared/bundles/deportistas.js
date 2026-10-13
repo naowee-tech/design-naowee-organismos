@@ -73,6 +73,7 @@
     if (readStore("cargues") == null) writeStore("cargues", []);
     if (readStore("audit") == null) writeStore("audit", []);
     writeStore("afiliaciones", seedAfiliaciones());
+    clearStore("usuarios");
     writeStore("solicitudes", []);
     clearStore("preinscritos");
     try {
@@ -372,7 +373,15 @@
     if (q.length < 3) return [];
     return allDeportistas().filter((d) => d.estado === "autodeclarado" && !d.tutorId && (!deportes || deportes.includes(d.deporte)) && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, _norm;
+  function organismosDeTerritorio(t) {
+    return allOrganismos().filter((o) => (t.municipio ? o.tipo === "club" : ["liga", "club"].includes(o.tipo)) && enTerritorio(o, t));
+  }
+  function deportistasDeTerritorio(t) {
+    const clubes = new Set(organismosDeTerritorio(t).filter((o) => o.tipo === "club").map((o) => o.id));
+    const tid = territorioId(t);
+    return allDeportistas().filter((d) => d.clubIds.some((c) => clubes.has(c)) || !d.clubIds.length && d.registradoPor === tid);
+  }
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, _norm, TER_PREFIX, territorioId, nombreTerritorio, enTerritorio;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
       init_estados();
@@ -524,9 +533,13 @@
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.3.0";
+      SEED_VERSION = "0.4.0";
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       _norm = (s) => String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      TER_PREFIX = "TER:";
+      territorioId = (t) => TER_PREFIX + (t.municipio ? `${t.depto}/${t.municipio}` : t.depto);
+      nombreTerritorio = (t) => t.municipio ? `${t.municipio} (${t.depto})` : t.depto;
+      enTerritorio = (o, t) => o.ubicacion && o.ubicacion.depto === t.depto && (!t.municipio || o.ubicacion.ciudad === t.municipio);
     }
   });
 
@@ -566,7 +579,29 @@
     if (ctx) return ctx;
     return role2 in SCOPE ? SCOPE[role2] : null;
   }
-  var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY;
+  function territorioDe(role2) {
+    if (role2 !== "TERRITORIAL") return null;
+    let mun = null;
+    try {
+      mun = new URLSearchParams(window.location.search).get("territorio");
+      if (mun) sessionStorage.setItem("naowee-organismos-territorio", mun);
+      else mun = sessionStorage.getItem("naowee-organismos-territorio");
+    } catch (_) {
+    }
+    if (mun && mun !== TER_DEFAULT.depto) {
+      const club = getOrganismoByCiudad(mun);
+      if (club) return { depto: club.ubicacion.depto, municipio: mun };
+    }
+    return { ...TER_DEFAULT };
+  }
+  function getOrganismoByCiudad(ciudad) {
+    for (const id of ["CLU-001", "CLU-002", "CLU-003", "CLU-004", "CLU-005", "CLU-006", "CLU-007", "CLU-008", "CLU-009", "CLU-010", "CLU-011", "CLU-012"]) {
+      const o = getOrganismo(id);
+      if (o && o.ubicacion && o.ubicacion.ciudad === ciudad) return o;
+    }
+    return null;
+  }
+  var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
     "permissions.js"() {
       init_organismos_data();
@@ -597,7 +632,8 @@
           FEDERACION: "R",
           LIGA: "R",
           CLUB: "R",
-          DEPORTISTA: "R"
+          DEPORTISTA: "R",
+          TERRITORIAL: "R"
         },
         federaciones: {
           MINDEPORTE: "RAS",
@@ -608,7 +644,8 @@
           // la propia
           LIGA: "R",
           CLUB: "R",
-          DEPORTISTA: "R"
+          DEPORTISTA: "R",
+          TERRITORIAL: "R"
         },
         ligas: {
           MINDEPORTE: "RS",
@@ -620,7 +657,8 @@
           LIGA: "RU",
           // la propia
           CLUB: "R",
-          DEPORTISTA: "R"
+          DEPORTISTA: "R",
+          TERRITORIAL: "R"
         },
         clubes: {
           MINDEPORTE: "RS",
@@ -632,8 +670,9 @@
           // los suyos
           CLUB: "RU",
           // el propio
-          DEPORTISTA: "R"
+          DEPORTISTA: "R",
           // solo buscar clubes Activos (se acota en la UI de afiliación)
+          TERRITORIAL: "R"
         },
         deportistas: {
           MINDEPORTE: "R",
@@ -643,8 +682,10 @@
           // C = registrar autodeclarados y proponer club (P-07)
           CLUB: "CRX",
           // sus afiliados · X = desvincular (ORG-10, ver nota)
-          DEPORTISTA: "RU"
+          DEPORTISTA: "RU",
           // el propio (nunca documento / fecha nac.)
+          TERRITORIAL: "CR"
+          // registra autodeclarados y propone club (P-12); no aprueba
         },
         /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
            DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -662,8 +703,9 @@
           LIGA: "",
           CLUB: "RA",
           // las dirigidas a su club (ORG-05, único aprobador)
-          DEPORTISTA: "CRX"
+          DEPORTISTA: "CRX",
           // crea / ve estado / retira las propias
+          TERRITORIAL: ""
         },
         cargue: {
           MINDEPORTE: "R",
@@ -676,7 +718,8 @@
           // clubes
           CLUB: "",
           // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
-          DEPORTISTA: ""
+          DEPORTISTA: "",
+          TERRITORIAL: ""
         },
         auditoria: {
           MINDEPORTE: "R",
@@ -684,7 +727,8 @@
           FEDERACION: "R",
           LIGA: "R",
           CLUB: "R",
-          DEPORTISTA: "R"
+          DEPORTISTA: "R",
+          TERRITORIAL: "R"
         }
       };
       SCOPE = {
@@ -697,6 +741,7 @@
       };
       TIPO_DE_ROL = { COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club" };
       CTX_KEY = "naowee-organismos-ctx-";
+      TER_DEFAULT = { depto: "Valle del Cauca" };
     }
   });
 
@@ -988,7 +1033,7 @@
     });
   }
   function perfilesDemoHtml(actual) {
-    const codes = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+    const codes = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => {
@@ -1007,7 +1052,7 @@
     if (burger) burger.addEventListener("click", openDrawer);
     headerEl.querySelectorAll("[data-perfil-chip]").forEach((a) => a.addEventListener("click", () => {
       try {
-        [PERSONA_KEY, ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
+        [PERSONA_KEY, "naowee-organismos-territorio", ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
       } catch (_) {
       }
     }));
@@ -1134,7 +1179,7 @@
           return;
         }
         try {
-          [PERSONA_KEY, ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
+          [PERSONA_KEY, "naowee-organismos-territorio", ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
         } catch (_) {
         }
         window.location.href = `${homeForRole(next)}?role=${next}`;
@@ -1282,6 +1327,20 @@
           group: "Personas",
           deportistaId: "DEP-001"
         },
+        /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
+           deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
+        TERRITORIAL: {
+          code: "TERRITORIAL",
+          label: "Encargado departamental",
+          userName: "Ana Luc\xEDa Valencia",
+          userEmail: "avalencia@valledelcauca.demo.gov.co",
+          userDoc: "CC 66.912.345",
+          org: "Valle del Cauca",
+          avatar: "AV",
+          color: "#b45309",
+          short: "Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados",
+          group: "Territorio"
+        },
         /* v1.6.0 · perfil multi-rol: una persona con varias facetas
            (deportista + tutora legal + personal de apoyo) en un solo perfil. */
         PERSONA: {
@@ -1298,7 +1357,7 @@
         }
       };
       NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
-      NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista" };
+      NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
       jerarquiaItems = (code) => {
         const hijos = nivelesForRole(code);
         if (hijos.length === 1) return [];
@@ -1367,6 +1426,12 @@
         ],
         PERSONA: [
           { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+        ],
+        TERRITORIAL: [
+          { section: null, items: jerarquiaItems("TERRITORIAL") },
+          { section: "MI TERRITORIO", items: [
+            { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+          ] }
         ]
       };
       PERSONAS = {
@@ -1389,6 +1454,8 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          const terr = territorioDe(code);
+          if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
           if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
             const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ""}`.trim();
             Object.assign(ROLES[code], {
@@ -1414,6 +1481,7 @@
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
       ROLE_GROUPS = [
         { label: "Rector\xEDa", codes: ["MINDEPORTE"] },
+        { label: "Territorio", codes: ["TERRITORIAL"] },
         { label: "Cabezas de sector", codes: ["COMITE"] },
         { label: "Organismos", codes: ["FEDERACION", "LIGA", "CLUB"] },
         { label: "Personas", codes: ["DEPORTISTA", "PERSONA"] }
@@ -1688,7 +1756,7 @@
       root = document.getElementById("deportistasRoot");
       if (root) {
         let plantel = function() {
-          return deportistasOf(scopeId).map((d) => {
+          return (terr ? deportistasDeTerritorio(terr) : deportistasOf(scopeId)).map((d) => {
             let p = null;
             try {
               p = buildDeportistaDetalle(d);
@@ -1837,7 +1905,7 @@
       ${msg(
             "informative",
             I.info,
-            esClub ? `Deportistas con afiliaci\xF3n <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : "tu club")}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club \u2192 liga \u2192 federaci\xF3n \u2192 comit\xE9) que el deportista recibi\xF3 al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliaci\xF3n y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode2)}">Solicitudes de deportistas</a>.` : `Deportistas vinculados a clubes de tu jurisdicci\xF3n${club ? ` (<strong>${esc(club.nombre)}</strong> y su sub\xE1rbol)` : ""}. Tambi\xE9n ves los autodeclarados que registraste: prop\xF3nles un club y ese club confirma.`,
+            esClub ? `Deportistas con afiliaci\xF3n <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : "tu club")}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club \u2192 liga \u2192 federaci\xF3n \u2192 comit\xE9) que el deportista recibi\xF3 al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliaci\xF3n y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode2)}">Solicitudes de deportistas</a>.` : terr ? `Deportistas vinculados a clubes ubicados en <strong>${esc(nombreTerritorio(terr))}</strong> y los autodeclarados que registraste. Puedes registrar deportistas y proponerles un club de tu territorio; el club lo confirma. No apruebas organismos ni afiliaciones.` : `Deportistas vinculados a clubes de tu jurisdicci\xF3n${club ? ` (<strong>${esc(club.nombre)}</strong> y su sub\xE1rbol)` : ""}. Tambi\xE9n ves los autodeclarados que registraste: prop\xF3nles un club y ese club confirma.`,
             "margin-bottom:16px"
           )}
 
@@ -2041,11 +2109,11 @@
             }
           });
         }, openRegistro = function(depId) {
-          const actor = getOrganismo(scopeId);
+          const actor = terr ? { id: territorioId(terr), tipo: "territorio", nombre: nombreTerritorio(terr) } : getOrganismo(scopeId);
           if (!actor) return;
           const existente = depId ? getDeportista(depId) : null;
           const abajo = NIVELES_ABAJO[actor.tipo] || [];
-          const fijos = [...ancestorsOf(actor.id).reverse(), actor];
+          const fijos = terr ? [] : [...ancestorsOf(actor.id).reverse(), actor];
           const st = {
             step: existente ? 2 : 1,
             id: existente ? existente.id : null,
@@ -2067,6 +2135,7 @@
           };
           document.addEventListener("keydown", onKey);
           const opciones = (tipo) => {
+            if (terr) return tipo === "club" ? organismosDeTerritorio(terr).filter((o) => o.tipo === "club" && o.estado === "Activo") : [];
             const padre = tipo === "federacion" ? actor.id : tipo === "liga" ? st.sel.federacionId || (actor.tipo === "federacion" ? actor.id : null) : st.sel.ligaId || (actor.tipo === "liga" ? actor.id : null);
             return padre ? childrenOf(padre).filter((o) => o.tipo === tipo && o.estado === "Activo") : [];
           };
@@ -2312,6 +2381,7 @@
         const qsp = (k) => new URLSearchParams(location.search).get(k);
         const roleCode2 = qsp("role") || "MINDEPORTE";
         const scopeId = scopeFor(roleCode2);
+        const terr = territorioDe(roleCode2);
         const puedeVer = can(roleCode2, "R", "deportistas");
         const esClub = roleCode2 === "CLUB";
         const puedeCrear = can(roleCode2, "C", "deportistas");
@@ -2359,7 +2429,7 @@
         let _ddWired = false;
         const sortEs = (a, b) => a.localeCompare(b, "es");
         const DEPORTES = ["Patinaje", "Nataci\xF3n", "F\xFAtbol", "Ciclismo"];
-        const NIVELES_ABAJO = { comite: ["federacion", "liga", "club"], federacion: ["liga", "club"], liga: ["club"], club: [] };
+        const NIVELES_ABAJO = { comite: ["federacion", "liga", "club"], federacion: ["liga", "club"], liga: ["club"], club: [], territorio: ["club"] };
         const TIPO_LBL = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
         const toast = (t) => {
           if (window.naoweeToast) window.naoweeToast(t, "success");

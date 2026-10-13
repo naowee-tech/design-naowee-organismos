@@ -11,7 +11,7 @@ import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
   solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo,
-  personalDe, resolverVinculo, clubesQuePidenLiga, resolverLiga
+  personalDe, resolverVinculo, clubesQuePidenLiga, resolverLiga, nombreActor
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './estados.js';
@@ -229,7 +229,7 @@ function renderAfiliaciones() {
                 <tr>
                   <td data-label="Deportista"><div class="bj-org"><span class="bj-org__emoji">🏃</span><div><div class="bj-org__name">${esc(r.dep.nombre)}</div><div class="bj-org__sub">${esc(r.dep.tipoDoc)} ${esc(r.dep.numDoc)}</div></div></div></td>
                   <td data-label="Deporte"><div class="bj-org__name" style="font-weight:500">${esc(r.dep.deporte)}</div><div class="bj-org__sub">${esc(r.dep.modalidad || '')}</div></td>
-                  <td data-label="Estado"><div class="bj-sol-cell">${r.tipo === 'retiro' ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Baja</span>' : r.origen === 'propuesta' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta</span>' : '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Afiliación</span>'}${solBadge(r.estado)}</div>${r.origen === 'propuesta' && r.proponenteId ? `<div class="bj-org__sub">Propuesto por ${esc((getOrganismo(r.proponenteId) || {}).nombre || r.proponenteId)}</div>` : ''}</td>
+                  <td data-label="Estado"><div class="bj-sol-cell">${r.tipo === 'retiro' ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Baja</span>' : r.origen === 'propuesta' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta</span>' : '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Afiliación</span>'}${solBadge(r.estado)}</div>${r.origen === 'propuesta' && r.proponenteId ? `<div class="bj-org__sub">Propuesto por ${esc(nombreActor(r.proponenteId))}</div>` : ''}</td>
                   <td class="cg-table__nit" data-label="Fecha">${esc(r.fecha || '—')}</td>
                   <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-openafil="${esc(r.id)}">${puedeAfil && r.estado === 'Enviada' ? 'Revisar' : 'Ver'}</button></td>
                 </tr>`).join('')}
@@ -268,7 +268,7 @@ function openAfilDetail(sid) {
           ${kv('Modalidad', dep.modalidad || '—')}
           ${kv('Correo', dep.correo || '—')}
           ${kv(esRetiro ? 'Baja solicitada' : 'Solicitud', sol.fecha || '—')}
-          ${sol.origen === 'propuesta' && sol.proponenteId ? kv('Propuesto por', esc((getOrganismo(sol.proponenteId) || {}).nombre || sol.proponenteId)) : ''}
+          ${sol.origen === 'propuesta' && sol.proponenteId ? kv('Propuesto por', esc(nombreActor(sol.proponenteId))) : ''}
           ${!esRetiro && dep.clubIds.filter((c) => c !== sol.clubId).length ? kv('Otros clubes', esc(dep.clubIds.filter((c) => c !== sol.clubId).map((c) => (getOrganismo(c) || {}).nombre || c).join(', '))) : ''}
           ${(sol.estado === 'Aprobada' || sol.estado === 'Rechazada') && sol.responsable ? kv('Revisado por', `${esc(sol.responsable)}${sol.resueltaFecha ? ' · ' + esc(sol.resueltaFecha) : ''}`) : ''}
         </dl>

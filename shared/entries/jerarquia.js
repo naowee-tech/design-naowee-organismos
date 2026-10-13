@@ -4,10 +4,11 @@
   } from '../sidebar.js';
   import {
     seedDemoData, getOrganismo, childrenOf, allDeportistas,
-    ancestorsOf, countDescendants, deportistasOf, estadoBadgeVariant
+    ancestorsOf, countDescendants, deportistasOf, estadoBadgeVariant,
+    organismosDeTerritorio, deportistasDeTerritorio, nombreTerritorio
   } from '../organismos-data.js';
   import { ESTADOS } from '../estados.js';
-  import { scopeFor } from '../permissions.js';
+  import { scopeFor, territorioDe } from '../permissions.js';
   import { mountDevnotes } from '../devnotes.js';
 
   seedDemoData();
@@ -77,6 +78,14 @@
     } else if (dep) {
       roots = [depNode(dep)];   // autodeclarado — sin cadena
     }
+  } else if (territorioDe(roleCode)) {
+    /* Territorial (Fase 3): raíz virtual con los organismos ubicados en su territorio (ligas del
+       departamento y clubes de sus municipios; el municipio, solo sus clubes). Solo lectura. */
+    const terr = territorioDe(roleCode);
+    const orgs = organismosDeTerritorio(terr);
+    const ids = new Set(orgs.map((o) => o.id));
+    const top = orgs.filter((o) => !(o.parentId && ids.has(o.parentId)));
+    roots = [{ kind: 'org', id: 'TER', tipo: 'territorio', name: nombreTerritorio(terr), nit: '', deporte: '', estado: '', children: top.map(orgNode) }];
   } else if (scope === null) {
     roots = childrenOf(null).map(orgNode);   // Mindeporte → los 3 comités
   } else {
@@ -135,6 +144,7 @@
 
   function scopeInfo() {
     if (roleCode === 'MINDEPORTE') return { emoji: '🇨🇴', label: 'Jurisdicción · rectoría del SND', name: 'Sistema Nacional del Deporte' };
+    if (territorioDe(roleCode)) { const t = territorioDe(roleCode); return { emoji: '📍', label: `${t.municipio ? 'Municipio' : 'Departamento'} · tu territorio`, name: nombreTerritorio(t) }; }
     if (roleCode === 'DEPORTISTA') {
       const dep = allDeportistas().find((d) => d.id === scope);
       const club = dep && dep.clubId ? getOrganismo(dep.clubId) : null;
@@ -153,6 +163,11 @@
         { val: n, lbl: 'Comité', accent: true }, { val: n, lbl: 'Federación' },
         { val: n, lbl: 'Liga' }, { val: n, lbl: 'Club' }
       ];
+    }
+    if (territorioDe(roleCode)) {
+      const t = territorioDe(roleCode); const orgs = organismosDeTerritorio(t);
+      return [...(t.municipio ? [] : [{ val: orgs.filter((o) => o.tipo === 'liga').length, lbl: 'Ligas', accent: true }]),
+        { val: orgs.filter((o) => o.tipo === 'club').length, lbl: 'Clubes', accent: !!t.municipio }, { val: deportistasDeTerritorio(t).length, lbl: 'Deportistas' }];
     }
     const c = countDescendants(scope);
     if (roleCode === 'MINDEPORTE') {

@@ -20,9 +20,9 @@ import { getRoleFromQuery, ROLES, homeForRole } from './sidebar.js';
 import {
   getOrganismo, childrenOf, subtreeOf, ancestorsOf,
   countDescendants, deportistasOf, allAudit, allDeportistas,
-  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga
+  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga, organismosDeTerritorio
 } from './organismos-data.js';
-import { can, scopeFor, isGlobalScope } from './permissions.js';
+import { can, scopeFor, isGlobalScope, territorioDe } from './permissions.js';
 import { mountDevnotes } from './devnotes.js';
 import { estadoBadgeVariant } from './estados.js';
 import { estadoPropioHtml, sancionesHtml, abrirSancion } from './ciclo.js';
@@ -77,6 +77,11 @@ function fmtDate(iso) {
 /* ─── RBAC / jurisdicción (§11) ─── */
 function inJurisdiction(orgId) {
   if (isGlobalScope(roleCode)) return true;              // MINDEPORTE ve todo
+  const terr = territorioDe(roleCode);
+  if (terr) {                                            // territorial: lo ubicado en su territorio y lo que cuelga de ello
+    const base = organismosDeTerritorio(terr).map((o) => o.id);
+    return base.includes(orgId) || base.some((b) => subtreeOf(b).some((x) => x.id === orgId));
+  }
   const scopeId = scopeFor(roleCode);
   if (roleCode === 'DEPORTISTA') {                       // solo su cadena heredada
     const dep = allDeportistas().find((d) => d.id === scopeId);

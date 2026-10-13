@@ -20,12 +20,12 @@
    render(); las notas para devs se montan después de cada render.
    ═══════════════════════════════════════════════════════════════ */
 import { mountDevnotes } from './devnotes.js?v=1.7.0';
-import { scopeFor } from './permissions.js';
+import { scopeFor, territorioDe } from './permissions.js';
 import {
   getOrganismo, subtreeOf, getDeportista, afiliacionesDe, menoresDe, edadDe, ancestorsOf, allSolicitudes,
   crearSolicitud, retirarAfiliacion, crearSolicitudRetiro, retiroPendienteDe, cancelarRetiro, resolverAfiliacion,
   desvincularPorClub, solicitarVinculo, resolverVinculo, registrarMenor, buscarClubesActivos, allOrganismos,
-  catalogoDeportes, allDeportistas
+  catalogoDeportes, allDeportistas, organismosDeTerritorio, nombreTerritorio
 } from './organismos-data.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
 
@@ -64,6 +64,7 @@ export function resolveViewer() {
   let shellRole = 'PERSONA';
   if (q.get('modo') === 'consulta' || role === 'MINDEPORTE') { kind = 'admin'; shellRole = 'MINDEPORTE'; }
   else if (role === 'DEPORTISTA') { kind = 'own'; shellRole = 'DEPORTISTA'; }
+  else if (role === 'TERRITORIAL') { kind = 'org'; shellRole = 'TERRITORIAL'; }
   else if (ORG_ROLES.includes(role)) { kind = 'org'; shellRole = role; }
   else if (comite) { kind = 'comite'; shellRole = 'COMITE'; }
   const orgId = kind === 'org' ? scopeFor(role) : null;
@@ -173,8 +174,11 @@ const parseRoles = () => {
   return r.length ? r : base;
 };
 let personaRoles = parseRoles();
-const scope = viewer.orgId ? new Set([viewer.orgId, ...subtreeOf(viewer.orgId).map((o) => o.id)]) : null;
-const orgName = viewer.orgId ? (getOrganismo(viewer.orgId)?.nombre || 'tu organismo') : '';
+const TERR = territorioDe(qs().get('role'));
+/* Territorial: su alcance son los organismos ubicados en su territorio y lo que cuelga de ellos (solo consulta). */
+const scope = viewer.orgId ? new Set([viewer.orgId, ...subtreeOf(viewer.orgId).map((o) => o.id)])
+  : TERR ? new Set(organismosDeTerritorio(TERR).flatMap((o) => [o.id, ...subtreeOf(o.id).map((x) => x.id)])) : null;
+const orgName = viewer.orgId ? (getOrganismo(viewer.orgId)?.nombre || 'tu organismo') : TERR ? nombreTerritorio(TERR) : '';
 
 const state = {
   section: (qs().get('seccion') === 'analisis' && !resolveViewer().analisis) ? 'perfil' : (qs().get('seccion') || 'perfil'),

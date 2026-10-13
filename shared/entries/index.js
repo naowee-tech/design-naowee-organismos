@@ -1,12 +1,12 @@
   import { ROLES, homeForRole, esLocal } from '../sidebar.js';
   /* Elegir perfil desde el inicio es entrar como otra persona: se olvidan persona y contexto de la sesión. */
-  try { Object.keys(sessionStorage).filter((k) => k === 'naowee-organismos-persona' || k.startsWith('naowee-organismos-ctx-')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
+  try { Object.keys(sessionStorage).filter((k) => k === 'naowee-organismos-persona' || k === 'naowee-organismos-territorio' || k.startsWith('naowee-organismos-ctx-')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
 
   const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  const order = ['MINDEPORTE', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  const order = ['MINDEPORTE', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
   const CTA = {
     MINDEPORTE: 'Abrir jerarquía', COMITE: 'Abrir jerarquía', FEDERACION: 'Abrir jerarquía',
-    LIGA: 'Abrir jerarquía', CLUB: 'Abrir bandeja', DEPORTISTA: 'Abrir mi afiliación', PERSONA: 'Abrir mi perfil'
+    LIGA: 'Abrir jerarquía', TERRITORIAL: 'Abrir jerarquía', CLUB: 'Abrir bandeja', DEPORTISTA: 'Abrir mi perfil', PERSONA: 'Abrir mi perfil'
   };
 
   document.getElementById('grid').innerHTML = order.map((code) => {
@@ -43,6 +43,8 @@
     { color: '#0e7490', quien: 'Laura Gómez · deportista', titulo: 'Afiliarse a un segundo club', desc: 'Busca el club y pide afiliación; ve la cadena que hereda de cada club y puede retirarse de uno.', href: 'perfil.html?role=PERSONA&seccion=afiliaciones' },
     { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club asocia a un autodeclarado', desc: 'En «Mis deportistas», «Asociar autodeclarado» busca a quien ya está en el SUID sin club.', href: 'deportistas.html?role=CLUB' },
     { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club pide entrar a otra liga', desc: 'Desde «Mi organismo» elige otra liga de su deporte; esa liga aprueba solo el vínculo (P-20).', href: 'organismo-detalle.html?role=CLUB' },
+    { color: '#b45309', quien: 'Ana Lucía Valencia · Encargada departamental', titulo: 'El territorio consulta su departamento', desc: 'Ve las ligas y clubes ubicados en el Valle y sus deportistas, en solo lectura. No aprueba nada.', href: 'jerarquia.html?role=TERRITORIAL&territorio=Valle del Cauca' },
+    { color: '#b45309', quien: 'Encargado municipal · Cali', titulo: 'El municipio registra un deportista', desc: 'Lo registra autodeclarado y le propone un club de su municipio; el club lo confirma.', href: 'deportistas.html?role=TERRITORIAL&territorio=Cali' },
     { color: '#7c3aed', quien: 'Sandra Mejía · Liga de Natación', titulo: 'Un deportista en dos clubes', desc: 'Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.', href: 'deportistas.html?role=LIGA&org=LIG-006&como=sandra' }
   ];
   document.getElementById('casosGrid').innerHTML = CASOS.map((c) => `

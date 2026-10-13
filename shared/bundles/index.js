@@ -201,6 +201,29 @@
     if (ctx) return ctx;
     return role in SCOPE ? SCOPE[role] : null;
   }
+  var TER_DEFAULT = { depto: "Valle del Cauca" };
+  function territorioDe(role) {
+    if (role !== "TERRITORIAL") return null;
+    let mun = null;
+    try {
+      mun = new URLSearchParams(window.location.search).get("territorio");
+      if (mun) sessionStorage.setItem("naowee-organismos-territorio", mun);
+      else mun = sessionStorage.getItem("naowee-organismos-territorio");
+    } catch (_) {
+    }
+    if (mun && mun !== TER_DEFAULT.depto) {
+      const club = getOrganismoByCiudad(mun);
+      if (club) return { depto: club.ubicacion.depto, municipio: mun };
+    }
+    return { ...TER_DEFAULT };
+  }
+  function getOrganismoByCiudad(ciudad) {
+    for (const id of ["CLU-001", "CLU-002", "CLU-003", "CLU-004", "CLU-005", "CLU-006", "CLU-007", "CLU-008", "CLU-009", "CLU-010", "CLU-011", "CLU-012"]) {
+      const o = getOrganismo(id);
+      if (o && o.ubicacion && o.ubicacion.ciudad === ciudad) return o;
+    }
+    return null;
+  }
 
   // sidebar.js
   var ICONS = {
@@ -299,6 +322,20 @@
       group: "Personas",
       deportistaId: "DEP-001"
     },
+    /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
+       deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
+    TERRITORIAL: {
+      code: "TERRITORIAL",
+      label: "Encargado departamental",
+      userName: "Ana Luc\xEDa Valencia",
+      userEmail: "avalencia@valledelcauca.demo.gov.co",
+      userDoc: "CC 66.912.345",
+      org: "Valle del Cauca",
+      avatar: "AV",
+      color: "#b45309",
+      short: "Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados",
+      group: "Territorio"
+    },
     /* v1.6.0 · perfil multi-rol: una persona con varias facetas
        (deportista + tutora legal + personal de apoyo) en un solo perfil. */
     PERSONA: {
@@ -315,7 +352,7 @@
     }
   };
   var NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
-  var NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista" };
+  var NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
   function nivelesForRole(code) {
     const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
     return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
@@ -388,6 +425,12 @@
     ],
     PERSONA: [
       { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
+    ],
+    TERRITORIAL: [
+      { section: null, items: jerarquiaItems("TERRITORIAL") },
+      { section: "MI TERRITORIO", items: [
+        { id: "deportistas", label: "Deportistas", icon: "users", route: "deportistas.html" }
+      ] }
     ]
   };
   var PERSONAS = {
@@ -423,6 +466,8 @@
       if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
       const org = getOrganismo(scopeFor(code));
       if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+      const terr = territorioDe(code);
+      if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
       if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
         const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ""}`.trim();
         Object.assign(ROLES[code], {
@@ -452,18 +497,19 @@
 
   // entries/index.js
   try {
-    Object.keys(sessionStorage).filter((k) => k === "naowee-organismos-persona" || k.startsWith("naowee-organismos-ctx-")).forEach((k) => sessionStorage.removeItem(k));
+    Object.keys(sessionStorage).filter((k) => k === "naowee-organismos-persona" || k === "naowee-organismos-territorio" || k.startsWith("naowee-organismos-ctx-")).forEach((k) => sessionStorage.removeItem(k));
   } catch (_) {
   }
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  var order = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+  var order = ["MINDEPORTE", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
   var CTA = {
     MINDEPORTE: "Abrir jerarqu\xEDa",
     COMITE: "Abrir jerarqu\xEDa",
     FEDERACION: "Abrir jerarqu\xEDa",
     LIGA: "Abrir jerarqu\xEDa",
+    TERRITORIAL: "Abrir jerarqu\xEDa",
     CLUB: "Abrir bandeja",
-    DEPORTISTA: "Abrir mi afiliaci\xF3n",
+    DEPORTISTA: "Abrir mi perfil",
     PERSONA: "Abrir mi perfil"
   };
   document.getElementById("grid").innerHTML = order.map((code) => {
@@ -497,6 +543,8 @@
     { color: "#0e7490", quien: "Laura G\xF3mez \xB7 deportista", titulo: "Afiliarse a un segundo club", desc: "Busca el club y pide afiliaci\xF3n; ve la cadena que hereda de cada club y puede retirarse de uno.", href: "perfil.html?role=PERSONA&seccion=afiliaciones" },
     { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club asocia a un autodeclarado", desc: "En \xABMis deportistas\xBB, \xABAsociar autodeclarado\xBB busca a quien ya est\xE1 en el SUID sin club.", href: "deportistas.html?role=CLUB" },
     { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club pide entrar a otra liga", desc: "Desde \xABMi organismo\xBB elige otra liga de su deporte; esa liga aprueba solo el v\xEDnculo (P-20).", href: "organismo-detalle.html?role=CLUB" },
+    { color: "#b45309", quien: "Ana Luc\xEDa Valencia \xB7 Encargada departamental", titulo: "El territorio consulta su departamento", desc: "Ve las ligas y clubes ubicados en el Valle y sus deportistas, en solo lectura. No aprueba nada.", href: "jerarquia.html?role=TERRITORIAL&territorio=Valle del Cauca" },
+    { color: "#b45309", quien: "Encargado municipal \xB7 Cali", titulo: "El municipio registra un deportista", desc: "Lo registra autodeclarado y le propone un club de su municipio; el club lo confirma.", href: "deportistas.html?role=TERRITORIAL&territorio=Cali" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga de Nataci\xF3n", titulo: "Un deportista en dos clubes", desc: "Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.", href: "deportistas.html?role=LIGA&org=LIG-006&como=sandra" }
   ];
   document.getElementById("casosGrid").innerHTML = CASOS.map((c) => `

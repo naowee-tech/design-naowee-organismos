@@ -11,7 +11,7 @@
      - Cambio de perfil = homeForRole(next) + '?role=' + next.
    ═══════════════════════════════════════════════════════════════ */
 
-import { contextoDe, scopeFor } from './permissions.js';
+import { contextoDe, scopeFor, territorioDe } from './permissions.js';
 import { getOrganismo, allOrganismos, solicitudesDeClub } from './organismos-data.js';
 
 const COLLAPSED_KEY = 'naowee-organismos-sidebar-collapsed';
@@ -88,6 +88,15 @@ export const ROLES = {
     color: '#0e7490', short: 'Gestiona su afiliación a un club deportivo',
     group: 'Personas', deportistaId: 'DEP-001'
   },
+  /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
+     deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
+  TERRITORIAL: {
+    code: 'TERRITORIAL', label: 'Encargado departamental',
+    userName: 'Ana Lucía Valencia', userEmail: 'avalencia@valledelcauca.demo.gov.co',
+    userDoc: 'CC 66.912.345', org: 'Valle del Cauca', avatar: 'AV',
+    color: '#b45309', short: 'Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados',
+    group: 'Territorio'
+  },
   /* v1.6.0 · perfil multi-rol: una persona con varias facetas
      (deportista + tutora legal + personal de apoyo) en un solo perfil. */
   PERSONA: {
@@ -106,7 +115,7 @@ export const ROLES = {
 /* Jerarquía SND con un subítem por nivel: cada uno abre las columnas con ese nivel ya abierto. */
 const NIVELES_JERARQUIA = [['comite', 'Comités'], ['federacion', 'Federaciones'], ['liga', 'Ligas'], ['club', 'Clubes'], ['deportista', 'Deportistas']];
 /* Cada rol ve los niveles que tiene debajo (Mindeporte, todos); nunca a sí mismo ni a sus ancestros. */
-const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista' };
+const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista', TERRITORIAL: 'federacion' };
 export function nivelesForRole(code) {
   const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
   return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
@@ -181,6 +190,12 @@ const MENU_BY_ROLE = {
   ],
   PERSONA: [
     { section: null,          items: [{ id: 'perfil',     label: 'Mi perfil',            icon: 'user',     route: 'perfil.html' }] }
+  ],
+  TERRITORIAL: [
+    { section: null,          items: jerarquiaItems('TERRITORIAL') },
+    { section: 'MI TERRITORIO', items: [
+        { id: 'deportistas', label: 'Deportistas', icon: 'users', route: 'deportistas.html' }
+    ] }
   ]
 };
 
@@ -223,6 +238,8 @@ const ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k
     if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
     const org = getOrganismo(scopeFor(code));
     if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+    const terr = territorioDe(code);
+    if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? 'Encargado municipal' : 'Encargado departamental' });
     /* Solo demo: «entrar como» otro organismo del mismo nivel. Su administrador es el representante legal. */
     if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
       const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ''}`.trim();
@@ -537,7 +554,7 @@ function mountContexto(role) {
    panel «Recorrido por HU»). Mismas personas que el switcher; limpia persona y contexto. */
 const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'perfil.html', PERSONA: 'perfil.html' };
 function perfilesDemoHtml(actual) {
-  const codes = ['MINDEPORTE', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  const codes = ['MINDEPORTE', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
   return `<div class="profile-dd__sep"></div>
     <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
     ${codes.map((c) => { const r = ROLES[c]; const def = ROLE_DEFAULT[c] || r;
@@ -553,7 +570,7 @@ function bindHeaderEvents(headerEl) {
   const burger = headerEl.querySelector('#headerBurger');
   if (burger) burger.addEventListener('click', openDrawer);
   headerEl.querySelectorAll('[data-perfil-chip]').forEach((a) => a.addEventListener('click', () => {
-    try { [PERSONA_KEY, ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
+    try { [PERSONA_KEY, 'naowee-organismos-territorio', ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
   }));
   if (!switcher || !trigger) return;
   const toggle = (e) => { e.stopPropagation(); switcher.classList.toggle('open'); };
@@ -599,6 +616,7 @@ export function getDemoMode() {
 export const esLocal = () => location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const ROLE_GROUPS = [
   { label: 'Rectoría',          codes: ['MINDEPORTE'] },
+  { label: 'Territorio',        codes: ['TERRITORIAL'] },
   { label: 'Cabezas de sector', codes: ['COMITE'] },
   { label: 'Organismos',        codes: ['FEDERACION', 'LIGA', 'CLUB'] },
   { label: 'Personas',          codes: ['DEPORTISTA', 'PERSONA'] }
@@ -687,7 +705,7 @@ function bindDemoSwitcher(root) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('role') === next && !params.get('como')) { root.classList.remove('is-open'); return; }
       /* Cambiar de perfil es entrar como otra persona: se olvida la persona y el contexto de la sesión. */
-      try { [PERSONA_KEY, ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
+      try { [PERSONA_KEY, 'naowee-organismos-territorio', ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
       window.location.href = `${homeForRole(next)}?role=${next}`;
     });
   });

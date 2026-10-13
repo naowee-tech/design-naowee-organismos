@@ -31,20 +31,23 @@ const PERMS = {
   comites: {
     MINDEPORTE: 'CRUS',  // único creador (ORG-01)
     COMITE: 'RU',        // el propio
-    FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R'
   },
   federaciones: {
     MINDEPORTE: 'RAS',   // A = su mitad de la doble validación
     COMITE: 'CRA',       // C pre-registro/cargue · A = su mitad — solo su sector
     FEDERACION: 'RU',    // la propia
-    LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R'
   },
   ligas: {
     MINDEPORTE: 'RS',    // S* supuesto
     COMITE: 'R',         // su sector
     FEDERACION: 'CRA',   // las suyas
     LIGA: 'RU',          // la propia
-    CLUB: 'R', DEPORTISTA: 'R'
+    CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R'
   },
   clubes: {
     MINDEPORTE: 'RS',    // S* supuesto
@@ -52,13 +55,15 @@ const PERMS = {
     FEDERACION: 'R',     // subárbol
     LIGA: 'CRA',         // los suyos
     CLUB: 'RU',          // el propio
-    DEPORTISTA: 'R'      // solo buscar clubes Activos (se acota en la UI de afiliación)
+    DEPORTISTA: 'R',      // solo buscar clubes Activos (se acota en la UI de afiliación)
+    TERRITORIAL: 'R'
   },
   deportistas: {
     MINDEPORTE: 'R',
     COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar autodeclarados y proponer club (P-07)
     CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
-    DEPORTISTA: 'RU'     // el propio (nunca documento / fecha nac.)
+    DEPORTISTA: 'RU',     // el propio (nunca documento / fecha nac.)
+    TERRITORIAL: 'CR'   // registra autodeclarados y propone club (P-12); no aprueba
   },
   /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
      DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -72,7 +77,8 @@ const PERMS = {
     MINDEPORTE: 'R',     // auditoría
     COMITE: '', FEDERACION: '', LIGA: '',
     CLUB: 'RA',          // las dirigidas a su club (ORG-05, único aprobador)
-    DEPORTISTA: 'CRX'    // crea / ve estado / retira las propias
+    DEPORTISTA: 'CRX',    // crea / ve estado / retira las propias
+    TERRITORIAL: ''
   },
   cargue: {
     MINDEPORTE: 'R',     // historial global*
@@ -80,10 +86,12 @@ const PERMS = {
     FEDERACION: 'CR',    // ligas
     LIGA: 'CR',          // clubes
     CLUB: '',            // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
-    DEPORTISTA: ''
+    DEPORTISTA: '',
+    TERRITORIAL: ''
   },
   auditoria: {
-    MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R'
   }
 };
 
@@ -141,6 +149,26 @@ export function scopeFor(role) {
 }
 
 /* ¿El rol ve TODO el SND? (solo Mindeporte — ancla en la raíz). */
+/* Territorial (Fase 3): su ancla no es un organismo sino un departamento o un municipio. Lo crea
+   el Ministerio. Demo: Valle del Cauca; ?territorio=Cali (o cualquier municipio de la demo) lo vuelve municipal. */
+const TER_DEFAULT = { depto: 'Valle del Cauca' };
+export function territorioDe(role) {
+  if (role !== 'TERRITORIAL') return null;
+  let mun = null;
+  try { mun = new URLSearchParams(window.location.search).get('territorio'); if (mun) sessionStorage.setItem('naowee-organismos-territorio', mun); else mun = sessionStorage.getItem('naowee-organismos-territorio'); } catch (_) {}
+  if (mun && mun !== TER_DEFAULT.depto) {
+    const club = getOrganismoByCiudad(mun);
+    if (club) return { depto: club.ubicacion.depto, municipio: mun };
+  }
+  return { ...TER_DEFAULT };
+}
+function getOrganismoByCiudad(ciudad) {
+  for (const id of ['CLU-001', 'CLU-002', 'CLU-003', 'CLU-004', 'CLU-005', 'CLU-006', 'CLU-007', 'CLU-008', 'CLU-009', 'CLU-010', 'CLU-011', 'CLU-012']) {
+    const o = getOrganismo(id); if (o && o.ubicacion && o.ubicacion.ciudad === ciudad) return o;
+  }
+  return null;
+}
+
 export function isGlobalScope(role) {
   return scopeFor(role) === null && role === 'MINDEPORTE';
 }

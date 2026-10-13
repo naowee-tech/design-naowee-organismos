@@ -261,7 +261,7 @@ function seedAfiliaciones() {
    ═══════════════════════════════════════════════════════════════ */
 const STORE_PREFIX = 'naowee-organismos-';
 const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
-export const SEED_VERSION = '0.3.0';  // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
+export const SEED_VERSION = '0.4.0';  // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
 
 export function readStore(key, fallback = null) {
   try {
@@ -293,6 +293,7 @@ export function seedDemoData() {
   if (readStore('cargues') == null) writeStore('cargues', []);
   if (readStore('audit') == null) writeStore('audit', []);
   writeStore('afiliaciones', seedAfiliaciones());
+  clearStore('usuarios');
   writeStore('solicitudes', []);   // las solicitudes viejas apuntaban a afiliaciones que ya no existen
   clearStore('preinscritos');
   try { localStorage.setItem(SEED_FLAG, SEED_VERSION); } catch (_) {}
@@ -1020,6 +1021,101 @@ export function resolverLiga(clubId, ligaId, estado, meta = {}) {
   const r = cambiarAfiliacion(clubId, ligaId, estado, { tipo: 'club', ...meta });
   auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || '', rol: 'Liga', accion: estado === 'Vinculada' ? `Afiliación aprobada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}` : `Afiliación rechazada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: estado, motivo: meta.motivo || '', notif: true });
   return r;
+}
+
+/* ─── Fase 3 · jerarquía territorial (paralela a la deportiva, P-11/P-12) ───
+   Un territorio es { depto } o { depto, municipio }. Ubica organismos; no aprueba nada. */
+export const TER_PREFIX = 'TER:';
+export const territorioId = (t) => TER_PREFIX + (t.municipio ? `${t.depto}/${t.municipio}` : t.depto);
+export function territorioDesdeId(id) {
+  if (!id || !String(id).startsWith(TER_PREFIX)) return null;
+  const [depto, municipio] = String(id).slice(TER_PREFIX.length).split('/');
+  return municipio ? { depto, municipio } : { depto };
+}
+export const nombreTerritorio = (t) => (t.municipio ? `${t.municipio} (${t.depto})` : t.depto);
+/* Quién propuso o registró: un organismo o un usuario territorial. */
+export function nombreActor(id) {
+  const t = territorioDesdeId(id);
+  if (t) return `${t.municipio ? 'Encargado municipal' : 'Encargado departamental'} · ${nombreTerritorio(t)}`;
+  return (getOrganismo(id) || {}).nombre || id || '';
+}
+const enTerritorio = (o, t) => o.ubicacion && o.ubicacion.depto === t.depto && (!t.municipio || o.ubicacion.ciudad === t.municipio);
+/* Organismos ubicados en el territorio: el departamento ve sus ligas y los clubes de sus municipios;
+   el municipio, sus clubes. Comités y federaciones son nacionales: no los ve un territorial. */
+export function organismosDeTerritorio(t) {
+  return allOrganismos().filter((o) => (t.municipio ? o.tipo === 'club' : ['liga', 'club'].includes(o.tipo)) && enTerritorio(o, t));
+}
+/* Deportistas del territorio: los vinculados a un club ubicado allí y los autodeclarados que ese
+   usuario territorial registró. El deportista sin club no tiene territorio propio en el modelo. */
+export function deportistasDeTerritorio(t) {
+  const clubes = new Set(organismosDeTerritorio(t).filter((o) => o.tipo === 'club').map((o) => o.id));
+  const tid = territorioId(t);
+  return allDeportistas().filter((d) => d.clubIds.some((c) => clubes.has(c)) || (!d.clubIds.length && d.registradoPor === tid));
+}
+
+/* ─── Fase 3 · usuarios del organismo y roles internos ───
+   Una sola cuenta principal por organismo (A-9). Esa cuenta crea los usuarios internos según el
+   catálogo: roles transversales (cualquier organismo) y roles por marca (funcionalidades olímpicas
+   del COC). Cada rol declara quién lo crea (árbol de creación). Sin borrado: se desactiva.
+   El Ministerio tiene varios administradores, creados por Naowee (A-7), y crea a los territoriales (A-2). */
+export const MARCAS = { COC: ['olimpica'] };
+export const CATALOGO_ROLES = [
+  { id: 'ADMIN', nombre: 'Administrador del organismo', desc: 'Cuenta principal: una por organismo. Aprueba al nivel de abajo, hace cargues y crea los usuarios internos.', creaRol: null, principal: true },
+  { id: 'REVISOR', nombre: 'Revisor de registros', desc: 'Aprueba, devuelve o rechaza registros del nivel de abajo en nombre del organismo. Es quien decide cuando el administrador también administra el organismo en revisión.', creaRol: 'ADMIN', transversal: true, propuesta: 'Propuesta de Arquitectura (P-16 y P-24)' },
+  { id: 'GESTOR_COC', nombre: 'Gestor de comité olímpico', desc: 'Invita y asigna metodólogos; ve el Ciclo Olímpico y sus deportistas.', creaRol: 'ADMIN', marca: 'olimpica' },
+  { id: 'METODOLOGO', nombre: 'Metodólogo', desc: 'Registra opiniones sobre los deportistas del Ciclo Olímpico (análisis cualitativo).', creaRol: 'GESTOR_COC', marca: 'olimpica' }
+];
+export const ROLES_MINISTERIO = [
+  { id: 'ADMIN_MIN', nombre: 'Administrador del Ministerio', desc: 'Todos con el mismo alcance: crean comités, aprueban su parte de las federaciones, sancionan y ven todo el SND.', creaRol: 'NAOWEE' },
+  { id: 'TERRITORIAL', nombre: 'Encargado territorial', desc: 'Departamental o municipal. Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados con club propuesto. No aprueba.', creaRol: 'ADMIN_MIN' }
+];
+/* Roles del catálogo que puede tener este organismo (transversales + los de sus marcas). */
+export function rolesDelOrganismo(orgId) {
+  if (orgId === 'MIN') return ROLES_MINISTERIO;
+  const marcas = MARCAS[orgId] || [];
+  return CATALOGO_ROLES.filter((r) => r.principal || r.transversal || marcas.includes(r.marca));
+}
+const USUARIOS_SEED = [
+  { id: 'US-001', orgId: 'COC', rol: 'ADMIN', nombre: 'Camilo Duarte', doc: 'CC 79.456.123', correo: 'cduarte@coc.demo.co', estado: 'Activo', creadoPor: 'Ministerio del Deporte', fecha: '2025-11-02' },
+  { id: 'US-002', orgId: 'COC', rol: 'GESTOR_COC', nombre: 'Paula Andrea Ruiz', doc: 'CC 52.334.981', correo: 'pruiz@coc.demo.co', estado: 'Activo', creadoPor: 'Camilo Duarte', fecha: '2026-01-15' },
+  { id: 'US-003', orgId: 'COC', rol: 'METODOLOGO', nombre: 'Andrés Pineda', doc: 'CC 80.112.457', correo: 'apineda@coc.demo.co', estado: 'Activo', creadoPor: 'Paula Andrea Ruiz', fecha: '2026-02-03' },
+  { id: 'US-004', orgId: 'COC', rol: 'METODOLOGO', nombre: 'Lina Mora Castaño', doc: 'CC 1.020.443.118', correo: 'lmora@coc.demo.co', estado: 'Invitado', creadoPor: 'Paula Andrea Ruiz', fecha: '2026-10-08' },
+  { id: 'US-005', orgId: 'FED-040', rol: 'ADMIN', nombre: 'Alberto Herrera', doc: 'CC 16.789.234', correo: 'presidencia@fedepatinaje.demo.co', estado: 'Activo', creadoPor: 'Comité Olímpico Colombiano', fecha: '2026-02-20' },
+  { id: 'US-006', orgId: 'FED-040', rol: 'REVISOR', nombre: 'Jaime Ortiz Salcedo', doc: 'CC 79.880.214', correo: 'registros@fedepatinaje.demo.co', estado: 'Activo', creadoPor: 'Alberto Herrera', fecha: '2026-03-01' },
+  { id: 'US-007', orgId: 'LIG-001', rol: 'ADMIN', nombre: 'Sandra Mejía', doc: 'CC 31.567.890', correo: 'sandra.mejia@correo.demo.co', estado: 'Activo', creadoPor: 'Federación Colombiana de Patinaje', fecha: '2026-03-08' },
+  { id: 'US-008', orgId: 'CLU-001', rol: 'ADMIN', nombre: 'Óscar Cardona', doc: 'CC 94.321.678', correo: 'admin@clubpatincali.demo.co', estado: 'Activo', creadoPor: 'Liga de Patinaje del Valle', fecha: '2026-03-25' },
+  { id: 'US-009', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'María F. Rojas', doc: 'CC 41.234.567', correo: 'maria.rojas@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
+  { id: 'US-010', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'Jorge Iván Peña', doc: 'CC 79.553.120', correo: 'jorge.pena@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
+  { id: 'US-011', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Ana Lucía Valencia', doc: 'CC 66.912.345', correo: 'avalencia@valledelcauca.demo.gov.co', estado: 'Activo', creadoPor: 'María F. Rojas', fecha: '2026-08-01', ancla: { depto: 'Valle del Cauca' } },
+  { id: 'US-012', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Carlos Mario Ríos', doc: 'CC 16.743.002', correo: 'cmrios@cali.demo.gov.co', estado: 'Activo', creadoPor: 'María F. Rojas', fecha: '2026-08-04', ancla: { depto: 'Valle del Cauca', municipio: 'Cali' } },
+  { id: 'US-013', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Diana Castaño Gil', doc: 'CC 43.210.889', correo: 'dcastano@antioquia.demo.gov.co', estado: 'Invitado', creadoPor: 'Jorge Iván Peña', fecha: '2026-10-10', ancla: { depto: 'Antioquia' } }
+];
+export function usuariosDe(orgId) {
+  let list = readStore('usuarios', null);
+  if (!list) { list = USUARIOS_SEED.map((u) => ({ ...u })); writeStore('usuarios', list); }
+  const out = list.filter((u) => u.orgId === orgId);
+  /* Organismos sin cuenta sembrada: su administrador es el representante legal (demo). */
+  if (orgId !== 'MIN' && !out.some((u) => u.rol === 'ADMIN')) {
+    const o = getOrganismo(orgId);
+    if (o && o.repLegal) out.unshift({ id: `US-${orgId}`, orgId, rol: 'ADMIN', nombre: `${o.repLegal.nombre} ${o.repLegal.apellido || ''}`.trim(), doc: `${o.repLegal.tipoDoc} ${o.repLegal.numDoc}`, correo: o.repLegal.correo, estado: o.estado === 'Activo' ? 'Activo' : 'Invitado', creadoPor: nombreActor(o.parentId) || 'Ministerio del Deporte', fecha: o.fechaRegistro, derivado: true });
+  }
+  return out.map((u) => ({ ...u }));
+}
+export function invitarUsuario(orgId, datos, meta = {}) {
+  usuariosDe(orgId);
+  const list = readStore('usuarios', []) || [];
+  const rec = { ...datos, id: 'US-N' + String(list.length + 1).padStart(3, '0'), orgId, estado: 'Invitado', creadoPor: meta.creadoPor || '', fecha: _todayISO() };
+  list.push(rec); writeStore('usuarios', list);
+  auditLog({ orgId: orgId === 'MIN' ? '' : orgId, fecha: _todayISO(), responsable: meta.creadoPor || '', rol: meta.rol || '', accion: `Usuario invitado: ${rec.nombre}`, a: 'Invitado', notif: true });
+  return { ...rec };
+}
+export function cambiarEstadoUsuario(id, estado, meta = {}) {
+  const list = readStore('usuarios', []) || [];
+  const i = list.findIndex((u) => u.id === id);
+  if (i < 0) return null;
+  list[i] = { ...list[i], estado }; writeStore('usuarios', list);
+  auditLog({ orgId: list[i].orgId === 'MIN' ? '' : list[i].orgId, fecha: _todayISO(), responsable: meta.responsable || '', accion: `Usuario ${estado === 'Desactivado' ? 'desactivado' : 'reactivado'}: ${list[i].nombre}`, a: estado });
+  return { ...list[i] };
 }
 
 /* Buscador de clubes para la afiliación (§5.2): SOLO clubes en estado Activo,

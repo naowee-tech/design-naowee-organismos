@@ -28,9 +28,10 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub,
-  childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes, buscarAutodeclarados, asociarAutodeclarado
+  childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes, buscarAutodeclarados, asociarAutodeclarado,
+  deportistasDeTerritorio, organismosDeTerritorio, territorioId, nombreTerritorio
 } from './organismos-data.js';
-import { can, scopeFor } from './permissions.js';
+import { can, scopeFor, territorioDe } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
 import { ROLES } from './sidebar.js';
 
@@ -39,6 +40,8 @@ if (root) {
   const qsp = (k) => new URLSearchParams(location.search).get(k);
   const roleCode = qsp('role') || 'MINDEPORTE';
   const scopeId = scopeFor(roleCode);
+  /* Territorial (Fase 3): su jurisdicción es un departamento o un municipio, no un organismo. */
+  const terr = territorioDe(roleCode);
   const puedeVer = can(roleCode, 'R', 'deportistas');
   const esClub = roleCode === 'CLUB';
   const puedeCrear = can(roleCode, 'C', 'deportistas');
@@ -101,7 +104,7 @@ if (root) {
 
   /* ─── Plantel: semilla delgada + perfil derivado (edad/categoría/medallas) ─── */
   function plantel() {
-    return deportistasOf(scopeId).map((d) => {
+    return (terr ? deportistasDeTerritorio(terr) : deportistasOf(scopeId)).map((d) => {
       let p = null;
       try { p = buildDeportistaDetalle(d); } catch (_) { /* registrado sin perfil derivado */ }
       return {
@@ -276,6 +279,7 @@ if (root) {
     root.innerHTML = `
       ${msg('informative', I.info, esClub
         ? `Deportistas con afiliación <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club → liga → federación → comité) que el deportista recibió al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliación y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode)}">Solicitudes de deportistas</a>.`
+        : terr ? `Deportistas vinculados a clubes ubicados en <strong>${esc(nombreTerritorio(terr))}</strong> y los autodeclarados que registraste. Puedes registrar deportistas y proponerles un club de tu territorio; el club lo confirma. No apruebas organismos ni afiliaciones.`
         : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. También ves los autodeclarados que registraste: propónles un club y ese club confirma.`,
         'margin-bottom:16px')}
 
@@ -502,15 +506,15 @@ if (root) {
      registra sabe su club, lo propone: se abre una afiliación Solicitada que el club confirma
      en su bandeja (la confirmación siempre es del club). Quién carga deportistas es P-07. */
   const DEPORTES = ['Patinaje', 'Natación', 'Fútbol', 'Ciclismo'];
-  const NIVELES_ABAJO = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [] };
+  const NIVELES_ABAJO = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [], territorio: ['club'] };
   const TIPO_LBL = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
 
   function openRegistro(depId) {
-    const actor = getOrganismo(scopeId);
+    const actor = terr ? { id: territorioId(terr), tipo: 'territorio', nombre: nombreTerritorio(terr) } : getOrganismo(scopeId);
     if (!actor) return;
     const existente = depId ? getDeportista(depId) : null;
     const abajo = NIVELES_ABAJO[actor.tipo] || [];
-    const fijos = [...ancestorsOf(actor.id).reverse(), actor];
+    const fijos = terr ? [] : [...ancestorsOf(actor.id).reverse(), actor];
     const st = {
       step: existente ? 2 : 1, id: existente ? existente.id : null, err: '',
       d: { nombre: '', tipoDoc: 'CC', numDoc: '', deporte: DEPORTES[0], correo: '' },
@@ -529,6 +533,7 @@ if (root) {
     document.addEventListener('keydown', onKey);
 
     const opciones = (tipo) => {
+      if (terr) return tipo === 'club' ? organismosDeTerritorio(terr).filter((o) => o.tipo === 'club' && o.estado === 'Activo') : [];
       const padre = tipo === 'federacion' ? actor.id : tipo === 'liga' ? (st.sel.federacionId || (actor.tipo === 'federacion' ? actor.id : null)) : (st.sel.ligaId || (actor.tipo === 'liga' ? actor.id : null));
       return padre ? childrenOf(padre).filter((o) => o.tipo === tipo && o.estado === 'Activo') : [];
     };
