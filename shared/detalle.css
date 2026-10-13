@@ -49,10 +49,14 @@
 .naowee-breadcrumb__current { color: var(--accent); font-weight: 600; cursor: default; white-space: nowrap; }
 
 /* ─── Cabecera de la ficha ─── */
-.od-back { margin-bottom: 14px; }
+.od-back { margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.od-back .naowee-btn--mute { background: var(--bg-soft); }
+.od-back .naowee-btn--mute:hover { background: var(--border); }
 .od-back .naowee-btn svg { width: 15px; height: 15px; margin-right: 2px; }
 
-.od-crumbs { margin: 12px 0 16px; }
+/* Breadcrumb a 24px del navbar y «Volver» a 32px del breadcrumb */
+.page:has(.od-crumbs) { padding-top: 24px; }
+.od-crumbs { margin: 0 0 32px; }
 
 .od-hero {
   display: flex; align-items: flex-start; gap: 16px;

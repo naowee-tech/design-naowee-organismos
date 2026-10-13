@@ -227,7 +227,6 @@ function layoutPill() {
 function renderOrgBandeja() {
   const all = bandejaOrgs();
   const allRows = filtered(all);
-  const pend = all.filter((o) => o.estado === 'En revisión').length;
   const anchor = scopeId ? getOrganismo(scopeId) : null;
   // Filtro de sector: solo si hay >1 sector visible (en COMITE=COC todo es Olímpico → no se muestra).
   const sectores = [...new Set(all.map((o) => o.sector).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -251,7 +250,6 @@ function renderOrgBandeja() {
           </div>
         </div>
         ${sectores.length > 1 ? `<label class="bj-filter"><span class="bj-filter__lbl">Sector</span><select class="bj-filter__select" id="bjSector"><option value="Todos"${sectorFiltro === 'Todos' ? ' selected' : ''}>Todos los sectores</option>${sectores.map((s) => `<option value="${esc(s)}"${sectorFiltro === s ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>` : ''}
-        <span class="bj-count">${allRows.length} de ${all.length}${pend ? ` · <strong>${pend}</strong> pendientes` : ''}</span>
       </div>
       <div class="naowee-tabs bj-tabs" id="bjFilters">
         ${['Accionables', 'En revisión', 'En corrección', 'Rechazado', 'Activo', 'Todos'].map((f) => `<button type="button" class="naowee-tab ${estadoFiltro === f ? 'naowee-tab--selected' : ''}" data-f="${f}">${FILTER_ICO[f] || ''}${f}</button>`).join('')}
@@ -304,7 +302,6 @@ function solBadge(estado) {
 function renderAfiliaciones() {
   const club = scopeId ? getOrganismo(scopeId) : null;
   const rows = solicitudesDeClub(scopeId).map((s) => ({ ...s, dep: getDeportista(s.deportistaId) })).filter((r) => r.dep);
-  const pend = rows.filter((r) => r.estado === 'Enviada').length;
 
   let view = rows;
   if (afilFiltro !== 'Todas') { const est = AFIL_ESTADO[afilFiltro]; if (est) view = rows.filter((r) => r.estado === est); }
@@ -324,7 +321,6 @@ function renderAfiliaciones() {
             <input class="naowee-searchbox__input" id="bjSearch" placeholder="Buscar por nombre, documento o deporte…" value="${esc(query)}">
           </div>
         </div>
-        <span class="bj-count">${view.length} de ${rows.length}${pend ? ` · <strong>${pend}</strong> pendientes` : ''}</span>
       </div>
       <div class="naowee-tabs bj-tabs" id="bjFilters">
         ${['Pendientes', 'Aprobadas', 'Rechazadas', 'Todas'].map((f) => `<button type="button" class="naowee-tab ${afilFiltro === f ? 'naowee-tab--selected' : ''}" data-af="${f}">${f}</button>`).join('')}
@@ -685,7 +681,6 @@ function doReject(id, tipoAccion, motivo) {
    corrección (motivo obligatorio). La traza vive en el propio registro. */
 function renderPreinscritos() {
   const all = preinscritosDeRol();
-  const pend = all.filter((p) => p.estado === 'En revisión').length;
   let view = all;
   if (preFiltro === 'Accionables') view = view.filter((p) => p.estado === 'En revisión');
   else if (preFiltro !== 'Todos') view = view.filter((p) => p.estado === preFiltro);
@@ -706,7 +701,6 @@ function renderPreinscritos() {
             <input class="naowee-searchbox__input" id="bjSearch" placeholder="Buscar por nombre, documento o tipo…" value="${esc(query)}">
           </div>
         </div>
-        <span class="bj-count">${view.length} de ${all.length}${pend ? ` · <strong>${pend}</strong> pendientes` : ''}</span>
       </div>
       <div class="naowee-tabs bj-tabs" id="bjFilters">
         ${['Accionables', 'Activo', 'En corrección', 'Rechazado', 'Todos'].map((f) => `<button type="button" class="naowee-tab ${preFiltro === f ? 'naowee-tab--selected' : ''}" data-pf="${f}">${f === 'Activo' ? 'Validados' : f}</button>`).join('')}

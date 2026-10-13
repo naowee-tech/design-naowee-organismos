@@ -166,6 +166,7 @@ const DD_RERENDER = {
 const SELECT_STEPS = ['nature', 'role', 'enttipo'];
 const isSelectStep = () => SELECT_STEPS.includes(stepKey());
 I.arrowR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+I.wand = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3l1.8 4.7L17.5 9.5l-4.7 1.8L11 16l-1.8-4.7L4.5 9.5l4.7-1.8z"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z"/></svg>';
 I.arrowL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>';
 function header() {
   const k = stepKey();
@@ -179,15 +180,16 @@ function header() {
     sub = 'Registra tu federación, liga o club';
     if (k !== 'enttipo' && STATE.entTipo) { title = `Registro como ${ENT_TXT[STATE.entTipo]}`; crumb = ENT_TXT[STATE.entTipo]; }
   }
+  STATE._view = title;
   const center = isSelectStep();
   return `<div class="ur-head${center ? ' ur-head--center' : ''}">
       ${crumb ? `<div class="ur-crumbs">Registro ${I.chevR} ${esc(crumb)} ${I.chevR} <b>Formulario</b></div>` : ''}
       <h1 class="ur-title">${esc(title)}</h1><p class="ur-sub">${esc(sub)}</p>
     </div>
-    <div class="ur-devnote-wrap${center ? ' ur-devnote-wrap--center' : ''}"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${k}"></span></div>`;
+    <div class="ur-devnote-wrap${center ? ' ur-devnote-wrap--center' : ''}"><button type="button" class="ur-fill" id="rpFill" aria-label="Llenar este paso con datos de ejemplo" title="Solo demo · llenar este paso con datos de ejemplo">${I.wand}</button><span class="wz-devnote" tabindex="0" role="button" data-devnote="${k}"></span></div>`;
 }
 function render() {
-  if (STATE.created) return renderResult();
+  if (STATE.created) { setView('Registro'); return renderResult(); }
   root().innerHTML = `
     <div class="reg-wizard" id="rpWizard">
       ${header()}
@@ -195,8 +197,25 @@ function render() {
       <div class="reg-pane" id="rpPane"></div>
       <div id="rpFooter"></div>
     </div>`;
-  renderStepper(); renderPane(); renderFooter(); bindPane();
+  renderStepper(); renderPane(); renderFooter(); bindPane(); setView(STATE._view); syncTopbar();
 }
+/* Navbar superior: sombra al bajar y nombre de la vista al centro cuando el título ya salió de pantalla */
+function syncTopbar() {
+  const top = document.getElementById('urTop'); if (!top) return;
+  const t = document.querySelector('.ur-title');
+  top.classList.toggle('is-stuck', window.scrollY > 0);
+  top.classList.toggle('is-view', !!t && t.getBoundingClientRect().bottom < top.offsetHeight);
+}
+function setView(txt) { const v = document.getElementById('urView'); if (v) v.textContent = txt; }
+window.addEventListener('scroll', syncTopbar, { passive: true });
+window.addEventListener('resize', syncTopbar);
+(() => {
+  const btn = document.getElementById('urMenuBtn'), pop = document.getElementById('urMenuPop'); if (!btn) return;
+  const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', String(!pop.hidden)); });
+  document.addEventListener('click', (e) => { if (!pop.contains(e.target)) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
 function renderStepper() {
   const wrap = document.getElementById('rpStepper'); if (!wrap) return;
   const labeled = stepDefs().filter(([, l]) => l);
@@ -212,9 +231,11 @@ function renderFooter() {
   const k = stepKey();
   const sel = k === 'nature' ? STATE.nature : k === 'role' ? STATE.role : k === 'enttipo' ? STATE.entTipo : true;
   const label = k === 'role' ? 'Comenzar registro' : (STATE.step === lastStep() ? 'Crear cuenta' : 'Siguiente');
-  const back = STATE.step > 0 ? `<button type="button" class="ur-back" id="rpBack">${I.arrowL} Volver</button>` : '';
-  f.innerHTML = `<div class="ur-actions">${back}<button type="button" class="ur-btn${k === 'nature' ? ' ur-btn--block' : ''}" id="rpNext" ${sel ? '' : 'disabled'}>${label} ${k === 'nature' ? '' : I.arrowR}</button></div>
-    ${isSelectStep() ? '<p class="ur-legal"><a href="#" onclick="return false">Política de privacidad</a> y <a href="#" onclick="return false">Términos y condiciones</a></p>' : ''}`;
+  const back = STATE.step > 0 ? `<button type="button" class="ur-back" id="rpBack">${I.chevL} Volver</button>` : '';
+  const pct = Math.round(((STATE.step + 1) / (stepDefs().length - 1)) * 100);
+  f.innerHTML = `${isSelectStep() ? '<p class="ur-legal"><a href="#" onclick="return false">Política de privacidad</a> y <a href="#" onclick="return false">Términos y condiciones</a></p>' : ''}
+    <div class="ur-bar"><div class="ur-bar__progress" role="progressbar" aria-label="Avance de la inscripción" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>
+    <div class="ur-actions">${back}<button type="button" class="ur-btn${k === 'nature' ? ' ur-btn--block' : ''}" id="rpNext" ${sel ? '' : 'disabled'}>${label} ${label === 'Siguiente' ? I.chevR : I.arrowR}</button></div></div>`;
   document.getElementById('rpNext').addEventListener('click', next);
   document.getElementById('rpBack')?.addEventListener('click', () => { STATE._armedStep = null; STATE.step = Math.max(0, STATE.step - 1); render(); });
 }
@@ -264,12 +285,13 @@ function paneBasicos() {
       <div class="rp-doc__row">${ddInline('tipoDoc', CAT.tipoDoc, d.tipoDoc)}
         <div class="naowee-textfield__input-wrap"><input id="f-numDoc" class="naowee-textfield__input" placeholder="# Documento" inputmode="numeric" value="${esc(d.numDoc)}" data-model="numDoc" data-mask="numeric" maxlength="12"></div></div>
       ${lookupBox()}
-      <p class="rp-demo-hint">Solo demo · prueba <code>${DOC_MENOR}</code> (menor de edad), <code>${DOC_SIN_RECLAMAR}</code> (perfil sin reclamar) o <code>1144556778</code> (ya tiene cuenta).</p>
+      <p class="rp-demo-hint">Solo demo · prueba <button type="button" class="rp-demo-fill" data-fill="numDoc" data-value="${DOC_MENOR}">${DOC_MENOR}</button> (menor de edad), <button type="button" class="rp-demo-fill" data-fill="numDoc" data-value="${DOC_SIN_RECLAMAR}">${DOC_SIN_RECLAMAR}</button> (perfil sin reclamar) <button type="button" class="rp-demo-fill" data-fill="numDoc" data-value="1144556778">1144556778</button> (ya tiene cuenta) o <button type="button" class="rp-demo-fill" data-fill="numDoc" data-ok="1" data-value="1020304050">1020304050</button> (sin registro: puede avanzar).</p>
     </div>`;
   if (st === 'minor') return `${isAthlete() ? minorInfo() : ''}<div class="reg-form">${docField}</div>${minorAlert('Por normativa, el registro debe completarlo su padre, madre o tutor legal.')}`;
   if (st === 'hasLogin') return `<div class="reg-form">${docField}</div>${hasLoginAlert()}`;
   if (st === 'unclaimed') return `<div class="reg-form">${docField}</div>${unclaimedAlert()}`;
   if (st === 'notMine') return `<div class="reg-form">${docField}</div>${notMineAlert()}`;
+  if (locked) return `${isAthlete() ? minorInfo() : ''}<div class="reg-form">${docField}</div>`;
   const edad = edadDe(d.fechaNac);
   const menorPorFecha = edad != null && edad < 18;
   return `${isAthlete() ? minorInfo() : ''}
@@ -421,10 +443,11 @@ function nitBox() {
 function paneEntBasicos() {
   const d = STATE.d, st = STATE.nitLookup, t = STATE.entTipo;
   const nit = `${tf({ id: 'f-nit', label: 'NIT', required: true, path: 'nit', value: d.nit, placeholder: '# Documento', mask: 'nit', maxLength: 11 })}${nitBox()}
-    <p class="rp-demo-hint">Solo demo · prueba <code>805010003-3</code> (en revisión) o <code>860077223-7</code> (ya tiene cuenta).</p>`;
+    <p class="rp-demo-hint">Solo demo · prueba <button type="button" class="rp-demo-fill" data-fill="nit" data-value="805010003-3">805010003-3</button> (en revisión), <button type="button" class="rp-demo-fill" data-fill="nit" data-value="860077223-7">860077223-7</button> (ya tiene cuenta) o <button type="button" class="rp-demo-fill" data-fill="nit" data-ok="1" data-value="900123456-1">900123456-1</button> (sin registro: puede avanzar).</p>`;
   if (st === 'pending') return `<div class="reg-form">${nit}</div><div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body"><p class="naowee-message__title">Ya tienes una cuenta registrada</p><p class="naowee-message__text">Hemos detectado que este número de documento tiene pendiente un proceso de revisión por parte de su organismo superior. Te notificaremos por email cuando tu entidad sea aprobada o si requieres enviar documentación adicional.</p></div></div>`;
   if (st === 'hasLogin') return `<div class="reg-form">${nit}</div>${hasLoginAlert()}`;
-  return `<form class="reg-form rp-form-wide${st !== 'ok' ? ' rp-locked' : ''}" onsubmit="return false">
+  if (st !== 'ok') return `<div class="reg-form">${nit}</div>`;
+  return `<form class="reg-form rp-form-wide" onsubmit="return false">
     ${nit}
     <div class="reg-section-label">${t === 'federacion' ? 'Comité' : 'Organismo superior'}</div>
     ${superiorSection()}
@@ -474,6 +497,8 @@ function runLookup() {
   _lookupT = setTimeout(() => {
     STATE.claim = null;
     STATE.lookup = n === DOC_MENOR ? 'minor' : n === DOC_SIN_RECLAMAR ? 'unclaimed' : docConCuenta(n) ? 'hasLogin' : 'ok';
+    if (STATE._demoFill && STATE.lookup === 'ok') demoFill();
+    STATE._demoFill = false;
     renderPane(); bindPane(); refocus('f-numDoc');
   }, 900);
 }
@@ -486,8 +511,56 @@ function runNitLookup() {
   _nitT = setTimeout(() => {
     const org = allOrganismos().find((o) => String(o.nit || '').replace(/\D/g, '') === n);
     STATE.nitLookup = !org ? 'ok' : ['En revisión', 'Preinscrito', 'En corrección'].includes(org.estado) ? 'pending' : 'hasLogin';
+    if (STATE._demoFill && STATE.nitLookup === 'ok') demoFill();
+    STATE._demoFill = false;
     renderPane(); bindPane(); refocus('f-nit');
   }, 900);
+}
+/* Solo demo: llena lo que esté en blanco del paso actual (incluye archivos simulados) para poder seguir. */
+function demoFill() {
+  const d = STATE.d, k = stepKey();
+  const blank = (key, v) => { if (!d[key] || (Array.isArray(d[key]) && !d[key].length)) d[key] = v; };
+  if (k === 'nature') { if (!STATE.nature) STATE.nature = 'persona'; }
+  else if (k === 'role') { if (!STATE.role) STATE.role = 'ATHLETE'; }
+  else if (k === 'enttipo') { if (!STATE.entTipo) STATE.entTipo = 'club'; }
+  else if (k === 'basicos') {
+    if (STATE.lookup !== 'ok') { d.numDoc = '1020304050'; STATE.lookup = 'ok'; STATE.claim = null; }
+    blank('nombre', 'Ana'); blank('apellido', 'Gómez'); blank('sexo', 'M'); blank('nacionalidad', 'CO');
+    const e = edadDe(d.fechaNac); if (!d.fechaNac || (e != null && e < 18)) d.fechaNac = '1995-04-12';
+    if (STATE.role === 'SUPPORT_STAFF') blank('rolApoyo', CAT.rolApoyo[0].v);
+    d.aceptaPoliticas = true;
+  } else if (k === 'deportivos') {
+    blank('tipoDeporte', CAT.tipoDeporte[0].v);
+    if (!deportesPorTipo(d.tipoDeporte).includes(d.deporte)) d.deporte = deportesPorTipo(d.tipoDeporte)[0] || '';
+    d.aceptaPoliticas = true;
+  } else if (k === 'socio') {
+    ['genero', 'orientacion', 'discapacidad', 'etnia', 'victima', 'priorizacion'].forEach((key) => blank(key, CAT[key][0].v));
+    if (d.etnia === 'IND') blank('comunidad', CAT.comunidad[0].v);
+    if (d.victima === 'YES') blank('victimizacion', CAT.victimizacion[0].v);
+  } else if (k === 'contacto') {
+    blank('depto', Object.keys(MUNICIPIOS)[0]);
+    if (!(MUNICIPIOS[d.depto] || []).includes(d.ciudad)) d.ciudad = (MUNICIPIOS[d.depto] || [])[0] || '';
+    blank('zona', 'U'); blank('direccion', 'Calle 10 # 20-30'); blank('telefono', '3001234567'); blank('correo', 'ana.gomez@ejemplo.co');
+  } else if (k === 'entbasicos') {
+    const t = STATE.entTipo;
+    if (STATE.nitLookup !== 'ok') { d.nit = '900123456-1'; STATE.nitLookup = 'ok'; }
+    if (t === 'federacion') { blank('sector', 'Olímpico'); blank('deportes', [SIN_FEDERACION[0]]); }
+    else { blank('superiorId', superiorOpts()[0]?.v || ''); blank('deportes', deportesPermitidos().slice(0, 1)); }
+    blank('entNombre', 'Entidad de Ejemplo'); blank('naturaleza', 'Privada'); blank('tamano', 'No aplica');
+    blank('repDoc', '1020304050'); blank('repNombre', 'Ana'); blank('repApellido', 'Gómez'); blank('repCorreo', 'ana.gomez@ejemplo.co');
+    if (t === 'liga') blank('ambito', 'departamental');
+    if (t === 'club') blank('tipoClub', 'promotor');
+  } else if (k === 'entdocs') {
+    DOCS_ENT.forEach((doc) => { if (!d.docs[doc.id]) d.docs[doc.id] = `${doc.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf · 120 KB`; });
+    d.aceptaPoliticas = true;
+  }
+}
+/* Botón icono del encabezado: llena el paso y re-dibuja (los pasos de selección actualizan también el pie). */
+function fillStep() {
+  demoFill();
+  STATE._armedStep = null;
+  document.getElementById('rpBypassHint')?.remove();
+  if (['nature', 'role', 'enttipo'].includes(stepKey())) render(); else { renderPane(); bindPane(); }
 }
 function refocus(id) { const el = document.getElementById(id); if (el) { el.focus(); const v = el.value; try { el.setSelectionRange(v.length, v.length); } catch (_) {} } }
 const nitMask = (v) => { const n = v.replace(/\D/g, '').slice(0, 10); return n.length > 9 ? `${n.slice(0, 9)}-${n.slice(9)}` : n; };
@@ -495,7 +568,8 @@ const nitMask = (v) => { const n = v.replace(/\D/g, '').slice(0, 10); return n.l
 function bindPane() {
   closeDatePicker();
   root().querySelectorAll('input[data-model]').forEach((inp) => {
-    inp.addEventListener('input', () => {
+    inp.addEventListener('input', (e) => {
+      if (e.isTrusted) STATE._demoFill = false;
       if (inp.dataset.mask === 'nit') inp.value = nitMask(inp.value);
       else if (inp.dataset.mask) inp.value = applyMask(inp.dataset.mask, inp.value);
       STATE.d[inp.dataset.model] = inp.value;
@@ -507,6 +581,7 @@ function bindPane() {
   root().querySelectorAll('input[data-check]').forEach((cb) => cb.addEventListener('change', () => { STATE.d[cb.dataset.check] = cb.checked; cb.closest('[data-field]')?.classList.remove('naowee-checkbox--error'); }));
   root().querySelectorAll('[data-card]').forEach((c) => c.addEventListener('click', () => {
     const key = c.dataset.card, v = c.dataset.value;
+    if (STATE[key] === v) { STATE[key] = null; if (key === 'nature') { STATE.role = null; STATE.entTipo = null; } render(); return; }
     if (key === 'nature') { if (STATE.nature !== v) { STATE.role = null; STATE.entTipo = null; } STATE.nature = v; }
     if (key === 'role') STATE.role = v;
     if (key === 'entTipo') { if (STATE.entTipo !== v) { STATE.d.superiorId = ''; STATE.d.sector = ''; STATE.d.deportes = []; STATE.d.filtroDeporte = ''; } STATE.entTipo = v; }
@@ -531,6 +606,13 @@ function bindPane() {
     trig.addEventListener('click', () => openDatePicker(f));
     trig.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDatePicker(f); } });
   });
+  /* Solo demo: cada ejemplo llena el campo y dispara la búsqueda simulada */
+  root().querySelectorAll('[data-fill]').forEach((b) => b.addEventListener('click', () => {
+    const inp = root().querySelector(`input[data-model="${b.dataset.fill}"]`); if (!inp) return;
+    STATE._demoFill = !!b.dataset.ok;
+    inp.value = b.dataset.value; inp.dispatchEvent(new Event('input', { bubbles: true }));
+  }));
+  const fillBtn = document.getElementById('rpFill'); if (fillBtn) fillBtn.onclick = fillStep;
   root().querySelectorAll('[data-doc-input]').forEach((inp) => inp.addEventListener('change', () => onFilePick(inp)));
   root().querySelectorAll('[data-doc-remove]').forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); delete STATE.d.docs[b.dataset.docRemove]; renderPane(); bindPane(); }));
   mountDevnotes(DEVNOTES, root());
@@ -612,7 +694,7 @@ function submit() {
       nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: '', correo: d.correo, clubId: null, estado: 'autodeclarado', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) });
       writeStore('deportistas-nuevos', nuevos);
     }
-    STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim };
+    STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim, doc: `${d.tipoDoc} ${d.numDoc}`, ubicacion: [d.ciudad, d.depto].filter(Boolean).join(', '), telefono: d.telefono, deporte: isAthlete() ? d.deporte : '' };
   } else {
     const t = STATE.entTipo;
     const parentId = t === 'federacion' ? comitePorSector(d.sector)?.id : d.superiorId;
@@ -633,6 +715,7 @@ function submit() {
 }
 
 /* ═══════════════ Resultado ═══════════════ */
+const profileRows = (rows) => `<dl class="ur-profile__rows">${rows.filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(String(v))}</dd></div>`).join('')}</dl>`;
 function renderResult() {
   const r = STATE.result;
   const persona = r.tipo === 'persona';
@@ -653,7 +736,8 @@ function renderResult() {
       <p>Enviamos el enlace para crear tu contraseña a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">¡Registro completado!</h1>
       <p>¡Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
       <p>¡Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmación.</p>`}
-      <div class="ur-profile"><strong>${esc(r.nombre)}</strong><span>${esc(r.rol)}${r.fechaNac ? ' · ' + esc(r.fechaNac.split('-').reverse().join('/')) : ''}</span></div>
+      <div class="ur-profile"><div class="ur-profile__head"><strong>${esc(r.nombre)}</strong><span class="ur-badge">Cuenta activa</span></div>
+        ${profileRows([['Rol', r.rol], ['Documento', r.doc], ['Fecha de nacimiento', r.fechaNac ? r.fechaNac.split('-').reverse().join('/') : ''], ['Deporte', r.deporte], ['Correo', r.correo], ['Teléfono', r.telefono], ['Ubicación', r.ubicacion]])}</div>
       ${msg('informative', '', esc(siguiente))}
       ${msg('caution', '', 'Si no recibiste el correo, revisa bandeja de SPAM o solicita reenvío.')}
       <div class="ur-actions"><a class="ur-btn ur-btn--block" href="index.html">Ir a Iniciar sesión</a></div>`
@@ -664,7 +748,8 @@ function renderResult() {
         <div>${I.check}<span><strong>Revisión por ${esFed ? 'el comité y el Ministerio del Deporte' : esc(sup?.nombre || 'tu organismo superior')}</strong>${esFed ? `El ${esc(sup?.nombre || 'comité')} y el Ministerio revisan tus documentos; la federación se activa con los dos avales.` : 'Revisa tus documentos y puede aprobar, devolver con motivo para que corrijas, o rechazar.'}</span></div>
         <div>${I.check}<span><strong>Activación</strong>Te notificaremos por email cuando tu entidad sea aprobada. El representante legal recibe el acceso como administrador de la entidad.</span></div>
       </div>
-      <div class="ur-profile"><strong>${esc(r.org.nombre)}</strong><span>${esc(ENT_TXT[r.org.tipo])} · ${esc((r.org.deportes || []).join(', '))} · superior: ${esc(sup?.nombre || '—')}</span></div>`}
+      <div class="ur-profile"><div class="ur-profile__head"><strong>${esc(r.org.nombre)}</strong><span class="ur-badge ur-badge--review">En revisión</span></div>
+        ${profileRows([['Tipo', ENT_TXT[r.org.tipo]], ['NIT', r.org.nit], ['Deportes', (r.org.deportes || []).join(', ')], ['Organismo superior', sup?.nombre], ['Representante legal', [r.org.repLegal?.nombre, r.org.repLegal?.apellido].filter(Boolean).join(' ') + (r.org.repLegal?.numDoc ? ` · ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : '')], ['Sede', [r.org.ubicacion?.ciudad, r.org.ubicacion?.depto].filter(Boolean).join(', ')], ['Contacto', [r.org.contacto?.correo, r.org.contacto?.telefono].filter(Boolean).join(' · ')], ['Documentos', `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>💬 ¿NECESITAS AYUDA?</b>Si tienes dudas o problemas con la activación de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
       ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
@@ -701,7 +786,7 @@ const DEVNOTES = {
       '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
     ] },
     { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
-    { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; <code>1055512345</code> devuelve perfil sin reclamar; un documento del seed devuelve cuenta existente.'] }
+    { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; <code>1055512345</code> devuelve perfil sin reclamar; un documento del seed devuelve cuenta existente; <code>1020304050</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones: tocarlos llena el documento y dispara la búsqueda; el que no tiene registro además deja el formulario lleno para poder dar Siguiente.'] }
   ] },
   deportivos: { title: 'Deportivos (solo deportista)', sections: [
     { title: 'Se mantiene', items: ['Tipo de deporte (<code>/catalogs/sport_type</code>) → Deporte (<code>GET /sports?type=</code>). Se envía como <code>main_sport_code</code>.'] },
@@ -720,6 +805,7 @@ const DEVNOTES = {
   ] },
   entbasicos: { title: 'Básicos (Entidad)', sections: [
     { title: 'Se mantiene', items: ['NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisión → mensaje de revisión pendiente; con cuenta → Iniciar sesión.', 'Naturaleza jurídica, tamaño y representante legal. <b>Corregir al migrar</b>: hoy no se envía el apellido del representante.'] },
+    { title: 'Solo demo', items: ['La búsqueda de NIT está simulada: <code>805010003-3</code> devuelve en revisión y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la búsqueda; el que no tiene registro además deja el formulario lleno para poder dar Siguiente.'] },
     { title: 'Nuevo: organismo superior', items: ['Federación → elige sector y queda adscrita al comité del sector. Liga → elige federación. Club → filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).', 'La lista solo trae organismos <b>Activos</b>. Si el suyo no está: soporte, que escala al Ministerio (P-17).', 'En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden después como afiliación.'] },
     { title: 'Nuevo: deportes', items: ['Lista de deportes del catálogo. Federación: del catálogo, sin repetir deportes que ya tiene otra federación del mismo sector. Liga: de su federación. Club: de su liga.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
     { title: 'Contrato propuesto', items: ['<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.', 'El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> ⊆ deportes del superior, NIT único, un deporte en una sola federación.'] },
@@ -744,13 +830,28 @@ const DEVNOTES = {
   resultPersona: { title: 'Resultado (Persona)', sections: [
     { title: 'Se mantiene', items: ['Textos de producción. Cuenta activa; el correo trae el enlace para crear la contraseña.'] },
     { title: 'Nuevo', items: ['Siguiente paso según el rol: deportista → afiliación a uno o varios clubes; tutor → registrar menores; personal deportivo → vínculo con cualquier organismo (P-05).'] },
-    { title: 'Solo demo', items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".'] }
+    { title: 'Solo demo', items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".', 'Los enlaces "Solo demo" al pie de la pantalla también se ocultan con el switch de notas para devs (queda "Registrar otro").'] }
   ] },
   resultEntidad: { title: 'Resultado (Entidad)', sections: [
     { title: 'Qué cambia vs producción', items: ['Hoy el título dice "¡Entidad pre-inscrita!". Preinscrito es el estado del cargue masivo; el autorregistro entra directo a <code>En revisión</code>, por eso aquí dice "¡Solicitud enviada!".', 'Hoy dice "Nuestro equipo verificará…" (revisión centralizada). Ahora revisa el <b>organismo superior</b>: la federación revisa la liga, la liga revisa el club.', 'Federación: el comité y el Ministerio, cada uno su aval. <b>Pendiente de confirmar</b> si esta doble validación existe (P-19).', 'Estado <code>En revisión</code> en la bandeja del superior; aprobar, devolver con motivo o rechazar. Al activarse, el representante legal es el administrador de la entidad (uno por organismo).'] },
-    { title: 'Solo demo', items: ['La entidad se guarda en la jerarquía bajo su superior. Para ver la bandeja: Liga de Patinaje del Valle (rol LIGA), Federación de Patinaje (rol FEDERACION) o COC (rol COMITE).'] }
+    { title: 'Solo demo', items: ['La entidad se guarda en la jerarquía bajo su superior. Para ver la bandeja: Liga de Patinaje del Valle (rol LIGA), Federación de Patinaje (rol FEDERACION) o COC (rol COMITE).', 'Los enlaces "Solo demo" al pie de la pantalla también se ocultan con el switch de notas para devs (queda "Registrar otro").'] }
   ] }
 };
+
+/* Nota común a todos los pasos del formulario (no a la pantalla de resultado). */
+const SHELL_NOTE = { title: 'Shell del registro (todos los pasos)', items: [
+  'Las acciones van en una <b>barra fija inferior</b>: Volver a la izquierda y Siguiente / Crear cuenta a la derecha, alineados con la columna del formulario. Progreso de 2px = paso actual / pasos del flujo (sin contar el resultado). Chevrones para navegar, flecha para las acciones finales. Hoy los botones van en el flujo del formulario; es solo presentación, sin cambios de contrato.',
+  '<b>Navbar superior fijo</b>: al bajar queda pegado y muestra al centro el nombre de la vista (el título ya salió de pantalla). En móvil: logo a la izquierda; a la derecha nombre de la vista y menú (iniciar sesión, política de privacidad, términos).',
+  'Las tarjetas de selección se <b>deseleccionan</b> al tocar la ya elegida; Siguiente vuelve a deshabilitarse.',
+  '<b>Solo demo</b>: el botón de destellos junto a esta nota llena lo que falte del paso (archivos simulados incluidos) para poder seguir en cualquier rol. El panel del recorrido ("Recorrido por HU") trae un switch para ocultar estas notas.',
+  'Se quitó el pie "Hecho by Naowee"; la versión sigue en la pastilla de la demo. Queda 200px de aire bajo el contenido para poder subirlo por encima de la barra.'
+] };
+const FLUJO_DOC = { title: 'Flujo: primero el documento', items: [
+  'Solo se muestra el campo de documento. Al verificarlo, el resultado decide lo que sigue: <b>sin registro previo</b> → aparece el formulario; <b>caso de error</b> (menor de edad, ya tiene cuenta, perfil sin reclamar, en revisión) → se muestra ese caso y el formulario no aparece.',
+  'Hoy producción muestra el formulario completo bloqueado hasta verificar; aquí se revela, para que cada resultado se lea como un camino.'
+] };
+Object.keys(DEVNOTES).filter((k) => !k.startsWith('result')).forEach((k) => DEVNOTES[k].sections.push(SHELL_NOTE));
+['basicos', 'entbasicos'].forEach((k) => DEVNOTES[k].sections.push(FLUJO_DOC));
 
 /* ═══════════════ Helpers de campo, datepicker y errores (de la v1.4.1) ═══════════════ */
 /* ═══════════════ Datepicker canónico (componente del DS) ═══════════════

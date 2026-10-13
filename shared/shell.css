@@ -115,6 +115,8 @@ a:hover { text-decoration: none; }
    del icono del padre hacia el hijo. Solo en sidebar expandido. */
 .sidebar:not(.collapsed) .nav-row--child .icon { margin-left: 52px; }
 .sidebar:not(.collapsed) .nav-row--child .lbl { font-size: 13.5px; }
+/* Subniveles son secundarios: más bajos que el ítem principal (44px) */
+.sidebar:not(.collapsed) .nav-row--child { height: 34px; }
 /* Conector en árbol — una sola curva fina y sutil (border-left + border-bottom
    + radio) que desciende del padre y entra al icono del hijo. Sin codos rectos. */
 .sidebar:not(.collapsed) .nav-row--child::before {
