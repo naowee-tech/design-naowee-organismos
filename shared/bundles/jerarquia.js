@@ -343,7 +343,8 @@
     const clubIds = new Set(sub.filter((o) => o.tipo === "club").map((o) => o.id));
     if (self && self.tipo === "club") clubIds.add(self.id);
     const orgIds = /* @__PURE__ */ new Set([orgId, ...sub.map((o) => o.id)]);
-    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
+    const propuestos = new Set(allSolicitudes().filter((s) => s.origen === "propuesta" && s.estado === "Enviada" && orgIds.has(s.proponenteId)).map((s) => s.deportistaId));
+    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || propuestos.has(d.id) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
   }
   function countDescendants(orgId) {
     const sub = subtreeOf(orgId);

@@ -7,7 +7,9 @@
    decisión de Producto pendiente de ratificar); el deportista también
    puede pedir la baja y el club la confirma en su bandeja. Con
    multi-afiliación, desvincular termina solo la afiliación a este club.
-   Los niveles de arriba registran autodeclarados y proponen club (P-07).
+   Todos los organismos registran deportistas (P-07 respondida, 2026-10-09): los niveles de
+   arriba indican el club y queda como propuesta que el club confirma (2026-10-13). Carga
+   masiva de deportistas en `?vista=cargue` (DEP-609).
 
    La pantalla es GENÉRICA POR JURISDICCIÓN: usa scopeFor(role) +
    deportistasOf(), que resuelve el subárbol (§2 handoff: el deportista
@@ -29,11 +31,13 @@
 import {
   getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub,
   childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes, buscarAutodeclarados, asociarAutodeclarado,
-  deportistasDeTerritorio, organismosDeTerritorio, territorioId, nombreTerritorio
+  deportistasDeTerritorio, organismosDeTerritorio, territorioId, nombreTerritorio,
+  personaPorDocumento, cargarDeportistas, recordCargue, allCargues, deportesDe, subtreeOf, allOrganismos, allDeportistas, edadDe, esDeportista
 } from './organismos-data.js';
 import { can, scopeFor, territorioDe } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
-import { ROLES } from './sidebar.js';
+import { ROLES, getDemoMode } from './sidebar.js';
+import { mountDevnotes } from './devnotes.js';
 
 const root = document.getElementById('deportistasRoot');
 if (root) {
@@ -70,6 +74,7 @@ if (root) {
     link:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.7-1.7"/></svg>',
     plus:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
     upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
     check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
   };
 
@@ -112,7 +117,7 @@ if (root) {
         sinClub: d.estado === 'autodeclarado',
         otrosClubes: d.clubIds.filter((c) => c !== scopeId).length, id: d.id, nombre: d.nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc,
         deporte: d.deporte, modalidad: d.modalidad || '—', estado: d.estado,
-        edad: p ? p.edad : null, cat: p ? p.tierLabel : '—',
+        edad: d.fechaNac ? edadDe(d.fechaNac) : (p ? p.edad : null), cat: p ? p.tierLabel : '—',
         emoji: p ? p.deporteEmoji : '🏅', medallas: p ? p.medalleria.length : 0
       };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -259,6 +264,7 @@ if (root) {
   const sortEs = (a, b) => a.localeCompare(b, 'es');
 
   function render() {
+    if (vistaCargue) { renderCargue(); return; }
     if (!puedeVer) {
       root.innerHTML = msg('caution', I.info,
         'Tu perfil no tiene permiso de consulta sobre deportistas en la matriz de accesos del módulo.');
@@ -380,13 +386,19 @@ if (root) {
   function pintarAcciones() {
     const box = document.getElementById('dpActions');
     if (!box || !puedeCrear || box.querySelector('#dpNuevo')) return;
+    /* La carga masiva es de los organismos (P-07); el territorial registra uno a uno. */
     box.insertAdjacentHTML('beforeend', `
-      <button type="button" class="naowee-btn naowee-btn--quiet" id="dpMasivo">${I.upload}Cargue masivo de deportistas</button>
+      ${terr ? '' : `<a class="naowee-btn naowee-btn--quiet" id="dpMasivo" href="${esc(urlCon({ vista: 'cargue' }))}">${I.upload}Cargue masivo de deportistas</a>`}
       ${esClub ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="dpBuscar">${I.search}Asociar autodeclarado</button>` : ''}
       <button type="button" class="naowee-btn naowee-btn--loud" id="dpNuevo">${I.plus}Registrar deportista</button>`);
     document.getElementById('dpNuevo').addEventListener('click', () => openRegistro());
     document.getElementById('dpBuscar')?.addEventListener('click', openAsociar);
-    document.getElementById('dpMasivo').addEventListener('click', openMasivo);
+  }
+  /* Misma URL con parámetros cambiados (conserva role, org, como, territorio). */
+  function urlCon(cambios) {
+    const u = new URLSearchParams(location.search);
+    Object.entries(cambios).forEach(([k, v]) => (v == null ? u.delete(k) : u.set(k, v)));
+    return `deportistas.html?${u.toString()}`;
   }
 
   /* ─── Modal de desvinculación (ORG-10) ───
@@ -501,10 +513,13 @@ if (root) {
     });
   }
 
-  /* ─── Registrar → Proponer club (dos momentos, visibles en el modal) ───
-     El deportista registrado por un nivel distinto al club queda AUTODECLARADO. Si quien lo
-     registra sabe su club, lo propone: se abre una afiliación Solicitada que el club confirma
-     en su bandeja (la confirmación siempre es del club). Quién carga deportistas es P-07. */
+  /* ─── Registrar deportista: Datos → Club ───
+     Todos los organismos registran deportistas (P-07 respondida, 2026-10-09). Desde un nivel
+     distinto al club, el club es obligatorio: la liga indica el club; la federación, la liga y
+     el club. El club queda como PROPUESTA que el club confirma en su bandeja (2026-10-13);
+     mientras tanto el deportista sigue autodeclarado. Si el club aún no está en el SUID, se
+     registra sin club (autodeclarado) y se le propone después. Si el documento ya existe, no se
+     crea otra persona: conserva sus datos y su correo y solo se le propone el club. */
   const DEPORTES = ['Patinaje', 'Natación', 'Fútbol', 'Ciclismo'];
   const NIVELES_ABAJO = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [], territorio: ['club'] };
   const TIPO_LBL = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
@@ -512,12 +527,15 @@ if (root) {
   function openRegistro(depId) {
     const actor = terr ? { id: territorioId(terr), tipo: 'territorio', nombre: nombreTerritorio(terr) } : getOrganismo(scopeId);
     if (!actor) return;
-    const existente = depId ? getDeportista(depId) : null;
     const abajo = NIVELES_ABAJO[actor.tipo] || [];
     const fijos = terr ? [] : [...ancestorsOf(actor.id).reverse(), actor];
+    const delActor = terr ? [] : actor.tipo === 'comite'
+      ? [...new Set(childrenOf(actor.id).filter((o) => o.tipo === 'federacion').flatMap((o) => deportesDe(o)))] : deportesDe(actor);
+    const deportesActor = delActor.length ? delActor : DEPORTES;
     const st = {
-      step: existente ? 2 : 1, id: existente ? existente.id : null, err: '',
-      d: { nombre: '', tipoDoc: 'CC', numDoc: '', deporte: DEPORTES[0], correo: '' },
+      step: depId ? 2 : 1, err: '', sinClub: false, soloProponer: !!depId,
+      existente: depId ? getDeportista(depId) : null,
+      d: { nombre: '', tipoDoc: 'CC', numDoc: '', deporte: deportesActor[0], correo: '' },
       sel: {}
     };
     const ov = document.createElement('div');
@@ -532,18 +550,21 @@ if (root) {
     const onKey = (e) => { if (e.key === 'Escape') cerrar(); };
     document.addEventListener('keydown', onKey);
 
+    const deporteDe = () => (st.existente ? st.existente.deporte : st.d.deporte);
     const opciones = (tipo) => {
-      if (terr) return tipo === 'club' ? organismosDeTerritorio(terr).filter((o) => o.tipo === 'club' && o.estado === 'Activo') : [];
+      const conDeporte = (o) => tipo !== 'club' || !deporteDe() || deportesDe(o).includes(deporteDe());
+      if (terr) return tipo === 'club' ? organismosDeTerritorio(terr).filter((o) => o.tipo === 'club' && o.estado === 'Activo' && conDeporte(o)) : [];
       const padre = tipo === 'federacion' ? actor.id : tipo === 'liga' ? (st.sel.federacionId || (actor.tipo === 'federacion' ? actor.id : null)) : (st.sel.ligaId || (actor.tipo === 'liga' ? actor.id : null));
-      return padre ? childrenOf(padre).filter((o) => o.tipo === tipo && o.estado === 'Activo') : [];
+      return padre ? childrenOf(padre).filter((o) => o.tipo === tipo && o.estado === 'Activo' && conDeporte(o)) : [];
     };
-    const dd = (key, tipo) => {
+    const dd = (tipo) => {
       const ops = opciones(tipo);
       const cur = ops.find((o) => o.id === st.sel[`${tipo}Id`]);
+      const off = st.sinClub || !ops.length;
       return `<div class="dp-desv__field">
-        <span class="bj-filter__lbl">${TIPO_LBL[tipo]}</span>
+        <span class="bj-filter__lbl">${TIPO_LBL[tipo]} <span aria-hidden="true">*</span></span>
         <div class="naowee-dropdown dp-desv__dd" data-dd="${tipo}">
-          <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"${ops.length ? '' : ' disabled'}>
+          <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"${off ? ' disabled' : ''}>
             <span class="naowee-dropdown__value${cur ? '' : ' is-placeholder'}">${esc(cur ? cur.nombre : (ops.length ? 'Seleccione…' : 'Elige primero el nivel anterior'))}</span>
             <span class="naowee-dropdown__chevron">${I.chevron}</span>
           </button>
@@ -555,47 +576,53 @@ if (root) {
     const campo = (id, label, val, type) => `<div class="dp-desv__field">
       <label class="bj-filter__lbl" for="${id}">${label} <span aria-hidden="true">*</span></label>
       <div class="naowee-textfield"><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="${id}" type="${type || 'text'}" value="${esc(val)}"></div></div></div>`;
+    const avisoExistente = (dep) => msg('caution', I.info, `<strong>${esc(dep.nombre)}</strong> (${esc(dep.tipoDoc)} ${esc(dep.numDoc)}) ya está registrado en el SUID. No se crea de nuevo: conserva sus datos y su correo. ${abajo.length ? 'Solo le propones el club.' : 'Puedes asociarlo a tu club.'}`);
 
     function draw() {
-      const pasos = ['Registro', 'Club'].map((t, i) => {
+      const pasos = (abajo.length ? ['Datos', 'Club'] : ['Datos']).map((t, i) => {
         const n = i + 1; const estado = st.step > n ? 'done' : st.step === n ? 'on' : '';
         return `<li class="dp-step ${estado ? `dp-step--${estado}` : ''}"><span class="dp-step__n">${estado === 'done' ? I.check : n}</span>${t}</li>`;
       }).join('<li class="dp-step__sep" aria-hidden="true"></li>');
-      const nombre = existente ? existente.nombre : st.d.nombre;
+      const nombre = st.existente ? st.existente.nombre : st.d.nombre;
+      const okLbl = st.step === 1
+        ? (abajo.length ? 'Continuar' : (st.existente ? 'Asociar a mi club' : 'Registrar'))
+        : (st.sinClub ? 'Registrar sin club' : (st.existente ? 'Proponer club' : 'Registrar y proponer club'));
       ov.innerHTML = `
       <div class="reg-modal bj-modal bj-modal--overflow dp-desv">
         <div class="reg-modal__head">
-          <h3 class="reg-modal__title">${existente ? 'Proponer club' : 'Registrar deportista'}</h3>
+          <h3 class="reg-modal__title">${st.soloProponer ? 'Proponer club' : 'Registrar deportista'}</h3>
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
-          <ol class="dp-steps">${pasos}</ol>
+          ${st.soloProponer ? '' : `<ol class="dp-steps">${pasos}</ol>`}
           ${st.step === 1 ? `
-            ${campo('rdNombre', 'Nombre completo', st.d.nombre)}
+            ${st.existente ? avisoExistente(st.existente) : ''}
             ${campo('rdDoc', 'Número de documento', st.d.numDoc)}
+            ${campo('rdNombre', 'Nombre completo', st.d.nombre)}
             ${campo('rdCorreo', 'Correo electrónico', st.d.correo, 'email')}
             <div class="dp-desv__field"><span class="bj-filter__lbl">Deporte</span>
               <div class="naowee-dropdown dp-desv__dd" data-dd="deporte"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">${esc(st.d.deporte)}</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
-              <div class="naowee-dropdown__menu" role="listbox">${DEPORTES.map((x) => `<div class="naowee-dropdown__opt${x === st.d.deporte ? ' is-selected' : ''}" role="option" data-value="${x}">${x}<span class="naowee-dropdown__opt-check">${I.check}</span></div>`).join('')}</div></div></div>
-            <p class="bj-detail__note">${abajo.length ? 'Momento 1 de 2: el deportista queda registrado como autodeclarado. Luego puedes proponerle un club (o dejarlo para después).' : 'El deportista queda vinculado a tu club.'}</p>`
+              <div class="naowee-dropdown__menu" role="listbox">${deportesActor.map((x) => `<div class="naowee-dropdown__opt${x === st.d.deporte ? ' is-selected' : ''}" role="option" data-value="${esc(x)}">${esc(x)}<span class="naowee-dropdown__opt-check">${I.check}</span></div>`).join('')}</div></div></div>
+            <p class="bj-detail__note">${abajo.length ? 'Paso 1 de 2. Si el documento ya está en el SUID no se crea otra persona. Al deportista nuevo le llega un correo para completar su perfil.' : 'El deportista queda vinculado a tu club. Al deportista nuevo le llega un correo para completar su perfil.'}</p>`
           : `
-            ${msg('informative', I.info, `Momento 2 de 2: propón el club de <strong>${esc(nombre)}</strong>. El club recibe la propuesta en su bandeja y es quien la confirma; mientras tanto sigue autodeclarado.`)}
-            <div class="dp-chain">${fijos.map((o) => `<span class="dp-chain__chip" title="Fijo: según tu organismo">${esc(TIPO_LBL[o.tipo])} · ${esc(o.nombre)}</span>`).join('')}</div>
-            ${abajo.map((t) => dd(t, t)).join('') || '<p class="bj-detail__note">Como club, el deportista queda asociado a tu club automáticamente.</p>'}`}
+            ${st.existente && !st.soloProponer ? avisoExistente(st.existente) : ''}
+            ${msg('informative', I.info, `Indica el club de <strong>${esc(nombre)}</strong>${actor.tipo === 'federacion' ? ' (primero su liga)' : actor.tipo === 'comite' ? ' (primero su federación y su liga)' : ''}. El club recibe la propuesta en su bandeja y es quien la confirma; mientras tanto sigue autodeclarado.`)}
+            ${fijos.length ? `<div class="dp-chain">${fijos.map((o) => `<span class="dp-chain__chip" title="Fijo: según tu organismo">${esc(TIPO_LBL[o.tipo])} · ${esc(o.nombre)}</span>`).join('')}</div>` : ''}
+            ${abajo.map((t) => dd(t)).join('')}
+            ${st.soloProponer ? '' : `<label class="naowee-checkbox dp-sinclub"><input type="checkbox" id="rdSinClub"${st.sinClub ? ' checked' : ''}${st.existente ? ' disabled' : ''}><span class="naowee-checkbox__box" aria-hidden="true">${I.check}</span><span class="naowee-checkbox__label">El club todavía no está en el SUID: registrarlo sin club por ahora. Queda autodeclarado y le propones el club cuando se cree.</span></label>`}`}
           ${st.err ? `<p class="naowee-helper dp-desv__err">${esc(st.err)}</p>` : ''}
         </div>
         <div class="reg-modal__foot bj-modal__foot">
-          <button type="button" class="naowee-btn naowee-btn--mute" data-close>${st.step === 2 ? 'Proponer después' : 'Cancelar'}</button>
-          <button type="button" class="naowee-btn" id="rdOk">${st.step === 1 ? (abajo.length ? 'Registrar y continuar' : 'Registrar') : 'Proponer club'}</button>
+          <button type="button" class="naowee-btn naowee-btn--mute" ${st.step === 2 && !st.soloProponer ? 'id="rdBack"' : 'data-close'}>${st.step === 2 && !st.soloProponer ? 'Atrás' : 'Cancelar'}</button>
+          <button type="button" class="naowee-btn" id="rdOk">${okLbl}</button>
         </div>
       </div>`;
     }
 
     ov.addEventListener('click', (e) => {
-      if (e.target === ov || e.target.closest('[data-close]')) {
-        if (st.id) render();
-        cerrar(); return;
-      }
+      if (e.target === ov || e.target.closest('[data-close]')) { cerrar(); return; }
+      if (e.target.closest('#rdBack')) { st.step = 1; st.err = ''; draw(); return; }
+      if (e.target.closest('#rdSinClub')) { st.sinClub = e.target.closest('#rdSinClub').checked; st.err = ''; draw(); return; }
       const opt = e.target.closest('.naowee-dropdown__opt');
       const trg = e.target.closest('.naowee-dropdown__trigger');
       if (opt) {
@@ -619,21 +646,46 @@ if (root) {
     function avanzar() {
       leer(); st.err = '';
       if (st.step === 1) {
-        if (!st.d.nombre || !st.d.numDoc || !/.+@.+\..+/.test(st.d.correo)) { st.err = 'Completa nombre, documento y un correo válido.'; draw(); return; }
-        const dep = registrarDeportista(st.d, actor.id);
-        st.id = dep.id; st.step = 2;
-        if (!abajo.length) { render(); cerrar(); toast(`${dep.nombre} quedó registrado y vinculado a tu club.`); return; }
-        render(); draw(); return;
+        const ya = personaPorDocumento(st.d.numDoc);
+        if (ya && (!st.existente || st.existente.id !== ya.id)) {
+          /* Primer aviso: se muestra y el siguiente clic sigue con la persona que ya existe. */
+          st.existente = ya; draw(); return;
+        }
+        if (!ya) st.existente = null;
+        if (st.existente) {
+          if (st.existente.tutorId) { st.err = 'Es menor de edad: lo afilia su tutor desde su perfil.'; draw(); return; }
+          if (!abajo.length) {
+            if (st.existente.clubIds.includes(actor.id)) { st.err = 'Ya está vinculado a tu club.'; draw(); return; }
+            asociarAutodeclarado(st.existente.id, actor.id, { responsable: (ROLES[roleCode] || {}).userName || '' });
+            render(); cerrar(); toast(`${st.existente.nombre} quedó vinculado a tu club. Conserva sus datos y su correo.`); return;
+          }
+          st.step = 2; st.sinClub = false; draw(); return;
+        }
+        if (!st.d.nombre || !st.d.numDoc || !/.+@.+\..+/.test(st.d.correo)) { st.err = 'Completa documento, nombre y un correo válido.'; draw(); return; }
+        if (!abajo.length) {
+          const dep = registrarDeportista(st.d, actor.id);
+          render(); cerrar(); toast(`${dep.nombre} quedó registrado y vinculado a tu club. Le llega un correo para completar su perfil.`); return;
+        }
+        st.step = 2; draw(); return;
       }
-      if (!st.sel.clubId) { st.err = 'Elige el club que propones.'; draw(); return; }
-      proponerClub(st.id, st.sel.clubId, actor.id);
-      const dep = getDeportista(st.id);
+      if (st.sinClub) {
+        const dep = registrarDeportista(st.d, actor.id);
+        render(); cerrar(); toast(`${dep.nombre} quedó registrado sin club (autodeclarado). Le llega un correo para completar su perfil.`); return;
+      }
+      if (!st.sel.clubId) { st.err = st.existente ? 'Elige el club que le propones.' : 'Elige el club del deportista, o márcalo sin club si el club aún no está en el SUID.'; draw(); return; }
+      if (st.existente && st.existente.clubIds.includes(st.sel.clubId)) { st.err = 'Ya está vinculado a ese club.'; draw(); return; }
+      const dep = st.existente || registrarDeportista(st.d, actor.id);
+      proponerClub(dep.id, st.sel.clubId, actor.id);
       render(); cerrar();
-      toast(`Propuesta enviada: ${(getOrganismo(st.sel.clubId) || {}).nombre} confirma a ${dep.nombre} desde su bandeja.`);
+      const clubNom = (getOrganismo(st.sel.clubId) || {}).nombre;
+      toast(st.existente
+        ? `Propuesta enviada: ${clubNom} confirma a ${dep.nombre} desde su bandeja.`
+        : `${dep.nombre} quedó registrado y le llega un correo para completar su perfil. ${clubNom} confirma la propuesta desde su bandeja.`);
     }
     draw();
   }
   const toast = (t) => { if (window.naoweeToast) window.naoweeToast(t, 'success'); };
+  const toastErr = (t) => { if (window.naoweeToast) window.naoweeToast(t, 'error'); };
 
   /* ─── El club busca un deportista autodeclarado y lo asocia (Fase 2) ───
      nao-docs, Afiliación · El flujo: «el club puede buscarlo entre los autodeclarados y asociarlo».
@@ -673,18 +725,381 @@ if (root) {
     pinta(); setTimeout(() => inp.focus(), 60);
   }
 
-  /* Cargue masivo de deportistas: entrada lista, la carga llega después. */
-  function openMasivo() {
-    const ov = document.createElement('div');
-    ov.className = 'reg-modal-overlay dp-modal-ov';
-    ov.innerHTML = `<div class="reg-modal bj-modal bj-modal--sm"><div class="reg-modal__head"><h3 class="reg-modal__title">Cargue masivo de deportistas</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button></div>
-      <div class="reg-modal__body">${msg('informative', I.info, 'Próximamente: subirás una plantilla .xlsx con los deportistas. Quedarán autodeclarados y el club propuesto los confirma, igual que en el registro manual. Quién puede cargarlos está abierto (P-07).')}</div>
-      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn" data-close>Entendido</button></div></div>`;
-    document.body.appendChild(ov);
-    requestAnimationFrame(() => ov.classList.add('is-open'));
-    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) { ov.classList.remove('is-open'); setTimeout(() => ov.remove(), 340); } });
+  /* ═══════════ Carga masiva de deportistas (DEP-609) ═══════════
+     `?vista=cargue`. La usan club, liga, federación y comité (P-07 respondida, 2026-10-09);
+     el territorial no. Mismo patrón que el cargue de organismos (cargue.js): plantilla .xlsx,
+     validación por fila, confirmar solo las válidas, detalle de errores e historial.
+     Reglas (reunión 2026-10-09 y decisión 2026-10-13):
+     - Cada deportista va con su club: la liga indica el club; la federación, la liga y el club;
+       el comité, la federación, la liga y el club. El club carga los suyos (sin columna).
+     - El club indicado queda como PROPUESTA que el club confirma. Si carga el propio club,
+       quedan vinculados. Club vacío = el club aún no está en el SUID: queda autodeclarado.
+     - Documento que ya está en el SUID: no se crea otra persona, conserva su correo y solo se
+       le propone el club.
+     - Solo datos básicos; el resto del perfil lo completa el deportista (le llega un correo). */
+  const vistaCargue = qsp('vista') === 'cargue' && puedeCrear && !terr;
+  const CG_CADENA = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [] };
+  const CG_BASE = ['Tipo de documento', 'Número de documento', 'Nombres', 'Apellidos', 'Fecha de nacimiento (AAAA-MM-DD)', 'Sexo', 'Correo electrónico', 'Teléfono', 'Deporte'];
+  const TIPOS_DOC = ['CC', 'TI', 'CE', 'PPT', 'PA'];
+  const SEXOS = ['Mujer', 'Hombre', 'Intersexual'];
+  const fmtSize = (b) => (b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`);
+  const hoyISO = () => new Date().toISOString().slice(0, 10);
+  let cg = { parsed: null, hecho: null };
+
+  function cgActor() { return scopeId ? getOrganismo(scopeId) : null; }
+  /* El comité no tiene deportes propios: son los de sus federaciones. */
+  function deportesDeActor(actor) {
+    if (actor.tipo !== 'comite') return deportesDe(actor);
+    return [...new Set(childrenOf(actor.id).filter((o) => o.tipo === 'federacion').flatMap((o) => deportesDe(o)))];
+  }
+  function cgHeaders(actor) {
+    return [...CG_BASE, ...(CG_CADENA[actor.tipo] || []).map((t) => TIPO_LBL[t])];
   }
 
+  /* Filas de ejemplo armadas con la jurisdicción real de quien carga: dos nuevas con club, una
+     persona que ya está en el SUID, una sin club y los errores típicos. */
+  function cgEjemplos(actor) {
+    const propiosDep = deportesDeActor(actor);
+    const dep = propiosDep.includes('Patinaje') ? 'Patinaje' : (propiosDep[0] || 'Patinaje');
+    const otroDeporte = ['Ciclismo', 'Fútbol', 'Natación', 'Patinaje', 'Pádel', 'Polo'].find((x) => !propiosDep.includes(x));
+    const activo = (o) => o.tipo === 'club' && o.estado === 'Activo' && deportesDe(o).includes(dep);
+    const propios = actor.tipo === 'club' ? [] : subtreeOf(actor.id).filter(activo);
+    const ids = new Set(propios.map((o) => o.id));
+    const ajeno = allOrganismos().find((o) => activo(o) && !ids.has(o.id));
+    const clubA = propios[0]; const clubB = propios[1] || propios[0];
+    const ya = allSolicitudes().filter((s) => s.estado === 'Enviada').map((s) => s.deportistaId);
+    const existente = allDeportistasDe(dep).find((d) => d.estado === 'autodeclarado' && !ya.includes(d.id))
+      || allDeportistasDe(dep).find((d) => clubA && !d.clubIds.includes(clubA.id) && !ya.includes(d.id));
+    const cadena = (club) => {
+      if (!club) return (CG_CADENA[actor.tipo] || []).map(() => '');
+      const anc = [club, ...ancestorsOf(club.id)];
+      return (CG_CADENA[actor.tipo] || []).map((t) => (anc.find((o) => o.tipo === t) || {}).nombre || '');
+    };
+    const sufijo = actor.id.replace(/\D/g, '').padStart(3, '0');
+    const doc = (n) => `11${sufijo}${String(n).padStart(5, '0')}`;
+    const fila = (td, nd, nom, ape, fn, sx, correo, tel, deporte, club) => [td, nd, nom, ape, fn, sx, correo, tel, deporte, ...cadena(club)];
+    const rows = [
+      fila('CC', doc(1), 'Mariana', 'Ceballos Ruiz', '2003-04-12', 'Mujer', 'mariana.ceballos@correo.demo.co', '3154820011', dep, clubA),
+      fila('CC', doc(2), 'Juan Esteban', 'Ríos Mora', '2000-09-30', 'Hombre', 'juanesteban.rios@correo.demo.co', '3164820022', dep, clubB)
+    ];
+    if (existente) {
+      const p = existente.nombre.split(' ');
+      rows.push(fila(existente.tipoDoc, existente.numDoc, p[0], p.slice(1).join(' '), '1998-01-15', 'Mujer', 'otro.correo@correo.demo.co', '3174820033', dep, clubA));
+    }
+    if (actor.tipo !== 'club') rows.push(fila('CC', doc(3), 'Kevin', 'Andrade Polo', '2001-11-02', 'Hombre', 'kevin.andrade@correo.demo.co', '3184820044', dep, null));
+    if (ajeno && actor.tipo !== 'club') rows.push(fila('CC', doc(4), 'Paula', 'Henao Gil', '2002-06-08', 'Mujer', 'paula.henao@correo.demo.co', '3194820055', dep, ajeno));
+    rows.push(fila('CC', doc(5), 'Sergio', 'Molina Paz', '1999-03-21', 'Hombre', 'sergio.molina@correo.demo.co', '3204820066', otroDeporte, clubA));
+    rows.push(fila('TI', doc(6), 'Valeria', 'Cuesta Lima', '2013-08-17', 'Mujer', 'valeria.cuesta@correo.demo.co', '3214820077', dep, clubA));
+    rows.push(fila('CC', doc(1), 'Mariana', 'Ceballos Ruiz', '2003-04-12', 'Mujer', 'mariana.ceballos@correo.demo.co', '3154820011', dep, clubA));
+    rows.push(fila('CC', doc(7), 'Óscar', 'Patiño Leal', '1997-12-05', 'Hombre', '', '3224820088', dep, clubB));
+    return rows;
+  }
+  /* Personas deportistas de ese deporte, sin tutor (a los menores los afilia su tutor). */
+  function allDeportistasDe(dep) {
+    return allDeportistas().filter((d) => esDeportista(d) && !d.tutorId && d.deporte === dep);
+  }
+
+  function cgPlantilla() {
+    const actor = cgActor();
+    if (!window.XLSX) { toastErr('No se pudo cargar la librería de Excel. Revisa tu conexión.'); return; }
+    const ws = window.XLSX.utils.aoa_to_sheet([cgHeaders(actor), ...cgEjemplos(actor)]);
+    ws['!cols'] = cgHeaders(actor).map(() => ({ wch: 24 }));
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'Deportistas');
+    window.XLSX.writeFile(wb, 'plantilla-cargue-deportistas.xlsx');
+  }
+
+  const celdaFecha = (v) => {
+    if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 86400 * 1000)); return d.toISOString().slice(0, 10); }
+    if (v instanceof Date) return v.toISOString().slice(0, 10);
+    return String(v == null ? '' : v).trim();
+  };
+  const buscaNombre = (lista, nombre) => lista.find((o) => norm(o.nombre) === norm(nombre));
+
+  /* Validación por fila. Resultado: tipo 'nueva' | 'existente' | 'sinClub' | 'error'. */
+  function cgValidar(body, actor) {
+    const cadenaTipos = CG_CADENA[actor.tipo] || [];
+    const deportesActor = deportesDeActor(actor);
+    const docs = new Set();
+    return body.map((raw, i) => {
+      const c = (k) => String(raw[k] == null ? '' : raw[k]).trim();
+      const d = {
+        tipoDoc: c(0).toUpperCase(), numDoc: c(1).replace(/\D/g, ''), nombres: c(2), apellidos: c(3),
+        fechaNac: celdaFecha(raw[4]), sexo: c(5), correo: c(6), telefono: c(7), deporte: c(8)
+      };
+      const cad = {}; cadenaTipos.forEach((t, j) => { cad[t] = c(9 + j); });
+      const errores = [];
+      const ya = d.numDoc ? personaPorDocumento(d.numDoc) : null;
+      if (!d.numDoc) errores.push('Número de documento vacío');
+      else if (docs.has(d.numDoc)) errores.push('Documento repetido en el archivo');
+      if (d.numDoc) docs.add(d.numDoc);
+      if (!ya) {
+        if (!TIPOS_DOC.includes(d.tipoDoc)) errores.push('Tipo de documento inválido');
+        if (!d.nombres || !d.apellidos) errores.push('Nombres o apellidos vacíos');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d.fechaNac)) errores.push('Fecha de nacimiento inválida (AAAA-MM-DD)');
+        else if (edadDe(d.fechaNac) < 18) errores.push('Menor de edad: lo registra su tutor desde su perfil');
+        if (!SEXOS.map(norm).includes(norm(d.sexo))) errores.push('Sexo inválido');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.correo)) errores.push('Correo vacío o inválido');
+      } else if (ya.tutorId) errores.push('Menor de edad: lo afilia su tutor');
+      if (!d.deporte) errores.push('Deporte vacío');
+      else if (!deportesActor.includes(d.deporte)) errores.push(`${d.deporte} no es deporte de ${actor.nombre}`);
+
+      /* Club según quién carga. */
+      let club = null; let sinClub = false;
+      if (actor.tipo === 'club') club = actor;
+      else if (!cad.club) sinClub = true;
+      else {
+        let padre = actor;
+        for (const t of cadenaTipos) {
+          const nombre = cad[t];
+          const hijos = childrenOf(padre.id).filter((o) => o.tipo === t);
+          if (!nombre) { errores.push(`${TIPO_LBL[t]} vacía para el club indicado`); padre = null; break; }
+          const hallado = buscaNombre(hijos, nombre);
+          if (!hallado) {
+            const existe = buscaNombre(allOrganismos().filter((o) => o.tipo === t), nombre);
+            errores.push(existe ? `${existe.nombre} no es de ${padre.nombre}` : `${TIPO_LBL[t]} «${nombre}» no existe en el SUID`);
+            padre = null; break;
+          }
+          padre = hallado;
+        }
+        if (padre) {
+          club = padre;
+          if (club.estado !== 'Activo') errores.push(`${club.nombre} no está Activo`);
+          if (d.deporte && !deportesDe(club).includes(d.deporte)) errores.push(`${club.nombre} no practica ${d.deporte}`);
+        }
+      }
+      if (ya && club && ya.clubIds.includes(club.id)) errores.push(`Ya está vinculado a ${club.nombre}`);
+      if (ya && club && allSolicitudes().some((s) => s.deportistaId === ya.id && s.clubId === club.id && s.estado === 'Enviada')) errores.push(`Ya tiene una propuesta pendiente con ${club.nombre}`);
+      if (ya && sinClub) errores.push('Ya está en el SUID: indica el club para proponérselo');
+
+      const nombre = ya ? ya.nombre : `${d.nombres} ${d.apellidos}`.trim() || '(sin nombre)';
+      const tipo = errores.length ? 'error' : ya ? 'existente' : sinClub ? 'sinClub' : 'nueva';
+      return { fila: i + 2, raw, nombre, doc: d.numDoc ? `${ya ? ya.tipoDoc : d.tipoDoc} ${d.numDoc}` : '—', tipo, errores, club, existenteId: ya ? ya.id : null,
+        datos: { nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, fechaNac: d.fechaNac, sexo: d.sexo, correo: d.correo, telefono: d.telefono, deporte: d.deporte, modalidad: '' } };
+    });
+  }
+
+  function cgLeer(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = window.XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const aoa = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const body = aoa.slice(1).filter((r) => r.some((x) => String(x).trim() !== ''));
+        cg.parsed = { archivo: file.name, tamano: file.size, filas: cgValidar(body, cgActor()) };
+        renderCargue();
+      } catch (_) { toastErr('No se pudo leer el archivo (.xlsx).'); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function cgErrores() {
+    const actor = cgActor();
+    const malas = cg.parsed.filas.filter((r) => r.tipo === 'error');
+    const ws = window.XLSX.utils.aoa_to_sheet([[...cgHeaders(actor), 'Errores'], ...malas.map((r) => [...cgHeaders(actor).map((_, j) => r.raw[j] == null ? '' : r.raw[j]), r.errores.join(' · ')])]);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'Errores');
+    window.XLSX.writeFile(wb, `errores-${cg.parsed.archivo.replace(/\.xlsx?$/i, '')}.xlsx`);
+  }
+
+  function cgConfirmar() {
+    const actor = cgActor();
+    const validas = cg.parsed.filas.filter((r) => r.tipo !== 'error');
+    if (!validas.length) return;
+    const responsable = (ROLES[roleCode] || {}).userName || roleCode;
+    const res = cargarDeportistas(validas.map((r) => ({
+      existenteId: r.existenteId, datos: r.datos, clubId: actor.tipo === 'club' ? actor.id : (r.club ? r.club.id : null)
+    })), actor.id, { responsable });
+    const reg = recordCargue({
+      rol: roleCode, orgId: actor.id, tipo: 'deportista', fecha: hoyISO(), responsable,
+      archivo: { nombre: cg.parsed.archivo, tamano: cg.parsed.tamano },
+      totales: { filas: cg.parsed.filas.length, nuevos: res.nuevos.length, existentes: res.existentes.length, sinClub: res.sinClub.length, cargadas: validas.length, error: cg.parsed.filas.length - validas.length }
+    });
+    cg = { parsed: null, hecho: { ...res, radicado: reg.id } };
+    renderCargue();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  const CG_TIPO = {
+    nueva: ['positive', 'Nueva'],
+    existente: ['informative', 'Ya está en el SUID'],
+    sinClub: ['caution', 'Nueva · sin club'],
+    error: ['negative', 'Error']
+  };
+  const cgBadge = (t) => `<span class="naowee-badge naowee-badge--${CG_TIPO[t][0]} naowee-badge--quiet naowee-badge--small">${CG_TIPO[t][1]}</span>`;
+
+  function cgDetalle(r, actor) {
+    if (r.tipo === 'error') return `<span class="cg-errs">${esc(r.errores.join(' · '))}</span>`;
+    const clubTxt = actor.tipo === 'club' ? 'Se vincula a tu club' : r.club ? `Se propone a ${esc(r.club.nombre)}; el club confirma` : 'Queda autodeclarado: el club aún no está en el SUID';
+    const extra = r.tipo === 'existente' ? 'No se crea de nuevo: conserva sus datos y su correo.' : 'Le llega un correo para completar su perfil.';
+    return `<span class="dp-cg-det">${clubTxt}. ${extra}</span>`;
+  }
+
+  function renderCargue() {
+    const actor = cgActor();
+    const titulo = document.getElementById('pageTitle');
+    if (titulo) titulo.textContent = 'Cargue masivo de deportistas';
+    const sub = document.getElementById('pageSub');
+    if (sub) sub.textContent = actor ? `Carga en lote los deportistas de ${actor.nombre} con una plantilla .xlsx.` : '';
+    const box = document.getElementById('dpActions');
+    if (box && !box.querySelector('#dpVolver')) {
+      box.insertAdjacentHTML('beforeend', `<a class="naowee-btn naowee-btn--mute" id="dpVolver" href="${esc(urlCon({ vista: null }))}">Volver a deportistas</a>`);
+    }
+    const dn = document.querySelector('[data-devnote="clubTitulo"]');
+    if (dn && dn.dataset.devnote !== 'cargueDep') { dn.dataset.devnote = 'cargueDep'; delete dn.dataset.mounted; dn.innerHTML = ''; }
+    mountDevnotes({ cargueDep: CG_DEVNOTE });
+    if (!actor) { root.innerHTML = msg('caution', I.info, 'Tu perfil no tiene un organismo para cargar deportistas.'); return; }
+
+    const activo = actor.estado === 'Activo';
+    const cadena = (CG_CADENA[actor.tipo] || []).map((t) => TIPO_LBL[t].toLowerCase());
+    const intro = actor.tipo === 'club'
+      ? `Como <strong>${esc(actor.nombre)}</strong> cargas tus deportistas: quedan <strong>vinculados a tu club</strong>.`
+      : `Como <strong>${esc(actor.nombre)}</strong> cargas deportistas con su ${cadena.join(', ').replace(/, ([^,]*)$/, ' y $1')}. El club queda como <strong>propuesta</strong> y lo confirma desde su bandeja; mientras tanto el deportista sigue autodeclarado. Si el club aún no está en el SUID, deja la columna vacía: queda autodeclarado.`;
+
+    if (cg.hecho) {
+      const h = cg.hecho;
+      const clubes = [...new Set(h.propuestas.map((p) => p.clubId))];
+      const primerClub = clubes[0] ? getOrganismo(clubes[0]) : null;
+      root.innerHTML = `
+        <div class="naowee-card cg-success">
+          <div class="cg-success__check">${I.check}</div>
+          <h2 class="cg-success__title">Cargue completado · ${esc(h.radicado)}</h2>
+          <ul class="dp-cg-res">
+            ${h.nuevos.length ? `<li><strong>${h.nuevos.length} ${h.nuevos.length === 1 ? 'deportista nuevo' : 'deportistas nuevos'}</strong>: les llega un correo para completar su perfil.</li>` : ''}
+            ${h.existentes.length ? `<li><strong>${h.existentes.length} ya ${h.existentes.length === 1 ? 'estaba' : 'estaban'} en el SUID</strong>: ${h.existentes.length === 1 ? 'no se creó de nuevo y conserva' : 'no se crearon de nuevo y conservan'} sus datos y su correo.</li>` : ''}
+            ${h.vinculados.length ? `<li><strong>${h.vinculados.length} ${h.vinculados.length === 1 ? 'quedó vinculado' : 'quedaron vinculados'}</strong> a tu club.</li>` : ''}
+            ${h.propuestas.length ? `<li><strong>${h.propuestas.length} ${h.propuestas.length === 1 ? 'propuesta enviada' : 'propuestas enviadas'}</strong> a ${clubes.length} ${clubes.length === 1 ? 'club' : 'clubes'}: ${clubes.length === 1 ? 'el club la' : 'cada club las'} confirma desde su bandeja. Mientras tanto ${h.propuestas.length === 1 ? 'sigue autodeclarado' : 'siguen autodeclarados'}.</li>` : ''}
+            ${h.sinClub.length ? `<li><strong>${h.sinClub.length} sin club</strong>: ${h.sinClub.length === 1 ? 'queda autodeclarado. Propónle' : 'quedan autodeclarados. Propónles'} el club cuando esté en el SUID.</li>` : ''}
+          </ul>
+          <div class="cg-success__actions">
+            <a class="naowee-btn naowee-btn--loud" href="${esc(urlCon({ vista: null }))}">Ver deportistas</a>
+            ${primerClub ? `<a class="naowee-btn naowee-btn--quiet" title="Solo demo: abre la bandeja de ese club" href="bandeja.html?role=CLUB&org=${encodeURIComponent(primerClub.id)}">Ver la bandeja de ${esc(primerClub.nombre)}</a>` : ''}
+            <button type="button" class="naowee-btn naowee-btn--mute" id="cgOtro">Cargar otro archivo</button>
+          </div>
+        </div>
+        ${cgHistorial(actor)}`;
+      document.getElementById('cgOtro').addEventListener('click', () => { cg.hecho = null; renderCargue(); });
+      return;
+    }
+
+    const filas = cg.parsed ? cg.parsed.filas : null;
+    const n = (t) => (filas ? filas.filter((r) => r.tipo === t).length : 0);
+    const validas = filas ? filas.length - n('error') : 0;
+    root.innerHTML = `
+      ${msg('informative', I.info, intro, 'margin-bottom:16px')}
+      ${activo ? '' : msg('caution', I.info, 'Tu organismo no está <strong>Activo</strong>: no puedes cargar deportistas hasta que tu nivel superior te habilite.', 'margin-bottom:16px')}
+      <div class="naowee-card cg-template">
+        <div class="cg-template__body">
+          <span class="cg-template__ico">${I.users}</span>
+          <div>
+            <p class="cg-template__title">Plantilla de deportistas (${cgHeaders(actor).length} columnas)</p>
+            <p class="cg-template__sub">Datos básicos${(CG_CADENA[actor.tipo] || []).length ? ` y ${cadena.join(', ').replace(/, ([^,]*)$/, ' y $1')}` : ''}. Trae filas de ejemplo: nuevas, una persona que ya está en el SUID y errores típicos.</p>
+          </div>
+        </div>
+        <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="cgTpl"${activo ? '' : ' disabled'}><span class="naowee-btn__ico">${I.download}</span>Descargar plantilla</button>
+      </div>
+      <label class="naowee-file-uploader__drop-zone cg-drop${activo ? '' : ' is-disabled'}" id="cgDrop">
+        <input type="file" accept=".xlsx,.xls" id="cgInput"${activo ? '' : ' disabled'}>
+        <span class="cg-drop__ico">${I.upload}</span>
+        <span class="cg-drop__title">Arrastra tu archivo o haz clic para elegirlo</span>
+        <span class="cg-drop__sub">Formato .xlsx o .xls · máx 5 MB</span>
+      </label>
+      ${filas ? `
+        <div class="naowee-card cg-preview">
+          <div class="cg-preview__head">
+            <div class="cg-preview__file"><span>${esc(cg.parsed.archivo)}</span><span class="cg-preview__size">${fmtSize(cg.parsed.tamano)}</span></div>
+            <div class="cg-preview__counts">
+              <span class="naowee-badge naowee-badge--positive naowee-badge--quiet">${n('nueva') + n('sinClub')} nuevas</span>
+              <span class="naowee-badge naowee-badge--informative naowee-badge--quiet">${n('existente')} ya en el SUID</span>
+              <span class="naowee-badge naowee-badge--negative naowee-badge--quiet">${n('error')} con error</span>
+            </div>
+          </div>
+          <div class="cg-table-wrap">
+            <table class="cg-table">
+              <thead><tr><th>Fila</th><th>Deportista</th><th>Resultado</th><th>Qué pasa</th></tr></thead>
+              <tbody>
+                ${filas.map((r) => `
+                  <tr class="${r.tipo === 'error' ? 'is-error' : ''}">
+                    <td class="cg-table__row" data-label="Fila">${r.fila}</td>
+                    <td data-label="Deportista"><div class="bj-org__name">${esc(r.nombre)}</div><div class="bj-org__sub">${esc(r.doc)}</div></td>
+                    <td data-label="Resultado">${cgBadge(r.tipo)}</td>
+                    <td data-label="Qué pasa">${cgDetalle(r, actor)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="cg-preview__foot">
+            ${n('error') ? '<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="cgErr">Descargar errores</button>' : ''}
+            <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="cgCancel">Cancelar</button>
+            <button type="button" class="naowee-btn naowee-btn--loud" id="cgOk"${validas ? '' : ' disabled'}>Cargar ${validas} ${validas === 1 ? 'deportista' : 'deportistas'}</button>
+          </div>
+        </div>` : ''}
+      ${cgHistorial(actor)}`;
+
+    document.getElementById('cgTpl')?.addEventListener('click', cgPlantilla);
+    const input = document.getElementById('cgInput'); const drop = document.getElementById('cgDrop');
+    if (activo && input) {
+      input.addEventListener('change', (e) => { if (e.target.files[0]) cgLeer(e.target.files[0]); });
+      ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('is-over'); }));
+      ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('is-over')));
+      drop.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files[0]) cgLeer(e.dataTransfer.files[0]); });
+    }
+    document.getElementById('cgOk')?.addEventListener('click', cgConfirmar);
+    document.getElementById('cgErr')?.addEventListener('click', cgErrores);
+    document.getElementById('cgCancel')?.addEventListener('click', () => { cg.parsed = null; renderCargue(); });
+  }
+
+  function cgHistorial(actor) {
+    const lista = allCargues().filter((c) => c.tipo === 'deportista' && c.orgId === actor.id && (getDemoMode() !== 'blank' || !c.demo));
+    const head = '<div class="cg-hist__head"><h3 class="cg-hist__title">Historial de cargues de deportistas</h3></div>';
+    if (!lista.length) {
+      return `<div class="naowee-card">${head}${emptyState('Sin cargues todavía', 'Cada archivo que cargues queda aquí con su radicado, responsable y resultado.')}</div>`;
+    }
+    return `<div class="naowee-card">${head}
+      <div class="cg-table-wrap"><table class="cg-table">
+        <thead><tr><th>Radicado</th><th>Fecha</th><th>Responsable</th><th>Archivo</th><th>Resultado</th></tr></thead>
+        <tbody>${lista.map((c) => `
+          <tr>
+            <td class="cg-table__row" data-label="Radicado">${esc(c.id)}</td>
+            <td data-label="Fecha">${esc(c.fecha)}</td>
+            <td data-label="Responsable">${esc(c.responsable)}</td>
+            <td class="cg-table__nit" data-label="Archivo">${esc((c.archivo && c.archivo.nombre) || '—')}</td>
+            <td data-label="Resultado">
+              ${c.totales.nuevos ? `<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">${c.totales.nuevos} nuevos</span> ` : ''}
+              ${c.totales.existentes ? `<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">${c.totales.existentes} ya en el SUID</span> ` : ''}
+              ${c.totales.error ? `<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small">${c.totales.error} error</span>` : ''}
+            </td>
+          </tr>`).join('')}</tbody>
+      </table></div></div>`;
+  }
+
+  /* Historial de ejemplo de la liga del Valle (modo demo con datos). */
+  function cgSembrar() {
+    if (getDemoMode() !== 'demo' || allCargues().some((c) => c.demo && c.tipo === 'deportista')) return;
+    recordCargue({ rol: 'LIGA', orgId: 'LIG-001', tipo: 'deportista', fecha: '2026-09-22', responsable: 'Sandra Mejía', demo: true,
+      archivo: { nombre: 'deportistas-liga-valle.xlsx', tamano: 16384 }, totales: { filas: 24, nuevos: 18, existentes: 4, sinClub: 1, cargadas: 22, error: 2 } });
+  }
+
+  const CG_DEVNOTE = { title: 'Carga masiva de deportistas (DEP-609)', sections: [
+    { title: 'Reglas', items: [
+      'La usan club, liga, federación y comité (P-07 respondida en la reunión con Producto del 2026-10-09). El territorial registra uno a uno.',
+      'Columnas: datos básicos + la cadena según quién carga. La liga indica el club; la federación, la liga y el club; el comité, la federación, la liga y el club. El club no indica club: quedan vinculados a él.',
+      'El club indicado queda como <strong>propuesta</strong> que el club confirma en su bandeja (decisión 2026-10-13); mientras tanto el deportista sigue autodeclarado.',
+      'Club vacío = el club aún no está en el SUID: la fila es válida y el deportista queda autodeclarado, para proponerle el club después.',
+      'Documento que ya existe en el SUID: no se crea otra persona; manda el primer registro y su correo no cambia. Solo se le propone el club. Sin club, esa fila es error.',
+      'Solo datos básicos. Al deportista nuevo le llega un correo para completar su perfil (decisión 2026-10-13); los datos personales adicionales los maneja él.'
+    ] },
+    { title: 'Validación por fila', items: [
+      'Documento vacío o repetido en el archivo · tipo de documento · nombres y apellidos · fecha (AAAA-MM-DD) · menor de 18 (lo registra su tutor) · sexo · correo.',
+      'Deporte que no es del organismo · liga o club que no existen, no cuelgan de quien carga, no están Activos o no practican el deporte.',
+      'Persona que ya está vinculada a ese club o que ya tiene una propuesta pendiente con él.'
+    ] },
+    { title: 'Back (referencia)', items: [
+      'INT-125 ya tiene en user-auth-ms (staging) el motor de lotes para administradores internos: plantilla ATHLETE, validación, archivo de errores, confirmación y reporte. DEP-611 lo extiende a organismos con la cadena y la propuesta al club.'
+    ] }
+  ] };
+  if (vistaCargue) cgSembrar();
   /* ─── Wiring ─── */
   function wire() {
     const search = document.getElementById('dpSearch');

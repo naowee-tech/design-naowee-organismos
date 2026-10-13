@@ -399,7 +399,7 @@
         { id: "METODOLOGO", nombre: "Metod\xF3logo", desc: "Registra opiniones sobre los deportistas del Ciclo Ol\xEDmpico (an\xE1lisis cualitativo).", creaRol: "GESTOR_COC", marca: "olimpica" }
       ];
       ROLES_MINISTERIO = [
-        { id: "ADMIN_MIN", nombre: "Administrador del Ministerio", desc: "Todos con el mismo alcance: crean comit\xE9s, aprueban su parte de las federaciones, sancionan y ven todo el SND.", creaRol: "NAOWEE" },
+        { id: "ADMIN_MIN", nombre: "Administrador del Ministerio", desc: "Administra el m\xF3dulo de Organismos: crea comit\xE9s, aprueba su parte de las federaciones, sanciona y ve todo el SND. En la Suite habr\xE1 administradores por m\xF3dulo (matriz pendiente con Producto).", creaRol: "NAOWEE" },
         { id: "TERRITORIAL", nombre: "Encargado territorial", desc: "Departamental o municipal. Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados con club propuesto. No aprueba.", creaRol: "ADMIN_MIN" }
       ];
       USUARIOS_SEED = [
@@ -1330,7 +1330,7 @@
       <div class="us-admins__head">
         <div>
           <h2 class="us-admins__title" id="usAdmTitle">Administradores del Ministerio</h2>
-          <p class="us-admins__sub">${admins.length} ${admins.length === 1 ? "cuenta" : "cuentas"} con el mismo alcance.</p>
+          <p class="us-admins__sub">${admins.length} ${admins.length === 1 ? "cuenta" : "cuentas"} del m\xF3dulo de Organismos.</p>
         </div>
         ${badge("neutral", "Solo lectura", "naowee-badge--large")}
       </div>
@@ -1344,6 +1344,7 @@
         </li>`).join("")}
       </ul>
       ${msg("informative", "info", "<strong>Los crea Naowee.</strong> Para sumar o retirar un administrador del Ministerio, p\xEDdelo a soporte de Naowee.")}
+      ${msg("caution", "info", "<strong>Administradores por m\xF3dulo.</strong> En la Suite cada administrador del Ministerio es de un m\xF3dulo (por ejemplo, Fomento administra Eventos; Infraestructura, Escenarios), bajo un administrador general. La matriz de roles est\xE1 pendiente con Producto.")}
       <p class="us-admins__compact"><span class="us-stack" aria-hidden="true">${admins.map((a2) => `<span class="us-ava">${esc(ini(a2.nombre))}</span>`).join("")}</span><span><strong>${admins.length} administradores del Ministerio</strong> \xB7 los crea Naowee</span></p>
     </section>`;
     }
@@ -1957,7 +1958,8 @@
       "No hay borrado: Invitado \u2192 Activo \u2192 Desactivado, y se puede reactivar. Cada cambio queda en la auditor\xEDa del organismo."
     ] },
     { title: "Ministerio", items: [
-      "El Ministerio tiene <strong>varios administradores</strong> con el mismo alcance (A-7). Los crea Naowee: en la pantalla salen en solo lectura.",
+      "El Ministerio tiene <strong>varios administradores</strong> (A-7). Los crea Naowee: en la pantalla salen en solo lectura.",
+      "Reuni\xF3n con Producto del 2026-10-09: en la Suite los administradores del Ministerio son <strong>por m\xF3dulo</strong> (por ejemplo, Direcci\xF3n de Fomento \u2192 Eventos; Infraestructura \u2192 Escenarios), bajo un administrador general de la Suite que ve todo. Los de esta pantalla son los del m\xF3dulo de Organismos. La matriz de roles del Ministerio por m\xF3dulo est\xE1 pendiente de levantar con Producto.",
       "El Ministerio crea a los <strong>usuarios territoriales</strong> (A-2), anclados a un departamento o a un municipio (<code>ancla: { depto }</code> o <code>{ depto, municipio }</code>). Consultan su territorio y registran deportistas autodeclarados; no aprueban.",
       "Si el territorio ya tiene un encargado activo, el di\xE1logo lo avisa pero no bloquea."
     ] },

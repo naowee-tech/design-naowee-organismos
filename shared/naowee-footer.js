@@ -623,6 +623,18 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.0 —  CARGA MASIVA DE DEPORTISTAS Y DECISIONES DEL 09-10 Y 13-10:
+             · Carga masiva de deportistas desde club, liga, federación y comité
+               (Deportistas › Cargue masivo): plantilla según quién carga, filas
+               Nueva / Ya está en el SUID / sin club / Error, confirmar solo las
+               válidas, detalle de errores e historial. El club indicado queda como
+               propuesta que el club confirma; al deportista nuevo le llega un correo.
+             · Registrar deportista: club obligatorio para un organismo (opcional
+               para el encargado territorial), opción «sin club» si aún no existe;
+               un documento existente no se duplica, solo se le propone el club.
+             · Un organismo solo edita datos básicos del deportista (dirección,
+               teléfono, correo). P-07 respondida. Administradores del Ministerio
+               por módulo (texto; matriz pendiente con Producto). */
 /* v1.8.0 —  DEMO COMPLETA DE JERARQUÍA DE ORGANIZACIONES (fases 0 a 3):
              · Modelo: afiliación como una sola relación con estado y vigencia
                (deportista→club, personal→organismo, club→liga); un deportista en
@@ -646,7 +658,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.8.0';
+const MODULE_VERSION = 'v1.9.0';
 
 (function () {
   function mount() {

@@ -18,7 +18,8 @@
       'No hay borrado: Invitado → Activo → Desactivado, y se puede reactivar. Cada cambio queda en la auditoría del organismo.'
     ] },
     { title: 'Ministerio', items: [
-      'El Ministerio tiene <strong>varios administradores</strong> con el mismo alcance (A-7). Los crea Naowee: en la pantalla salen en solo lectura.',
+      'El Ministerio tiene <strong>varios administradores</strong> (A-7). Los crea Naowee: en la pantalla salen en solo lectura.',
+      'Reunión con Producto del 2026-10-09: en la Suite los administradores del Ministerio son <strong>por módulo</strong> (por ejemplo, Dirección de Fomento → Eventos; Infraestructura → Escenarios), bajo un administrador general de la Suite que ve todo. Los de esta pantalla son los del módulo de Organismos. La matriz de roles del Ministerio por módulo está pendiente de levantar con Producto.',
       'El Ministerio crea a los <strong>usuarios territoriales</strong> (A-2), anclados a un departamento o a un municipio (<code>ancla: { depto }</code> o <code>{ depto, municipio }</code>). Consultan su territorio y registran deportistas autodeclarados; no aprueban.',
       'Si el territorio ya tiene un encargado activo, el diálogo lo avisa pero no bloquea.'
     ] },

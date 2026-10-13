@@ -132,7 +132,7 @@ function mainHtml() {
       <div class="us-admins__head">
         <div>
           <h2 class="us-admins__title" id="usAdmTitle">Administradores del Ministerio</h2>
-          <p class="us-admins__sub">${admins.length} ${admins.length === 1 ? 'cuenta' : 'cuentas'} con el mismo alcance.</p>
+          <p class="us-admins__sub">${admins.length} ${admins.length === 1 ? 'cuenta' : 'cuentas'} del módulo de Organismos.</p>
         </div>
         ${badge('neutral', 'Solo lectura', 'naowee-badge--large')}
       </div>
@@ -146,6 +146,7 @@ function mainHtml() {
         </li>`).join('')}
       </ul>
       ${msg('informative', 'info', '<strong>Los crea Naowee.</strong> Para sumar o retirar un administrador del Ministerio, pídelo a soporte de Naowee.')}
+      ${msg('caution', 'info', '<strong>Administradores por módulo.</strong> En la Suite cada administrador del Ministerio es de un módulo (por ejemplo, Fomento administra Eventos; Infraestructura, Escenarios), bajo un administrador general. La matriz de roles está pendiente con Producto.')}
       <p class="us-admins__compact"><span class="us-stack" aria-hidden="true">${admins.map((a) => `<span class="us-ava">${esc(ini(a.nombre))}</span>`).join('')}</span><span><strong>${admins.length} administradores del Ministerio</strong> · los crea Naowee</span></p>
     </section>`;
   }

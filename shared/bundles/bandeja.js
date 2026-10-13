@@ -749,13 +749,13 @@
           COMITE: "CR",
           FEDERACION: "CR",
           LIGA: "CR",
-          // C = registrar autodeclarados y proponer club (P-07)
+          // C = registrar (uno a uno o carga masiva) con club propuesto que el club confirma (P-07 respondida 2026-10-09: todos los organismos)
           CLUB: "CRX",
           // sus afiliados · X = desvincular (ORG-10, ver nota)
           DEPORTISTA: "RU",
           // el propio (nunca documento / fecha nac.)
           TERRITORIAL: "CR",
-          // registra autodeclarados y propone club (P-12); no aprueba
+          // registra uno a uno con club propuesto (P-12); sin carga masiva; no aprueba
           MINISTRO: "R"
         },
         /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
@@ -789,7 +789,7 @@
           LIGA: "CR",
           // clubes
           CLUB: "",
-          // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
+          // cargue de ORGANISMOS: el club no tiene nivel abajo. Su carga masiva de deportistas va por deportistas[CLUB] 'C' («Deportistas» › Cargue masivo)
           DEPORTISTA: "",
           TERRITORIAL: "",
           MINISTRO: "R"
@@ -2338,7 +2338,7 @@
     { title: "Qui\xE9n ve qu\xE9", items: [
       "Cada organismo Activo ve lo que cuelga directamente de \xE9l y est\xE1 <strong>En revisi\xF3n</strong>: lo que carg\xF3 y lo que se autorregistr\xF3 eligi\xE9ndolo como superior. Aprobar, devolver a correcci\xF3n y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.",
       "Nadie decide si su propio organismo no est\xE1 Activo. Federaciones: doble validaci\xF3n Comit\xE9 + Ministerio, sin orden (pendiente de confirmar, P-19).",
-      "El club ve aqu\xED sus solicitudes de afiliaci\xF3n. Las marcadas <strong>Propuesta</strong> no las pidi\xF3 el deportista: las abri\xF3 otro nivel que lo registr\xF3 (P-07) y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene."
+      "El club ve aqu\xED sus solicitudes de afiliaci\xF3n. Las marcadas <strong>Propuesta</strong> no las pidi\xF3 el deportista: las abri\xF3 otro nivel que lo registr\xF3, uno a uno o por carga masiva (P-07 respondida: todos los organismos), y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene."
     ] },
     { title: "Una persona, varios organismos (P-15)", items: [
       "Los contextos son de la <strong>persona</strong>, no del rol: cada uno es un par rol \u2194 organismo. En la demo, Sandra Mej\xEDa administra la Liga de Patinaje del Valle, la Liga de Nataci\xF3n del Valle y la Federaci\xF3n Colombiana de Patinaje (<code>PERSONAS</code> en shared/sidebar.js).",

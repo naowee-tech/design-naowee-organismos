@@ -164,6 +164,10 @@ const viewer = resolveViewer();
 const own = viewer.kind === 'own';
 const third = !own;
 const canEdit = viewer.kind === 'own' || viewer.kind === 'admin';
+/* Reunión con Producto 2026-10-09: el organismo (club, liga, federación) solo edita los datos básicos
+   de contacto de la persona; los datos personales adicionales quedan bajo su control. */
+const ORG_EDITA = ['Dirección', 'Teléfono', 'Correo electrónico'];
+const orgEdita = viewer.kind === 'org' && ORG_ROLES.includes(viewer.shellRole);
 /* Roles que la persona tiene según los datos: deportista siempre; tutor si tiene menores a cargo;
    personal de apoyo si tiene rol de apoyo o vínculos. ?roles= solo recorta (ejemplos de la demo). */
 const ROLES_DATOS = () => [...(DEP.esDeportista === false ? [] : ['deportista']),
@@ -496,6 +500,11 @@ function secPerfil() {
   const t = tabs.find((x) => x.id === state.tab.perfil);
   const editing = state.editing === t.id;
   const fields = t.fields.filter((f) => !f[3] || has(f[3]));
+  const orgPuede = orgEdita && fields.some((f) => ORG_EDITA.includes(f[0]));
+  const bloqueado = (dt, lock) => lock || (orgEdita && !ORG_EDITA.includes(dt));
+  const notaOrg = !orgEdita ? '' : orgPuede
+    ? `<p>Tu organismo puede actualizar ${fields.filter((f) => ORG_EDITA.includes(f[0])).map((f) => f[0].toLowerCase()).join(' y ')}.${fields.some((f) => !ORG_EDITA.includes(f[0])) ? ' El resto lo maneja la persona.' : ' Los demás datos personales los maneja la persona.'}</p>`
+    : '<p>Estos datos los maneja la persona; tu organismo solo los consulta.</p>';
   return `
     <section aria-labelledby="mpH-perfil">
       <h2 class="mp-sr" id="mpH-perfil">Perfil</h2>
@@ -503,12 +512,12 @@ function secPerfil() {
         ${tabsBar('perfil', tabs.map((x) => [x.id, x.label]), t.id, 'Datos del perfil')}
         <div class="mp-panel" role="tabpanel" id="mpp-perfil-${t.id}" aria-labelledby="mpt-perfil-${t.id}">
           <div class="mp-panel-h">
-            <div><h3>${t.title}</h3>${t.id === 'datos' && own ? '<p>Son los mismos para todos tus roles.</p>' : ''}</div>
-            <div class="mp-sec-h__acts">${canEdit && !editing ? `<button class="mp-btn mp-btn--sm" type="button" data-edit="${t.id}">${ic('edit', 'sm')}Editar</button>` : ''}${t.id === 'datos' ? devnote('perfil') : ''}</div>
+            <div><h3>${t.title}</h3>${t.id === 'datos' && own ? '<p>Son los mismos para todos tus roles.</p>' : ''}${notaOrg}</div>
+            <div class="mp-sec-h__acts">${(canEdit || orgPuede) && !editing ? `<button class="mp-btn mp-btn--sm" type="button" data-edit="${t.id}">${ic('edit', 'sm')}${orgPuede ? 'Editar datos básicos' : 'Editar'}</button>` : ''}${t.id === 'datos' ? devnote('perfil') : ''}</div>
           </div>
           <dl class="mp-fields">
             ${fields.map(([dt, dd, lock]) => `<div><dt>${dt}</dt>${editing
-              ? `<dd><input value="${esc(dd)}" aria-label="${esc(dt)}"${lock ? ' disabled' : ''} data-field="${esc(dt)}"></dd>`
+              ? `<dd><input value="${esc(dd)}" aria-label="${esc(dt)}"${bloqueado(dt, lock) ? ' disabled' : ''} data-field="${esc(dt)}"></dd>`
               : `<dd${dd === 'Prefiere no responder' ? ' class="is-empty"' : ''}>${esc(dd)}</dd>`}</div>`).join('')}
           </dl>
           ${editing ? `<div class="mp-edit-acts"><button class="mp-btn mp-btn--lg" type="button" data-edit-cancel>Cancelar</button><button class="mp-btn mp-btn--pri mp-btn--lg" type="button" data-edit-save="${t.id}">Guardar cambios</button></div>` : ''}
@@ -712,7 +721,7 @@ function bind() {
       const f = t.fields.find((x) => x[0] === inp.dataset.field); if (f) f[1] = inp.value;
     });
     state.editing = null; render();
-    toast(viewer.kind === 'admin' ? 'Cambios guardados. Quedan registrados a tu nombre.' : 'Cambios guardados.');
+    toast(viewer.kind === 'admin' ? 'Cambios guardados. Quedan registrados a tu nombre.' : orgEdita ? `Datos básicos actualizados. Quedan registrados a nombre de ${orgName}.` : 'Cambios guardados.');
   });
 
   /* Perfil propio: cancelar una solicitud, retirarse de un club, cancelar la baja. */
@@ -1002,7 +1011,8 @@ const DEVNOTES = {
   perfil: { title: 'Perfil · datos personales', sections: [
     { title: 'Hoy en el perfil migrado', items: ['Datos de <code>GET /v1/user/{code}</code>; guardado con <code>PATCH /v1/user/{code}</code> enviando <code>individual_data</code> (permiso <code>user:update_athlete</code>).', 'Ya muestra secciones por <code>roles.includes(...)</code> (multi-rol listo para gating), pero la etiqueta del encabezado usa <code>roles[0]</code>. Las vistas viejas (perfil propio y "Consulta de usuario") usan <code>roles[0]</code> en todo.', 'La biometría sale a cualquiera, vacía si no es deportista.'] },
     { title: 'Qué cambia', items: ['Encabezado con todos los roles como chips (sin selector de rol). Datos comunes una sola vez: «Son los mismos para todos tus roles».', 'Biometría como grupo compacto en la franja del encabezado, solo con rol deportista y solo en Perfil y en las secciones de deportista.', '«Editar» es un botón secundario neutro; el naranja queda para lo activo y «Agregar rol».'] },
-    { title: 'Qué falta en el back', items: ['Nada para los datos; el encabezado debe leer <code>roles[]</code> completo en vez de <code>roles[0]</code>.'] }
+    { title: 'Edición desde un organismo', items: ['Reunión con Producto del 2026-10-09: club, liga y federación editan solo los <b>datos básicos</b> de contacto de la persona (dirección, teléfono y correo), en las pestañas Ubicación y Contacto. Los datos personales adicionales (identidad de género, orientación sexual, salud, etc.) quedan bajo control de la persona: el organismo solo los consulta.', 'El cambio queda registrado a nombre del organismo.'] },
+    { title: 'Qué falta en el back', items: ['Nada para los datos; el encabezado debe leer <code>roles[]</code> completo en vez de <code>roles[0]</code>.', 'Un permiso de edición acotado para el organismo (solo dirección, teléfono y correo de personas de su jurisdicción).'] }
   ] },
   trayectoria: { title: 'Trayectoria', sections: [
     { title: 'Hoy en el perfil migrado', items: ['sport-records <code>GET /sport-records/api/v2/athletes/by-document/{doc}/history?view=trajectory</code>. Pestañas Trayectoria / Medallería.'] },
