@@ -6,7 +6,7 @@
    debe estar Activo", y trazabilidad (timeline de auditoría).
    Solo componentes .naowee-* + layout local (.cg-table reusada, .reg-modal reusado).
    ═══════════════════════════════════════════════════════════════ */
-import { getRoleFromQuery, ROLES, getDemoMode } from './sidebar.js';
+import { getRoleFromQuery, ROLES, getDemoMode, organismoActivoSiVarios } from './sidebar.js';
 import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
@@ -17,6 +17,8 @@ import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './est
 
 const roleCode = getRoleFromQuery();
 const role = ROLES[roleCode] || {};
+/* Quien administra varios organismos ve en cada decisión en nombre de cuál actúa (P-15). */
+const enNombreDe = (verbo) => { const o = organismoActivoSiVarios(roleCode); return o ? `<p class="bj-detail__note bj-en-nombre">Vas a ${verbo} en nombre de <strong>${esc(o.nombre)}</strong>.</p>` : ''; };
 
 /* Recurso + tipo que aprueba cada rol (RBAC §11.2). */
 const TARGET = {
@@ -275,6 +277,7 @@ function openAfilDetail(sid) {
           ? `Al confirmar la baja, <strong>${esc(dep.nombre)}</strong> dejará de estar afiliado a <strong>${clubNm}</strong> y perderá la liga y la federación heredadas.`
           : `Al aprobar, <strong>${esc(dep.nombre)}</strong> quedará vinculado a <strong>${clubNm}</strong> y heredará automáticamente la liga y la federación (ORG-05).`}</p>` : ''}
       </div>
+      ${accionable ? enNombreDe('decidir') : ''}
       <div class="reg-modal__foot bj-actions">
         ${accionable ? `
           <div class="bj-actions__main">
@@ -430,6 +433,7 @@ function openDetail(id) {
             : '<p class="bj-tl-empty">Sin movimientos registrados.</p>'}
         </div>
       </div>
+      ${accionable ? enNombreDe('decidir') : ''}
       <div class="reg-modal__foot bj-actions">
         ${accionable ? `
           <button type="button" class="naowee-btn naowee-btn--mute" id="bjCorr">Solicitar corrección</button>

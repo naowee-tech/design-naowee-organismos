@@ -513,7 +513,56 @@ body > .demo-role-switcher--inline { display: none; }
 }
 .demo-role-switcher--inline.is-open .demo-role-switcher__panel { transform: none; max-height: 340px; margin-top: 6px; border: 1px solid var(--border); }
 
-/* Selector de contexto (P-15): la persona administra más de un organismo. */
-.profile-dd__ctx { text-decoration: none; }
-.profile-dd__ctx.is-current { background: var(--bg-soft); }
-.profile-dd__ctx .profile-dd__check-ico { flex-shrink: 0; }
+/* Franja de contexto (P-15): la persona administra más de un organismo. Va encima del
+   título de cada página y se queda arriba al desplazarse. Ganó la variante C de la ronda de
+   diseño de 2026-10-13 (sin la pantalla de elección al entrar). */
+.ctx-bar {
+  position: sticky; top: -28px; z-index: 30;
+  display: flex; align-items: center; gap: 14px;
+  margin: 0 0 20px; padding: 10px 10px 10px 12px;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg, 12px);
+}
+.ctx-ico {
+  flex-shrink: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; letter-spacing: .02em;
+  color: var(--tipo-color); background: color-mix(in srgb, var(--tipo-color) 12%, #fff);
+}
+.ctx-bar__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ctx-bar__lbl { font-size: 12px; font-weight: 600; color: var(--text-secondary); line-height: 16px; }
+.ctx-bar__name { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 20px; }
+.ctx-bar__meta { font-weight: 500; color: var(--text-secondary); font-size: 13px; }
+.ctx-bar__meta::before { content: '·'; margin: 0 6px; color: var(--text-muted); }
+.ctx-bar__aviso {
+  flex-shrink: 1; min-width: 0; max-width: 300px;
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; text-align: right;
+  color: var(--naowee-color-feedback-text-caution-quiet-on-fill, #9a5b00);
+}
+.ctx-dd { flex-shrink: 0; position: relative; }
+.ctx-dd .naowee-dropdown__trigger { min-height: 40px; background: var(--surface, #fff); font-weight: 600; font-size: 13.5px; gap: 8px; }
+.ctx-dd .naowee-dropdown__trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ctx-dd .naowee-dropdown__menu { left: auto; right: 0; width: 380px; }
+.ctx-opt { display: flex; text-decoration: none; align-items: flex-start !important; gap: 12px !important; padding: 10px 12px !important; }
+.ctx-opt__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ctx-opt__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.ctx-opt__meta { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.ctx-opt__pend { font-size: 12px; font-weight: 600; color: var(--naowee-color-feedback-text-caution-quiet-on-fill, #9a5b00); }
+.ctx-opt__pend.is-clear { color: var(--text-muted); font-weight: 500; }
+.ctx-opt.is-selected .ctx-opt__name { color: var(--accent); }
+.ctx-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (max-width: 1023px) { .ctx-bar { top: -20px; } }
+@media (max-width: 760px) {
+  .ctx-bar { flex-wrap: wrap; }
+  .ctx-bar__aviso { order: 3; flex-basis: 100%; max-width: none; text-align: left; }
+}
+@media (max-width: 600px) {
+  .ctx-bar { padding: 10px 8px 10px 10px; gap: 10px; }
+  .ctx-bar > .ctx-ico { display: none; }
+  .ctx-bar__name { font-size: 14px; line-height: 18px; }
+  .ctx-bar__meta { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ctx-bar__meta::before { content: none; }
+  .ctx-dd { position: static; }
+  .ctx-dd__long { display: none; }
+  .ctx-dd .naowee-dropdown__menu { left: 0; right: 0; width: auto; }
+}
+@media (min-width: 601px) { .ctx-dd__short { display: none; } }
+.bj-en-nombre { margin: 0; padding: 10px 24px; border-top: 1px solid var(--border); background: var(--bg-soft); }

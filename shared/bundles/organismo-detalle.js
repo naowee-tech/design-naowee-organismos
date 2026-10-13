@@ -237,6 +237,12 @@
     ];
     trail.forEach((e) => auditLog(e));
   }
+  function allSolicitudes() {
+    return (readStore("solicitudes", []) || []).map((s) => ({ ...s }));
+  }
+  function solicitudesDeClub(clubId) {
+    return allSolicitudes().filter((s) => s.clubId === clubId);
+  }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
@@ -714,11 +720,11 @@
         </div>
         <div class="user-info">
           <span class="user-name">${role3.userName}</span>
-          <span class="user-role">${(role3.contextos || []).length > 1 && role3.org ? role3.org : role3.label}</span>
+          <span class="user-role">${role3.label}</span>
         </div>
         <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true">${getIcon("chevron")}</button>
       </div>
-      <div class="profile-dd profile-dd--identity-only${(role3.contextos || []).length > 1 ? " profile-dd--ctx" : ""}" role="menu">
+      <div class="profile-dd profile-dd--identity-only" role="menu">
         <div class="profile-dd__header">
           <span class="ava-ring" style="width:42px;height:42px;font-size:14px;background:${role3.color}22;color:${role3.color}">${initials}</span>
           <div class="profile-dd__user">
@@ -729,22 +735,93 @@
             </span>
           </div>
         </div>
-        ${contextosHtml(role3)}
       </div>
     </div>
   `;
     bindHeaderEvents(headerEl);
+    mountContexto(role3);
   }
-  function contextosHtml(role3) {
+  function inicialesOrg(nombre) {
+    const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
+    return (w.slice(0, 2).map((x) => x[0]).join("") || String(nombre)[0] || "?").toUpperCase();
+  }
+  function pendientesDe(orgId) {
+    const o2 = getOrganismo(orgId);
+    if (!o2) return { n: 0, txt: "" };
+    if (o2.tipo === "club") {
+      const n2 = solicitudesDeClub(orgId).filter((x) => x.estado === "Enviada").length;
+      return { n: n2, txt: n2 ? `${n2} ${n2 === 1 ? "solicitud" : "solicitudes"} por confirmar` : "" };
+    }
+    const hijo = { comite: ["federaci\xF3n", "federaciones"], federacion: ["liga", "ligas"], liga: ["club", "clubes"] }[o2.tipo];
+    const n = allOrganismos().filter((x) => x.parentId === orgId && x.estado === "En revisi\xF3n").length;
+    return { n, txt: n && hijo ? `${n} ${n === 1 ? hijo[0] : hijo[1]} por revisar` : "" };
+  }
+  function orgIco(o2, size) {
+    const c = COLOR_TIPO[o2.tipo] || "#d74009";
+    return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o2.nombre)}</span>`;
+  }
+  function mountContexto(role3) {
     const lista = (role3.contextos || []).map((id2) => getOrganismo(id2)).filter(Boolean);
-    if (lista.length < 2) return "";
-    const actual = scopeFor(role3.code);
-    return `<div class="profile-dd__sep"></div>
-    <div class="profile-dd__label">Trabajas en</div>
-    ${lista.map((o2) => `<a class="profile-dd__item profile-dd__item--role profile-dd__ctx${o2.id === actual ? " is-current" : ""}" role="menuitemradio" aria-checked="${o2.id === actual}" href="${homeForRole(role3.code)}?role=${role3.code}&org=${o2.id}">
-      <span class="role-meta"><span>${o2.nombre}</span><small>${o2.deporte} \xB7 ${o2.ubicacion ? o2.ubicacion.depto : ""}</small></span>
-      ${o2.id === actual ? `<span class="profile-dd__check-ico" style="color:${role3.color}">${getIcon("check")}</span>` : ""}
-    </a>`).join("")}`;
+    const head = document.querySelector(".page-inner > .page-head, .page-inner .page-head");
+    if (lista.length < 2 || !head || document.getElementById("ctxBar")) return;
+    const actual = getOrganismo(scopeFor(role3.code)) || lista[0];
+    const pagina = location.pathname.split("/").pop() || "index.html";
+    const destino = /detalle|afiliacion|perfil/.test(pagina) ? homeForRole(role3.code) : pagina;
+    const meta = (o2) => `${TIPO_TXT[o2.tipo]} \xB7 ${o2.deporte} \xB7 ${o2.ubicacion ? o2.ubicacion.depto : ""}`;
+    const otros = lista.filter((o2) => o2.id !== actual.id).map((o2) => ({ o: o2, p: pendientesDe(o2.id) })).filter((x) => x.p.n);
+    const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}` : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : "";
+    const bar = document.createElement("section");
+    bar.className = "ctx-bar";
+    bar.id = "ctxBar";
+    bar.setAttribute("aria-label", "Organismo en el que trabajas");
+    bar.innerHTML = `
+    ${orgIco(actual, 38)}
+    <div class="ctx-bar__txt">
+      <span class="ctx-bar__lbl">Trabajas en</span>
+      <span class="ctx-bar__name">${actual.nombre}<span class="ctx-bar__meta">${meta(actual)}</span></span>
+    </div>
+    ${aviso ? `<span class="ctx-bar__aviso">${aviso}</span>` : ""}
+    <div class="naowee-dropdown ctx-dd" id="ctxDd">
+      <button type="button" class="naowee-dropdown__trigger" id="ctxTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="ctxMenu">
+        <span class="ctx-dd__long">Cambiar de organismo</span><span class="ctx-dd__short">Cambiar</span>
+        <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon("chevron")}</span>
+      </button>
+      <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
+        ${lista.map((o2) => {
+      const p = pendientesDe(o2.id);
+      const sel = o2.id === actual.id;
+      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${destino}?role=${role3.code}&org=${o2.id}">
+            ${orgIco(o2, 34)}
+            <span class="ctx-opt__txt">
+              <span class="ctx-opt__name">${o2.nombre}</span>
+              <span class="ctx-opt__meta">${meta(o2)}</span>
+              <span class="ctx-opt__pend${p.n ? "" : " is-clear"}">${p.n ? p.txt : "Sin pendientes"}</span>
+            </span>
+            ${sel ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${getIcon("check")}</span>` : ""}
+          </a>`;
+    }).join("")}
+      </div>
+    </div>`;
+    head.parentNode.insertBefore(bar, head);
+    const dd = bar.querySelector("#ctxDd");
+    const trg = bar.querySelector("#ctxTrigger");
+    const set = (open) => {
+      dd.classList.toggle("naowee-dropdown--open", open);
+      trg.setAttribute("aria-expanded", String(open));
+    };
+    trg.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!dd.classList.contains("naowee-dropdown--open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!dd.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dd.classList.contains("naowee-dropdown--open")) {
+        set(false);
+        trg.focus();
+      }
+    });
   }
   function bindHeaderEvents(headerEl) {
     const switcher = headerEl.querySelector("#profileSwitcher");
@@ -916,7 +993,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "sidebar.js"() {
       init_permissions();
@@ -1129,6 +1206,9 @@
       })();
       _toastTimer = null;
       _tooltipEl = null;
+      TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
+      COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
+      NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);

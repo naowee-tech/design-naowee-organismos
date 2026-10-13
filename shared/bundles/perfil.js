@@ -260,6 +260,12 @@
     }
     return out;
   }
+  function allSolicitudes() {
+    return (readStore("solicitudes", []) || []).map((s) => ({ ...s }));
+  }
+  function solicitudesDeClub(clubId) {
+    return allSolicitudes().filter((s) => s.clubId === clubId);
+  }
 
   // permissions.js
   var ACCIONES = Object.freeze({
@@ -681,11 +687,11 @@
         </div>
         <div class="user-info">
           <span class="user-name">${role.userName}</span>
-          <span class="user-role">${(role.contextos || []).length > 1 && role.org ? role.org : role.label}</span>
+          <span class="user-role">${role.label}</span>
         </div>
         <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true">${getIcon("chevron")}</button>
       </div>
-      <div class="profile-dd profile-dd--identity-only${(role.contextos || []).length > 1 ? " profile-dd--ctx" : ""}" role="menu">
+      <div class="profile-dd profile-dd--identity-only" role="menu">
         <div class="profile-dd__header">
           <span class="ava-ring" style="width:42px;height:42px;font-size:14px;background:${role.color}22;color:${role.color}">${initials}</span>
           <div class="profile-dd__user">
@@ -696,22 +702,96 @@
             </span>
           </div>
         </div>
-        ${contextosHtml(role)}
       </div>
     </div>
   `;
     bindHeaderEvents(headerEl);
+    mountContexto(role);
   }
-  function contextosHtml(role) {
+  var TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
+  var COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
+  var NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
+  function inicialesOrg(nombre) {
+    const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
+    return (w.slice(0, 2).map((x) => x[0]).join("") || String(nombre)[0] || "?").toUpperCase();
+  }
+  function pendientesDe(orgId) {
+    const o = getOrganismo(orgId);
+    if (!o) return { n: 0, txt: "" };
+    if (o.tipo === "club") {
+      const n2 = solicitudesDeClub(orgId).filter((x) => x.estado === "Enviada").length;
+      return { n: n2, txt: n2 ? `${n2} ${n2 === 1 ? "solicitud" : "solicitudes"} por confirmar` : "" };
+    }
+    const hijo = { comite: ["federaci\xF3n", "federaciones"], federacion: ["liga", "ligas"], liga: ["club", "clubes"] }[o.tipo];
+    const n = allOrganismos().filter((x) => x.parentId === orgId && x.estado === "En revisi\xF3n").length;
+    return { n, txt: n && hijo ? `${n} ${n === 1 ? hijo[0] : hijo[1]} por revisar` : "" };
+  }
+  function orgIco(o, size) {
+    const c = COLOR_TIPO[o.tipo] || "#d74009";
+    return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
+  }
+  function mountContexto(role) {
     const lista = (role.contextos || []).map((id) => getOrganismo(id)).filter(Boolean);
-    if (lista.length < 2) return "";
-    const actual = scopeFor(role.code);
-    return `<div class="profile-dd__sep"></div>
-    <div class="profile-dd__label">Trabajas en</div>
-    ${lista.map((o) => `<a class="profile-dd__item profile-dd__item--role profile-dd__ctx${o.id === actual ? " is-current" : ""}" role="menuitemradio" aria-checked="${o.id === actual}" href="${homeForRole(role.code)}?role=${role.code}&org=${o.id}">
-      <span class="role-meta"><span>${o.nombre}</span><small>${o.deporte} \xB7 ${o.ubicacion ? o.ubicacion.depto : ""}</small></span>
-      ${o.id === actual ? `<span class="profile-dd__check-ico" style="color:${role.color}">${getIcon("check")}</span>` : ""}
-    </a>`).join("")}`;
+    const head = document.querySelector(".page-inner > .page-head, .page-inner .page-head");
+    if (lista.length < 2 || !head || document.getElementById("ctxBar")) return;
+    const actual = getOrganismo(scopeFor(role.code)) || lista[0];
+    const pagina = location.pathname.split("/").pop() || "index.html";
+    const destino = /detalle|afiliacion|perfil/.test(pagina) ? homeForRole(role.code) : pagina;
+    const meta = (o) => `${TIPO_TXT[o.tipo]} \xB7 ${o.deporte} \xB7 ${o.ubicacion ? o.ubicacion.depto : ""}`;
+    const otros = lista.filter((o) => o.id !== actual.id).map((o) => ({ o, p: pendientesDe(o.id) })).filter((x) => x.p.n);
+    const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}` : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : "";
+    const bar = document.createElement("section");
+    bar.className = "ctx-bar";
+    bar.id = "ctxBar";
+    bar.setAttribute("aria-label", "Organismo en el que trabajas");
+    bar.innerHTML = `
+    ${orgIco(actual, 38)}
+    <div class="ctx-bar__txt">
+      <span class="ctx-bar__lbl">Trabajas en</span>
+      <span class="ctx-bar__name">${actual.nombre}<span class="ctx-bar__meta">${meta(actual)}</span></span>
+    </div>
+    ${aviso ? `<span class="ctx-bar__aviso">${aviso}</span>` : ""}
+    <div class="naowee-dropdown ctx-dd" id="ctxDd">
+      <button type="button" class="naowee-dropdown__trigger" id="ctxTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="ctxMenu">
+        <span class="ctx-dd__long">Cambiar de organismo</span><span class="ctx-dd__short">Cambiar</span>
+        <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon("chevron")}</span>
+      </button>
+      <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
+        ${lista.map((o) => {
+      const p = pendientesDe(o.id);
+      const sel = o.id === actual.id;
+      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${destino}?role=${role.code}&org=${o.id}">
+            ${orgIco(o, 34)}
+            <span class="ctx-opt__txt">
+              <span class="ctx-opt__name">${o.nombre}</span>
+              <span class="ctx-opt__meta">${meta(o)}</span>
+              <span class="ctx-opt__pend${p.n ? "" : " is-clear"}">${p.n ? p.txt : "Sin pendientes"}</span>
+            </span>
+            ${sel ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${getIcon("check")}</span>` : ""}
+          </a>`;
+    }).join("")}
+      </div>
+    </div>`;
+    head.parentNode.insertBefore(bar, head);
+    const dd = bar.querySelector("#ctxDd");
+    const trg = bar.querySelector("#ctxTrigger");
+    const set = (open) => {
+      dd.classList.toggle("naowee-dropdown--open", open);
+      trg.setAttribute("aria-expanded", String(open));
+    };
+    trg.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!dd.classList.contains("naowee-dropdown--open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!dd.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dd.classList.contains("naowee-dropdown--open")) {
+        set(false);
+        trg.focus();
+      }
+    });
   }
   function bindHeaderEvents(headerEl) {
     const switcher = headerEl.querySelector("#profileSwitcher");
