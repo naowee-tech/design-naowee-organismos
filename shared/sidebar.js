@@ -137,7 +137,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }
   ],
   FEDERACION: [
     { section: null,        items: jerarquiaItems('FEDERACION') },
@@ -147,7 +148,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }
   ],
   LIGA: [
     { section: null,          items: jerarquiaItems('LIGA') },
@@ -157,7 +159,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }
   ],
   CLUB: [
     { section: null,          items: jerarquiaItems('CLUB') },
@@ -166,27 +169,14 @@ const MENU_BY_ROLE = {
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas',            icon: 'users', route: 'deportistas.html' },
         { id: 'bandeja',     label: 'Solicitudes de deportistas', icon: 'inbox', route: 'bandeja.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }
   ],
-  /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+  /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
   DEPORTISTA: [
-    { section: 'PERFIL',      items: [
-        { id: 'afiliacion-resumen',    label: 'Resumen',          icon: 'id',     route: 'afiliacion.html?sec=resumen' },
-        { id: 'afiliacion-documentos', label: 'Documentos',       icon: 'doc',    route: 'afiliacion.html?sec=documentos', badge: '1' },
-        { id: 'afiliacion-carne',      label: 'Carné digital',    icon: 'id',     route: 'afiliacion.html?sec=carne' }
-    ] },
-    { section: 'AFILIACIÓN',  items: [
-        { id: 'afiliacion-miclub',      label: 'Mi club',         icon: 'club',   route: 'afiliacion.html?sec=miclub' },
-        { id: 'afiliacion-solicitudes', label: 'Solicitudes',     icon: 'link',   route: 'afiliacion.html?sec=solicitudes' }
-    ] },
-    { section: 'DEPORTIVO',   items: [
-        { id: 'afiliacion-eventos',    label: 'Eventos',          icon: 'cal',    route: 'afiliacion.html?sec=eventos' },
-        { id: 'afiliacion-historial',  label: 'Historial',        icon: 'award',  route: 'afiliacion.html?sec=historial' }
-    ] },
-    { section: 'CUENTA',      items: [
-        { id: 'afiliacion-config',     label: 'Configuraciones',  icon: 'gear',   route: 'afiliacion.html?sec=config' },
-        { id: 'afiliacion-notif',      label: 'Notificaciones',   icon: 'bell',   route: 'afiliacion.html?sec=notif' },
-        { id: 'afiliacion-seguridad',  label: 'Seguridad',        icon: 'shield', route: 'afiliacion.html?sec=seguridad' }
+    { section: null,          items: [
+        { id: 'perfil', label: 'Mi perfil',     icon: 'user', route: 'perfil.html' },
+        { id: 'carne',  label: 'Carné digital', icon: 'id',   route: 'afiliacion.html?sec=carne' }
     ] }
   ],
   PERSONA: [
@@ -267,7 +257,7 @@ export function getMenuForRole(code) {
 export function homeForRole(code) {
   if (organismoNoActivo(code)) return 'organismo-detalle.html';   // sin ?id = mi organismo
   if (code === 'CLUB') return 'bandeja.html';
-  if (code === 'DEPORTISTA') return 'afiliacion.html';
+  if (code === 'DEPORTISTA') return 'perfil.html';
   if (code === 'PERSONA') return 'perfil.html';
   return 'jerarquia.html';
 }
@@ -545,7 +535,7 @@ function mountContexto(role) {
 
 /* Solo demo: cambiar de perfil también desde el chip (el usuario no lo encontraba dentro del
    panel «Recorrido por HU»). Mismas personas que el switcher; limpia persona y contexto. */
-const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'afiliacion.html', PERSONA: 'perfil.html' };
+const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'perfil.html', PERSONA: 'perfil.html' };
 function perfilesDemoHtml(actual) {
   const codes = ['MINDEPORTE', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
   return `<div class="profile-dd__sep"></div>

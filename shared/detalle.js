@@ -20,7 +20,7 @@ import { getRoleFromQuery, ROLES, homeForRole } from './sidebar.js';
 import {
   getOrganismo, childrenOf, subtreeOf, ancestorsOf,
   countDescendants, deportistasOf, allAudit, allDeportistas,
-  seedTrazabilidadDemo
+  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga
 } from './organismos-data.js';
 import { can, scopeFor, isGlobalScope } from './permissions.js';
 import { mountDevnotes } from './devnotes.js';
@@ -208,6 +208,26 @@ function heroHtml(o) {
     </div>`;
 }
 
+/* ─── Fase 2 · el club en varias ligas de sus deportes (P-20) ───
+   La primera liga lo activó; puede pedir afiliación a otra liga que comparta un deporte y esa liga
+   aprueba solo el vínculo. Deportes de combate: pendiente con Negocio. */
+function ligasClubHtml(o) {
+  const afs = afiliacionesDe(o.id).filter((a) => a.tipo === 'club' && ['Vinculada', 'Solicitada', 'Rechazada'].includes(a.estado));
+  const disp = ligasDisponiblesPara(o.id);
+  const EST = { Vinculada: ['positive', 'Afiliado'], Solicitada: ['caution', 'Solicitada'], Rechazada: ['negative', 'Rechazada'] };
+  return `<section class="oc-status oc-status--single od-ligas" aria-label="Ligas de tu club">
+    <div class="oc-status__main">
+      <p class="oc-sanc__title">Ligas de tu club</p>
+      <p class="oc-status__text">Tu club puede estar en varias ligas de sus deportes. Cada liga aprueba su vínculo; de cada una heredan tus deportistas su cadena.</p>
+      <ul class="od-ligas__list">${afs.map((a) => { const l = getOrganismo(a.organismoId) || {}; const e = EST[a.estado];
+        return `<li><span><strong>${esc(l.nombre || a.organismoId)}</strong><small>${esc(l.deporte || '')} · ${esc(l.ubicacion ? l.ubicacion.depto : '')}${a.organismoId === o.parentId ? ' · la activó' : ''}${a.motivo && a.estado === 'Rechazada' ? ' · ' + esc(a.motivo) : ''}</small></span><span class="naowee-badge naowee-badge--${e[0]} naowee-badge--quiet naowee-badge--small">${e[1]}</span></li>`; }).join('')}</ul>
+      <div class="oc-status__cta">${disp.length
+        ? `<label class="od-ligas__pick"><span class="sr-only">Liga</span><select id="odLiga" class="oc-select"><option value="">Elige una liga de tus deportes…</option>${disp.map((l) => `<option value="${l.id}">${esc(l.nombre)} · ${esc(l.deporte)}</option>`).join('')}</select></label><button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" id="odLigaOk">Solicitar afiliación</button>`
+        : '<span class="oc-status__hint">No hay otras ligas activas de tus deportes.</span>'}</div>
+    </div>
+  </section>`;
+}
+
 /* ─── Paneles ─── */
 function kvRow(k, v) { return v == null || v === '' ? '' : `<div class="od-kv__row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`; }
 
@@ -362,6 +382,7 @@ function renderProfile(o) {
     ${conBloqueEstado(o) ? estadoPropioHtml(o, roleCode) : ''}
     ${heroHtml(o)}
     ${roleCode === 'MINDEPORTE' ? sancionesHtml(o) : ''}
+    ${esPropio(o) && o.tipo === 'club' && o.estado === 'Activo' ? ligasClubHtml(o) : ''}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
         ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? 'naowee-tab--selected' : ''}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc(l)}</button>`).join('')}
@@ -390,6 +411,13 @@ function renderProfile(o) {
       renderProfile(getOrganismo(o.id));
     });
   }));
+  root.querySelector('#odLigaOk')?.addEventListener('click', () => {
+    const v = root.querySelector('#odLiga').value;
+    if (!v) { root.querySelector('#odLiga').focus(); return; }
+    solicitarLiga(o.id, v, { responsable: role.userName || '' });
+    window.naoweeToast && window.naoweeToast(`Solicitud enviada a ${getOrganismo(v).nombre}. La liga la aprueba desde su bandeja.`, 'success');
+    renderProfile(getOrganismo(o.id));
+  });
   mountDevnotes(DEVNOTES);
 }
 

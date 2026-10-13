@@ -28,7 +28,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub,
-  childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes
+  childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes, buscarAutodeclarados, asociarAutodeclarado
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
@@ -378,8 +378,10 @@ if (root) {
     if (!box || !puedeCrear || box.querySelector('#dpNuevo')) return;
     box.insertAdjacentHTML('beforeend', `
       <button type="button" class="naowee-btn naowee-btn--quiet" id="dpMasivo">${I.upload}Cargue masivo de deportistas</button>
+      ${esClub ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="dpBuscar">${I.search}Asociar autodeclarado</button>` : ''}
       <button type="button" class="naowee-btn naowee-btn--loud" id="dpNuevo">${I.plus}Registrar deportista</button>`);
     document.getElementById('dpNuevo').addEventListener('click', () => openRegistro());
+    document.getElementById('dpBuscar')?.addEventListener('click', openAsociar);
     document.getElementById('dpMasivo').addEventListener('click', openMasivo);
   }
 
@@ -628,6 +630,44 @@ if (root) {
   }
   const toast = (t) => { if (window.naoweeToast) window.naoweeToast(t, 'success'); };
 
+  /* ─── El club busca un deportista autodeclarado y lo asocia (Fase 2) ───
+     nao-docs, Afiliación · El flujo: «el club puede buscarlo entre los autodeclarados y asociarlo».
+     Queda Vinculado de inmediato y hereda la cadena del club. Los menores no salen: los afilia su tutor. */
+  function openAsociar() {
+    let sel = null;
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay dp-modal-ov';
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    const cerrar = () => { ov.classList.remove('is-open'); setTimeout(() => ov.remove(), 340); };
+    ov.innerHTML = `<div class="reg-modal bj-modal dp-desv">
+      <div class="reg-modal__head"><h3 class="reg-modal__title">Asociar un deportista autodeclarado</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button></div>
+      <div class="reg-modal__body">
+        ${msg('informative', I.info, `Busca a la persona que ya se registró en el SUID y aún no tiene club. Al asociarla queda vinculada a <strong>${esc(club ? club.nombre : 'tu club')}</strong> y hereda tu liga y tu federación. A los menores los afilia su tutor.`)}
+        <div class="naowee-searchbox" style="margin-top:12px"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">${I.search}</span><input class="naowee-searchbox__input" id="asBusca" placeholder="Nombre o documento (mín. 3 caracteres)" autocomplete="off"></div></div>
+        <div id="asRes" class="dp-as-res"></div>
+      </div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" data-close>Cancelar</button><button type="button" class="naowee-btn" id="asOk" disabled>Asociar a mi club</button></div></div>`;
+    const res = ov.querySelector('#asRes'); const inp = ov.querySelector('#asBusca'); const ok = ov.querySelector('#asOk');
+    const pinta = () => {
+      const q = inp.value.trim();
+      const items = buscarAutodeclarados(q).slice(0, 8);
+      res.innerHTML = q.length < 3 ? '<p class="bj-detail__note">Escribe al menos 3 caracteres.</p>'
+        : items.length ? items.map((d) => `<button type="button" class="dp-as-opt${sel === d.id ? ' is-sel' : ''}" data-id="${esc(d.id)}"><strong>${esc(d.nombre)}</strong><span>${esc(d.tipoDoc)} ${esc(d.numDoc)} · ${esc(d.deporte)}</span></button>`).join('')
+        : '<p class="bj-detail__note">No hay autodeclarados con ese nombre o documento.</p>';
+      res.querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { sel = b.dataset.id; ok.disabled = false; pinta(); }));
+    };
+    inp.addEventListener('input', () => { sel = null; ok.disabled = true; pinta(); });
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) cerrar(); });
+    ok.addEventListener('click', () => {
+      if (!sel) return;
+      const d = asociarAutodeclarado(sel, scopeId, { responsable: (ROLES[roleCode] || {}).userName || '' });
+      cerrar(); render();
+      toast(`${(d && d.nombre) || 'El deportista'} quedó vinculado a tu club.`);
+    });
+    pinta(); setTimeout(() => inp.focus(), 60);
+  }
+
   /* Cargue masivo de deportistas: entrada lista, la carga llega después. */
   function openMasivo() {
     const ov = document.createElement('div');
@@ -664,7 +704,7 @@ if (root) {
     document.querySelectorAll('[data-ficha]').forEach((b) => {
       b.addEventListener('click', () => {
         const id = b.getAttribute('data-ficha');
-        window.location.href = `afiliacion.html?role=${encodeURIComponent(roleCode)}&id=${encodeURIComponent(id)}&from=deportistas`;
+        window.location.href = `perfil.html?role=${encodeURIComponent(roleCode)}&persona=${encodeURIComponent(id)}&seccion=afiliaciones&from=${encodeURIComponent('deportistas.html?role=' + roleCode)}`;
       });
     });
 

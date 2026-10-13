@@ -71,7 +71,7 @@
     const out = [];
     DEPORTISTAS.forEach((d) => {
       if (!d.clubId) return;
-      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: AF_DESDE, origen: "solicitud" });
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: d.id === "DEP-022" ? "2022-03-12" : AF_DESDE, origen: d.tutorId ? "tutor" : "solicitud" });
     });
     CLUBES.forEach((c) => {
       const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
@@ -119,6 +119,7 @@
     if (readStore("cargues") == null) writeStore("cargues", []);
     if (readStore("audit") == null) writeStore("audit", []);
     writeStore("afiliaciones", seedAfiliaciones());
+    writeStore("solicitudes", []);
     clearStore("preinscritos");
     try {
       localStorage.setItem(SEED_FLAG, SEED_VERSION);
@@ -370,6 +371,24 @@
     });
     return { ...list[i] };
   }
+  function resolverVinculo(personaId, orgId, estado, meta = {}) {
+    const p = getDeportista(personaId);
+    const r = cambiarAfiliacion(personaId, orgId, estado, { tipo: "personal", ...meta });
+    const ACC = { Vinculada: "V\xEDnculo de personal aprobado", Rechazada: "V\xEDnculo de personal rechazado", Terminada: "V\xEDnculo de personal terminado" };
+    auditLog({ orgId, fecha: _todayISO(), deportistaId: personaId, deportistaNombre: p ? p.nombre : "", responsable: meta.responsable || "", rol: meta.rol || "", accion: ACC[estado] || "V\xEDnculo actualizado", a: estado, motivo: meta.motivo || "", notif: true });
+    return r;
+  }
+  function personalDe(orgId) {
+    return allAfiliaciones().filter((a) => a.tipo === "personal" && a.organismoId === orgId && ["Solicitada", "Vinculada"].includes(a.estado)).map((a) => ({ ...a, persona: getDeportista(a.sujetoId) })).filter((a) => a.persona);
+  }
+  function clubesQuePidenLiga(ligaId) {
+    return allAfiliaciones().filter((a) => a.tipo === "club" && a.organismoId === ligaId && a.estado === "Solicitada").map((a) => ({ ...a, club: getOrganismo(a.sujetoId) })).filter((a) => a.club && a.club.estado === "Activo");
+  }
+  function resolverLiga(clubId, ligaId, estado, meta = {}) {
+    const r = cambiarAfiliacion(clubId, ligaId, estado, { tipo: "club", ...meta });
+    auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || "", rol: "Liga", accion: estado === "Vinculada" ? `Afiliaci\xF3n aprobada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}` : `Afiliaci\xF3n rechazada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: estado, motivo: meta.motivo || "", notif: true });
+    return r;
+  }
   function seedAfiliacionesDemo(mode) {
     if (mode !== "demo") return;
     const list = readStore("solicitudes", []) || [];
@@ -377,8 +396,10 @@
     const seeds = [
       { deportistaId: "DEP-010", clubId: "CLU-001", fecha: "2026-07-12" },
       // Juan D. Marín · Patinaje
-      { deportistaId: "DEP-007", clubId: "CLU-001", fecha: "2026-07-13" }
+      { deportistaId: "DEP-007", clubId: "CLU-001", fecha: "2026-07-13" },
       // Daniela Cárdenas · Patinaje
+      { deportistaId: "DEP-022", clubId: "CLU-003", fecha: "2026-10-02" }
+      // Laura · su segundo club
     ];
     seeds.forEach((s, idx) => {
       list.unshift({ id: "AF-D" + (idx + 1), tipo: "afiliacion", deportistaId: s.deportistaId, clubId: s.clubId, estado: "Enviada", fecha: s.fecha, origen: "solicitud", demoSeed: true });
@@ -508,7 +529,11 @@
         { id: "DEP-018", nombre: "Felipe Quintero S\xE1enz", tipoDoc: "TI", numDoc: "1029778899", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "felipe.quintero@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
         { id: "DEP-019", nombre: "Valeria Mosquera Renter\xEDa", tipoDoc: "CC", numDoc: "1144992277", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "valeria.mosquera@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
         { id: "DEP-020", nombre: "Sebasti\xE1n Toro Aguirre", tipoDoc: "CC", numDoc: "1144110099", deporte: "Patinaje", modalidad: "Carreras", correo: "sebastian.toro@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
-        { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" }
+        { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
+        /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+        { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
+        { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
+        { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
       ];
       SEED_ORGANISMOS = [
         ...COMITES,
@@ -527,11 +552,15 @@
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
         /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
-        { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" }
+        { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" },
+        /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+        { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
+        { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
+        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.2.0";
+      SEED_VERSION = "0.3.0";
       ID_PREFIX = { comite: "COM", federacion: "FED", liga: "LIG", club: "CLU" };
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     }
@@ -745,7 +774,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
-    if (code === "DEPORTISTA") return "afiliacion.html";
+    if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
@@ -1339,7 +1368,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         FEDERACION: [
           { section: null, items: jerarquiaItems("FEDERACION") },
@@ -1349,7 +1379,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         LIGA: [
           { section: null, items: jerarquiaItems("LIGA") },
@@ -1359,7 +1390,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         CLUB: [
           { section: null, items: jerarquiaItems("CLUB") },
@@ -1368,27 +1400,14 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
             { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
-        /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+        /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
         DEPORTISTA: [
-          { section: "PERFIL", items: [
-            { id: "afiliacion-resumen", label: "Resumen", icon: "id", route: "afiliacion.html?sec=resumen" },
-            { id: "afiliacion-documentos", label: "Documentos", icon: "doc", route: "afiliacion.html?sec=documentos", badge: "1" },
-            { id: "afiliacion-carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
-          ] },
-          { section: "AFILIACI\xD3N", items: [
-            { id: "afiliacion-miclub", label: "Mi club", icon: "club", route: "afiliacion.html?sec=miclub" },
-            { id: "afiliacion-solicitudes", label: "Solicitudes", icon: "link", route: "afiliacion.html?sec=solicitudes" }
-          ] },
-          { section: "DEPORTIVO", items: [
-            { id: "afiliacion-eventos", label: "Eventos", icon: "cal", route: "afiliacion.html?sec=eventos" },
-            { id: "afiliacion-historial", label: "Historial", icon: "award", route: "afiliacion.html?sec=historial" }
-          ] },
-          { section: "CUENTA", items: [
-            { id: "afiliacion-config", label: "Configuraciones", icon: "gear", route: "afiliacion.html?sec=config" },
-            { id: "afiliacion-notif", label: "Notificaciones", icon: "bell", route: "afiliacion.html?sec=notif" },
-            { id: "afiliacion-seguridad", label: "Seguridad", icon: "shield", route: "afiliacion.html?sec=seguridad" }
+          { section: null, items: [
+            { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
+            { id: "carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
           ] }
         ],
         PERSONA: [
@@ -1434,7 +1453,7 @@
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
       COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
       NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
-      HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "afiliacion.html", PERSONA: "perfil.html" };
+      HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -1538,7 +1557,7 @@
             </tbody>
           </table>
         </div>${totalPages > 1 ? `<div class="bj-panel__foot"><div class="naowee-pagination naowee-pagination--small" id="bjPager"><div class="naowee-pagination__pages"><span class="naowee-pagination__label">P\xE1gina</span><input class="naowee-pagination__input" id="bjPageInput" type="number" min="1" max="${totalPages}" value="${page}" aria-label="N\xFAmero de p\xE1gina"><span class="naowee-pagination__total">de <strong>${totalPages}</strong></span></div><div class="naowee-pagination__controls"><button type="button" class="naowee-pagination__btn" data-pg="prev"${page <= 1 ? " disabled" : ""} aria-label="P\xE1gina anterior">${I.chevL}</button><button type="button" class="naowee-pagination__btn" data-pg="next"${page >= totalPages ? " disabled" : ""} aria-label="P\xE1gina siguiente">${I.chevR}</button></div></div></div>` : ""}` : emptyState("Sin organismos", `No hay ${target.plural} ${estadoFiltro === "Accionables" ? "pendientes de tu revisi\xF3n" : "que coincidan con el filtro"} por ahora.`)}
-    </div>`;
+    </div>${vinculosCard()}`;
     wire();
   }
   function renderNoBandeja() {
@@ -1594,7 +1613,7 @@
             </tbody>
           </table>
         </div>` : emptyState("Sin solicitudes", afilFiltro === "Pendientes" ? "No hay solicitudes de afiliaci\xF3n pendientes de tu confirmaci\xF3n por ahora." : "No hay solicitudes que coincidan con el filtro.")}
-    </div>`;
+    </div>${vinculosCard()}`;
     wire();
   }
   function afilById(sid) {
@@ -1943,6 +1962,57 @@
     setEstado(id, nuevoEstado, { ...meta, patch });
     toast(`${tipoAccion} registrada \u2014 se notific\xF3 a ${o.nombre} por email y app`, "success");
   }
+  function vinculosCard() {
+    if (!scopeId) return "";
+    const per = personalDe(scopeId).filter((a) => a.estado === "Solicitada");
+    const cls = roleCode === "LIGA" ? clubesQuePidenLiga(scopeId) : [];
+    const filas = [
+      ...per.map((a) => ({ key: `per:${a.sujetoId}`, emoji: "\u{1F9D1}\u200D\u{1F3EB}", nombre: a.persona.nombre, sub: `${a.rol || "Personal deportivo"} \xB7 ${a.persona.tipoDoc} ${a.persona.numDoc}`, tipo: "Personal deportivo", persona: a.sujetoId })),
+      ...cls.map((a) => ({ key: `club:${a.sujetoId}`, emoji: "\u{1F6E1}\uFE0F", nombre: a.club.nombre, sub: `${a.club.deporte} \xB7 ${a.club.ubicacion ? a.club.ubicacion.ciudad : ""} \xB7 ya activo en ${(getOrganismo(a.club.parentId) || {}).nombre || "otra liga"}`, tipo: "Club de otra liga" }))
+    ];
+    if (!filas.length) return "";
+    return `<div class="naowee-card bj-panel bj-vinc">
+    <div class="bj-vinc__head"><strong>Solicitudes de v\xEDnculo</strong><span>${roleCode === "LIGA" ? "Personal deportivo que quiere trabajar con tu liga y clubes de otras ligas que piden afiliarse. Solo apruebas el v\xEDnculo." : "Personal deportivo que quiere trabajar con tu organismo. Solo apruebas el v\xEDnculo."}</span></div>
+    <div class="cg-table-wrap"><table class="cg-table bj-table"><thead><tr><th>Qui\xE9n</th><th>Tipo</th><th></th></tr></thead><tbody>
+      ${filas.map((f) => `<tr><td data-label="Qui\xE9n"><div class="bj-org"><span class="bj-org__emoji">${f.emoji}</span><div><div class="bj-org__name">${esc(f.nombre)}</div><div class="bj-org__sub">${esc(f.sub)}</div></div></div></td>
+        <td data-label="Tipo"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">${f.tipo}</span></td>
+        <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-vrej="${f.key}">Rechazar</button><button type="button" class="naowee-btn naowee-btn--small" data-vok="${f.key}">Aprobar</button></td></tr>`).join("")}
+    </tbody></table></div>
+    ${enNombreDe("decidir")}
+  </div>`;
+  }
+  function resolverVinc(key, estado, motivo) {
+    const [k, id] = key.split(":");
+    const meta = { responsable: role.userName || roleCode, rol: roleCode, motivo };
+    if (k === "per") resolverVinculo(id, scopeId, estado, meta);
+    else resolverLiga(id, scopeId, estado, meta);
+    const quien = k === "per" ? (getDeportista(id) || {}).nombre : (getOrganismo(id) || {}).nombre;
+    toast(estado === "Vinculada" ? `V\xEDnculo aprobado: ${quien}.` : `V\xEDnculo rechazado: ${quien}.`, "success");
+    render();
+  }
+  function wireVinculos() {
+    root.querySelectorAll("[data-vok]").forEach((b) => b.addEventListener("click", () => resolverVinc(b.dataset.vok, "Vinculada")));
+    root.querySelectorAll("[data-vrej]").forEach((b) => b.addEventListener("click", () => {
+      const ov = openModal(`<div class="reg-modal bj-modal bj-modal--sm" role="dialog" aria-modal="true">
+      <div class="reg-modal__head"><h3 class="reg-modal__title">Rechazar v\xEDnculo</h3><button type="button" class="reg-modal__close" data-x aria-label="Cerrar">${I.x}</button></div>
+      <div class="reg-modal__body"><div class="bj-field"><label class="bj-label" for="vMot">Motivo <span class="bj-req">*</span></label>
+        <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="vMot" rows="3" placeholder="Lo que ver\xE1 en su notificaci\xF3n\u2026"></textarea></div>
+        <p class="bj-err" id="vErr" style="display:none">Escribe el motivo.</p></div></div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" data-x>Volver</button><button type="button" class="naowee-btn bj-btn-danger" id="vOk">Rechazar</button></div></div>`);
+      ov.addEventListener("click", (e) => {
+        if (e.target === ov || e.target.closest("[data-x]")) closeModal(ov);
+      });
+      ov.querySelector("#vOk").addEventListener("click", () => {
+        const m = ov.querySelector("#vMot").value.trim();
+        if (!m) {
+          ov.querySelector("#vErr").style.display = "block";
+          return;
+        }
+        closeModal(ov);
+        resolverVinc(b.dataset.vrej, "Rechazada", m);
+      });
+    }));
+  }
   function wire() {
     const s = document.getElementById("bjSearch");
     if (s) s.addEventListener("input", (e) => {
@@ -1991,6 +2061,7 @@
     });
     root.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", () => openDetail(b.dataset.open)));
     root.querySelectorAll("[data-openafil]").forEach((b) => b.addEventListener("click", () => openAfilDetail(b.dataset.openafil)));
+    wireVinculos();
   }
   function toast(text, variant) {
     window.naoweeToast && window.naoweeToast(text, variant === "negative" ? "error" : "success");

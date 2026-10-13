@@ -736,7 +736,7 @@ function renderResult() {
         ${profileRows([['Tipo', ENT_TXT[r.org.tipo]], ['NIT', r.org.nit], ['Deportes', (r.org.deportes || []).join(', ')], ['Organismo superior', sup?.nombre], ['Representante legal', [r.org.repLegal?.nombre, r.org.repLegal?.apellido].filter(Boolean).join(' ') + (r.org.repLegal?.numDoc ? ` · ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : '')], ['Sede', [r.org.ubicacion?.ciudad, r.org.ubicacion?.depto].filter(Boolean).join(', ')], ['Contacto', [r.org.contacto?.correo, r.org.contacto?.telefono].filter(Boolean).join(' · ')], ['Documentos', `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>💬 ¿NECESITAS AYUDA?</b>Si tienes dudas o problemas con la activación de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
+      ${r.id ? `<a href="perfil.html?role=DEPORTISTA&persona=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo · bandeja de ${esc(sup.nombre)}</a>` : ''}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo · bandeja del Ministerio</a>' : ''}
       ${persona ? '' : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo · ver en la jerarquía</a>'}

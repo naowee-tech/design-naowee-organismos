@@ -10,7 +10,8 @@ import { getRoleFromQuery, ROLES, getDemoMode, organismoActivoSiVarios, administ
 import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
-  solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo
+  solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo,
+  personalDe, resolverVinculo, clubesQuePidenLiga, resolverLiga
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './estados.js';
@@ -164,7 +165,7 @@ function renderOrgBandeja() {
             </tbody>
           </table>
         </div>${totalPages > 1 ? `<div class="bj-panel__foot"><div class="naowee-pagination naowee-pagination--small" id="bjPager"><div class="naowee-pagination__pages"><span class="naowee-pagination__label">Página</span><input class="naowee-pagination__input" id="bjPageInput" type="number" min="1" max="${totalPages}" value="${page}" aria-label="Número de página"><span class="naowee-pagination__total">de <strong>${totalPages}</strong></span></div><div class="naowee-pagination__controls"><button type="button" class="naowee-pagination__btn" data-pg="prev"${page <= 1 ? ' disabled' : ''} aria-label="Página anterior">${I.chevL}</button><button type="button" class="naowee-pagination__btn" data-pg="next"${page >= totalPages ? ' disabled' : ''} aria-label="Página siguiente">${I.chevR}</button></div></div></div>` : ''}` : emptyState('Sin organismos', `No hay ${target.plural} ${estadoFiltro === 'Accionables' ? 'pendientes de tu revisión' : 'que coincidan con el filtro'} por ahora.`)}
-    </div>`;
+    </div>${vinculosCard()}`;
   wire();
 }
 
@@ -235,7 +236,7 @@ function renderAfiliaciones() {
             </tbody>
           </table>
         </div>` : emptyState('Sin solicitudes', afilFiltro === 'Pendientes' ? 'No hay solicitudes de afiliación pendientes de tu confirmación por ahora.' : 'No hay solicitudes que coincidan con el filtro.')}
-    </div>`;
+    </div>${vinculosCard()}`;
   wire();
 }
 
@@ -584,6 +585,55 @@ function doReject(id, tipoAccion, motivo) {
   toast(`${tipoAccion} registrada — se notificó a ${o.nombre} por email y app`, 'success');
 }
 
+/* ═══════════════ Vínculos (Fase 2) ═══════════════
+   Personal deportivo que pide trabajar con este organismo (P-05) y, en la liga, clubes ya activos
+   que piden afiliarse a ella (P-20). Este organismo aprueba el vínculo; rechazar pide motivo. */
+function vinculosCard() {
+  if (!scopeId) return '';
+  const per = personalDe(scopeId).filter((a) => a.estado === 'Solicitada');
+  const cls = roleCode === 'LIGA' ? clubesQuePidenLiga(scopeId) : [];
+  const filas = [
+    ...per.map((a) => ({ key: `per:${a.sujetoId}`, emoji: '🧑‍🏫', nombre: a.persona.nombre, sub: `${a.rol || 'Personal deportivo'} · ${a.persona.tipoDoc} ${a.persona.numDoc}`, tipo: 'Personal deportivo', persona: a.sujetoId })),
+    ...cls.map((a) => ({ key: `club:${a.sujetoId}`, emoji: '🛡️', nombre: a.club.nombre, sub: `${a.club.deporte} · ${a.club.ubicacion ? a.club.ubicacion.ciudad : ''} · ya activo en ${(getOrganismo(a.club.parentId) || {}).nombre || 'otra liga'}`, tipo: 'Club de otra liga' }))
+  ];
+  if (!filas.length) return '';
+  return `<div class="naowee-card bj-panel bj-vinc">
+    <div class="bj-vinc__head"><strong>Solicitudes de vínculo</strong><span>${roleCode === 'LIGA' ? 'Personal deportivo que quiere trabajar con tu liga y clubes de otras ligas que piden afiliarse. Solo apruebas el vínculo.' : 'Personal deportivo que quiere trabajar con tu organismo. Solo apruebas el vínculo.'}</span></div>
+    <div class="cg-table-wrap"><table class="cg-table bj-table"><thead><tr><th>Quién</th><th>Tipo</th><th></th></tr></thead><tbody>
+      ${filas.map((f) => `<tr><td data-label="Quién"><div class="bj-org"><span class="bj-org__emoji">${f.emoji}</span><div><div class="bj-org__name">${esc(f.nombre)}</div><div class="bj-org__sub">${esc(f.sub)}</div></div></div></td>
+        <td data-label="Tipo"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">${f.tipo}</span></td>
+        <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-vrej="${f.key}">Rechazar</button><button type="button" class="naowee-btn naowee-btn--small" data-vok="${f.key}">Aprobar</button></td></tr>`).join('')}
+    </tbody></table></div>
+    ${enNombreDe('decidir')}
+  </div>`;
+}
+function resolverVinc(key, estado, motivo) {
+  const [k, id] = key.split(':');
+  const meta = { responsable: role.userName || roleCode, rol: roleCode, motivo };
+  if (k === 'per') resolverVinculo(id, scopeId, estado, meta);
+  else resolverLiga(id, scopeId, estado, meta);
+  const quien = k === 'per' ? (getDeportista(id) || {}).nombre : (getOrganismo(id) || {}).nombre;
+  toast(estado === 'Vinculada' ? `Vínculo aprobado: ${quien}.` : `Vínculo rechazado: ${quien}.`, 'success');
+  render();
+}
+function wireVinculos() {
+  root.querySelectorAll('[data-vok]').forEach((b) => b.addEventListener('click', () => resolverVinc(b.dataset.vok, 'Vinculada')));
+  root.querySelectorAll('[data-vrej]').forEach((b) => b.addEventListener('click', () => {
+    const ov = openModal(`<div class="reg-modal bj-modal bj-modal--sm" role="dialog" aria-modal="true">
+      <div class="reg-modal__head"><h3 class="reg-modal__title">Rechazar vínculo</h3><button type="button" class="reg-modal__close" data-x aria-label="Cerrar">${I.x}</button></div>
+      <div class="reg-modal__body"><div class="bj-field"><label class="bj-label" for="vMot">Motivo <span class="bj-req">*</span></label>
+        <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="vMot" rows="3" placeholder="Lo que verá en su notificación…"></textarea></div>
+        <p class="bj-err" id="vErr" style="display:none">Escribe el motivo.</p></div></div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" data-x>Volver</button><button type="button" class="naowee-btn bj-btn-danger" id="vOk">Rechazar</button></div></div>`);
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-x]')) closeModal(ov); });
+    ov.querySelector('#vOk').addEventListener('click', () => {
+      const m = ov.querySelector('#vMot').value.trim();
+      if (!m) { ov.querySelector('#vErr').style.display = 'block'; return; }
+      closeModal(ov); resolverVinc(b.dataset.vrej, 'Rechazada', m);
+    });
+  }));
+}
+
 /* ── Wiring ── */
 function wire() {
   const s = document.getElementById('bjSearch');
@@ -601,6 +651,7 @@ function wire() {
   if (pi) pi.addEventListener('change', (e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { page = v; render(); } });
   root.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openDetail(b.dataset.open)));
   root.querySelectorAll('[data-openafil]').forEach((b) => b.addEventListener('click', () => openAfilDetail(b.dataset.openafil)));
+  wireVinculos();
 }
 function toast(text, variant) { window.naoweeToast && window.naoweeToast(text, variant === 'negative' ? 'error' : 'success'); }
 

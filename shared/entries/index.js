@@ -39,6 +39,10 @@
     { color: '#002B5B', quien: 'María F. Rojas · Ministerio', titulo: 'El Ministerio sanciona un club', desc: 'Suspender, reactivar (vuelve a revisión) y cancelar el registro como acción definitiva.', href: 'organismo-detalle.html?role=MINDEPORTE&id=CLU-003' },
     { color: '#7c3aed', quien: 'Sandra Mejía · Liga', titulo: 'La liga registra un deportista y le propone club', desc: 'Queda autodeclarado; la propuesta llega a la bandeja del club, que la confirma.', href: 'deportistas.html?role=LIGA&org=LIG-001&como=sandra' },
     { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club confirma solicitudes y propuestas', desc: 'Aprobar suma el club al deportista sin quitarle los que ya tiene.', href: 'bandeja.html?role=CLUB' },
+    { color: '#0e7490', quien: 'Laura Gómez · deportista, tutora y entrenadora', titulo: 'La tutora registra a un menor', desc: 'Mismo flujo de sports: documentos y datos básicos. Queda en revisión mientras se valida el parentesco.', href: 'perfil.html?role=PERSONA&seccion=menores' },
+    { color: '#0e7490', quien: 'Laura Gómez · deportista', titulo: 'Afiliarse a un segundo club', desc: 'Busca el club y pide afiliación; ve la cadena que hereda de cada club y puede retirarse de uno.', href: 'perfil.html?role=PERSONA&seccion=afiliaciones' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club asocia a un autodeclarado', desc: 'En «Mis deportistas», «Asociar autodeclarado» busca a quien ya está en el SUID sin club.', href: 'deportistas.html?role=CLUB' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club pide entrar a otra liga', desc: 'Desde «Mi organismo» elige otra liga de su deporte; esa liga aprueba solo el vínculo (P-20).', href: 'organismo-detalle.html?role=CLUB' },
     { color: '#7c3aed', quien: 'Sandra Mejía · Liga de Natación', titulo: 'Un deportista en dos clubes', desc: 'Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.', href: 'deportistas.html?role=LIGA&org=LIG-006&como=sandra' }
   ];
   document.getElementById('casosGrid').innerHTML = CASOS.map((c) => `

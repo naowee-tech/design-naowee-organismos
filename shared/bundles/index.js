@@ -344,7 +344,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -354,7 +355,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -364,7 +366,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -373,27 +376,14 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
-    /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+    /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
-      { section: "PERFIL", items: [
-        { id: "afiliacion-resumen", label: "Resumen", icon: "id", route: "afiliacion.html?sec=resumen" },
-        { id: "afiliacion-documentos", label: "Documentos", icon: "doc", route: "afiliacion.html?sec=documentos", badge: "1" },
-        { id: "afiliacion-carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
-      ] },
-      { section: "AFILIACI\xD3N", items: [
-        { id: "afiliacion-miclub", label: "Mi club", icon: "club", route: "afiliacion.html?sec=miclub" },
-        { id: "afiliacion-solicitudes", label: "Solicitudes", icon: "link", route: "afiliacion.html?sec=solicitudes" }
-      ] },
-      { section: "DEPORTIVO", items: [
-        { id: "afiliacion-eventos", label: "Eventos", icon: "cal", route: "afiliacion.html?sec=eventos" },
-        { id: "afiliacion-historial", label: "Historial", icon: "award", route: "afiliacion.html?sec=historial" }
-      ] },
-      { section: "CUENTA", items: [
-        { id: "afiliacion-config", label: "Configuraciones", icon: "gear", route: "afiliacion.html?sec=config" },
-        { id: "afiliacion-notif", label: "Notificaciones", icon: "bell", route: "afiliacion.html?sec=notif" },
-        { id: "afiliacion-seguridad", label: "Seguridad", icon: "shield", route: "afiliacion.html?sec=seguridad" }
+      { section: null, items: [
+        { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
+        { id: "carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
       ] }
     ],
     PERSONA: [
@@ -454,7 +444,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
-    if (code === "DEPORTISTA") return "afiliacion.html";
+    if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
@@ -503,6 +493,10 @@
     { color: "#002B5B", quien: "Mar\xEDa F. Rojas \xB7 Ministerio", titulo: "El Ministerio sanciona un club", desc: "Suspender, reactivar (vuelve a revisi\xF3n) y cancelar el registro como acci\xF3n definitiva.", href: "organismo-detalle.html?role=MINDEPORTE&id=CLU-003" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga", titulo: "La liga registra un deportista y le propone club", desc: "Queda autodeclarado; la propuesta llega a la bandeja del club, que la confirma.", href: "deportistas.html?role=LIGA&org=LIG-001&como=sandra" },
     { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club confirma solicitudes y propuestas", desc: "Aprobar suma el club al deportista sin quitarle los que ya tiene.", href: "bandeja.html?role=CLUB" },
+    { color: "#0e7490", quien: "Laura G\xF3mez \xB7 deportista, tutora y entrenadora", titulo: "La tutora registra a un menor", desc: "Mismo flujo de sports: documentos y datos b\xE1sicos. Queda en revisi\xF3n mientras se valida el parentesco.", href: "perfil.html?role=PERSONA&seccion=menores" },
+    { color: "#0e7490", quien: "Laura G\xF3mez \xB7 deportista", titulo: "Afiliarse a un segundo club", desc: "Busca el club y pide afiliaci\xF3n; ve la cadena que hereda de cada club y puede retirarse de uno.", href: "perfil.html?role=PERSONA&seccion=afiliaciones" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club asocia a un autodeclarado", desc: "En \xABMis deportistas\xBB, \xABAsociar autodeclarado\xBB busca a quien ya est\xE1 en el SUID sin club.", href: "deportistas.html?role=CLUB" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club pide entrar a otra liga", desc: "Desde \xABMi organismo\xBB elige otra liga de su deporte; esa liga aprueba solo el v\xEDnculo (P-20).", href: "organismo-detalle.html?role=CLUB" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga de Nataci\xF3n", titulo: "Un deportista en dos clubes", desc: "Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.", href: "deportistas.html?role=LIGA&org=LIG-006&como=sandra" }
   ];
   document.getElementById("casosGrid").innerHTML = CASOS.map((c) => `

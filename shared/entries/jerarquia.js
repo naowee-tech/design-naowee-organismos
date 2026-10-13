@@ -254,7 +254,7 @@
   const emptyState = document.getElementById('emptyState');
 
   const colsFor = () => { const w = treeCard.clientWidth; return w < 560 ? 1 : w < 900 ? 2 : 3; };
-  const fichaUrl = (id) => `afiliacion.html?role=${roleCode}&id=${encodeURIComponent(id)}&from=jerarquia`;
+  const fichaUrl = (id) => `perfil.html?role=${roleCode}&persona=${encodeURIComponent(id)}&from=${encodeURIComponent('jerarquia.html?role=' + roleCode)}`;
   const detailUrl = (id) => `organismo-detalle.html?id=${encodeURIComponent(id)}&role=${roleCode}`;
   const CHILD_LABEL = { comite: 'Federaciones', federacion: 'Ligas', liga: 'Clubes', club: 'Deportistas' };
 
@@ -494,7 +494,7 @@
     { title: 'Botones de cada fila', items: [
       '<strong>Fila</strong> (botón): abre el siguiente nivel con <code>aria-pressed</code>. Solo es botón si tiene hijos (o viene de resultados); si no, es estática.',
       '<strong>Chevron</strong>: aparece solo con hijos; en hover <strong>del propio botón</strong> (no de toda la fila; solo ≥1024px) o foco de la fila se despliega «Ver &lt;siguiente nivel&gt;» (<code>CHILD_LABEL</code>).',
-      '<strong>Ver detalles</strong>: organismos → <code>organismo-detalle.html?id=</code>. <strong>Ver ficha</strong>: deportistas → <code>afiliacion.html?id=…&amp;from=jerarquia</code>; el «Volver» de la ficha honra <code>from</code>.',
+      '<strong>Ver detalles</strong>: organismos → <code>organismo-detalle.html?id=</code>. <strong>Ver ficha</strong>: deportistas → <code>perfil.html?persona=…&amp;from=…</code> (perfil multi-rol en modo visor); el «Volver» de la ficha honra <code>from</code>.',
       '<strong>X</strong> de la columna: cierra esa columna y las de su derecha (<code>data-close</code>) con animación de salida; es la única forma de subir de nivel en móvil.'
     ] },
     { title: 'Búsqueda y filtro', items: [

@@ -572,3 +572,9 @@ body > .demo-role-switcher--inline { display: none; }
 .profile-dd__perfil.is-current { background: var(--bg-soft); }
 .profile-dd--identity-only { max-height: calc(100vh - 90px); overflow-y: auto; }
 .profile-dd__casos { color: var(--accent); font-weight: 600; }
+/* Bandeja · solicitudes de vínculo (Fase 2) */
+.bj-vinc { margin-top: 16px; }
+.bj-vinc__head { display: flex; flex-direction: column; gap: 4px; padding: 16px 20px 8px; }
+.bj-vinc__head strong { font-size: 15px; }
+.bj-vinc__head span { font-size: 13px; color: var(--text-secondary); }
+.bj-vinc .bj-row-action { display: flex; gap: 8px; justify-content: flex-end; }

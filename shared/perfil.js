@@ -21,7 +21,13 @@
    ═══════════════════════════════════════════════════════════════ */
 import { mountDevnotes } from './devnotes.js?v=1.7.0';
 import { scopeFor } from './permissions.js';
-import { getOrganismo, subtreeOf } from './organismos-data.js';
+import {
+  getOrganismo, subtreeOf, getDeportista, afiliacionesDe, menoresDe, edadDe, ancestorsOf, allSolicitudes,
+  crearSolicitud, retirarAfiliacion, crearSolicitudRetiro, retiroPendienteDe, cancelarRetiro, resolverAfiliacion,
+  desvincularPorClub, solicitarVinculo, resolverVinculo, registrarMenor, buscarClubesActivos, allOrganismos,
+  catalogoDeportes, allDeportistas
+} from './organismos-data.js';
+import { buildDeportistaDetalle } from './deportista-detalle.js';
 
 /* ─── Iconos (sprite inline, stroke currentColor) ─── */
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -57,6 +63,7 @@ export function resolveViewer() {
   let kind = 'own';
   let shellRole = 'PERSONA';
   if (q.get('modo') === 'consulta' || role === 'MINDEPORTE') { kind = 'admin'; shellRole = 'MINDEPORTE'; }
+  else if (role === 'DEPORTISTA') { kind = 'own'; shellRole = 'DEPORTISTA'; }
   else if (ORG_ROLES.includes(role)) { kind = 'org'; shellRole = role; }
   else if (comite) { kind = 'comite'; shellRole = 'COMITE'; }
   const orgId = kind === 'org' ? scopeFor(role) : null;
@@ -64,18 +71,36 @@ export function resolveViewer() {
   return { kind, shellRole, orgId, analisis: kind === 'comite' };
 }
 
-/* ─── Datos de la persona (brief) ─── */
-const P = {
+/* ─── La persona del perfil (Fase 2: sale de los datos, no del brief) ───
+   ?persona=<id de deportista>. Sin él: DEPORTISTA → Valentina (DEP-001); el resto → Laura (DEP-022).
+   Laura conserva los datos ricos del brief; para las demás se derivan con buildDeportistaDetalle. */
+const LAURA = 'DEP-022';
+const PERSONA_ID = (() => {
+  const q = qs(); const id = q.get('persona');
+  if (id && id !== 'laura' && id !== 'ajena' && getDeportista(id)) return id;
+  return q.get('role') === 'DEPORTISTA' ? 'DEP-001' : LAURA;
+})();
+const DEP = getDeportista(PERSONA_ID);
+const DET = (() => { try { return buildDeportistaDetalle(DEP); } catch (_) { return null; } })();
+const edadP = edadDe(DEP.fechaNac) ?? (DET ? DET.edad : null);
+const P = PERSONA_ID === LAURA ? {
   nombre: 'Laura Marcela Gómez Restrepo', corto: 'Laura', ini: 'LG',
-  doc: 'C.C. 1.032.987.456', edad: '34 años',
+  doc: 'C.C. 1.032.987.456', edad: `${edadP} años`,
   deporte: 'Patinaje (carreras)', depto: 'Valle del Cauca', muni: 'Cali', correo: 'laura.gomez@correo.co',
   rolApoyo: 'Docente/Entrenador'
+} : {
+  nombre: DEP.nombre, corto: DEP.nombre.split(' ')[0], ini: DEP.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase(),
+  doc: `${DEP.tipoDoc === 'TI' ? 'T.I.' : DEP.tipoDoc === 'CC' ? 'C.C.' : DEP.tipoDoc} ${Number(DEP.numDoc).toLocaleString('es-CO')}`, edad: edadP != null ? `${edadP} años` : '',
+  deporte: `${DEP.deporte}${DEP.modalidad ? ` (${DEP.modalidad.toLowerCase()})` : ''}`,
+  depto: DET ? DET.ubicacion.depto : '—', muni: DET ? DET.ubicacion.municipio : '—', correo: DEP.correo || (DET ? DET.contacto.correo : '—'),
+  rolApoyo: DEP.rolApoyo || ''
 };
+const TUTOR = DEP.tutorId ? getDeportista(DEP.tutorId) : null;   // si la persona es un menor
 const ALL_ROLES = ['deportista', 'tutor', 'apoyo'];
 const ROLE = {
-  deportista: { name: 'Deportista', icon: 'run', group: 'Como deportista', hint: 'Patinaje' },
-  tutor: { name: 'Tutor legal', icon: 'family', group: 'Como tutor legal', hint: '2 menores' },
-  apoyo: { name: 'Personal de apoyo', icon: 'whistle', group: 'Como personal de apoyo', hint: 'Docente/Entrenador' }
+  deportista: { name: 'Deportista', icon: 'run', group: 'Como deportista', hint: DEP.deporte },
+  tutor: { name: 'Tutor legal', icon: 'family', group: 'Como tutor legal', hint: '' },
+  apoyo: { name: 'Personal de apoyo', icon: 'whistle', group: 'Como personal de apoyo', hint: P.rolApoyo }
 };
 /* Campos por pestaña. lock = no editable (llave o derivado). role = solo si tiene ese rol. */
 const TABS = [
@@ -98,6 +123,20 @@ const TABS = [
   { id: 'adic', label: 'Datos adicionales', title: 'Datos adicionales', fields: [
     ['Talla de uniforme', 'S'], ['Grado escolar', 'Profesional']] }
 ];
+if (PERSONA_ID !== LAURA && DET) {
+  const partes = DEP.nombre.split(/\s+/);
+  const v = (x) => x || '—';
+  const VAL = {
+    'Nombre': partes[0], 'Segundo nombre': partes.length > 3 ? partes[1] : '', 'Apellido': partes.length > 3 ? partes[2] : v(partes[1]), 'Segundo apellido': partes.length > 3 ? v(partes[3]) : v(partes[2]),
+    'Tipo de documento': DET.doc.tipo, 'Número de documento': Number(DEP.numDoc).toLocaleString('es-CO'), 'Fecha expedición documento': '—',
+    'Sexo': DEP.sexo === 'Hombre' ? 'Masculino' : DEP.sexo === 'Mujer' ? 'Femenino' : DET.sexo, 'Fecha de nacimiento': DEP.fechaNac ? DEP.fechaNac.split('-').reverse().join('/') : DET.nacimiento, 'Edad': P.edad,
+    'Departamento de nacimiento': DET.ubicacion.depto, 'Municipio de nacimiento': DET.ubicacion.municipio, 'Nacionalidad': 'Colombiana',
+    'Deporte principal': P.deporte, 'Dirección': '—', 'Departamento': DET.ubicacion.depto, 'Municipio': DET.ubicacion.municipio, 'Zona': DET.ubicacion.zona,
+    'Teléfono': DET.contacto.telefono, 'Correo electrónico': P.correo, 'Nombre del contacto de emergencia': TUTOR ? TUTOR.nombre : DET.contacto.emergenciaNombre,
+    'Teléfono de emergencia': DET.contacto.emergenciaTel, 'Relación con contacto de emergencia': TUTOR ? 'Tutor legal' : 'Familiar', 'Protección menores': TUTOR ? 'Tutor legal registrado' : 'No aplica'
+  };
+  TABS.forEach((t) => t.fields.forEach((f) => { if (f[0] in VAL) f[1] = VAL[f[0]]; else f[1] = '—'; }));
+}
 const TRAY = [
   { yr: 2025, ev: 'Juegos Nacionales', prueba: '500 m', fase: 'Final', pos: '2.º', marca: '43,812 s', medal: 'silver', cyc: true },
   { yr: 2024, ev: 'Campeonato Nacional', prueba: '1000 m', fase: 'Final', pos: '1.º', marca: '1:27,405', medal: 'gold', cyc: true },
@@ -123,9 +162,15 @@ const viewer = resolveViewer();
 const own = viewer.kind === 'own';
 const third = !own;
 const canEdit = viewer.kind === 'own' || viewer.kind === 'admin';
+/* Roles que la persona tiene según los datos: deportista siempre; tutor si tiene menores a cargo;
+   personal de apoyo si tiene rol de apoyo o vínculos. ?roles= solo recorta (ejemplos de la demo). */
+const ROLES_DATOS = () => ['deportista',
+  ...(menoresDe(PERSONA_ID).length ? ['tutor'] : []),
+  ...(DEP.rolApoyo || afiliacionesDe(PERSONA_ID).some((a) => a.tipo === 'personal') ? ['apoyo'] : [])];
 const parseRoles = () => {
-  const r = (qs().get('roles') || ALL_ROLES.join(',')).split(',').map((s) => s.trim()).filter((s) => ALL_ROLES.includes(s));
-  return r.length ? r : ALL_ROLES.slice();
+  const base = ROLES_DATOS();
+  const r = (qs().get('roles') || base.join(',')).split(',').map((s) => s.trim()).filter((s) => base.includes(s));
+  return r.length ? r : base;
 };
 let personaRoles = parseRoles();
 const scope = viewer.orgId ? new Set([viewer.orgId, ...subtreeOf(viewer.orgId).map((o) => o.id)]) : null;
@@ -136,23 +181,37 @@ const state = {
   tab: { perfil: 'datos', tray: 'tr', eval: 0 },
   editing: null,
   activa: true,
-  afiliaciones: [
-    { id: 'af1', org: 'CLU-001', nombre: 'Club Patín Cali', sub: 'Club · Patinaje · Cali', estado: 'vinculado', fecha: 'Desde 12/03/2022' },
-    { id: 'af2', org: 'CLU-003', nombre: 'Club Patín Vallecaucano', sub: 'Club · Patinaje · Cali', estado: 'solicitada', fecha: 'Enviada el 02/10/2026' }
-  ],
-  vinculos: [
-    { id: 'vi1', org: 'LIG-001', nombre: 'Liga de Patinaje del Valle', sub: 'Liga · Valle del Cauca', estado: 'vinculado', fecha: 'Desde 20/01/2024', aprueba: 'la liga' },
-    { id: 'vi2', org: 'CLU-001', nombre: 'Club Patín Cali', sub: 'Club · Cali', estado: 'solicitado', fecha: 'Enviada el 29/09/2026', aprueba: 'el club' }
-  ],
-  menores: [
-    { id: 'mn1', ini: 'TG', nombre: 'Tomás Gómez', meta: ['T.I.', '12 años', 'Patinaje · Club Patín Cali', 'Vínculo: Padre/Madre'], estado: 'registrado', org: 'CLU-001' },
-    { id: 'mn2', ini: 'SG', nombre: 'Sara Gómez', meta: ['T.I.', '9 años', 'Natación', 'Vínculo: Padre/Madre'], estado: 'revision', org: null }
-  ]
+  pendOpen: false
 };
+/* Afiliaciones, vínculos y menores salen de los datos de la demo (organismos-data.js). */
+const dmy = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '');
+const TIPO_TXT = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
+const ARTICULO = { comite: 'el comité', federacion: 'la federación', liga: 'la liga', club: 'el club' };
+const EST_AF = { Vinculada: 'vinculado', Solicitada: 'solicitada', Rechazada: 'rechazada', Terminada: 'desvinculado' };
+const EST_VI = { Vinculada: 'vinculado', Solicitada: 'solicitado', Rechazada: 'rechazado', Terminada: 'desvinculado' };
+function itemDe(a, est) {
+  const o = getOrganismo(a.organismoId) || {};
+  const cadena = o.tipo === 'club' ? ancestorsOf(o.id).filter((x) => x.tipo !== 'comite').map((x) => x.nombre).join(' · ') : '';
+  const fecha = a.estado === 'Vinculada' ? `Desde ${dmy(a.desde)}` : a.estado === 'Solicitada' ? `Enviada el ${dmy(a.fecha || a.desde) || 'hoy'}`
+    : a.estado === 'Terminada' ? `Hasta ${dmy(a.hasta)}${a.fin === 'desvinculacion' ? ' · desvinculado por el club' : ''}` : `Rechazada${a.motivo ? ` · ${a.motivo}` : ''}`;
+  return { id: a.id, org: a.organismoId, tipoOrg: o.tipo, nombre: o.nombre || a.organismoId, sub: [TIPO_TXT[o.tipo], a.deporte || o.deporte, o.ubicacion ? o.ubicacion.ciudad : ''].filter(Boolean).join(' · '),
+    cadena, estado: est[a.estado] || 'pendiente', fecha, aprueba: ARTICULO[o.tipo] || 'el organismo', motivo: a.motivo || '', touched: true,
+    baja: a.tipo === 'deportista' && a.estado === 'Vinculada' && !!retiroPendienteDe(PERSONA_ID, a.organismoId) };
+}
+const AFS = () => afiliacionesDe(PERSONA_ID).filter((a) => a.tipo === 'deportista').map((a) => itemDe(a, EST_AF));
+const VIS = () => afiliacionesDe(PERSONA_ID).filter((a) => a.tipo === 'personal').map((a) => itemDe(a, EST_VI));
+const MEN = () => menoresDe(PERSONA_ID).map((m) => {
+  const e = edadDe(m.fechaNac);
+  const club = m.clubId ? getOrganismo(m.clubId) : null;
+  return { id: m.id, ini: m.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase(), nombre: m.nombre,
+    meta: [m.tipoDoc === 'TI' ? 'T.I.' : m.tipoDoc === 'RC' ? 'R.C.' : m.tipoDoc, e != null ? `${e} años` : '', `${m.deporte}${club ? ' · ' + club.nombre : ''}`, `Vínculo: ${m.parentesco || 'Tutor legal'}`].filter(Boolean),
+    estado: m.docsEstado === 'revision' ? 'revision' : 'registrado', org: m.clubId };
+});
+ROLE.tutor.hint = (() => { const n = menoresDe(PERSONA_ID).length; return n ? `${n} menor${n > 1 ? 'es' : ''}` : ''; })();
 const VIVOS = ['vinculado', 'solicitada', 'solicitado'];
 const inScope = (it) => !scope || scope.has(it.org);
-const afiliacionesVis = () => state.afiliaciones.filter((a) => inScope(a) && (VIVOS.includes(a.estado) || a.touched));
-const vinculosVis = () => state.vinculos.filter((v) => inScope(v) && (VIVOS.includes(v.estado) || v.touched));
+const afiliacionesVis = () => AFS().filter((a) => inScope(a) && (VIVOS.includes(a.estado) || a.touched));
+const vinculosVis = () => VIS().filter((v) => inScope(v) && (VIVOS.includes(v.estado) || v.touched));
 
 /* Facetas visibles para este visor. */
 function visibleRoles() {
@@ -160,8 +219,8 @@ function visibleRoles() {
     if (viewer.kind !== 'org') return true; /* propio, Ministerio y Comité: todo */
     /* organismo: deportista y apoyo solo si hay algo en su jurisdicción;
        la lista de menores sí la ve (abrir cada menor sigue la misma regla). */
-    if (r === 'deportista') return state.afiliaciones.some(inScope);
-    if (r === 'apoyo') return state.vinculos.some(inScope);
+    if (r === 'deportista') return AFS().some(inScope);
+    if (r === 'apoyo') return VIS().some(inScope);
     return r === 'tutor';
   });
 }
@@ -186,7 +245,7 @@ function pendAfil() {
   return n ? { txt: `${n} solicitada${n > 1 ? 's' : ''}`, aria: `${n} afiliación${n > 1 ? 'es' : ''} solicitada${n > 1 ? 's' : ''}, pendiente${n > 1 ? 's' : ''} de aprobación` } : null;
 }
 function pendMen() {
-  const n = state.menores.filter((m) => m.estado === 'revision').length;
+  const n = MEN().filter((m) => m.estado === 'revision').length;
   return n ? { txt: `${n} en revisión`, aria: `${n} menor${n > 1 ? 'es' : ''} en revisión`, rev: true } : null;
 }
 function pendVin() {
@@ -197,11 +256,11 @@ function pendVin() {
 function pendientes() {
   if (!own) return [];
   const out = [];
-  if (personaRoles.includes('deportista')) state.afiliaciones.filter((a) => a.estado === 'solicitada').forEach((a) =>
+  if (personaRoles.includes('deportista')) AFS().filter((a) => a.estado === 'solicitada').forEach((a) =>
     out.push({ t: `Afiliación a ${a.nombre}`, sub: 'La aprueba el club', estado: 'solicitada', act: 'cancel', kind: 'af', id: a.id }));
-  if (personaRoles.includes('tutor')) state.menores.filter((m) => m.estado === 'revision').forEach((m) =>
+  if (personaRoles.includes('tutor')) MEN().filter((m) => m.estado === 'revision').forEach((m) =>
     out.push({ t: m.nombre, sub: 'El Ministerio valida sus documentos', estado: 'revision', act: 'ver', go: 'menores' }));
-  if (personaRoles.includes('apoyo')) state.vinculos.filter((v) => v.estado === 'solicitado').forEach((v) =>
+  if (personaRoles.includes('apoyo')) VIS().filter((v) => v.estado === 'solicitado').forEach((v) =>
     out.push({ t: `Vínculo con ${v.nombre}`, sub: `Lo aprueba ${v.aprueba}`, estado: 'solicitado', act: 'cancel', kind: 'vi', id: v.id }));
   return out;
 }
@@ -219,8 +278,8 @@ function render() {
   root.querySelectorAll('[data-tabs]').forEach((t) => { scrollTabs[t.dataset.tabs] = t.scrollLeft; });
 
   /* Organismo fuera de jurisdicción: no ve el perfil. */
-  const enJurisdiccion = (personaRoles.includes('deportista') && state.afiliaciones.some(inScope))
-    || (personaRoles.includes('apoyo') && state.vinculos.some(inScope));
+  const enJurisdiccion = (personaRoles.includes('deportista') && AFS().some(inScope))
+    || (personaRoles.includes('apoyo') && VIS().some(inScope));
   if (viewer.kind === 'org' && (qs().get('persona') === 'ajena' || !enJurisdiccion)) {
     root.innerHTML = `
       ${renderTop(true)}
@@ -248,6 +307,12 @@ function render() {
 function renderTop(denied) {
   const q = qs();
   const from = q.get('from');
+  if (own && TUTOR) {
+    return `
+      <div class="naowee-message naowee-message--informative mp-banner" role="status"><span class="naowee-message__icon">${ic('family', 'sm')}</span>
+        <div class="naowee-message__body"><p class="naowee-message__text">Estás gestionando el perfil de <strong>${esc(P.corto)}</strong> como su tutor legal (${esc(TUTOR.nombre)}). Sus datos, documentos y afiliaciones los administras tú mientras sea menor de edad.</p></div></div>
+      <div class="mp-bar"><a class="mp-back" href="${esc(from || 'perfil.html?seccion=menores')}">${ic('left')}Volver a mi perfil</a></div>`;
+  }
   if (viewer.kind === 'admin') {
     return `
       <div class="naowee-message naowee-message--informative mp-banner" role="status"><span class="naowee-message__icon">${ic('info', 'sm')}</span>
@@ -292,7 +357,7 @@ function renderHeader() {
           <p class="mp-doc">${P.doc} · ${P.edad}</p>
           ${own ? `<div class="mp-hid__note">${devnote('barOwn')}</div>` : ''}
           <ul class="mp-roles" aria-label="Roles de la persona">${chips}
-            ${own ? `<li><button class="mp-addrole" type="button" data-addrole>${ic('plus', 'sm')}Agregar rol</button></li>` : ''}</ul>
+            ${own && !TUTOR ? `<li><button class="mp-addrole" type="button" data-addrole>${ic('plus', 'sm')}Agregar rol</button></li>` : ''}</ul>
         </div>
       </div>
       <dl class="mp-hstrip">
@@ -374,6 +439,7 @@ function renderPendientes() {
 /* Solo demo: ejemplos de una persona con uno o varios roles (perfil propio). */
 const EJEMPLOS = [['deportista,tutor,apoyo', 'Multi-rol'], ['deportista', 'Solo deportista'], ['tutor', 'Solo tutor legal'], ['apoyo', 'Solo personal de apoyo']];
 function renderExamples() {
+  if (PERSONA_ID !== LAURA) return '';   // los ejemplos (multi-rol, solo deportista…) son de Laura
   if (!own) return '';
   const cur = personaRoles.join(',');
   return `
@@ -490,6 +556,9 @@ function secTrayectoria() {
 function rowActions(it, kind) {
   const solicitada = it.estado === 'solicitada' || it.estado === 'solicitado';
   if (own && solicitada) return `<button class="mp-btn mp-btn--sm" type="button" data-cancel="${kind}:${it.id}">Cancelar solicitud</button>`;
+  if (own && kind === 'af' && it.estado === 'vinculado') return it.baja
+    ? `<button class="mp-btn mp-btn--sm" type="button" data-nobaja="${it.id}">Cancelar retiro</button>`
+    : `<button class="mp-btn mp-btn--sm mp-btn--text" type="button" data-retiro="${it.id}">Retirarme</button>`;
   if (viewer.kind === 'org' && it.org === viewer.orgId) {
     if (solicitada) return `<button class="mp-btn mp-btn--sm" type="button" data-org="aprobar:${kind}:${it.id}">Aprobar</button><button class="mp-btn mp-btn--sm mp-btn--danger" type="button" data-org="rechazar:${kind}:${it.id}">Rechazar</button>`;
     if (it.estado === 'vinculado') return `<button class="mp-btn mp-btn--sm mp-btn--danger" type="button" data-org="desvincular:${kind}:${it.id}">Desvincular</button>`;
@@ -501,7 +570,8 @@ function orgRow(it, kind, aprueba) {
   return `
     <li class="mp-row"><span class="mp-tile">${ic('building')}</span>
       <div class="mp-row__main"><strong>${esc(it.nombre)}</strong><span>${esc(it.sub)}</span>
-        <span class="mp-row__hint">${esc(it.fecha)}${solicitada ? ` · Lo aprueba ${aprueba}` : ''}</span></div>
+        ${it.cadena && it.estado === 'vinculado' ? `<span class="mp-row__hint">Hereda: ${esc(it.cadena)}</span>` : ''}
+        <span class="mp-row__hint">${esc(it.fecha)}${solicitada ? ` · Lo aprueba ${aprueba}` : ''}${it.baja ? ' · Retiro en trámite: el club debe confirmarlo' : ''}</span></div>
       <div class="mp-row__side">${pill(it.estado)}${rowActions(it, kind)}</div></li>`;
 }
 
@@ -513,11 +583,11 @@ function secAfiliaciones() {
         desc: viewer.kind === 'org' ? `Afiliaciones de ${P.corto} a clubes de tu jurisdicción. Cada club aprueba la suya.`
           : third ? 'Clubes en los que la persona está inscrita como deportista. El club aprueba cada solicitud.'
           : 'Clubes en los que estás inscrita como deportista. El club aprueba cada solicitud.',
-        acts: own ? `<button class="mp-btn" type="button" data-soon="Solicitar afiliación">${ic('plus', 'sm')}Solicitar afiliación</button>` : '',
+        acts: own ? `<button class="mp-btn" type="button" data-solicitar-af>${ic('plus', 'sm')}Solicitar afiliación</button>` : '',
         note: 'afiliaciones' })}
       ${list.length ? `<ul class="mp-list">${list.map((a) => orgRow(a, 'af', 'el club')).join('')}</ul>`
         : `<div class="mp-card mp-empty"><div class="mp-tile">${ic('building')}</div><h3>Sin afiliaciones</h3><p>${own ? 'Solicita la afiliación a un club para competir con él.' : 'No tiene afiliaciones a clubes.'}</p></div>`}
-      <div class="mp-note">${ic('info')}<span>${own ? 'La afiliación la aprueba el club. Mientras está solicitada, sigues compitiendo con tu club actual.' : 'La afiliación la aprueba el club. Al aprobarla, el deportista hereda la liga y la federación del club.'}</span></div>
+      <div class="mp-note">${ic('info')}<span>${own ? 'Puedes estar en varios clubes a la vez, del mismo deporte o de otros. Cada club aprueba su afiliación y de cada uno heredas su liga y su federación. Mientras una está solicitada, sigues compitiendo con tus clubes actuales.' : 'La afiliación la aprueba el club. Al aprobarla, el deportista hereda la liga y la federación de ese club, sin perder las de sus otros clubes.'}</span></div>
     </section>`;
 }
 
@@ -540,18 +610,18 @@ function secMenores() {
     <section aria-labelledby="mpH-men">
       ${secHead({ group: 'tutor', id: 'mpH-men', title: third ? 'Menores a cargo' : 'Mis menores',
         desc: third ? 'Deportistas menores de edad cuyo perfil administra esta persona.' : 'Administras el perfil de los menores a tu cargo. Un menor solo puede tener el rol de deportista.',
-        acts: own ? `<button class="mp-btn" type="button" data-soon="Registrar menor">${ic('plus', 'sm')}Registrar menor</button>` : '',
+        acts: own ? `<button class="mp-btn" type="button" data-menor-nuevo>${ic('plus', 'sm')}Registrar menor</button>` : '',
         note: 'menores' })}
       <div class="mp-card">
-        <ul class="mp-minors">${state.menores.map((m) => `
+        <ul class="mp-minors">${MEN().map((m) => `
           <li class="mp-minor"><span class="mp-ava-s" aria-hidden="true">${m.ini}</span>
             <div><strong>${m.nombre}</strong><div class="mp-meta">${m.meta.map((x) => `<span>${x}</span>`).join('')}</div></div>
             <div class="mp-row__side">${pill(m.estado)}${viewer.kind === 'org' && !(m.org && scope.has(m.org))
               ? `<span class="mp-out" tabindex="0" title="Solo puedes abrir el perfil de menores afiliados a ${esc(orgName)} o a un organismo que dependa de él." aria-label="Fuera de tu jurisdicción: solo puedes abrir el perfil de menores afiliados a ${esc(orgName)} o a un organismo que dependa de él.">${ic('info', 'sm')}Fuera de tu jurisdicción</span>`
-              : `<button class="mp-btn mp-btn--sm" type="button" data-soon="Perfil de ${m.nombre}">Ver perfil</button>`}${canEdit ? `<button class="mp-btn mp-btn--sm mp-btn--text" type="button" data-soon="Editar a ${m.nombre}">${ic('edit', 'sm')}Editar</button>` : ''}</div></li>`).join('')}
+              : `<button class="mp-btn mp-btn--sm" type="button" data-menor="${m.id}">${own ? 'Gestionar perfil' : 'Ver perfil'}</button>`}</div></li>`).join('') || `<li class="mp-minor"><div><strong>Sin menores registrados</strong><div class="mp-meta"><span>Registra a un menor a tu cargo para administrar su perfil.</span></div></div></li>`}
         </ul>
       </div>
-      <div class="mp-note">${ic('info')}<span>«En revisión» significa que el Ministerio está validando los documentos del menor. ${third ? 'El tutor puede seguir editando sus datos mientras tanto.' : 'Puedes seguir editando sus datos mientras tanto.'} Mientras sea menor de edad, sus datos, documentos y afiliaciones los gestiona su tutor.</span></div>
+      <div class="mp-note">${ic('info')}<span>«En revisión» significa que se está validando el documento de parentesco del menor. ${third ? 'El tutor puede seguir editando sus datos mientras tanto.' : 'Puedes seguir editando sus datos mientras tanto.'} Mientras sea menor de edad, sus datos, documentos y afiliaciones los gestiona su tutor.</span></div>
     </section>`;
 }
 
@@ -563,17 +633,17 @@ function secVinculos() {
         desc: viewer.kind === 'org' ? `Rol de apoyo de ${P.corto} y sus vínculos con organismos de tu jurisdicción.`
           : third ? 'Rol de apoyo y organismos con los que trabaja esta persona. Cada organismo aprueba el vínculo.'
           : 'Tu rol de apoyo y los organismos con los que trabajas. Cada organismo aprueba el vínculo.',
-        acts: own ? `<button class="mp-btn" type="button" data-soon="Solicitar vínculo">${ic('plus', 'sm')}Solicitar vínculo</button>` : '',
+        acts: own ? `<button class="mp-btn" type="button" data-solicitar-vi>${ic('plus', 'sm')}Solicitar vínculo</button>` : '',
         note: 'vinculos' })}
       <h3 class="mp-sub-h">Rol de apoyo</h3>
       <ul class="mp-list">
         <li class="mp-row"><span class="mp-tile">${ic('whistle')}</span>
-          <div class="mp-row__main"><strong>${P.rolApoyo}</strong><span>Patinaje · Rol principal</span></div>
+          <div class="mp-row__main"><strong>${esc(P.rolApoyo || 'Personal deportivo')}</strong><span>${esc(DEP.deporte)} · Rol principal</span></div>
           ${own ? `<div class="mp-row__side"><button class="mp-btn mp-btn--sm mp-btn--text" type="button" data-addrole>${ic('plus', 'sm')}Agregar otro rol específico</button></div>` : ''}</li>
       </ul>
       <h3 class="mp-sub-h">Organismos</h3>
       ${list.length ? `<ul class="mp-list">${list.map((v) => orgRow(v, 'vi', v.aprueba)).join('')}</ul>` : '<p class="mp-note">Sin vínculos con organismos.</p>'}
-      <div class="mp-note">${ic('info')}<span>Cada vínculo lo aprueba el organismo (la liga o el club). Ser personal de apoyo no requiere aprobación; trabajar para un organismo sí.</span></div>
+      <div class="mp-note">${ic('info')}<span>Puedes vincularte a cualquier organismo: club, liga, federación o comité. Cada uno aprueba su vínculo. Ser personal de apoyo no requiere aprobación; trabajar para un organismo sí.</span></div>
     </section>`;
 }
 
@@ -640,39 +710,76 @@ function bind() {
     toast(viewer.kind === 'admin' ? 'Cambios guardados. Quedan registrados a tu nombre.' : 'Cambios guardados.');
   });
 
-  /* Cancelar solicitud (perfil propio) */
+  /* Perfil propio: cancelar una solicitud, retirarse de un club, cancelar la baja. */
+  const lista = (k) => (k === 'af' ? AFS() : VIS());
   root.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', () => {
     const [k, id] = b.dataset.cancel.split(':');
-    const arr = k === 'af' ? state.afiliaciones : state.vinculos;
-    const it = arr.find((x) => x.id === id);
+    const it = lista(k).find((x) => x.id === id);
     confirmDlg({
       title: 'Cancelar solicitud',
       text: `${k === 'af' ? 'Se retira la solicitud de afiliación a' : 'Se retira la solicitud de vínculo con'} ${it.nombre}. Puedes volver a solicitarla cuando quieras.`,
       ok: 'Cancelar solicitud', back: 'Mantener solicitud',
-      onOk: () => { arr.splice(arr.indexOf(it), 1); render(); toast('Solicitud cancelada.'); }
+      onOk: () => {
+        if (k === 'af') retirarAfiliacion(PERSONA_ID, {}, it.org);
+        else resolverVinculo(PERSONA_ID, it.org, 'Rechazada', { motivo: 'Retirada por la persona', responsable: P.nombre, rol: 'Personal deportivo' });
+        render(); toast('Solicitud cancelada.');
+      }
     });
   }));
+  root.querySelectorAll('[data-retiro]').forEach((b) => b.addEventListener('click', () => {
+    const it = AFS().find((x) => x.id === b.dataset.retiro);
+    confirmDlg({
+      title: `Retirarme de ${it.nombre}`,
+      text: `El club confirma tu retiro. Mientras tanto sigues afiliada. Al confirmarlo dejas de heredar su liga y su federación; tus otros clubes no cambian.`,
+      ok: 'Pedir el retiro', back: 'Volver',
+      onOk: () => { crearSolicitudRetiro(PERSONA_ID, it.org); render(); toast(`Retiro enviado: ${it.nombre} debe confirmarlo.`); }
+    });
+  }));
+  root.querySelectorAll('[data-nobaja]').forEach((b) => b.addEventListener('click', () => {
+    const it = AFS().find((x) => x.id === b.dataset.nobaja);
+    cancelarRetiro(PERSONA_ID, it.org); render(); toast('Retiro cancelado: sigues afiliada al club.');
+  }));
+  root.querySelector('[data-solicitar-af]')?.addEventListener('click', openSolicitarAfiliacion);
+  root.querySelector('[data-solicitar-vi]')?.addEventListener('click', openSolicitarVinculo);
+  root.querySelector('[data-menor-nuevo]')?.addEventListener('click', openRegistrarMenor);
+  root.querySelectorAll('[data-menor]').forEach((b) => b.addEventListener('click', () => {
+    const m = MEN().find((x) => x.id === b.dataset.menor);
+    if (own && m.estado === 'revision') { toast(`${m.nombre} todavía está en revisión. Podrás ingresar cuando se valide el documento de parentesco.`); return; }
+    const q = new URLSearchParams({ persona: m.id, ...(qs().get('role') ? { role: qs().get('role') } : {}), from: `perfil.html?${qs().toString()}` });
+    window.location.href = `perfil.html?${q.toString()}`;
+  }));
 
-  /* Acciones de organismo: Aprobar / Rechazar / Desvincular */
+  /* Acciones de organismo: Aprobar / Rechazar / Desvincular (sobre los datos reales). */
+  const solicitudDe = (org) => allSolicitudes().find((x) => x.deportistaId === PERSONA_ID && x.clubId === org && x.tipo !== 'retiro' && x.estado === 'Enviada') || crearSolicitud(PERSONA_ID, org);
+  const quien = { responsable: getOrganismo(viewer.orgId)?.nombre || '', rol: qs().get('role') || '' };
   root.querySelectorAll('[data-org]').forEach((b) => b.addEventListener('click', () => {
     const [act, k, id] = b.dataset.org.split(':');
-    const arr = k === 'af' ? state.afiliaciones : state.vinculos;
-    const it = arr.find((x) => x.id === id);
+    const it = lista(k).find((x) => x.id === id);
     const fem = k === 'af';
     const que = fem ? 'la afiliación' : 'el vínculo';
     if (act === 'aprobar') {
-      it.estado = 'vinculado'; it.fecha = 'Desde hoy'; it.touched = true; render();
+      if (fem) resolverAfiliacion(solicitudDe(it.org).id, 'aprobada', quien);
+      else resolverVinculo(PERSONA_ID, it.org, 'Vinculada', quien);
+      render();
       toast(`${fem ? 'Afiliación aprobada' : 'Vínculo aprobado'}: ${P.corto} queda vinculada a ${it.nombre}.`);
       return;
     }
     confirmDlg(act === 'rechazar' ? {
       title: `Rechazar ${que}`, text: `${P.corto} recibe el rechazo con el motivo y puede volver a solicitar${fem ? 'la' : 'lo'}.`, ok: 'Rechazar', danger: true, motivo: true,
-      onOk: () => { it.estado = fem ? 'rechazada' : 'rechazado'; it.touched = true; render(); toast(`${fem ? 'Afiliación rechazada' : 'Vínculo rechazado'}.`); }
+      onOk: (motivo) => {
+        if (fem) resolverAfiliacion(solicitudDe(it.org).id, 'rechazada', { ...quien, motivo });
+        else resolverVinculo(PERSONA_ID, it.org, 'Rechazada', { ...quien, motivo });
+        render(); toast(`${fem ? 'Afiliación rechazada' : 'Vínculo rechazado'}.`);
+      }
     } : {
       title: `Desvincular de ${it.nombre}`,
-      text: fem ? `${P.corto} deja de estar afiliada a ${it.nombre} y pierde la liga y la federación que heredó del club.` : `${P.corto} deja de figurar como personal de apoyo de ${it.nombre}.`,
+      text: fem ? `${P.corto} deja de estar afiliada a ${it.nombre} y pierde la liga y la federación que heredó de ese club. Sus otros clubes no cambian.` : `${P.corto} deja de figurar como personal de apoyo de ${it.nombre}.`,
       ok: 'Desvincular', danger: true, motivo: true,
-      onOk: () => { it.estado = 'desvinculado'; it.fecha = 'Desde hoy'; it.touched = true; render(); toast('Desvinculación registrada.'); }
+      onOk: (motivo) => {
+        if (fem) desvincularPorClub(PERSONA_ID, { clubId: it.org, motivo, responsable: quien.responsable });
+        else resolverVinculo(PERSONA_ID, it.org, 'Terminada', { ...quien, motivo, fin: 'desvinculacion' });
+        render(); toast('Desvinculación registrada.');
+      }
     });
   }));
 
@@ -727,6 +834,123 @@ function openAddRole() {
     toast(`${b.querySelector('strong').textContent}: disponible en una próxima fase de la demo.`);
   }));
 }
+/* ─── Fase 2 · diálogos de afiliación, vínculo y menor ─── */
+/* Buscador común: lista organismos Activos por nombre o NIT (mín. 3 letras) y elige uno. */
+function buscadorDlg({ title, sub, placeholder, buscar, meta, ok, onOk, rule }) {
+  let sel = null;
+  const d = dialog(`
+    <div class="mp-dlg__h"><div><h2 id="mpDlgT">${esc(title)}</h2><p>${esc(sub)}</p></div>
+      <button class="mp-x" type="button" aria-label="Cerrar" data-close>${ic('x')}</button></div>
+    <div class="mp-dlg__b mp-busca"><input id="mpBusca" type="search" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" autocomplete="off">
+      <ul class="mp-busca__res" id="mpBuscaRes" role="listbox" aria-label="Resultados"></ul></div>
+    ${rule ? `<p class="mp-dlg__rule">${rule}</p>` : ''}
+    <div class="mp-dlg__f"><button class="mp-btn" type="button" data-close>Volver</button>
+      <button class="mp-btn mp-btn--pri" type="button" data-ok disabled>${esc(ok)}</button></div>`);
+  const inp = d.querySelector('#mpBusca'); const res = d.querySelector('#mpBuscaRes'); const btn = d.querySelector('[data-ok]');
+  const pinta = () => {
+    const q = inp.value.trim();
+    const items = q.length < 3 ? [] : buscar(q).slice(0, 8);
+    res.innerHTML = q.length < 3 ? '<li class="mp-busca__hint">Escribe al menos 3 letras del nombre o del NIT.</li>'
+      : items.length ? items.map((o) => `<li><button type="button" role="option" aria-selected="${sel === o.id}" class="mp-busca__opt${sel === o.id ? ' is-sel' : ''}" data-id="${o.id}"><strong>${esc(o.nombre)}</strong><span>${esc(meta(o))}</span></button></li>`).join('')
+      : '<li class="mp-busca__hint">No encontramos un organismo activo con ese nombre. Si debería estar, comunícate con soporte.</li>';
+    res.querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { sel = b.dataset.id; btn.disabled = false; pinta(); }));
+  };
+  inp.addEventListener('input', () => { sel = null; btn.disabled = true; pinta(); });
+  pinta(); inp.focus();
+  btn.addEventListener('click', () => { if (!sel) return; d.close(); onOk(sel); });
+}
+function openSolicitarAfiliacion() {
+  const ya = new Set(AFS().filter((a) => ['vinculado', 'solicitada'].includes(a.estado)).map((a) => a.org));
+  buscadorDlg({
+    title: 'Solicitar afiliación', sub: 'Busca el club. Solo aparecen clubes activos en el SUID.', placeholder: 'Nombre o NIT del club',
+    buscar: (q) => buscarClubesActivos(q).filter((c) => !ya.has(c.id)),
+    meta: (c) => `${c.deporte} · ${c.ubicacion ? c.ubicacion.ciudad : ''} · ${(getOrganismo(c.parentId) || {}).nombre || ''}`,
+    ok: 'Enviar solicitud', rule: 'El club aprueba la afiliación. Puedes estar en varios clubes; de cada uno heredas su liga y su federación.',
+    onOk: (id) => { crearSolicitud(PERSONA_ID, id); render(); toast(`Solicitud enviada a ${getOrganismo(id).nombre}. El club la confirma desde su bandeja.`); }
+  });
+}
+function openSolicitarVinculo() {
+  const ya = new Set(VIS().filter((v) => ['vinculado', 'solicitado'].includes(v.estado)).map((v) => v.org));
+  const n = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  buscadorDlg({
+    title: 'Solicitar vínculo', sub: `Busca el organismo con el que trabajas como ${(P.rolApoyo || 'personal deportivo').toLowerCase()}: club, liga, federación o comité.`, placeholder: 'Nombre o NIT del organismo',
+    buscar: (q) => allOrganismos().filter((o) => o.estado === 'Activo' && !ya.has(o.id) && (n(o.nombre).includes(n(q)) || n(o.nit).includes(n(q)))),
+    meta: (o) => `${TIPO_TXT[o.tipo]} · ${o.deporte !== '—' ? o.deporte : o.sector || ''}`,
+    ok: 'Enviar solicitud', rule: 'El organismo aprueba el vínculo. Mientras tanto queda «Solicitado».',
+    onOk: (id) => { solicitarVinculo(PERSONA_ID, id, P.rolApoyo); render(); toast(`Solicitud de vínculo enviada a ${getOrganismo(id).nombre}.`); }
+  });
+}
+/* Registrar menor: mismo flujo del perfil de sports (modal de dos pasos: Documentos y Datos básicos).
+   Suma lo que sports no valida en el front: que sea menor de 18 y que el documento no esté registrado. */
+function openRegistrarMenor() {
+  const st = { paso: 1, d: { vinculo: '', tipoDoc: 'TI', numDoc: '', archivo: '', acepta: false, nombre: '', segNombre: '', apellido: '', segApellido: '', sexo: '', fechaNac: '', deporte: '', depto: 'Valle del Cauca', ciudad: '' } };
+  const d = dialog('<div id="mpMenor"></div>', 'mp-dlg--form');
+  const box = d.querySelector('#mpMenor');
+  const campo = (id, label, html, req) => `<div class="mp-f"><label for="${id}">${label}${req ? ' <span aria-hidden="true">*</span>' : ''}</label>${html}<p class="mp-f__err" id="${id}Err" hidden></p></div>`;
+  const inp = (id, v, type = 'text', extra = '') => `<input id="${id}" type="${type}" value="${esc(v)}" ${extra}>`;
+  const sel = (id, v, opts, ph) => `<select id="${id}"><option value="">${ph || 'Selecciona…'}</option>${opts.map((o) => `<option${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  const pinta = () => {
+    const x = st.d;
+    box.innerHTML = `
+      <div class="mp-dlg__h"><div><h2 id="mpDlgT">Registrar menor</h2><p>Paso ${st.paso} de 2 · ${st.paso === 1 ? 'Documentos' : 'Datos básicos'}</p></div>
+        <button class="mp-x" type="button" aria-label="Cerrar" data-close>${ic('x')}</button></div>
+      <div class="mp-dlg__b">
+        <div class="mp-alert">${ic('info', 'sm')}<span>Solo tú, como tutor registrado, podrás administrar el perfil del menor, editar sus datos sensibles y hacer sus inscripciones.</span></div>
+        ${st.paso === 1 ? `<div class="mp-form">
+          ${campo('mVinculo', 'Tipo de vínculo', sel('mVinculo', x.vinculo, ['Padre/Madre', 'Tutor legal'], 'Padre | Tutor'), true)}
+          <div class="mp-form__row">${campo('mTipoDoc', 'Tipo de documento', sel('mTipoDoc', x.tipoDoc, ['TI', 'RC'], 'Tipo'), true)}${campo('mNumDoc', 'Documento del menor', inp('mNumDoc', x.numDoc, 'text', 'inputmode="numeric" placeholder="# Documento"'), true)}</div>
+          ${campo('mArchivo', 'Adjuntar documento de parentesco', `<input id="mArchivo" type="file" accept=".pdf,.jpg,.jpeg,.png"><span class="mp-f__hint">${x.archivo ? `Adjunto: ${esc(x.archivo)}` : 'Registro civil / Sentencia de tutela (JPG, PNG o PDF). Máx 10 MB'}</span>`, true)}
+          <label class="mp-check"><input id="mAcepta" type="checkbox"${x.acepta ? ' checked' : ''}> Declaro ser el tutor legal y autorizo el tratamiento de los datos del menor.</label>
+          <p class="mp-f__err" id="mAceptaErr" hidden></p>
+        </div>` : `<div class="mp-form">
+          <div class="mp-form__row">${campo('mNombre', 'Nombre', inp('mNombre', x.nombre), true)}${campo('mSegNombre', 'Segundo nombre', inp('mSegNombre', x.segNombre))}</div>
+          <div class="mp-form__row">${campo('mApellido', 'Apellido', inp('mApellido', x.apellido), true)}${campo('mSegApellido', 'Segundo apellido', inp('mSegApellido', x.segApellido))}</div>
+          <div class="mp-form__row">${campo('mSexo', 'Sexo', sel('mSexo', x.sexo, ['Hombre', 'Mujer']), true)}${campo('mFechaNac', 'Fecha de nacimiento', inp('mFechaNac', x.fechaNac, 'date'), true)}</div>
+          ${campo('mDeporte', 'Deporte', sel('mDeporte', x.deporte, catalogoDeportes()), true)}
+          <div class="mp-form__row">${campo('mDepto', 'Departamento', inp('mDepto', x.depto), true)}${campo('mCiudad', 'Ciudad', inp('mCiudad', x.ciudad), true)}</div>
+        </div>`}
+      </div>
+      <div class="mp-dlg__f"><button class="mp-btn" type="button" ${st.paso === 1 ? 'data-close' : 'data-atras'}>${st.paso === 1 ? 'Cancelar' : 'Atrás'}</button>
+        <button class="mp-btn mp-btn--pri" type="button" data-sig>${st.paso === 1 ? 'Siguiente' : 'Registrar'}</button></div>`;
+    box.querySelector('#mArchivo')?.addEventListener('change', (e) => { st.d.archivo = e.target.files[0] ? e.target.files[0].name : ''; lee(); pinta(); });
+    box.querySelector('[data-atras]')?.addEventListener('click', () => { lee(); st.paso = 1; pinta(); });
+    box.querySelector('[data-sig]').addEventListener('click', siguiente);
+  };
+  const val = (id) => box.querySelector('#' + id)?.value.trim() ?? '';
+  const lee = () => {
+    const x = st.d;
+    if (st.paso === 1) { x.vinculo = val('mVinculo'); x.tipoDoc = val('mTipoDoc'); x.numDoc = val('mNumDoc'); x.acepta = !!box.querySelector('#mAcepta')?.checked; }
+    else { ['nombre', 'segNombre', 'apellido', 'segApellido', 'sexo', 'fechaNac', 'deporte', 'depto', 'ciudad'].forEach((k) => { x[k] = val('m' + k.charAt(0).toUpperCase() + k.slice(1)); }); }
+  };
+  const err = (id, msg) => { const e = box.querySelector('#' + id + 'Err'); if (e) { e.textContent = msg; e.hidden = false; } return true; };
+  function siguiente() {
+    lee(); box.querySelectorAll('.mp-f__err').forEach((e) => { e.hidden = true; });
+    const x = st.d; let mal = false;
+    if (st.paso === 1) {
+      if (!x.vinculo) mal = err('mVinculo', 'Elige el tipo de vínculo.');
+      if (!x.tipoDoc) mal = err('mTipoDoc', 'Elige el tipo.');
+      if (!x.numDoc) mal = err('mNumDoc', 'El número de documento es obligatorio.');
+      else if (allDeportistas().some((p) => String(p.numDoc) === x.numDoc)) mal = err('mNumDoc', 'Este documento ya está registrado en el SUID. Si es tu hijo o tu hija, comunícate con soporte para vincularlo.');
+      if (!x.archivo) mal = err('mArchivo', 'Adjunta el documento de parentesco.');
+      if (!x.acepta) mal = err('mAcepta', 'Debes aceptar para continuar.');
+      if (!mal) { st.paso = 2; pinta(); }
+      return;
+    }
+    ['mNombre', 'mApellido', 'mSexo', 'mFechaNac', 'mDeporte', 'mDepto', 'mCiudad'].forEach((id) => { if (!val(id)) mal = err(id, 'Campo obligatorio.'); });
+    const e = edadDe(x.fechaNac);
+    if (x.fechaNac && (e == null || e >= 18)) mal = err('mFechaNac', 'Tiene 18 años o más: debe registrarse por su cuenta en el registro público.');
+    if (x.fechaNac && e != null && e < 0) mal = err('mFechaNac', 'La fecha no puede ser futura.');
+    if (mal) return;
+    const nombre = [x.nombre, x.segNombre, x.apellido, x.segApellido].filter(Boolean).join(' ');
+    registrarMenor(PERSONA_ID, { nombre, tipoDoc: x.tipoDoc, numDoc: x.numDoc, deporte: x.deporte, fechaNac: x.fechaNac, parentesco: x.vinculo, sexo: x.sexo, docsEstado: 'revision', documentoParentesco: x.archivo, ubicacion: { depto: x.depto, ciudad: x.ciudad } });
+    d.close();
+    if (!personaRoles.includes('tutor')) personaRoles = parseRoles();
+    go('menores');
+    toast('Registro exitoso: el perfil del menor quedó vinculado a tu cuenta. Queda en revisión mientras se valida el documento de parentesco.');
+  }
+  pinta();
+}
+
 function confirmDlg({ title, text, ok, back = 'Volver', danger, motivo, onOk }) {
   const d = dialog(`
     <div class="mp-dlg__h"><div><h2 id="mpDlgT">${esc(title)}</h2></div>
@@ -739,7 +963,7 @@ function confirmDlg({ title, text, ok, back = 'Volver', danger, motivo, onOk }) 
   d.querySelector('[data-ok]').addEventListener('click', () => {
     const m = d.querySelector('#mpMotivo');
     if (m && !m.value.trim()) { m.focus(); m.style.borderColor = 'var(--naowee-color-red-700)'; m.setAttribute('aria-invalid', 'true'); return; }
-    d.close(); onOk();
+    d.close(); onOk(m ? m.value.trim() : '');
   });
 }
 
@@ -782,7 +1006,8 @@ const DEVNOTES = {
   ] },
   afiliaciones: { title: 'Afiliaciones (deportista)', sections: [
     { title: 'Hoy en el perfil migrado', items: ['No existen en el perfil. Viven aparte (Mi afiliación) y el modelo está en nao-docs (entidad de afiliación).'] },
-    { title: 'Qué cambia', items: ['Lista de clubes con estado Vinculado / Solicitada / Rechazada. En lo Solicitado, «Cancelar solicitud» en la misma fila y la nota «Lo aprueba el club».', 'El badge de la navegación cuenta solo lo pendiente.'] },
+    { title: 'Qué cambia', items: ['Lista de clubes con estado Vinculado / Solicitada / Rechazada / Desvinculado. En lo Solicitado, «Cancelar solicitud» en la misma fila y la nota «Lo aprueba el club».', 'El badge de la navegación cuenta solo lo pendiente.'] },
+    { title: 'Fase 2 · en la demo ya funciona', items: ['Sale de la relación de afiliación (shared/organismos-data.js), no de datos fijos. «Solicitar afiliación» busca clubes Activos y crea la solicitud que el club ve en su bandeja.', 'Varios clubes a la vez: cada fila Vinculada muestra la cadena que hereda (liga · federación). «Retirarme» pide la baja de ESE club; el club la confirma y los otros clubes no cambian.', 'El organismo visor aprueba, rechaza (motivo) o desvincula sobre los datos reales; queda en la trazabilidad.'] },
     { title: 'Qué falta en el back', items: ['Exponer las afiliaciones de la persona (varias, en clubes distintos) en el perfil, y cancelar una solicitud.'] }
   ] },
   analisis: { title: 'Análisis cualitativo', sections: [
@@ -793,11 +1018,13 @@ const DEVNOTES = {
   menores: { title: 'Menores a cargo (tutor legal)', sections: [
     { title: 'Hoy en el perfil migrado', items: ['Solo existían en el perfil viejo: <code>GET/POST /v1/user/me/dependents</code>, <code>GET/PATCH /v1/user/me/dependents/{code}</code>; estados Registrado / En revisión / Pendiente / Inactivo. En el perfil nuevo están marcados como no implementados.', 'El gateway ya acepta <code>GET /v1/user/{code}?include_dependents=true</code> (devuelve <code>dependents[]</code> y <code>guardians[]</code>); no está verificado que user-auth-ms lo responda para un usuario distinto del de la sesión.'] },
     { title: 'Qué cambia', items: ['Una sola tarjeta con filas (nombre, T.I., edad, deporte, vínculo, estado, Ver perfil) y la nota de qué significa «En revisión».', 'Regla: un menor solo puede ser deportista y lo administra su tutor. Un organismo ve la lista en solo lectura y abre solo a los menores de su jurisdicción.'] },
+    { title: 'Fase 2 · Registrar menor (mismo flujo de sports)', items: ['Modal de dos pasos, igual al de <code>/profile</code> de suite-web-v2: <b>Documentos</b> (tipo de vínculo Padre | Tutor, documento TI o RC, documento de parentesco adjunto, consentimiento) y <b>Datos básicos</b> (nombres, sexo, fecha de nacimiento, deporte, departamento y ciudad). En sports va a <code>POST /user/me/dependents</code> y sube el parentesco por documentation-ms.', 'Suma lo que sports no valida en el front: menor de 18 por la fecha de nacimiento y documento no registrado ya en el SUID.', 'Queda <b>En revisión</b> mientras se valida el documento de parentesco; el tutor no puede entrar a su perfil hasta entonces (como en sports). Después, «Gestionar perfil» abre el perfil del menor con el aviso de que lo administra su tutor.', 'Solo el tutor registra al menor (propuesta de P-21, pendiente con Negocio). El menor queda autodeclarado: no pasa por la bandeja de ningún organismo.'] },
     { title: 'Qué falta en el back', items: ['Confirmar <code>include_dependents</code> para el visor administrador.'] }
   ] },
   vinculos: { title: 'Vínculos (personal de apoyo)', sections: [
     { title: 'Hoy en el perfil migrado', items: ['Solo existe <code>support_role_code/name</code>; la tarjeta «Rol / Principal» cae en «Personal deportivo» si no llega.', 'No existen profesión, certificaciones ni vínculos con organismos. El rol de apoyo multi-valor estaba en la vista vieja y no en la nueva.'] },
     { title: 'Qué cambia', items: ['Rol de apoyo y organismos con estado. Ser personal de apoyo no requiere aprobación; el vínculo con una liga o un club sí.'] },
+    { title: 'Fase 2 · en la demo ya funciona', items: ['«Solicitar vínculo» busca cualquier organismo Activo (club, liga, federación o comité, P-05). Usa la misma relación de afiliación con <code>tipo: personal</code>.', 'Ese organismo lo ve en su bandeja, en «Solicitudes de vínculo», y aprueba o rechaza con motivo. Un vínculo de personal no cuenta como club del deportista.'] },
     { title: 'Qué falta en el back', items: ['Entidad de vínculo persona–organismo (estado, fechas, quién aprueba) y rol de apoyo multi-valor.'] }
   ] },
   pendientes: { title: 'Pendientes', sections: [

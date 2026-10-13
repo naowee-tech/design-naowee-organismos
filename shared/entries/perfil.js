@@ -5,7 +5,7 @@ import { resolveViewer, mountPerfil } from '../perfil.js';
   /* El shell muestra a QUIEN MIRA (visor), no a la persona del perfil. */
   const viewer = resolveViewer();
   const roleCode = viewer.shellRole;
-  const activeId = roleCode === 'PERSONA' ? 'perfil' : roleCode === 'CLUB' ? 'deportistas' : null;
+  const activeId = ['PERSONA', 'DEPORTISTA'].includes(roleCode) ? 'perfil' : roleCode === 'CLUB' ? 'deportistas' : null;
   mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId });
   /* En escritorio el sidebar del shell arranca en riel de íconos: así la
      navegación agrupada del perfil es la única vertical expandida. No se

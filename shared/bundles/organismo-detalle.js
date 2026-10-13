@@ -39,7 +39,7 @@
     const out = [];
     DEPORTISTAS.forEach((d) => {
       if (!d.clubId) return;
-      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: AF_DESDE, origen: "solicitud" });
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: d.id === "DEP-022" ? "2022-03-12" : AF_DESDE, origen: d.tutorId ? "tutor" : "solicitud" });
     });
     CLUBES.forEach((c) => {
       const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
@@ -87,6 +87,7 @@
     if (readStore("cargues") == null) writeStore("cargues", []);
     if (readStore("audit") == null) writeStore("audit", []);
     writeStore("afiliaciones", seedAfiliaciones());
+    writeStore("solicitudes", []);
     clearStore("preinscritos");
     try {
       localStorage.setItem(SEED_FLAG, SEED_VERSION);
@@ -131,6 +132,9 @@
       writeStore("afiliaciones", list);
     }
     return list.map((a) => ({ ...a }));
+  }
+  function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
+    return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === "Vinculada"));
   }
   function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
     const list = allAfiliaciones();
@@ -339,6 +343,18 @@
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
+  function ligasDisponiblesPara(clubId) {
+    const c = getOrganismo(clubId);
+    if (!c) return [];
+    const ya = new Set(afiliacionesDe(clubId).filter((a) => ["Solicitada", "Vinculada"].includes(a.estado)).map((a) => a.organismoId));
+    return allOrganismos().filter((l) => l.tipo === "liga" && l.estado === "Activo" && !ya.has(l.id) && l.deportes.some((d) => c.deportes.includes(d)));
+  }
+  function solicitarLiga(clubId, ligaId, meta = {}) {
+    const c = getOrganismo(clubId);
+    const rec = solicitarAfiliacion({ tipo: "club", sujetoId: clubId, organismoId: ligaId, deporte: c ? c.deporte : "", origen: "solicitud" });
+    auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || "", rol: "Club", accion: `Afiliaci\xF3n solicitada a ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: "Solicitada", notif: true });
+    return rec;
+  }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
@@ -460,7 +476,11 @@
         { id: "DEP-018", nombre: "Felipe Quintero S\xE1enz", tipoDoc: "TI", numDoc: "1029778899", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "felipe.quintero@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
         { id: "DEP-019", nombre: "Valeria Mosquera Renter\xEDa", tipoDoc: "CC", numDoc: "1144992277", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "valeria.mosquera@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
         { id: "DEP-020", nombre: "Sebasti\xE1n Toro Aguirre", tipoDoc: "CC", numDoc: "1144110099", deporte: "Patinaje", modalidad: "Carreras", correo: "sebastian.toro@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
-        { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" }
+        { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
+        /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+        { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
+        { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
+        { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
       ];
       SEED_ORGANISMOS = [
         ...COMITES,
@@ -479,11 +499,15 @@
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
         /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
-        { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" }
+        { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" },
+        /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+        { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
+        { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
+        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.2.0";
+      SEED_VERSION = "0.3.0";
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     }
   });
@@ -699,7 +723,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
-    if (code === "DEPORTISTA") return "afiliacion.html";
+    if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
@@ -1284,7 +1308,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         FEDERACION: [
           { section: null, items: jerarquiaItems("FEDERACION") },
@@ -1294,7 +1319,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         LIGA: [
           { section: null, items: jerarquiaItems("LIGA") },
@@ -1304,7 +1330,8 @@
           ] },
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
         CLUB: [
           { section: null, items: jerarquiaItems("CLUB") },
@@ -1313,27 +1340,14 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
             { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
-          ] }
+          ] },
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
         ],
-        /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+        /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
         DEPORTISTA: [
-          { section: "PERFIL", items: [
-            { id: "afiliacion-resumen", label: "Resumen", icon: "id", route: "afiliacion.html?sec=resumen" },
-            { id: "afiliacion-documentos", label: "Documentos", icon: "doc", route: "afiliacion.html?sec=documentos", badge: "1" },
-            { id: "afiliacion-carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
-          ] },
-          { section: "AFILIACI\xD3N", items: [
-            { id: "afiliacion-miclub", label: "Mi club", icon: "club", route: "afiliacion.html?sec=miclub" },
-            { id: "afiliacion-solicitudes", label: "Solicitudes", icon: "link", route: "afiliacion.html?sec=solicitudes" }
-          ] },
-          { section: "DEPORTIVO", items: [
-            { id: "afiliacion-eventos", label: "Eventos", icon: "cal", route: "afiliacion.html?sec=eventos" },
-            { id: "afiliacion-historial", label: "Historial", icon: "award", route: "afiliacion.html?sec=historial" }
-          ] },
-          { section: "CUENTA", items: [
-            { id: "afiliacion-config", label: "Configuraciones", icon: "gear", route: "afiliacion.html?sec=config" },
-            { id: "afiliacion-notif", label: "Notificaciones", icon: "bell", route: "afiliacion.html?sec=notif" },
-            { id: "afiliacion-seguridad", label: "Seguridad", icon: "shield", route: "afiliacion.html?sec=seguridad" }
+          { section: null, items: [
+            { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
+            { id: "carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
           ] }
         ],
         PERSONA: [
@@ -1379,7 +1393,7 @@
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
       COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
       NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
-      HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "afiliacion.html", PERSONA: "perfil.html" };
+      HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
       esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -1717,6 +1731,23 @@
       </div>
     </div>`;
   }
+  function ligasClubHtml(o2) {
+    const afs = afiliacionesDe(o2.id).filter((a) => a.tipo === "club" && ["Vinculada", "Solicitada", "Rechazada"].includes(a.estado));
+    const disp = ligasDisponiblesPara(o2.id);
+    const EST = { Vinculada: ["positive", "Afiliado"], Solicitada: ["caution", "Solicitada"], Rechazada: ["negative", "Rechazada"] };
+    return `<section class="oc-status oc-status--single od-ligas" aria-label="Ligas de tu club">
+    <div class="oc-status__main">
+      <p class="oc-sanc__title">Ligas de tu club</p>
+      <p class="oc-status__text">Tu club puede estar en varias ligas de sus deportes. Cada liga aprueba su v\xEDnculo; de cada una heredan tus deportistas su cadena.</p>
+      <ul class="od-ligas__list">${afs.map((a) => {
+      const l = getOrganismo(a.organismoId) || {};
+      const e = EST[a.estado];
+      return `<li><span><strong>${esc2(l.nombre || a.organismoId)}</strong><small>${esc2(l.deporte || "")} \xB7 ${esc2(l.ubicacion ? l.ubicacion.depto : "")}${a.organismoId === o2.parentId ? " \xB7 la activ\xF3" : ""}${a.motivo && a.estado === "Rechazada" ? " \xB7 " + esc2(a.motivo) : ""}</small></span><span class="naowee-badge naowee-badge--${e[0]} naowee-badge--quiet naowee-badge--small">${e[1]}</span></li>`;
+    }).join("")}</ul>
+      <div class="oc-status__cta">${disp.length ? `<label class="od-ligas__pick"><span class="sr-only">Liga</span><select id="odLiga" class="oc-select"><option value="">Elige una liga de tus deportes\u2026</option>${disp.map((l) => `<option value="${l.id}">${esc2(l.nombre)} \xB7 ${esc2(l.deporte)}</option>`).join("")}</select></label><button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" id="odLigaOk">Solicitar afiliaci\xF3n</button>` : '<span class="oc-status__hint">No hay otras ligas activas de tus deportes.</span>'}</div>
+    </div>
+  </section>`;
+  }
   function kvRow(k, v) {
     return v == null || v === "" ? "" : `<div class="od-kv__row"><dt>${esc2(k)}</dt><dd>${esc2(v)}</dd></div>`;
   }
@@ -1843,12 +1874,14 @@
     return infoPanel(o2);
   }
   function renderProfile(o2) {
+    var _a;
     let active = "info";
     root.innerHTML = `${esPropio(o2) ? "" : breadcrumbHtml(o2)}
     ${esPropio(o2) ? '<div class="od-back"><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>' : backBtnHtml()}
     ${conBloqueEstado(o2) ? estadoPropioHtml(o2, roleCode) : ""}
     ${heroHtml(o2)}
     ${roleCode === "MINDEPORTE" ? sancionesHtml(o2) : ""}
+    ${esPropio(o2) && o2.tipo === "club" && o2.estado === "Activo" ? ligasClubHtml(o2) : ""}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
         ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? "naowee-tab--selected" : ""}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc2(l)}</button>`).join("")}
@@ -1878,6 +1911,16 @@
         renderProfile(getOrganismo(o2.id));
       });
     }));
+    (_a = root.querySelector("#odLigaOk")) == null ? void 0 : _a.addEventListener("click", () => {
+      const v = root.querySelector("#odLiga").value;
+      if (!v) {
+        root.querySelector("#odLiga").focus();
+        return;
+      }
+      solicitarLiga(o2.id, v, { responsable: role.userName || "" });
+      window.naoweeToast && window.naoweeToast(`Solicitud enviada a ${getOrganismo(v).nombre}. La liga la aprueba desde su bandeja.`, "success");
+      renderProfile(getOrganismo(o2.id));
+    });
     mountDevnotes(DEVNOTES);
   }
   function wireBack() {
@@ -1971,7 +2014,7 @@
   seedDemoData();
   var roleCode2 = getRoleFromQuery();
   var role2 = ROLES[roleCode2];
-  mountSidebar({ rootEl: document.getElementById("sidebarRoot"), roleCode: roleCode2, activeId: "jerarquia" });
+  mountSidebar({ rootEl: document.getElementById("sidebarRoot"), roleCode: roleCode2, activeId: new URLSearchParams(location.search).get("id") ? "jerarquia" : "mi-organismo" });
   mountHeader({ headerEl: document.getElementById("topHeader"), role: role2 });
   mountBackdrop();
   mountDemoSwitcher({ roleCode: roleCode2 });

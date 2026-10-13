@@ -117,7 +117,11 @@
     { id: "DEP-018", nombre: "Felipe Quintero S\xE1enz", tipoDoc: "TI", numDoc: "1029778899", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "felipe.quintero@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-019", nombre: "Valeria Mosquera Renter\xEDa", tipoDoc: "CC", numDoc: "1144992277", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "valeria.mosquera@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-020", nombre: "Sebasti\xE1n Toro Aguirre", tipoDoc: "CC", numDoc: "1144110099", deporte: "Patinaje", modalidad: "Carreras", correo: "sebastian.toro@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
-    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" }
+    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
+    /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+    { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
   ];
   var SEED_ORGANISMOS = [
     ...COMITES,
@@ -146,13 +150,17 @@
   var AF_DESDE = "2026-03-25";
   var AFILIACIONES_EXTRA = [
     /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
-    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" }
+    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" },
+    /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+    { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
+    { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
+    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
   ];
   function seedAfiliaciones() {
     const out = [];
     DEPORTISTAS.forEach((d) => {
       if (!d.clubId) return;
-      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: AF_DESDE, origen: "solicitud" });
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: d.id === "DEP-022" ? "2022-03-12" : AF_DESDE, origen: d.tutorId ? "tutor" : "solicitud" });
     });
     CLUBES.forEach((c) => {
       const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
@@ -162,7 +170,7 @@
   }
   var STORE_PREFIX = "naowee-organismos-";
   var SEED_FLAG = STORE_PREFIX + "demo-seeded";
-  var SEED_VERSION = "0.2.0";
+  var SEED_VERSION = "0.3.0";
   function readStore(key, fallback = null) {
     try {
       const raw = sessionStorage.getItem(STORE_PREFIX + key);
@@ -203,6 +211,7 @@
     if (readStore("cargues") == null) writeStore("cargues", []);
     if (readStore("audit") == null) writeStore("audit", []);
     writeStore("afiliaciones", seedAfiliaciones());
+    writeStore("solicitudes", []);
     clearStore("preinscritos");
     try {
       localStorage.setItem(SEED_FLAG, SEED_VERSION);
@@ -539,8 +548,10 @@
     const seeds = [
       { deportistaId: "DEP-010", clubId: "CLU-001", fecha: "2026-07-12" },
       // Juan D. Marín · Patinaje
-      { deportistaId: "DEP-007", clubId: "CLU-001", fecha: "2026-07-13" }
+      { deportistaId: "DEP-007", clubId: "CLU-001", fecha: "2026-07-13" },
       // Daniela Cárdenas · Patinaje
+      { deportistaId: "DEP-022", clubId: "CLU-003", fecha: "2026-10-02" }
+      // Laura · su segundo club
     ];
     seeds.forEach((s, idx) => {
       list.unshift({ id: "AF-D" + (idx + 1), tipo: "afiliacion", deportistaId: s.deportistaId, clubId: s.clubId, estado: "Enviada", fecha: s.fecha, origen: "solicitud", demoSeed: true });
@@ -863,7 +874,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -873,7 +885,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -883,7 +896,8 @@
       ] },
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -892,27 +906,14 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
-      ] }
+      ] },
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
     ],
-    /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+    /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
-      { section: "PERFIL", items: [
-        { id: "afiliacion-resumen", label: "Resumen", icon: "id", route: "afiliacion.html?sec=resumen" },
-        { id: "afiliacion-documentos", label: "Documentos", icon: "doc", route: "afiliacion.html?sec=documentos", badge: "1" },
-        { id: "afiliacion-carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
-      ] },
-      { section: "AFILIACI\xD3N", items: [
-        { id: "afiliacion-miclub", label: "Mi club", icon: "club", route: "afiliacion.html?sec=miclub" },
-        { id: "afiliacion-solicitudes", label: "Solicitudes", icon: "link", route: "afiliacion.html?sec=solicitudes" }
-      ] },
-      { section: "DEPORTIVO", items: [
-        { id: "afiliacion-eventos", label: "Eventos", icon: "cal", route: "afiliacion.html?sec=eventos" },
-        { id: "afiliacion-historial", label: "Historial", icon: "award", route: "afiliacion.html?sec=historial" }
-      ] },
-      { section: "CUENTA", items: [
-        { id: "afiliacion-config", label: "Configuraciones", icon: "gear", route: "afiliacion.html?sec=config" },
-        { id: "afiliacion-notif", label: "Notificaciones", icon: "bell", route: "afiliacion.html?sec=notif" },
-        { id: "afiliacion-seguridad", label: "Seguridad", icon: "shield", route: "afiliacion.html?sec=seguridad" }
+      { section: null, items: [
+        { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
+        { id: "carne", label: "Carn\xE9 digital", icon: "id", route: "afiliacion.html?sec=carne" }
       ] }
     ],
     PERSONA: [
@@ -983,7 +984,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
-    if (code === "DEPORTISTA") return "afiliacion.html";
+    if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
   }
@@ -1237,7 +1238,7 @@
       }
     });
   }
-  var HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "afiliacion.html", PERSONA: "perfil.html" };
+  var HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
   function perfilesDemoHtml(actual) {
     const codes = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
     return `<div class="profile-dd__sep"></div>

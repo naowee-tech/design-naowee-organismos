@@ -117,7 +117,11 @@
     { id: "DEP-018", nombre: "Felipe Quintero S\xE1enz", tipoDoc: "TI", numDoc: "1029778899", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "felipe.quintero@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-019", nombre: "Valeria Mosquera Renter\xEDa", tipoDoc: "CC", numDoc: "1144992277", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "valeria.mosquera@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-020", nombre: "Sebasti\xE1n Toro Aguirre", tipoDoc: "CC", numDoc: "1144110099", deporte: "Patinaje", modalidad: "Carreras", correo: "sebastian.toro@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
-    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" }
+    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
+    /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+    { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
   ];
   var SEED_ORGANISMOS = [
     ...COMITES,
@@ -156,13 +160,17 @@
   var AF_DESDE = "2026-03-25";
   var AFILIACIONES_EXTRA = [
     /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
-    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" }
+    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" },
+    /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+    { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
+    { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
+    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
   ];
   function seedAfiliaciones() {
     const out = [];
     DEPORTISTAS.forEach((d) => {
       if (!d.clubId) return;
-      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: AF_DESDE, origen: "solicitud" });
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: d.id === "DEP-022" ? "2022-03-12" : AF_DESDE, origen: d.tutorId ? "tutor" : "solicitud" });
     });
     CLUBES.forEach((c) => {
       const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
@@ -1256,7 +1264,7 @@
         ${profileRows([["Tipo", ENT_TXT[r.org.tipo]], ["NIT", r.org.nit], ["Deportes", (r.org.deportes || []).join(", ")], ["Organismo superior", sup == null ? void 0 : sup.nombre], ["Representante legal", [(_a = r.org.repLegal) == null ? void 0 : _a.nombre, (_b = r.org.repLegal) == null ? void 0 : _b.apellido].filter(Boolean).join(" ") + (((_c = r.org.repLegal) == null ? void 0 : _c.numDoc) ? ` \xB7 ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : "")], ["Sede", [(_d = r.org.ubicacion) == null ? void 0 : _d.ciudad, (_e = r.org.ubicacion) == null ? void 0 : _e.depto].filter(Boolean).join(", ")], ["Contacto", [(_f = r.org.contacto) == null ? void 0 : _f.correo, (_g = r.org.contacto) == null ? void 0 : _g.telefono].filter(Boolean).join(" \xB7 ")], ["Documentos", `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>\u{1F4AC} \xBFNECESITAS AYUDA?</b>Si tienes dudas o problemas con la activaci\xF3n de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo \xB7 ver perfil del deportista</a>` : ""}
+      ${r.id ? `<a href="perfil.html?role=DEPORTISTA&persona=${esc(r.id)}">Solo demo \xB7 ver perfil del deportista</a>` : ""}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo \xB7 bandeja de ${esc(sup.nombre)}</a>` : ""}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo \xB7 bandeja del Ministerio</a>' : ""}
       ${persona ? "" : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo \xB7 ver en la jerarqu\xEDa</a>'}

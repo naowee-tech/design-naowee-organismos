@@ -170,7 +170,11 @@ const DEPORTISTAS = [
   { id: 'DEP-018', nombre: 'Felipe Quintero Sáenz', tipoDoc: 'TI', numDoc: '1029778899', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: 'felipe.quintero@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
   { id: 'DEP-019', nombre: 'Valeria Mosquera Rentería', tipoDoc: 'CC', numDoc: '1144992277', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'valeria.mosquera@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
   { id: 'DEP-020', nombre: 'Sebastián Toro Aguirre', tipoDoc: 'CC', numDoc: '1144110099', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'sebastian.toro@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
-  { id: 'DEP-021', nombre: 'Luciana Palacio Hoyos', tipoDoc: 'TI', numDoc: '1029223344', deporte: 'Patinaje', modalidad: 'Freestyle', correo: 'luciana.palacio@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' }
+  { id: 'DEP-021', nombre: 'Luciana Palacio Hoyos', tipoDoc: 'TI', numDoc: '1029223344', deporte: 'Patinaje', modalidad: 'Freestyle', correo: 'luciana.palacio@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+  { id: 'DEP-022', nombre: 'Laura Marcela Gómez Restrepo', tipoDoc: 'CC', numDoc: '1032987456', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'laura.gomez@correo.co', fechaNac: '1992-05-03', rolApoyo: 'Docente/Entrenador', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-023', nombre: 'Tomás Gómez', tipoDoc: 'TI', numDoc: '1098765001', deporte: 'Patinaje', modalidad: 'Carreras', correo: '', fechaNac: '2014-02-10', sexo: 'Hombre', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-024', nombre: 'Sara Gómez', tipoDoc: 'TI', numDoc: '1098765002', deporte: 'Natación', modalidad: 'Estilo libre', correo: '', fechaNac: '2017-06-21', sexo: 'Mujer', docsEstado: 'revision', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' }
 ];
 
 /* ─── Seed combinado (orden jerárquico: comités → federaciones → ligas → clubes) ─── */
@@ -231,13 +235,17 @@ export function catalogoDeportes() {
 const AF_DESDE = '2026-03-25';
 const AFILIACIONES_EXTRA = [
   /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
-  { id: 'AF-S900', tipo: 'deportista', sujetoId: 'DEP-002', organismoId: 'CLU-007', deporte: 'Natación', estado: 'Vinculada', desde: '2026-05-04', origen: 'solicitud' }
+  { id: 'AF-S900', tipo: 'deportista', sujetoId: 'DEP-002', organismoId: 'CLU-007', deporte: 'Natación', estado: 'Vinculada', desde: '2026-05-04', origen: 'solicitud' },
+  /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+  { id: 'AF-S901', tipo: 'deportista', sujetoId: 'DEP-022', organismoId: 'CLU-003', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-02', origen: 'solicitud' },
+  { id: 'AF-P001', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Vinculada', desde: '2024-01-20', origen: 'solicitud', rol: 'Docente/Entrenador' },
+  { id: 'AF-P002', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-09-29', origen: 'solicitud', rol: 'Docente/Entrenador' }
 ];
 function seedAfiliaciones() {
   const out = [];
   DEPORTISTAS.forEach((d) => {
     if (!d.clubId) return;
-    out.push({ id: `AF-S${d.id.slice(4)}`, tipo: 'deportista', sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: 'Vinculada', desde: AF_DESDE, origen: 'solicitud' });
+    out.push({ id: `AF-S${d.id.slice(4)}`, tipo: 'deportista', sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: 'Vinculada', desde: d.id === 'DEP-022' ? '2022-03-12' : AF_DESDE, origen: d.tutorId ? 'tutor' : 'solicitud' });
   });
   CLUBES.forEach((c) => {
     const estado = ['Activo', 'Suspendido'].includes(c.estado) ? 'Vinculada' : c.estado === 'Rechazado' ? 'Rechazada' : 'Solicitada';
@@ -253,7 +261,7 @@ function seedAfiliaciones() {
    ═══════════════════════════════════════════════════════════════ */
 const STORE_PREFIX = 'naowee-organismos-';
 const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
-export const SEED_VERSION = '0.2.0';   // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
+export const SEED_VERSION = '0.3.0';  // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
 
 export function readStore(key, fallback = null) {
   try {
@@ -285,6 +293,7 @@ export function seedDemoData() {
   if (readStore('cargues') == null) writeStore('cargues', []);
   if (readStore('audit') == null) writeStore('audit', []);
   writeStore('afiliaciones', seedAfiliaciones());
+  writeStore('solicitudes', []);   // las solicitudes viejas apuntaban a afiliaciones que ya no existen
   clearStore('preinscritos');
   try { localStorage.setItem(SEED_FLAG, SEED_VERSION); } catch (_) {}
   return { seeded: true, version: SEED_VERSION };
@@ -928,6 +937,89 @@ export function desvincularPorClub(deportistaId, meta = {}) {
   return getDeportista(deportistaId);
 }
 
+/* ─── Fase 2 · personas y afiliación ─── */
+/* Edad cumplida a hoy desde 'aaaa-mm-dd', o null. */
+export function edadDe(fechaNac) {
+  if (!fechaNac) return null;
+  const [y, m, d] = fechaNac.split('-').map(Number); const h = new Date();
+  return h.getFullYear() - y - ((h.getMonth() + 1 < m || (h.getMonth() + 1 === m && h.getDate() < d)) ? 1 : 0);
+}
+/* Menores a cargo de un tutor. */
+export function menoresDe(tutorId) { return allDeportistas().filter((d) => d.tutorId === tutorId); }
+
+/* El tutor registra a un menor: queda deportista autodeclarado a su cargo (solo el tutor lo crea, P-21).
+   No pasa por bandeja: el menor no pertenece a ningún organismo hasta que pida afiliación. */
+export function registrarMenor(tutorId, datos) {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const dep = { modalidad: '', correo: '', ...datos, id: `DEP-M${String(nuevos.length + 1).padStart(3, '0')}`, tutorId, origen: 'tutor', fechaRegistro: _todayISO() };
+  delete dep.clubId; delete dep.estado;
+  nuevos.push(dep);
+  writeStore('deportistas-nuevos', nuevos);
+  const tutor = getDeportista(tutorId);
+  auditLog({ orgId: '', fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, responsable: tutor ? tutor.nombre : '', rol: 'Tutor', accion: 'Menor registrado por su tutor' });
+  return getDeportista(dep.id);
+}
+
+/* Personal deportivo ↔ organismo (P-05): la persona pide el vínculo y ese organismo lo confirma. */
+export function solicitarVinculo(personaId, orgId, rol) {
+  const p = getDeportista(personaId);
+  const rec = solicitarAfiliacion({ tipo: 'personal', sujetoId: personaId, organismoId: orgId, deporte: p ? p.deporte : '', origen: 'solicitud' });
+  if (rol) { const list = allAfiliaciones(); const i = list.findIndex((a) => a.id === rec.id); if (i >= 0) { list[i] = { ...list[i], rol }; writeStore('afiliaciones', list); } }
+  auditLog({ orgId, fecha: _todayISO(), deportistaId: personaId, deportistaNombre: p ? p.nombre : '', responsable: p ? p.nombre : '', rol: 'Personal deportivo', accion: 'Vínculo de personal solicitado', a: 'Solicitado' });
+  return rec;
+}
+/* El organismo (o la persona, al retirarse) resuelve un vínculo de personal. */
+export function resolverVinculo(personaId, orgId, estado, meta = {}) {
+  const p = getDeportista(personaId);
+  const r = cambiarAfiliacion(personaId, orgId, estado, { tipo: 'personal', ...meta });
+  const ACC = { Vinculada: 'Vínculo de personal aprobado', Rechazada: 'Vínculo de personal rechazado', Terminada: 'Vínculo de personal terminado' };
+  auditLog({ orgId, fecha: _todayISO(), deportistaId: personaId, deportistaNombre: p ? p.nombre : '', responsable: meta.responsable || '', rol: meta.rol || '', accion: ACC[estado] || 'Vínculo actualizado', a: estado, motivo: meta.motivo || '', notif: true });
+  return r;
+}
+/* Personal vinculado o pendiente de un organismo. */
+export function personalDe(orgId) {
+  return allAfiliaciones().filter((a) => a.tipo === 'personal' && a.organismoId === orgId && ['Solicitada', 'Vinculada'].includes(a.estado))
+    .map((a) => ({ ...a, persona: getDeportista(a.sujetoId) })).filter((a) => a.persona);
+}
+
+/* El club asocia a un deportista autodeclarado que encontró (nao-docs, Afiliación · El flujo, paso 2). */
+export function asociarAutodeclarado(depId, clubId, meta = {}) {
+  const dep = getDeportista(depId);
+  const r = cambiarAfiliacion(depId, clubId, 'Vinculada', { deporte: dep ? dep.deporte : '', origen: 'club' });
+  auditLog({ orgId: clubId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : '', responsable: meta.responsable || '', rol: 'CLUB', accion: 'Deportista asociado por el club', de: 'Autodeclarado', a: 'Vinculado', notif: true });
+  return r;
+}
+/* Autodeclarados que un club puede buscar y asociar (no menores: a un menor lo afilia su tutor). */
+export function buscarAutodeclarados(query) {
+  const q = _norm(String(query || '').trim());
+  if (q.length < 3) return [];
+  return allDeportistas().filter((d) => d.estado === 'autodeclarado' && !d.tutorId && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
+}
+
+/* Club → otra liga de sus deportes (P-20): el club pide y esa liga aprueba solo el vínculo. */
+export function ligasDisponiblesPara(clubId) {
+  const c = getOrganismo(clubId);
+  if (!c) return [];
+  const ya = new Set(afiliacionesDe(clubId).filter((a) => ['Solicitada', 'Vinculada'].includes(a.estado)).map((a) => a.organismoId));
+  return allOrganismos().filter((l) => l.tipo === 'liga' && l.estado === 'Activo' && !ya.has(l.id) && l.deportes.some((d) => c.deportes.includes(d)));
+}
+export function solicitarLiga(clubId, ligaId, meta = {}) {
+  const c = getOrganismo(clubId);
+  const rec = solicitarAfiliacion({ tipo: 'club', sujetoId: clubId, organismoId: ligaId, deporte: c ? c.deporte : '', origen: 'solicitud' });
+  auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || '', rol: 'Club', accion: `Afiliación solicitada a ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: 'Solicitada', notif: true });
+  return rec;
+}
+/* Solicitudes de clubes ya activos que piden entrar a esta liga (no su activación). */
+export function clubesQuePidenLiga(ligaId) {
+  return allAfiliaciones().filter((a) => a.tipo === 'club' && a.organismoId === ligaId && a.estado === 'Solicitada')
+    .map((a) => ({ ...a, club: getOrganismo(a.sujetoId) })).filter((a) => a.club && a.club.estado === 'Activo');
+}
+export function resolverLiga(clubId, ligaId, estado, meta = {}) {
+  const r = cambiarAfiliacion(clubId, ligaId, estado, { tipo: 'club', ...meta });
+  auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || '', rol: 'Liga', accion: estado === 'Vinculada' ? `Afiliación aprobada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}` : `Afiliación rechazada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: estado, motivo: meta.motivo || '', notif: true });
+  return r;
+}
+
 /* Buscador de clubes para la afiliación (§5.2): SOLO clubes en estado Activo,
    por nombre o NIT, acento-insensible, MÍNIMO 3 caracteres, sin texto libre.
    <3 chars → array vacío (la UI muestra la pista). Copias inmutables. */
@@ -952,7 +1044,8 @@ export function seedAfiliacionesDemo(mode) {
   if (list.some((s) => s.demoSeed)) return;
   const seeds = [
     { deportistaId: 'DEP-010', clubId: 'CLU-001', fecha: '2026-07-12' },  // Juan D. Marín · Patinaje
-    { deportistaId: 'DEP-007', clubId: 'CLU-001', fecha: '2026-07-13' }   // Daniela Cárdenas · Patinaje
+    { deportistaId: 'DEP-007', clubId: 'CLU-001', fecha: '2026-07-13' },  // Daniela Cárdenas · Patinaje
+    { deportistaId: 'DEP-022', clubId: 'CLU-003', fecha: '2026-10-02' }   // Laura · su segundo club
   ];
   seeds.forEach((s, idx) => {
     list.unshift({ id: 'AF-D' + (idx + 1), tipo: 'afiliacion', deportistaId: s.deportistaId, clubId: s.clubId, estado: 'Enviada', fecha: s.fecha, origen: 'solicitud', demoSeed: true });
