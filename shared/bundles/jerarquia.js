@@ -656,7 +656,8 @@
       { section: null, items: jerarquiaItems("MINDEPORTE") },
       { section: "GESTI\xD3N", items: [
         { id: "bandeja", label: "Bandeja de aprobaciones", icon: "inbox", route: "bandeja.html" },
-        { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" }
+        { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" },
+        { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }
       ] }
     ],
     COMITE: [
@@ -668,7 +669,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -679,7 +680,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -690,7 +691,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -700,7 +701,7 @@
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
@@ -1717,6 +1718,12 @@
     { title: "Una persona, varios organismos", items: [
       "Una persona puede administrar m\xE1s de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>\xABTrabajas en\xBB</strong> la reemplaza y cambia la jurisdicci\xF3n de este \xE1rbol.",
       "En la demo, Sandra Mej\xEDa administra dos ligas y la federaci\xF3n de la que cuelga una de ellas; desde la federaci\xF3n ve su propia liga en el \xE1rbol, pero no decide sobre ella (P-24). Detalle en la nota de la Bandeja."
+    ] },
+    { title: "Usuario territorial (Fase 3)", items: [
+      "Ancla en un <strong>departamento o municipio</strong>, no en un organismo (<code>territorioDe</code> en shared/permissions.js; demo: <code>?territorio=Cali</code> lo vuelve municipal). Lo crea el Ministerio (A-2).",
+      "Ve los organismos <strong>ubicados</strong> en su territorio (el departamento: ligas y clubes de sus municipios; el municipio: sus clubes) y sus deportistas. Comit\xE9s y federaciones son nacionales: no los ve.",
+      "Solo consulta; adem\xE1s registra deportistas autodeclarados y les propone un club de su territorio, que el club confirma (P-12). No aprueba organismos ni afiliaciones.",
+      "Pendiente t\xE9cnico: la identidad ya trae la ruta territorial <code>/COL/{dpto}/{mun}/</code> firmada y ning\xFAn handler la eval\xFAa."
     ] },
     { title: "Alcance por rol", items: [
       "<code>scopeFor(rol)</code> da el organismo ancla; el \xE1rbol es su sub\xE1rbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.",

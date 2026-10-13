@@ -400,6 +400,19 @@
     if (t) return `${t.municipio ? "Encargado municipal" : "Encargado departamental"} \xB7 ${nombreTerritorio(t)}`;
     return (getOrganismo(id) || {}).nombre || id || "";
   }
+  function usuariosDe(orgId) {
+    let list = readStore("usuarios", null);
+    if (!list) {
+      list = USUARIOS_SEED.map((u) => ({ ...u }));
+      writeStore("usuarios", list);
+    }
+    const out = list.filter((u) => u.orgId === orgId);
+    if (orgId !== "MIN" && !out.some((u) => u.rol === "ADMIN")) {
+      const o = getOrganismo(orgId);
+      if (o && o.repLegal) out.unshift({ id: `US-${orgId}`, orgId, rol: "ADMIN", nombre: `${o.repLegal.nombre} ${o.repLegal.apellido || ""}`.trim(), doc: `${o.repLegal.tipoDoc} ${o.repLegal.numDoc}`, correo: o.repLegal.correo, estado: o.estado === "Activo" ? "Activo" : "Invitado", creadoPor: nombreActor(o.parentId) || "Ministerio del Deporte", fecha: o.fechaRegistro, derivado: true });
+    }
+    return out.map((u) => ({ ...u }));
+  }
   function seedAfiliacionesDemo(mode) {
     if (mode !== "demo") return;
     const list = readStore("solicitudes", []) || [];
@@ -419,7 +432,7 @@
     });
     writeStore("solicitudes", list);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO, TER_PREFIX, nombreTerritorio;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO, TER_PREFIX, nombreTerritorio, USUARIOS_SEED;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
       init_estados();
@@ -576,6 +589,21 @@
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       TER_PREFIX = "TER:";
       nombreTerritorio = (t) => t.municipio ? `${t.municipio} (${t.depto})` : t.depto;
+      USUARIOS_SEED = [
+        { id: "US-001", orgId: "COC", rol: "ADMIN", nombre: "Camilo Duarte", doc: "CC 79.456.123", correo: "cduarte@coc.demo.co", estado: "Activo", creadoPor: "Ministerio del Deporte", fecha: "2025-11-02" },
+        { id: "US-002", orgId: "COC", rol: "GESTOR_COC", nombre: "Paula Andrea Ruiz", doc: "CC 52.334.981", correo: "pruiz@coc.demo.co", estado: "Activo", creadoPor: "Camilo Duarte", fecha: "2026-01-15" },
+        { id: "US-003", orgId: "COC", rol: "METODOLOGO", nombre: "Andr\xE9s Pineda", doc: "CC 80.112.457", correo: "apineda@coc.demo.co", estado: "Activo", creadoPor: "Paula Andrea Ruiz", fecha: "2026-02-03" },
+        { id: "US-004", orgId: "COC", rol: "METODOLOGO", nombre: "Lina Mora Casta\xF1o", doc: "CC 1.020.443.118", correo: "lmora@coc.demo.co", estado: "Invitado", creadoPor: "Paula Andrea Ruiz", fecha: "2026-10-08" },
+        { id: "US-005", orgId: "FED-040", rol: "ADMIN", nombre: "Alberto Herrera", doc: "CC 16.789.234", correo: "presidencia@fedepatinaje.demo.co", estado: "Activo", creadoPor: "Comit\xE9 Ol\xEDmpico Colombiano", fecha: "2026-02-20" },
+        { id: "US-006", orgId: "FED-040", rol: "REVISOR", nombre: "Jaime Ortiz Salcedo", doc: "CC 79.880.214", correo: "registros@fedepatinaje.demo.co", estado: "Activo", creadoPor: "Alberto Herrera", fecha: "2026-03-01" },
+        { id: "US-007", orgId: "LIG-001", rol: "ADMIN", nombre: "Sandra Mej\xEDa", doc: "CC 31.567.890", correo: "sandra.mejia@correo.demo.co", estado: "Activo", creadoPor: "Federaci\xF3n Colombiana de Patinaje", fecha: "2026-03-08" },
+        { id: "US-008", orgId: "CLU-001", rol: "ADMIN", nombre: "\xD3scar Cardona", doc: "CC 94.321.678", correo: "admin@clubpatincali.demo.co", estado: "Activo", creadoPor: "Liga de Patinaje del Valle", fecha: "2026-03-25" },
+        { id: "US-009", orgId: "MIN", rol: "ADMIN_MIN", nombre: "Mar\xEDa F. Rojas", doc: "CC 41.234.567", correo: "maria.rojas@mindeporte.demo.co", estado: "Activo", creadoPor: "Naowee", fecha: "2025-10-20" },
+        { id: "US-010", orgId: "MIN", rol: "ADMIN_MIN", nombre: "Jorge Iv\xE1n Pe\xF1a", doc: "CC 79.553.120", correo: "jorge.pena@mindeporte.demo.co", estado: "Activo", creadoPor: "Naowee", fecha: "2025-10-20" },
+        { id: "US-011", orgId: "MIN", rol: "TERRITORIAL", nombre: "Ana Luc\xEDa Valencia", doc: "CC 66.912.345", correo: "avalencia@valledelcauca.demo.gov.co", estado: "Activo", creadoPor: "Mar\xEDa F. Rojas", fecha: "2026-08-01", ancla: { depto: "Valle del Cauca" } },
+        { id: "US-012", orgId: "MIN", rol: "TERRITORIAL", nombre: "Carlos Mario R\xEDos", doc: "CC 16.743.002", correo: "cmrios@cali.demo.gov.co", estado: "Activo", creadoPor: "Mar\xEDa F. Rojas", fecha: "2026-08-04", ancla: { depto: "Valle del Cauca", municipio: "Cali" } },
+        { id: "US-013", orgId: "MIN", rol: "TERRITORIAL", nombre: "Diana Casta\xF1o Gil", doc: "CC 43.210.889", correo: "dcastano@antioquia.demo.gov.co", estado: "Invitado", creadoPor: "Jorge Iv\xE1n Pe\xF1a", fecha: "2026-10-10", ancla: { depto: "Antioquia" } }
+      ];
     }
   });
 
@@ -1416,7 +1444,8 @@
           { section: null, items: jerarquiaItems("MINDEPORTE") },
           { section: "GESTI\xD3N", items: [
             { id: "bandeja", label: "Bandeja de aprobaciones", icon: "inbox", route: "bandeja.html" },
-            { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" }
+            { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" },
+            { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }
           ] }
         ],
         COMITE: [
@@ -1428,7 +1457,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         FEDERACION: [
           { section: null, items: jerarquiaItems("FEDERACION") },
@@ -1439,7 +1468,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         LIGA: [
           { section: null, items: jerarquiaItems("LIGA") },
@@ -1450,7 +1479,7 @@
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         CLUB: [
           { section: null, items: jerarquiaItems("CLUB") },
@@ -1460,7 +1489,7 @@
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
             { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
           ] },
-          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+          { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
         DEPORTISTA: [
@@ -1853,6 +1882,11 @@
     if (!["Preinscrito", "En correcci\xF3n", "Rechazado"].includes(o.estado) || !ROL_DE_TIPO[o.tipo]) return "";
     return `<a class="naowee-btn naowee-btn--quiet bj-como" href="organismo-detalle.html?role=${ROL_DE_TIPO[o.tipo]}&org=${encodeURIComponent(o.id)}&como=org" title="Solo demo">Entrar como ${esc(o.nombre)}</a>`;
   }
+  function quienDecide() {
+    const org = getOrganismo(scopeId) || {};
+    const rev = usuariosDe(scopeId).find((u) => u.rol === "REVISOR" && u.estado === "Activo");
+    return rev ? `lo decide <strong>${esc(rev.nombre)}</strong>, Revisor de registros de ${esc(org.nombre || "tu organismo")}.` : `lo debe decidir otra persona de ${esc(org.nombre || "tu organismo")}: invita a un Revisor de registros desde Usuarios.`;
+  }
   function openDetail(id) {
     var _a;
     const o = getOrganismo(id);
@@ -1874,7 +1908,7 @@
       </div>
       <div class="reg-modal__body bj-detail">
         <div class="bj-detail__badges">${badge(o.estado)}${esFed ? valChips(o) : ""}</div>
-        ${conflicto ? msg("caution", I.alert, o.estado === "En revisi\xF3n" ? `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>, as\xED que no puedes decidir sobre su registro: lo aprueba, devuelve o rechaza otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || "tu organismo")}. <em>Propuesta pendiente con Negocio (P-24).</em>` : `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisi\xF3n, decidir\xE1 otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || "tu organismo")}, no t\xFA. <em>Propuesta pendiente con Negocio (P-24).</em>`) : ""}
+        ${conflicto ? msg("caution", I.alert, o.estado === "En revisi\xF3n" ? `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>, as\xED que no puedes decidir sobre su registro: ${quienDecide()}` : `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisi\xF3n, no decidir\xE1s t\xFA: ${quienDecide()}`) : ""}
         <dl class="bj-kv">
           ${kv("Tipo", TIPO_SING[o.tipo])}${kv("NIT / RUT", o.nit)}${o.deporte && o.deporte !== "\u2014" ? kv("Deporte", o.deporte) : ""}
           ${o.sector ? kv("Sector", o.sector) : ""}${superior ? kv("Superior", superior.nombre + " \xB7 " + superior.estado) : ""}

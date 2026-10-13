@@ -11,7 +11,7 @@ import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
   solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo,
-  personalDe, resolverVinculo, clubesQuePidenLiga, resolverLiga, nombreActor
+  personalDe, resolverVinculo, clubesQuePidenLiga, resolverLiga, nombreActor, usuariosDe
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './estados.js';
@@ -402,6 +402,14 @@ function comoOrganismo(o) {
   if (!['Preinscrito', 'En corrección', 'Rechazado'].includes(o.estado) || !ROL_DE_TIPO[o.tipo]) return '';
   return `<a class="naowee-btn naowee-btn--quiet bj-como" href="organismo-detalle.html?role=${ROL_DE_TIPO[o.tipo]}&org=${encodeURIComponent(o.id)}&como=org" title="Solo demo">Entrar como ${esc(o.nombre)}</a>`;
 }
+/* P-24 (b): quién decide cuando el administrador también administra el organismo en revisión. */
+function quienDecide() {
+  const org = getOrganismo(scopeId) || {};
+  const rev = usuariosDe(scopeId).find((u) => u.rol === 'REVISOR' && u.estado === 'Activo');
+  return rev
+    ? `lo decide <strong>${esc(rev.nombre)}</strong>, Revisor de registros de ${esc(org.nombre || 'tu organismo')}.`
+    : `lo debe decidir otra persona de ${esc(org.nombre || 'tu organismo')}: invita a un Revisor de registros desde Usuarios.`;
+}
 function openDetail(id) {
   const o = getOrganismo(id);
   if (!o) return;
@@ -426,8 +434,8 @@ function openDetail(id) {
       <div class="reg-modal__body bj-detail">
         <div class="bj-detail__badges">${badge(o.estado)}${esFed ? valChips(o) : ''}</div>
         ${conflicto ? msg('caution', I.alert, o.estado === 'En revisión'
-          ? `Tú también administras <strong>${esc(o.nombre)}</strong>, así que no puedes decidir sobre su registro: lo aprueba, devuelve o rechaza otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || 'tu organismo')}. <em>Propuesta pendiente con Negocio (P-24).</em>`
-          : `Tú también administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisión, decidirá otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || 'tu organismo')}, no tú. <em>Propuesta pendiente con Negocio (P-24).</em>`) : ''}
+          ? `Tú también administras <strong>${esc(o.nombre)}</strong>, así que no puedes decidir sobre su registro: ${quienDecide()}`
+          : `Tú también administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisión, no decidirás tú: ${quienDecide()}`) : ''}
         <dl class="bj-kv">
           ${kv('Tipo', TIPO_SING[o.tipo])}${kv('NIT / RUT', o.nit)}${o.deporte && o.deporte !== '—' ? kv('Deporte', o.deporte) : ''}
           ${o.sector ? kv('Sector', o.sector) : ''}${superior ? kv('Superior', superior.nombre + ' · ' + superior.estado) : ''}

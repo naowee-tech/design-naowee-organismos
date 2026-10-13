@@ -488,6 +488,12 @@
       'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>«Trabajas en»</strong> la reemplaza y cambia la jurisdicción de este árbol.',
       'En la demo, Sandra Mejía administra dos ligas y la federación de la que cuelga una de ellas; desde la federación ve su propia liga en el árbol, pero no decide sobre ella (P-24). Detalle en la nota de la Bandeja.'
     ] },
+    { title: 'Usuario territorial (Fase 3)', items: [
+      'Ancla en un <strong>departamento o municipio</strong>, no en un organismo (<code>territorioDe</code> en shared/permissions.js; demo: <code>?territorio=Cali</code> lo vuelve municipal). Lo crea el Ministerio (A-2).',
+      'Ve los organismos <strong>ubicados</strong> en su territorio (el departamento: ligas y clubes de sus municipios; el municipio: sus clubes) y sus deportistas. Comités y federaciones son nacionales: no los ve.',
+      'Solo consulta; además registra deportistas autodeclarados y les propone un club de su territorio, que el club confirma (P-12). No aprueba organismos ni afiliaciones.',
+      'Pendiente técnico: la identidad ya trae la ruta territorial <code>/COL/{dpto}/{mun}/</code> firmada y ningún handler la evalúa.'
+    ] },
     { title: 'Alcance por rol', items: [
       '<code>scopeFor(rol)</code> da el organismo ancla; el árbol es su subárbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.',
       'Un rol nunca se ve a sí mismo ni a sus ancestros: la primera columna arranca en los hijos de su ancla. DEPORTISTA ve solo su cadena hasta el club (<code>minimalChain</code>, sin contadores heredados).',

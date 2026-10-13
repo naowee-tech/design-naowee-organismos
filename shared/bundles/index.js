@@ -370,7 +370,8 @@
       { section: null, items: jerarquiaItems("MINDEPORTE") },
       { section: "GESTI\xD3N", items: [
         { id: "bandeja", label: "Bandeja de aprobaciones", icon: "inbox", route: "bandeja.html" },
-        { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" }
+        { id: "registro", label: "Registro de organismo", icon: "filePlus", route: "registro.html" },
+        { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }
       ] }
     ],
     COMITE: [
@@ -382,7 +383,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     FEDERACION: [
       { section: null, items: jerarquiaItems("FEDERACION") },
@@ -393,7 +394,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     LIGA: [
       { section: null, items: jerarquiaItems("LIGA") },
@@ -404,7 +405,7 @@
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     CLUB: [
       { section: null, items: jerarquiaItems("CLUB") },
@@ -414,7 +415,7 @@
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
         { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
       ] },
-      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }
+      { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
     DEPORTISTA: [
@@ -545,6 +546,8 @@
     { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club pide entrar a otra liga", desc: "Desde \xABMi organismo\xBB elige otra liga de su deporte; esa liga aprueba solo el v\xEDnculo (P-20).", href: "organismo-detalle.html?role=CLUB" },
     { color: "#b45309", quien: "Ana Luc\xEDa Valencia \xB7 Encargada departamental", titulo: "El territorio consulta su departamento", desc: "Ve las ligas y clubes ubicados en el Valle y sus deportistas, en solo lectura. No aprueba nada.", href: "jerarquia.html?role=TERRITORIAL&territorio=Valle del Cauca" },
     { color: "#b45309", quien: "Encargado municipal \xB7 Cali", titulo: "El municipio registra un deportista", desc: "Lo registra autodeclarado y le propone un club de su municipio; el club lo confirma.", href: "deportistas.html?role=TERRITORIAL&territorio=Cali" },
+    { color: "#d74009", quien: "Camilo Duarte \xB7 Comit\xE9 Ol\xEDmpico", titulo: "Usuarios del organismo", desc: "Cuenta principal y usuarios internos: invita un gestor; el metod\xF3logo lo invita el gestor. Desactivar no borra.", href: "usuarios.html?role=COMITE" },
+    { color: "#002B5B", quien: "Mar\xEDa F. Rojas \xB7 Ministerio", titulo: "Administradores y territoriales", desc: "Los administradores del Ministerio los crea Naowee; el Ministerio crea los usuarios territoriales.", href: "usuarios.html?role=MINDEPORTE" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga de Nataci\xF3n", titulo: "Un deportista en dos clubes", desc: "Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.", href: "deportistas.html?role=LIGA&org=LIG-006&como=sandra" }
   ];
   document.getElementById("casosGrid").innerHTML = CASOS.map((c) => `
