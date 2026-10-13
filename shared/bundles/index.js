@@ -160,6 +160,14 @@
     "cargue",
     "auditoria"
   ]);
+  var SCOPE = {
+    MINDEPORTE: null,
+    COMITE: "COC",
+    FEDERACION: "FED-040",
+    LIGA: "LIG-001",
+    CLUB: "CLU-001",
+    DEPORTISTA: "DEP-001"
+  };
   var TIPO_DE_ROL = { COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club" };
   var CTX_KEY = "naowee-organismos-ctx-";
   function contextoDe(role) {
@@ -185,6 +193,11 @@
     } catch (_) {
       return null;
     }
+  }
+  function scopeFor(role) {
+    const ctx = contextoDe(role);
+    if (ctx) return ctx;
+    return role in SCOPE ? SCOPE[role] : null;
   }
 
   // sidebar.js
@@ -257,10 +270,7 @@
       avatar: "SM",
       color: "#7c3aed",
       short: "Aprueba sus clubes \xB7 cargue masivo de clubes de su liga",
-      group: "Organismos",
-      /* Una persona puede administrar varios organismos (P-15): Sandra es la administradora de
-         dos ligas del Valle y elige en cuál trabaja desde su chip de usuario. */
-      contextos: ["LIG-001", "LIG-006"]
+      group: "Organismos"
     },
     CLUB: {
       code: "CLUB",
@@ -388,12 +398,37 @@
       { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
     ]
   };
+  var PERSONAS = {
+    sandra: {
+      userName: "Sandra Mej\xEDa",
+      userEmail: "sandra.mejia@correo.demo.co",
+      userDoc: "CC 31.567.890",
+      avatar: "SM",
+      contextos: [{ role: "LIGA", org: "LIG-001" }, { role: "LIGA", org: "LIG-006" }, { role: "FEDERACION", org: "FED-040" }]
+    }
+  };
+  var PERSONA_KEY = "naowee-organismos-persona";
+  var PERSONA_POR_ROL = { LIGA: "sandra" };
+  function personaDe(roleCode) {
+    let id = null;
+    try {
+      id = new URLSearchParams(window.location.search).get("como");
+      if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+      else id = sessionStorage.getItem(PERSONA_KEY);
+    } catch (_) {
+    }
+    if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode] || null;
+    const p = PERSONAS[id];
+    return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
+  }
   (function aplicarContexto() {
     try {
       const code = new URLSearchParams(window.location.search).get("role");
-      const ctx = ROLES[code] && contextoDe(code);
-      const org = ctx && getOrganismo(ctx);
-      if (org) ROLES[code].org = org.nombre;
+      if (!ROLES[code]) return;
+      const p = personaDe(code);
+      if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
+      const org = getOrganismo(scopeFor(code));
+      if (org && contextoDe(code)) ROLES[code].org = org.nombre;
     } catch (_) {
     }
   })();
@@ -406,6 +441,10 @@
   var esLocal = () => location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
   // entries/index.js
+  try {
+    Object.keys(sessionStorage).filter((k) => k === "naowee-organismos-persona" || k.startsWith("naowee-organismos-ctx-")).forEach((k) => sessionStorage.removeItem(k));
+  } catch (_) {
+  }
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
   var order = ["MINDEPORTE", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
   var CTA = {

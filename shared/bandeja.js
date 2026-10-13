@@ -6,7 +6,7 @@
    debe estar Activo", y trazabilidad (timeline de auditoría).
    Solo componentes .naowee-* + layout local (.cg-table reusada, .reg-modal reusado).
    ═══════════════════════════════════════════════════════════════ */
-import { getRoleFromQuery, ROLES, getDemoMode, organismoActivoSiVarios } from './sidebar.js';
+import { getRoleFromQuery, ROLES, getDemoMode, organismoActivoSiVarios, administraTambien } from './sidebar.js';
 import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
@@ -155,7 +155,7 @@ function renderOrgBandeja() {
             <tbody>
               ${rows.map((o) => `
                 <tr>
-                  <td data-label="${esc(TIPO_SING[target.tipo])}"><div class="bj-org"><span class="bj-org__emoji">${TIPO_EMOJI[o.tipo]}</span><div><div class="bj-org__name">${esc(o.nombre)}</div><div class="bj-org__sub">${esc(o.deporte && o.deporte !== '—' ? o.deporte : TIPO_SING[o.tipo])}</div></div></div></td>
+                  <td data-label="${esc(TIPO_SING[target.tipo])}"><div class="bj-org"><span class="bj-org__emoji">${TIPO_EMOJI[o.tipo]}</span><div><div class="bj-org__name">${esc(o.nombre)}</div><div class="bj-org__sub">${esc(o.deporte && o.deporte !== '—' ? o.deporte : TIPO_SING[o.tipo])}</div>${administraTambien(roleCode, o.id) ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">También la administras</span>' : ''}</div></div></td>
                   <td class="cg-table__nit" data-label="NIT">${esc(o.nit)}</td>
                   <td data-label="Estado">${badge(o.estado)}</td>
                   ${target.tipo === 'federacion' ? `<td data-label="Validación">${valChips(o)}</td>` : ''}
@@ -404,7 +404,9 @@ function openDetail(id) {
   const half = halfOf[roleCode];
   const v = o.validacion || { mindeporte: 'pendiente', comite: 'pendiente' };
   const yaVote = esFed && half && v[half] !== 'pendiente';
-  const accionable = puedeAccionar && o.estado === 'En revisión' &&
+  /* P-24 (propuesta b): quien también administra este organismo no decide sobre él. */
+  const conflicto = administraTambien(roleCode, id);
+  const accionable = puedeAccionar && o.estado === 'En revisión' && !conflicto &&
     puedeTransicionar(roleCode, o, 'Activo', superior) && (!esFed || !yaVote);
   const audit = allAudit(id);
 
@@ -416,6 +418,9 @@ function openDetail(id) {
       </div>
       <div class="reg-modal__body bj-detail">
         <div class="bj-detail__badges">${badge(o.estado)}${esFed ? valChips(o) : ''}</div>
+        ${conflicto ? msg('caution', I.alert, o.estado === 'En revisión'
+          ? `Tú también administras <strong>${esc(o.nombre)}</strong>, así que no puedes decidir sobre su registro: lo aprueba, devuelve o rechaza otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || 'tu organismo')}. <em>Propuesta pendiente con Negocio (P-24).</em>`
+          : `Tú también administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisión, decidirá otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || 'tu organismo')}, no tú. <em>Propuesta pendiente con Negocio (P-24).</em>`) : ''}
         <dl class="bj-kv">
           ${kv('Tipo', TIPO_SING[o.tipo])}${kv('NIT / RUT', o.nit)}${o.deporte && o.deporte !== '—' ? kv('Deporte', o.deporte) : ''}
           ${o.sector ? kv('Sector', o.sector) : ''}${superior ? kv('Superior', superior.nombre + ' · ' + superior.estado) : ''}

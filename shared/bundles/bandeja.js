@@ -661,6 +661,18 @@
     const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
     return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
   }
+  function personaDe(roleCode3) {
+    let id = null;
+    try {
+      id = new URLSearchParams(window.location.search).get("como");
+      if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+      else id = sessionStorage.getItem(PERSONA_KEY);
+    } catch (_) {
+    }
+    if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode3] || null;
+    const p = PERSONAS[id];
+    return p && p.contextos.some((c) => c.role === roleCode3) ? { id, ...p } : null;
+  }
   function getRoleFromQuery() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("role");
@@ -834,7 +846,8 @@
   }
   function inicialesOrg(nombre) {
     const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
-    return (w.slice(0, 2).map((x) => x[0]).join("") || String(nombre)[0] || "?").toUpperCase();
+    const ini = w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 2).map((x) => x[0]).join("");
+    return (ini || String(nombre).slice(0, 2)).toUpperCase();
   }
   function pendientesDe(orgId) {
     const o = getOrganismo(orgId);
@@ -852,19 +865,26 @@
     if (!role3 || (role3.contextos || []).length < 2) return null;
     return getOrganismo(scopeFor(roleCode3));
   }
+  function administraTambien(roleCode3, orgId) {
+    const role3 = ROLES[roleCode3];
+    return !!(role3 && (role3.contextos || []).some((c) => c.org === orgId && !(c.role === roleCode3 && c.org === scopeFor(roleCode3))));
+  }
   function orgIco(o, size) {
     const c = COLOR_TIPO[o.tipo] || "#d74009";
     return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
   }
   function mountContexto(role3) {
-    const lista = (role3.contextos || []).map((id) => getOrganismo(id)).filter(Boolean);
+    const lista = (role3.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
     const head = document.querySelector(".page-inner > .page-head, .page-inner .page-head");
     if (lista.length < 2 || !head || document.getElementById("ctxBar")) return;
-    const actual = getOrganismo(scopeFor(role3.code)) || lista[0];
+    const actual = getOrganismo(scopeFor(role3.code)) || lista[0].o;
     const pagina = location.pathname.split("/").pop() || "index.html";
-    const destino = /detalle|afiliacion|perfil/.test(pagina) ? homeForRole(role3.code) : pagina;
-    const meta = (o) => `${TIPO_TXT[o.tipo]} \xB7 ${o.deporte} \xB7 ${o.ubicacion ? o.ubicacion.depto : ""}`;
-    const otros = lista.filter((o) => o.id !== actual.id).map((o) => ({ o, p: pendientesDe(o.id) })).filter((x) => x.p.n);
+    const COMUNES = ["jerarquia.html", "bandeja.html", "cargue.html", "deportistas.html"];
+    const destino = (rol) => COMUNES.includes(pagina) ? pagina : homeForRole(rol);
+    const href = (c) => `${destino(c.role)}?role=${c.role}&org=${c.org}${role3.persona ? `&como=${role3.persona}` : ""}`;
+    const deportesTxt = (o) => o.deportes.length > 2 ? `${o.deportes[0]} y ${o.deportes.length - 1} deportes m\xE1s` : o.deporte;
+    const meta = (o) => `${TIPO_TXT[o.tipo]} \xB7 ${deportesTxt(o)} \xB7 ${o.tipo === "federacion" ? "Nacional" : o.ubicacion ? o.ubicacion.depto : ""}`;
+    const otros = lista.filter((c) => c.o.id !== actual.id).map((c) => ({ o: c.o, p: pendientesDe(c.o.id) })).filter((x) => x.p.n);
     const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}` : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : "";
     const bar = document.createElement("section");
     bar.className = "ctx-bar";
@@ -883,10 +903,11 @@
         <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon("chevron")}</span>
       </button>
       <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
-        ${lista.map((o) => {
+        ${lista.map((c) => {
+      const o = c.o;
       const p = pendientesDe(o.id);
       const sel = o.id === actual.id;
-      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${destino}?role=${role3.code}&org=${o.id}">
+      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${href(c)}">
             ${orgIco(o, 34)}
             <span class="ctx-opt__txt">
               <span class="ctx-opt__name">${o.nombre}</span>
@@ -1042,9 +1063,13 @@
         const next = item.getAttribute("data-perfil");
         if (!ROLES[next]) return;
         const params = new URLSearchParams(window.location.search);
-        if (params.get("role") === next) {
+        if (params.get("role") === next && !params.get("como")) {
           root2.classList.remove("is-open");
           return;
+        }
+        try {
+          [PERSONA_KEY, ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
+        } catch (_) {
         }
         window.location.href = `${homeForRole(next)}?role=${next}`;
       });
@@ -1089,7 +1114,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "sidebar.js"() {
       init_permissions();
@@ -1164,10 +1189,7 @@
           avatar: "SM",
           color: "#7c3aed",
           short: "Aprueba sus clubes \xB7 cargue masivo de clubes de su liga",
-          group: "Organismos",
-          /* Una persona puede administrar varios organismos (P-15): Sandra es la administradora de
-             dos ligas del Valle y elige en cuál trabaja desde su chip de usuario. */
-          contextos: ["LIG-001", "LIG-006"]
+          group: "Organismos"
         },
         CLUB: {
           code: "CLUB",
@@ -1291,12 +1313,25 @@
           { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
         ]
       };
+      PERSONAS = {
+        sandra: {
+          userName: "Sandra Mej\xEDa",
+          userEmail: "sandra.mejia@correo.demo.co",
+          userDoc: "CC 31.567.890",
+          avatar: "SM",
+          contextos: [{ role: "LIGA", org: "LIG-001" }, { role: "LIGA", org: "LIG-006" }, { role: "FEDERACION", org: "FED-040" }]
+        }
+      };
+      PERSONA_KEY = "naowee-organismos-persona";
+      PERSONA_POR_ROL = { LIGA: "sandra" };
       (function aplicarContexto() {
         try {
           const code = new URLSearchParams(window.location.search).get("role");
-          const ctx = ROLES[code] && contextoDe(code);
-          const org = ctx && getOrganismo(ctx);
-          if (org) ROLES[code].org = org.nombre;
+          if (!ROLES[code]) return;
+          const p = personaDe(code);
+          if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
+          const org = getOrganismo(scopeFor(code));
+          if (org && contextoDe(code)) ROLES[code].org = org.nombre;
         } catch (_) {
         }
       })();
@@ -1399,7 +1434,7 @@
             <tbody>
               ${rows.map((o) => `
                 <tr>
-                  <td data-label="${esc(TIPO_SING[target.tipo])}"><div class="bj-org"><span class="bj-org__emoji">${TIPO_EMOJI[o.tipo]}</span><div><div class="bj-org__name">${esc(o.nombre)}</div><div class="bj-org__sub">${esc(o.deporte && o.deporte !== "\u2014" ? o.deporte : TIPO_SING[o.tipo])}</div></div></div></td>
+                  <td data-label="${esc(TIPO_SING[target.tipo])}"><div class="bj-org"><span class="bj-org__emoji">${TIPO_EMOJI[o.tipo]}</span><div><div class="bj-org__name">${esc(o.nombre)}</div><div class="bj-org__sub">${esc(o.deporte && o.deporte !== "\u2014" ? o.deporte : TIPO_SING[o.tipo])}</div>${administraTambien(roleCode, o.id) ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Tambi\xE9n la administras</span>' : ""}</div></div></td>
                   <td class="cg-table__nit" data-label="NIT">${esc(o.nit)}</td>
                   <td data-label="Estado">${badge(o.estado)}</td>
                   ${target.tipo === "federacion" ? `<td data-label="Validaci\xF3n">${valChips(o)}</td>` : ""}
@@ -1642,7 +1677,8 @@
     const half = halfOf[roleCode];
     const v = o.validacion || { mindeporte: "pendiente", comite: "pendiente" };
     const yaVote = esFed && half && v[half] !== "pendiente";
-    const accionable = puedeAccionar && o.estado === "En revisi\xF3n" && puedeTransicionar(roleCode, o, "Activo", superior) && (!esFed || !yaVote);
+    const conflicto = administraTambien(roleCode, id);
+    const accionable = puedeAccionar && o.estado === "En revisi\xF3n" && !conflicto && puedeTransicionar(roleCode, o, "Activo", superior) && (!esFed || !yaVote);
     const audit = allAudit(id);
     const ov = openModal(`
     <div class="reg-modal bj-modal" role="dialog" aria-modal="true">
@@ -1652,6 +1688,7 @@
       </div>
       <div class="reg-modal__body bj-detail">
         <div class="bj-detail__badges">${badge(o.estado)}${esFed ? valChips(o) : ""}</div>
+        ${conflicto ? msg("caution", I.alert, o.estado === "En revisi\xF3n" ? `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>, as\xED que no puedes decidir sobre su registro: lo aprueba, devuelve o rechaza otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || "tu organismo")}. <em>Propuesta pendiente con Negocio (P-24).</em>` : `T\xFA tambi\xE9n administras <strong>${esc(o.nombre)}</strong>. Si vuelve a revisi\xF3n, decidir\xE1 otra persona de ${esc((getOrganismo(scopeId) || {}).nombre || "tu organismo")}, no t\xFA. <em>Propuesta pendiente con Negocio (P-24).</em>`) : ""}
         <dl class="bj-kv">
           ${kv("Tipo", TIPO_SING[o.tipo])}${kv("NIT / RUT", o.nit)}${o.deporte && o.deporte !== "\u2014" ? kv("Deporte", o.deporte) : ""}
           ${o.sector ? kv("Sector", o.sector) : ""}${superior ? kv("Superior", superior.nombre + " \xB7 " + superior.estado) : ""}

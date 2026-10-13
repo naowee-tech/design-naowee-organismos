@@ -72,10 +72,7 @@ export const ROLES = {
     userName: 'Sandra Mejía', userEmail: 'direccion@ligapatinajevalle.demo.co',
     userDoc: 'CC 31.567.890', org: 'Liga de Patinaje del Valle', avatar: 'SM',
     color: '#7c3aed', short: 'Aprueba sus clubes · cargue masivo de clubes de su liga',
-    group: 'Organismos',
-    /* Una persona puede administrar varios organismos (P-15): Sandra es la administradora de
-       dos ligas del Valle y elige en cuál trabaja desde su chip de usuario. */
-    contextos: ['LIG-001', 'LIG-006']
+    group: 'Organismos'
   },
   CLUB: {
     code: 'CLUB', label: 'Club',
@@ -197,13 +194,40 @@ const MENU_BY_ROLE = {
   ]
 };
 
-/* El organismo del contexto activo reemplaza al de la ficha del rol (nombre en chip y switcher). */
+/* ─── Personas con varios organismos (P-15) ───
+   Los contextos son de la PERSONA, no del rol: cada uno es { role, org } y al cambiar de
+   uno a otro cambian el rol, el menú y la jurisdicción. Sandra administra dos ligas y la
+   federación de la que cuelga una de ellas (caso de P-24: no decide sobre lo que también
+   administra). La persona viaja con ?como= y queda en la sesión; «Cambiar perfil» la limpia. */
+export const PERSONAS = {
+  sandra: {
+    userName: 'Sandra Mejía', userEmail: 'sandra.mejia@correo.demo.co', userDoc: 'CC 31.567.890', avatar: 'SM',
+    contextos: [{ role: 'LIGA', org: 'LIG-001' }, { role: 'LIGA', org: 'LIG-006' }, { role: 'FEDERACION', org: 'FED-040' }]
+  }
+};
+const PERSONA_KEY = 'naowee-organismos-persona';
+const PERSONA_POR_ROL = { LIGA: 'sandra' };   // la persona que ve por defecto el rol Liga de la demo
+export function personaDe(roleCode) {
+  let id = null;
+  try {
+    id = new URLSearchParams(window.location.search).get('como');
+    if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+    else id = sessionStorage.getItem(PERSONA_KEY);
+  } catch (_) {}
+  if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode] || null;
+  const p = PERSONAS[id];
+  return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
+}
+
+/* La persona y el organismo del contexto activo reemplazan a los de la ficha del rol. */
 (function aplicarContexto() {
   try {
     const code = new URLSearchParams(window.location.search).get('role');
-    const ctx = ROLES[code] && contextoDe(code);
-    const org = ctx && getOrganismo(ctx);
-    if (org) ROLES[code].org = org.nombre;
+    if (!ROLES[code]) return;
+    const p = personaDe(code);
+    if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
+    const org = getOrganismo(scopeFor(code));
+    if (org && contextoDe(code)) ROLES[code].org = org.nombre;
   } catch (_) {}
 })();
 
@@ -408,7 +432,8 @@ const COLOR_TIPO = { comite: '#d74009', federacion: '#1f78d1', liga: '#7c3aed', 
 const NO_INICIAL = new Set(['liga', 'club', 'federación', 'federacion', 'comité', 'comite', 'colombiana', 'colombiano', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'deportivo']);
 function inicialesOrg(nombre) {
   const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
-  return (w.slice(0, 2).map((x) => x[0]).join('') || String(nombre)[0] || '?').toUpperCase();
+  const ini = w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 2).map((x) => x[0]).join('');
+  return (ini || String(nombre).slice(0, 2)).toUpperCase();
 }
 /* Lo que espera a este organismo: el nivel de abajo En revisión, o las solicitudes si es club. */
 export function pendientesDe(orgId) {
@@ -428,20 +453,29 @@ export function organismoActivoSiVarios(roleCode) {
   if (!role || (role.contextos || []).length < 2) return null;
   return getOrganismo(scopeFor(roleCode));
 }
+/* ¿La persona también administra este organismo desde otro contexto? (P-24, propuesta (b):
+   puede tener los dos roles, pero no decide sobre un organismo que ella misma administra). */
+export function administraTambien(roleCode, orgId) {
+  const role = ROLES[roleCode];
+  return !!(role && (role.contextos || []).some((c) => c.org === orgId && !(c.role === roleCode && c.org === scopeFor(roleCode))));
+}
 function orgIco(o, size) {
   const c = COLOR_TIPO[o.tipo] || '#d74009';
   return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
 }
 function mountContexto(role) {
-  const lista = (role.contextos || []).map((id) => getOrganismo(id)).filter(Boolean);
+  const lista = (role.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
   const head = document.querySelector('.page-inner > .page-head, .page-inner .page-head');
   if (lista.length < 2 || !head || document.getElementById('ctxBar')) return;
-  const actual = getOrganismo(scopeFor(role.code)) || lista[0];
-  /* Cambiar de organismo deja a la persona en la misma página; una ficha de otro organismo vuelve al inicio. */
+  const actual = getOrganismo(scopeFor(role.code)) || lista[0].o;
+  /* Cambiar de organismo deja a la persona en la misma página si el otro rol la tiene; si no, va a su inicio. */
   const pagina = location.pathname.split('/').pop() || 'index.html';
-  const destino = /detalle|afiliacion|perfil/.test(pagina) ? homeForRole(role.code) : pagina;
-  const meta = (o) => `${TIPO_TXT[o.tipo]} · ${o.deporte} · ${o.ubicacion ? o.ubicacion.depto : ''}`;
-  const otros = lista.filter((o) => o.id !== actual.id).map((o) => ({ o, p: pendientesDe(o.id) })).filter((x) => x.p.n);
+  const COMUNES = ['jerarquia.html', 'bandeja.html', 'cargue.html', 'deportistas.html'];
+  const destino = (rol) => (COMUNES.includes(pagina) ? pagina : homeForRole(rol));
+  const href = (c) => `${destino(c.role)}?role=${c.role}&org=${c.org}${role.persona ? `&como=${role.persona}` : ''}`;
+  const deportesTxt = (o) => (o.deportes.length > 2 ? `${o.deportes[0]} y ${o.deportes.length - 1} deportes más` : o.deporte);
+  const meta = (o) => `${TIPO_TXT[o.tipo]} · ${deportesTxt(o)} · ${o.tipo === 'federacion' ? 'Nacional' : (o.ubicacion ? o.ubicacion.depto : '')}`;
+  const otros = lista.filter((c) => c.o.id !== actual.id).map((c) => ({ o: c.o, p: pendientesDe(c.o.id) })).filter((x) => x.p.n);
   const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}`
     : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : '';
   const bar = document.createElement('section');
@@ -461,9 +495,9 @@ function mountContexto(role) {
         <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon('chevron')}</span>
       </button>
       <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
-        ${lista.map((o) => {
-          const p = pendientesDe(o.id); const sel = o.id === actual.id;
-          return `<a class="naowee-dropdown__opt ctx-opt${sel ? ' is-selected' : ''}" role="option" aria-selected="${sel}" href="${destino}?role=${role.code}&org=${o.id}">
+        ${lista.map((c) => {
+          const o = c.o; const p = pendientesDe(o.id); const sel = o.id === actual.id;
+          return `<a class="naowee-dropdown__opt ctx-opt${sel ? ' is-selected' : ''}" role="option" aria-selected="${sel}" href="${href(c)}">
             ${orgIco(o, 34)}
             <span class="ctx-opt__txt">
               <span class="ctx-opt__name">${o.nombre}</span>
@@ -619,7 +653,9 @@ function bindDemoSwitcher(root) {
       const next = item.getAttribute('data-perfil');
       if (!ROLES[next]) return;
       const params = new URLSearchParams(window.location.search);
-      if (params.get('role') === next) { root.classList.remove('is-open'); return; }
+      if (params.get('role') === next && !params.get('como')) { root.classList.remove('is-open'); return; }
+      /* Cambiar de perfil es entrar como otra persona: se olvida la persona y el contexto de la sesión. */
+      try { [PERSONA_KEY, ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
       window.location.href = `${homeForRole(next)}?role=${next}`;
     });
   });

@@ -570,6 +570,18 @@
     const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
     return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
   }
+  function personaDe(roleCode3) {
+    let id2 = null;
+    try {
+      id2 = new URLSearchParams(window.location.search).get("como");
+      if (id2 && PERSONAS[id2]) sessionStorage.setItem(PERSONA_KEY, id2);
+      else id2 = sessionStorage.getItem(PERSONA_KEY);
+    } catch (_) {
+    }
+    if (!PERSONAS[id2]) id2 = PERSONA_POR_ROL[roleCode3] || null;
+    const p = PERSONAS[id2];
+    return p && p.contextos.some((c) => c.role === roleCode3) ? { id: id2, ...p } : null;
+  }
   function getRoleFromQuery() {
     const params2 = new URLSearchParams(window.location.search);
     const code = params2.get("role");
@@ -743,7 +755,8 @@
   }
   function inicialesOrg(nombre) {
     const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
-    return (w.slice(0, 2).map((x) => x[0]).join("") || String(nombre)[0] || "?").toUpperCase();
+    const ini = w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 2).map((x) => x[0]).join("");
+    return (ini || String(nombre).slice(0, 2)).toUpperCase();
   }
   function pendientesDe(orgId) {
     const o2 = getOrganismo(orgId);
@@ -761,14 +774,17 @@
     return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o2.nombre)}</span>`;
   }
   function mountContexto(role3) {
-    const lista = (role3.contextos || []).map((id2) => getOrganismo(id2)).filter(Boolean);
+    const lista = (role3.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
     const head = document.querySelector(".page-inner > .page-head, .page-inner .page-head");
     if (lista.length < 2 || !head || document.getElementById("ctxBar")) return;
-    const actual = getOrganismo(scopeFor(role3.code)) || lista[0];
+    const actual = getOrganismo(scopeFor(role3.code)) || lista[0].o;
     const pagina = location.pathname.split("/").pop() || "index.html";
-    const destino = /detalle|afiliacion|perfil/.test(pagina) ? homeForRole(role3.code) : pagina;
-    const meta = (o2) => `${TIPO_TXT[o2.tipo]} \xB7 ${o2.deporte} \xB7 ${o2.ubicacion ? o2.ubicacion.depto : ""}`;
-    const otros = lista.filter((o2) => o2.id !== actual.id).map((o2) => ({ o: o2, p: pendientesDe(o2.id) })).filter((x) => x.p.n);
+    const COMUNES = ["jerarquia.html", "bandeja.html", "cargue.html", "deportistas.html"];
+    const destino = (rol) => COMUNES.includes(pagina) ? pagina : homeForRole(rol);
+    const href = (c) => `${destino(c.role)}?role=${c.role}&org=${c.org}${role3.persona ? `&como=${role3.persona}` : ""}`;
+    const deportesTxt = (o2) => o2.deportes.length > 2 ? `${o2.deportes[0]} y ${o2.deportes.length - 1} deportes m\xE1s` : o2.deporte;
+    const meta = (o2) => `${TIPO_TXT[o2.tipo]} \xB7 ${deportesTxt(o2)} \xB7 ${o2.tipo === "federacion" ? "Nacional" : o2.ubicacion ? o2.ubicacion.depto : ""}`;
+    const otros = lista.filter((c) => c.o.id !== actual.id).map((c) => ({ o: c.o, p: pendientesDe(c.o.id) })).filter((x) => x.p.n);
     const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}` : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : "";
     const bar = document.createElement("section");
     bar.className = "ctx-bar";
@@ -787,10 +803,11 @@
         <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon("chevron")}</span>
       </button>
       <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
-        ${lista.map((o2) => {
+        ${lista.map((c) => {
+      const o2 = c.o;
       const p = pendientesDe(o2.id);
       const sel = o2.id === actual.id;
-      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${destino}?role=${role3.code}&org=${o2.id}">
+      return `<a class="naowee-dropdown__opt ctx-opt${sel ? " is-selected" : ""}" role="option" aria-selected="${sel}" href="${href(c)}">
             ${orgIco(o2, 34)}
             <span class="ctx-opt__txt">
               <span class="ctx-opt__name">${o2.nombre}</span>
@@ -946,9 +963,13 @@
         const next = item.getAttribute("data-perfil");
         if (!ROLES[next]) return;
         const params2 = new URLSearchParams(window.location.search);
-        if (params2.get("role") === next) {
+        if (params2.get("role") === next && !params2.get("como")) {
           root2.classList.remove("is-open");
           return;
+        }
+        try {
+          [PERSONA_KEY, ...Object.keys(ROLES).map((r) => "naowee-organismos-ctx-" + r)].forEach((k) => sessionStorage.removeItem(k));
+        } catch (_) {
         }
         window.location.href = `${homeForRole(next)}?role=${next}`;
       });
@@ -993,7 +1014,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "sidebar.js"() {
       init_permissions();
@@ -1068,10 +1089,7 @@
           avatar: "SM",
           color: "#7c3aed",
           short: "Aprueba sus clubes \xB7 cargue masivo de clubes de su liga",
-          group: "Organismos",
-          /* Una persona puede administrar varios organismos (P-15): Sandra es la administradora de
-             dos ligas del Valle y elige en cuál trabaja desde su chip de usuario. */
-          contextos: ["LIG-001", "LIG-006"]
+          group: "Organismos"
         },
         CLUB: {
           code: "CLUB",
@@ -1195,12 +1213,25 @@
           { section: null, items: [{ id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" }] }
         ]
       };
+      PERSONAS = {
+        sandra: {
+          userName: "Sandra Mej\xEDa",
+          userEmail: "sandra.mejia@correo.demo.co",
+          userDoc: "CC 31.567.890",
+          avatar: "SM",
+          contextos: [{ role: "LIGA", org: "LIG-001" }, { role: "LIGA", org: "LIG-006" }, { role: "FEDERACION", org: "FED-040" }]
+        }
+      };
+      PERSONA_KEY = "naowee-organismos-persona";
+      PERSONA_POR_ROL = { LIGA: "sandra" };
       (function aplicarContexto() {
         try {
           const code = new URLSearchParams(window.location.search).get("role");
-          const ctx = ROLES[code] && contextoDe(code);
-          const org = ctx && getOrganismo(ctx);
-          if (org) ROLES[code].org = org.nombre;
+          if (!ROLES[code]) return;
+          const p = personaDe(code);
+          if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
+          const org = getOrganismo(scopeFor(code));
+          if (org && contextoDe(code)) ROLES[code].org = org.nombre;
         } catch (_) {
         }
       })();
