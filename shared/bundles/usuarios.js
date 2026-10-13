@@ -101,6 +101,30 @@
   function getOrganismo(id) {
     return allOrganismos().find((o) => o.id === id) || null;
   }
+  function allDeportistas() {
+    const nuevos = readStore("deportistas-nuevos", []) || [];
+    const ov = readStore("deportistas-overrides", {}) || {};
+    const base = SEED_DEPORTISTAS.map((d) => ov[d.id] ? { ...d, ...ov[d.id] } : { ...d });
+    const clubesDe = {};
+    allAfiliaciones().forEach((a) => {
+      if (a.tipo === "deportista" && a.estado === "Vinculada") (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+    });
+    return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+      const clubIds = clubesDe[d.id] || [];
+      return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? "vinculado" : "autodeclarado" };
+    });
+  }
+  function allAfiliaciones() {
+    let list = readStore("afiliaciones", null);
+    if (!list) {
+      list = seedAfiliaciones();
+      writeStore("afiliaciones", list);
+    }
+    return list.map((a) => ({ ...a }));
+  }
+  function getDeportista(id) {
+    return allDeportistas().find((d) => d.id === id) || null;
+  }
   function auditLog(entry) {
     const list = readStore("audit", []) || [];
     const record = { id: "AU-" + String(list.length + 1).padStart(4, "0"), ...entry };
@@ -209,7 +233,7 @@
     auditLog({ orgId: list[i].orgId === "MIN" ? "" : list[i].orgId, fecha: _todayISO(), responsable: meta.responsable || "", accion: `Usuario ${estado === "Desactivado" ? "desactivado" : "reactivado"}: ${list[i].nombre}`, a: estado });
     return { ...list[i] };
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, TER_PREFIX, nombreTerritorio, MARCAS, CATALOGO_ROLES, ROLES_MINISTERIO, USUARIOS_SEED;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, TER_PREFIX, nombreTerritorio, MARCAS, CATALOGO_ROLES, ROLES_MINISTERIO, USUARIOS_SEED;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
       init_estados();
@@ -343,6 +367,7 @@
         ...LIGAS,
         ...CLUBES
       ];
+      SEED_DEPORTISTAS = DEPORTISTAS;
       DEPORTES_SEED = {
         "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
         "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"],
@@ -356,11 +381,13 @@
         /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
         { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
         { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
-        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
+        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+        /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+        { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.4.0";
+      SEED_VERSION = "0.5.0";
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       TER_PREFIX = "TER:";
       nombreTerritorio = (t) => t.municipio ? `${t.municipio} (${t.depto})` : t.depto;
@@ -1191,6 +1218,15 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org2 = getOrganismo(scopeFor(code));
           if (org2 && contextoDe(code)) ROLES[code].org = org2.nombre;
+          const pid = new URLSearchParams(window.location.search).get("persona");
+          const per = ["PERSONA", "DEPORTISTA"].includes(code) && pid && pid !== "laura" && pid !== "ajena" ? getDeportista(pid) : null;
+          if (per && !per.tutorId) Object.assign(ROLES[code], {
+            userName: per.nombre,
+            userEmail: per.correo || "",
+            userDoc: `${per.tipoDoc} ${per.numDoc}`,
+            avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase(),
+            label: per.esDeportista === false ? per.rolTutor ? "Tutor legal" : "Personal deportivo" : "Deportista"
+          });
           const terr = territorioDe(code);
           if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
           if (!p && org2 && contextoDe(code) && org2.repLegal && org2.repLegal.nombre) {

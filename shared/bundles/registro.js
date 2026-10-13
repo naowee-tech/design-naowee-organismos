@@ -21,6 +21,13 @@
     const deportes = deportesDe(org);
     return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
   }
+  function duenoDeporte(dep) {
+    return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
+  }
+  function catalogoDeportes() {
+    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
+    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
+  }
   function seedAfiliaciones() {
     const out = [];
     DEPORTISTAS.forEach((d) => {
@@ -96,6 +103,19 @@
   function getOrganismo(id) {
     return allOrganismos().find((o) => o.id === id) || null;
   }
+  function allDeportistas() {
+    const nuevos = readStore("deportistas-nuevos", []) || [];
+    const ov = readStore("deportistas-overrides", {}) || {};
+    const base = SEED_DEPORTISTAS.map((d) => ov[d.id] ? { ...d, ...ov[d.id] } : { ...d });
+    const clubesDe = {};
+    allAfiliaciones().forEach((a) => {
+      if (a.tipo === "deportista" && a.estado === "Vinculada") (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+    });
+    return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+      const clubIds = clubesDe[d.id] || [];
+      return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? "vinculado" : "autodeclarado" };
+    });
+  }
   function allAfiliaciones() {
     let list = readStore("afiliaciones", null);
     if (!list) {
@@ -131,6 +151,9 @@
     };
     writeStore("afiliaciones", list);
     return { ...list[i] };
+  }
+  function getDeportista(id) {
+    return allDeportistas().find((d) => d.id === id) || null;
   }
   function nextOrgId(tipo) {
     const prefix = ID_PREFIX[tipo] || "ORG";
@@ -264,7 +287,7 @@
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, SIN_FEDERACION, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
       init_estados();
@@ -398,12 +421,15 @@
         ...LIGAS,
         ...CLUBES
       ];
+      SEED_DEPORTISTAS = DEPORTISTAS;
       DEPORTES_SEED = {
         "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
         "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"],
         "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
         "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
       };
+      SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+      ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
         /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
@@ -411,11 +437,13 @@
         /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
         { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
         { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
-        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
+        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+        /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+        { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.4.0";
+      SEED_VERSION = "0.5.0";
       ID_PREFIX = { comite: "COM", federacion: "FED", liga: "LIG", club: "CLU" };
       DESDE_ENVIO = ["Preinscrito", "En correcci\xF3n", "Rechazado"];
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
@@ -1220,6 +1248,15 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          const pid = new URLSearchParams(window.location.search).get("persona");
+          const per = ["PERSONA", "DEPORTISTA"].includes(code) && pid && pid !== "laura" && pid !== "ajena" ? getDeportista(pid) : null;
+          if (per && !per.tutorId) Object.assign(ROLES[code], {
+            userName: per.nombre,
+            userEmail: per.correo || "",
+            userDoc: `${per.tipoDoc} ${per.numDoc}`,
+            avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase(),
+            label: per.esDeportista === false ? per.rolTutor ? "Tutor legal" : "Personal deportivo" : "Deportista"
+          });
           const terr = territorioDe(code);
           if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
           if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
@@ -1262,6 +1299,7 @@
       nombre: "",
       nit: "",
       deporte: "",
+      deportes: [],
       sector: "",
       tipoClub: "",
       ambito: "",
@@ -1282,6 +1320,7 @@
       nombre: o.nombre || "",
       nit: o.nit || "",
       deporte: o.deporte && o.deporte !== "\u2014" ? o.deporte : "",
+      deportes: deportesDe(o),
       sector: o.sector || "",
       tipoClub: o.tipoClub || "",
       ambito: o.ambito || "",
@@ -1433,20 +1472,20 @@
     if (STATE.tipo === "federacion") {
       fields = `
       ${ddPlaceholder("sector", "Sector", true)}
-      ${ddPlaceholder("deporte", "Deporte", true)}
+      ${deportesChecks()}
       ${tf({ id: "f-nombre", label: "Nombre de la federaci\xF3n", required: true, path: "nombre", value: d.nombre, placeholder: "Ej: Federaci\xF3n Colombiana de \u2026" })}
       ${tf({ id: "f-nit", label: "NIT", required: true, path: "nit", value: d.nit, placeholder: "800123456-7", mask: "tel", maxLength: 13 })}`;
     } else if (STATE.tipo === "liga") {
       fields = `
       ${ddPlaceholder("superior", "Federaci\xF3n a la que pertenece", true)}
-      ${deporteReadonly()}
+      ${deportesChecks()}
       ${tf({ id: "f-nombre", label: "Nombre de la liga", required: true, path: "nombre", value: d.nombre, placeholder: "Ej: Liga de \u2026 del Valle" })}
       ${tf({ id: "f-nit", label: "NIT / RUT", required: true, path: "nit", value: d.nit, placeholder: "805010001-1", mask: "tel", maxLength: 13 })}
       ${choiceGroup("ambito", "\xC1mbito", AMBITOS, d.ambito, true)}`;
     } else if (STATE.tipo === "club") {
       fields = `
       ${ddPlaceholder("superior", "Liga a la que se afilia", true)}
-      ${deporteReadonly()}
+      ${deportesChecks()}
       ${tf({ id: "f-nombre", label: "Nombre del club", required: true, path: "nombre", value: d.nombre, placeholder: "Ej: Club Deportivo \u2026" })}
       ${tf({ id: "f-nit", label: "NIT / RUT", required: true, path: "nit", value: d.nit, placeholder: "805020001-1", mask: "tel", maxLength: 13 })}
       ${choiceGroup("tipoClub", "Tipo de club", TIPOS_CLUB, d.tipoClub, true)}`;
@@ -1525,7 +1564,7 @@
       ["Nombre", d.nombre],
       ["NIT / RUT", d.nit],
       ["Sector", d.sector],
-      ["Deporte", d.deporte],
+      ["Deportes", (d.deportes || []).join(", ") || d.deporte],
       ["\xC1mbito", d.ambito],
       ["Tipo de club", d.tipoClub],
       ["Superior", sup ? sup.nombre : ""],
@@ -1585,12 +1624,19 @@
     <div class="naowee-textfield__input-wrap"><input ${attrs}></div>
   </div>`;
   }
-  function deporteReadonly() {
-    return `<div class="naowee-textfield naowee-textfield--readonly" data-field="f-deporte-ro">
-    <label class="naowee-textfield__label">Deporte</label>
-    <div class="naowee-textfield__input-wrap">
-      <input class="naowee-textfield__input" id="f-deporte-ro" value="${esc(STATE.data.deporte)}" placeholder="Se toma del superior seleccionado" readonly>
-    </div>
+  function deportesOpciones() {
+    if (STATE.tipo === "federacion") return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || COMPLETAR && deportesDe(COMPLETAR).includes(dp));
+    const sup = getOrganismo(STATE.data.superiorId);
+    return sup ? deportesDe(sup) : [];
+  }
+  function deportesChecks() {
+    const ops = deportesOpciones();
+    const sel = STATE.data.deportes || [];
+    const ayuda = STATE.tipo === "federacion" ? "Solo aparecen deportes que a\xFAn no tienen federaci\xF3n." : "Elige uno o varios de los deportes de tu superior.";
+    return `<div class="reg-deportes" data-field="f-deportes" id="f-deportes">
+    <span class="naowee-textfield__label naowee-textfield__label--required">Deportes</span>
+    ${ops.length ? `<div class="reg-deportes__list">${ops.map((dp) => `<label class="naowee-checkbox${sel.includes(dp) ? " naowee-checkbox--checked" : ""}"><input type="checkbox" data-dep="${esc(dp)}"${sel.includes(dp) ? " checked" : ""}><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">${esc(dp)}</span></label>`).join("")}</div>
+      <span class="reg-deportes__hint">${ayuda}</span>` : `<span class="reg-deportes__hint">${STATE.tipo === "federacion" ? "No hay deportes del cat\xE1logo sin federaci\xF3n." : "Elige primero el organismo superior."}</span>`}
   </div>`;
   }
   function ddPlaceholder(key, label, required) {
@@ -1673,8 +1719,20 @@
     footer.innerHTML = `${back2}<span class="reg-footer__spacer"></span>
     <button type="button" class="naowee-btn naowee-btn--loud" id="${nextId}">${nextLabel}</button>`;
   }
+  function bindDeportes() {
+    root.querySelectorAll("input[data-dep]").forEach((cb) => cb.addEventListener("change", () => {
+      const d = STATE.data;
+      const dp = cb.dataset.dep;
+      d.deportes = cb.checked ? [.../* @__PURE__ */ new Set([...d.deportes || [], dp])] : (d.deportes || []).filter((x) => x !== dp);
+      d.deporte = d.deportes.join(", ");
+      cb.closest(".naowee-checkbox").classList.toggle("naowee-checkbox--checked", cb.checked);
+      clearFieldError(cb.closest("[data-field]"));
+      scheduleSave();
+    }));
+  }
   function bindPane() {
     var _a, _b, _c, _d, _e;
+    bindDeportes();
     root.querySelectorAll("input[data-model]").forEach((inp) => {
       inp.addEventListener("input", () => {
         if (inp.dataset.mask) {
@@ -1807,10 +1865,15 @@
       d.superiorId = opt.v;
       const sup = getOrganismo(opt.v);
       if (sup) {
-        d.deporte = sup.deporte;
         if (sup.sector) d.sector = sup.sector;
-        const ro = document.getElementById("f-deporte-ro");
-        if (ro) ro.value = sup.deporte;
+        const deps = deportesDe(sup);
+        d.deportes = deps.length === 1 ? deps.slice() : (d.deportes || []).filter((x) => deps.includes(x));
+        d.deporte = d.deportes.join(", ");
+        const box = document.getElementById("f-deportes");
+        if (box) {
+          box.outerHTML = deportesChecks();
+          bindDeportes();
+        }
       }
     }
   }
@@ -2077,16 +2140,18 @@
         if (!d.aceptaPoliticas) errs.push({ field: "f-politicas", kind: "check" });
       } else if (STATE.tipo === "federacion") {
         if (!d.sector) errs.push({ field: "dd-sector", kind: "dd" });
-        if (!d.deporte) errs.push({ field: "dd-deporte", kind: "dd" });
+        if (!(d.deportes || []).length) errs.push({ field: "f-deportes", kind: "tf", msg: "Elige al menos un deporte" });
         reqTf("f-nombre", d.nombre.trim());
         reqTf("f-nit", d.nit.trim());
       } else if (STATE.tipo === "liga") {
         if (!d.superiorId) errs.push({ field: "dd-superior", kind: "dd" });
+        else if (!(d.deportes || []).length) errs.push({ field: "f-deportes", kind: "tf", msg: "Elige al menos un deporte" });
         reqTf("f-nombre", d.nombre.trim());
         reqTf("f-nit", d.nit.trim());
         if (!d.ambito) errs.push({ field: "dd-ambito", kind: "choice" });
       } else if (STATE.tipo === "club") {
         if (!d.superiorId) errs.push({ field: "dd-superior", kind: "dd" });
+        else if (!(d.deportes || []).length) errs.push({ field: "f-deportes", kind: "tf", msg: "Elige al menos un deporte" });
         reqTf("f-nombre", d.nombre.trim());
         reqTf("f-nit", d.nit.trim());
         if (!d.tipoClub) errs.push({ field: "dd-tipoClub", kind: "choice" });
@@ -2207,7 +2272,8 @@
         ubicacion: { ...d.ubicacion },
         contacto: { ...d.contacto },
         documentos: { ...d.documentos },
-        aceptaPoliticas: d.aceptaPoliticas
+        aceptaPoliticas: d.aceptaPoliticas,
+        deportes: d.deportes || []
       };
       if (STATE.tipo === "club") patch.tipoClub = d.tipoClub;
       if (STATE.tipo === "liga") patch.ambito = d.ambito;
@@ -2234,7 +2300,8 @@
       nombre: d.nombre.trim(),
       nit: d.nit.trim(),
       sector,
-      deporte: STATE.tipo === "comite" ? "\u2014" : d.deporte || "\u2014",
+      deporte: STATE.tipo === "comite" ? "\u2014" : (d.deportes || []).join(", ") || "\u2014",
+      deportes: STATE.tipo === "comite" ? [] : d.deportes || [],
       parentId,
       estado: STATE.tipo === "comite" ? "Activo" : "En revisi\xF3n",
       repLegal: { ...d.repLegal },

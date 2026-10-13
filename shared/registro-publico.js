@@ -672,10 +672,16 @@ function submit() {
   const nombre = [d.nombre, d.segNombre, d.apellido, d.segApellido].filter(Boolean).join(' ');
   if (STATE.nature === 'persona') {
     let id = null;
-    if (isAthlete()) {
+    /* Toda persona queda guardada (Fase 3): el deportista como autodeclarado; el tutor y el personal
+       deportivo como personas sin rol de deportista, para que sigan a su perfil (registrar menor,
+       pedir vínculo). El reclamo de un perfil existente no crea nada nuevo. */
+    if (!STATE.claim) {
       const nuevos = readStore('deportistas-nuevos', []) || [];
       id = `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`;
-      nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: '', correo: d.correo, clubId: null, estado: 'autodeclarado', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) });
+      const base = { id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, modalidad: '', correo: d.correo, fechaNac: d.fechaNac || '', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) };
+      if (isAthlete()) nuevos.push({ ...base, deporte: d.deporte });
+      else if (STATE.role === 'SUPPORT_STAFF') nuevos.push({ ...base, deporte: d.deporte || '', esDeportista: false, rolApoyo: (CAT.rolApoyo.find((o) => o.v === d.rolApoyo) || {}).t || d.rolApoyo || 'Personal deportivo' });
+      else nuevos.push({ ...base, deporte: '', esDeportista: false, rolTutor: true });
       writeStore('deportistas-nuevos', nuevos);
     }
     STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim, doc: `${d.tipoDoc} ${d.numDoc}`, ubicacion: [d.ciudad, d.depto].filter(Boolean).join(', '), telefono: d.telefono, deporte: isAthlete() ? d.deporte : '' };
@@ -736,7 +742,7 @@ function renderResult() {
         ${profileRows([['Tipo', ENT_TXT[r.org.tipo]], ['NIT', r.org.nit], ['Deportes', (r.org.deportes || []).join(', ')], ['Organismo superior', sup?.nombre], ['Representante legal', [r.org.repLegal?.nombre, r.org.repLegal?.apellido].filter(Boolean).join(' ') + (r.org.repLegal?.numDoc ? ` · ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : '')], ['Sede', [r.org.ubicacion?.ciudad, r.org.ubicacion?.depto].filter(Boolean).join(', ')], ['Contacto', [r.org.contacto?.correo, r.org.contacto?.telefono].filter(Boolean).join(' · ')], ['Documentos', `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>💬 ¿NECESITAS AYUDA?</b>Si tienes dudas o problemas con la activación de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="perfil.html?role=DEPORTISTA&persona=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
+      ${r.id ? `<a href="perfil.html?role=PERSONA&persona=${esc(r.id)}${STATE.role === 'LEGAL_GUARDIAN' ? '&seccion=menores' : STATE.role === 'SUPPORT_STAFF' ? '&seccion=vinculos' : ''}">Solo demo · entrar a mi perfil${STATE.role === 'LEGAL_GUARDIAN' ? ' y registrar a mi menor' : STATE.role === 'SUPPORT_STAFF' ? ' y pedir vínculo' : ''}</a>` : ''}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo · bandeja de ${esc(sup.nombre)}</a>` : ''}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo · bandeja del Ministerio</a>' : ''}
       ${persona ? '' : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo · ver en la jerarquía</a>'}

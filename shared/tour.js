@@ -69,7 +69,7 @@
       title: 'Pre-registrar federaciones (cargue masivo)',
       purpose: 'Cada Comité pre-registra por plantilla a las federaciones de su sector; quedan Preinscritas para completar su registro (cascada del Ministerio).',
       steps: [
-        { sel: '#cgTpl', body: 'Descarga la <b>plantilla oficial</b> (.xlsx, 22 columnas). No cambies los encabezados ni el nombre de las hojas.' },
+        { sel: '#cgTpl', body: 'Descarga la <b>plantilla oficial</b> (.xlsx, 23 columnas, la última con los deportes). No cambies los encabezados ni el nombre de las hojas.' },
         { sel: '#cgDrop', body: 'Arrastra el archivo diligenciado: se valida <b>fila por fila</b> con vista previa; las filas con error no se crean (carga parcial).' }
       ]
     },

@@ -12,7 +12,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { contextoDe, scopeFor, territorioDe } from './permissions.js';
-import { getOrganismo, allOrganismos, solicitudesDeClub } from './organismos-data.js';
+import { getOrganismo, allOrganismos, solicitudesDeClub, getDeportista } from './organismos-data.js';
 
 const COLLAPSED_KEY = 'naowee-organismos-sidebar-collapsed';
 
@@ -239,6 +239,11 @@ const ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k
     if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
     const org = getOrganismo(scopeFor(code));
     if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+    /* Una persona recién registrada (o cualquiera de la demo) entra a su propio perfil con ?persona=. */
+    const pid = new URLSearchParams(window.location.search).get('persona');
+    const per = ['PERSONA', 'DEPORTISTA'].includes(code) && pid && pid !== 'laura' && pid !== 'ajena' ? getDeportista(pid) : null;
+    if (per && !per.tutorId) Object.assign(ROLES[code], { userName: per.nombre, userEmail: per.correo || '', userDoc: `${per.tipoDoc} ${per.numDoc}`,
+      avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase(), label: per.esDeportista === false ? (per.rolTutor ? 'Tutor legal' : 'Personal deportivo') : 'Deportista' });
     const terr = territorioDe(code);
     if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? 'Encargado municipal' : 'Encargado departamental' });
     /* Solo demo: «entrar como» otro organismo del mismo nivel. Su administrador es el representante legal. */

@@ -111,7 +111,7 @@
     return allOrganismos().find((o2) => o2.id === id2) || null;
   }
   function childrenOf(id2) {
-    return allOrganismos().filter((o2) => o2.parentId === id2);
+    return (indexByParent(allOrganismos())[id2] || []).map((o2) => ({ ...o2 }));
   }
   function allDeportistas() {
     const nuevos = readStore("deportistas-nuevos", []) || [];
@@ -164,6 +164,9 @@
     };
     writeStore("afiliaciones", list);
     return { ...list[i] };
+  }
+  function getDeportista(id2) {
+    return allDeportistas().find((d) => d.id === id2) || null;
   }
   function indexByParent(orgs) {
     const idx = {};
@@ -219,7 +222,7 @@
     const clubIds = new Set(sub.filter((o2) => o2.tipo === "club").map((o2) => o2.id));
     if (self && self.tipo === "club") clubIds.add(self.id);
     const orgIds = /* @__PURE__ */ new Set([orgId, ...sub.map((o2) => o2.id)]);
-    return allDeportistas().filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
+    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
   }
   function countDescendants(orgId) {
     const sub = subtreeOf(orgId);
@@ -359,7 +362,7 @@
   function organismosDeTerritorio(t) {
     return allOrganismos().filter((o2) => (t.municipio ? o2.tipo === "club" : ["liga", "club"].includes(o2.tipo)) && enTerritorio(o2, t));
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, enTerritorio;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, _todayISO, enTerritorio;
   var init_organismos_data = __esm({
     "organismos-data.js"() {
       init_estados();
@@ -507,11 +510,14 @@
         /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
         { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
         { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
-        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
+        { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+        /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+        { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.4.0";
+      SEED_VERSION = "0.5.0";
+      esDeportista = (d) => d && d.esDeportista !== false;
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       enTerritorio = (o2, t) => o2.ubicacion && o2.ubicacion.depto === t.depto && (!t.municipio || o2.ubicacion.ciudad === t.municipio);
     }
@@ -1432,6 +1438,15 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          const pid = new URLSearchParams(window.location.search).get("persona");
+          const per = ["PERSONA", "DEPORTISTA"].includes(code) && pid && pid !== "laura" && pid !== "ajena" ? getDeportista(pid) : null;
+          if (per && !per.tutorId) Object.assign(ROLES[code], {
+            userName: per.nombre,
+            userEmail: per.correo || "",
+            userDoc: `${per.tipoDoc} ${per.numDoc}`,
+            avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase(),
+            label: per.esDeportista === false ? per.rolTutor ? "Tutor legal" : "Personal deportivo" : "Deportista"
+          });
           const terr = territorioDe(code);
           if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
           if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {

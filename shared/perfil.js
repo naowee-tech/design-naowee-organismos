@@ -165,8 +165,8 @@ const third = !own;
 const canEdit = viewer.kind === 'own' || viewer.kind === 'admin';
 /* Roles que la persona tiene según los datos: deportista siempre; tutor si tiene menores a cargo;
    personal de apoyo si tiene rol de apoyo o vínculos. ?roles= solo recorta (ejemplos de la demo). */
-const ROLES_DATOS = () => ['deportista',
-  ...(menoresDe(PERSONA_ID).length ? ['tutor'] : []),
+const ROLES_DATOS = () => [...(DEP.esDeportista === false ? [] : ['deportista']),
+  ...(menoresDe(PERSONA_ID).length || DEP.rolTutor ? ['tutor'] : []),
   ...(DEP.rolApoyo || afiliacionesDe(PERSONA_ID).some((a) => a.tipo === 'personal') ? ['apoyo'] : [])];
 const parseRoles = () => {
   const base = ROLES_DATOS();

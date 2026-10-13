@@ -239,7 +239,9 @@ const AFILIACIONES_EXTRA = [
   /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
   { id: 'AF-S901', tipo: 'deportista', sujetoId: 'DEP-022', organismoId: 'CLU-003', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-02', origen: 'solicitud' },
   { id: 'AF-P001', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Vinculada', desde: '2024-01-20', origen: 'solicitud', rol: 'Docente/Entrenador' },
-  { id: 'AF-P002', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-09-29', origen: 'solicitud', rol: 'Docente/Entrenador' }
+  { id: 'AF-P002', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-09-29', origen: 'solicitud', rol: 'Docente/Entrenador' },
+  /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+  { id: 'AF-C900', tipo: 'club', sujetoId: 'CLU-004', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-06', origen: 'solicitud' }
 ];
 function seedAfiliaciones() {
   const out = [];
@@ -261,7 +263,7 @@ function seedAfiliaciones() {
    ═══════════════════════════════════════════════════════════════ */
 const STORE_PREFIX = 'naowee-organismos-';
 const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
-export const SEED_VERSION = '0.4.0';  // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
+export const SEED_VERSION = '0.5.0';  // 0.5.0: club de otra liga pidiendo entrar; personas sin rol de deportista;   // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
 
 export function readStore(key, fallback = null) {
   try {
@@ -322,7 +324,8 @@ export function getOrganismo(id) {
 }
 
 export function childrenOf(id) {
-  return allOrganismos().filter((o) => o.parentId === id);
+  /* Incluye los clubes que cuelgan de esta liga por una afiliación vigente (club en varias ligas, P-20). */
+  return (indexByParent(allOrganismos())[id] || []).map((o) => ({ ...o }));
 }
 
 /* El estado del deportista (autodeclarado / vinculado) y sus clubes se DERIVAN de las
@@ -340,6 +343,10 @@ export function allDeportistas() {
     return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? 'vinculado' : 'autodeclarado' };
   });
 }
+
+/* El store de deportistas guarda a toda PERSONA del SUID. Tutor y personal deportivo que se
+   registran sin ser deportistas llevan esDeportista:false y no salen en listados de deportistas. */
+export const esDeportista = (d) => d && d.esDeportista !== false;
 
 /* ─── Afiliaciones (lectura y escritura) ─── */
 export function allAfiliaciones() {
@@ -465,7 +472,7 @@ export function deportistasOf(orgId) {
   const clubIds = new Set(sub.filter((o) => o.tipo === 'club').map((o) => o.id));
   if (self && self.tipo === 'club') clubIds.add(self.id);
   const orgIds = new Set([orgId, ...sub.map((o) => o.id)]);
-  return allDeportistas()
+  return allDeportistas().filter(esDeportista)
     .filter((d) => d.clubIds.some((c) => clubIds.has(c)) || (!d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor)));
 }
 
@@ -995,7 +1002,7 @@ export function buscarAutodeclarados(query, deportes) {
   const q = _norm(String(query || '').trim());
   if (q.length < 3) return [];
   /* Solo de los deportes del club: un ciclista no entra a un club de patinaje. */
-  return allDeportistas().filter((d) => d.estado === 'autodeclarado' && !d.tutorId && (!deportes || deportes.includes(d.deporte))
+  return allDeportistas().filter((d) => esDeportista(d) && d.estado === 'autodeclarado' && !d.tutorId && (!deportes || deportes.includes(d.deporte))
     && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
 }
 
@@ -1050,7 +1057,7 @@ export function organismosDeTerritorio(t) {
 export function deportistasDeTerritorio(t) {
   const clubes = new Set(organismosDeTerritorio(t).filter((o) => o.tipo === 'club').map((o) => o.id));
   const tid = territorioId(t);
-  return allDeportistas().filter((d) => d.clubIds.some((c) => clubes.has(c)) || (!d.clubIds.length && d.registradoPor === tid));
+  return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubes.has(c)) || (!d.clubIds.length && d.registradoPor === tid));
 }
 
 /* ─── Fase 3 · usuarios del organismo y roles internos ───

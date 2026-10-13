@@ -179,7 +179,9 @@
     /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
     { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
     { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
-    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
+    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+    /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+    { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
   ];
   function seedAfiliaciones() {
     const out = [];
@@ -195,7 +197,7 @@
   }
   var STORE_PREFIX = "naowee-organismos-";
   var SEED_FLAG = STORE_PREFIX + "demo-seeded";
-  var SEED_VERSION = "0.4.0";
+  var SEED_VERSION = "0.5.0";
   function readStore(key, fallback = null) {
     try {
       const raw = sessionStorage.getItem(STORE_PREFIX + key);
@@ -260,7 +262,7 @@
     return allOrganismos().find((o) => o.id === id) || null;
   }
   function childrenOf(id) {
-    return allOrganismos().filter((o) => o.parentId === id);
+    return (indexByParent(allOrganismos())[id] || []).map((o) => ({ ...o }));
   }
   function allDeportistas() {
     const nuevos = readStore("deportistas-nuevos", []) || [];
@@ -275,6 +277,7 @@
       return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? "vinculado" : "autodeclarado" };
     });
   }
+  var esDeportista = (d) => d && d.esDeportista !== false;
   function allAfiliaciones() {
     let list = readStore("afiliaciones", null);
     if (!list) {
@@ -282,6 +285,9 @@
       writeStore("afiliaciones", list);
     }
     return list.map((a) => ({ ...a }));
+  }
+  function getDeportista(id) {
+    return allDeportistas().find((d) => d.id === id) || null;
   }
   function indexByParent(orgs) {
     const idx = {};
@@ -337,7 +343,7 @@
     const clubIds = new Set(sub.filter((o) => o.tipo === "club").map((o) => o.id));
     if (self && self.tipo === "club") clubIds.add(self.id);
     const orgIds = /* @__PURE__ */ new Set([orgId, ...sub.map((o) => o.id)]);
-    return allDeportistas().filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
+    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
   }
   function countDescendants(orgId) {
     const sub = subtreeOf(orgId);
@@ -422,7 +428,7 @@
   function deportistasDeTerritorio(t) {
     const clubes = new Set(organismosDeTerritorio(t).filter((o) => o.tipo === "club").map((o) => o.id));
     const tid = territorioId(t);
-    return allDeportistas().filter((d) => d.clubIds.some((c) => clubes.has(c)) || !d.clubIds.length && d.registradoPor === tid);
+    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubes.has(c)) || !d.clubIds.length && d.registradoPor === tid);
   }
 
   // permissions.js
@@ -753,6 +759,15 @@
       if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
       const org = getOrganismo(scopeFor(code));
       if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+      const pid = new URLSearchParams(window.location.search).get("persona");
+      const per = ["PERSONA", "DEPORTISTA"].includes(code) && pid && pid !== "laura" && pid !== "ajena" ? getDeportista(pid) : null;
+      if (per && !per.tutorId) Object.assign(ROLES[code], {
+        userName: per.nombre,
+        userEmail: per.correo || "",
+        userDoc: `${per.tipoDoc} ${per.numDoc}`,
+        avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase(),
+        label: per.esDeportista === false ? per.rolTutor ? "Tutor legal" : "Personal deportivo" : "Deportista"
+      });
       const terr = territorioDe(code);
       if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? "Encargado municipal" : "Encargado departamental" });
       if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
@@ -1713,7 +1728,9 @@
       "El deportista hereda la cadena de <strong>cada</strong> club en el que est\xE1 Vinculado. En la demo, Mateo Restrepo patina en el Club Pat\xEDn Cali y nada en Aguas del Valle: aparece en las dos ligas y federaciones, y se cuenta una vez (personas, no afiliaciones).",
       "Autodeclarado o vinculado no se guarda en la persona: se deriva de si tiene alguna afiliaci\xF3n vigente.",
       "Cada organismo tiene una <strong>lista de deportes</strong> dentro de los de su superior. Un deporte pertenece a una sola federaci\xF3n en todo el sistema (DEP-545). Los paradeportes son deportes aparte del cat\xE1logo (Para Nataci\xF3n \u2260 Nataci\xF3n).",
-      "Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliaci\xF3n Vinculada. Lo activa la primera."
+      "Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliaci\xF3n Vinculada. Lo activa la primera.",
+      "Deportes al registrar o cargar: la federaci\xF3n elige deportes del cat\xE1logo sin federaci\xF3n; la liga y el club, uno o varios de los de su superior. La plantilla de cargue suma la columna \xABDeportes (separados por coma)\xBB y valida cada fila con la misma regla.",
+      "Personas: el store guarda a toda persona del SUID. Tutor y personal deportivo registrados por el formulario p\xFAblico quedan con <code>esDeportista: false</code> (no salen en listados de deportistas) y entran a su perfil para registrar a su menor o pedir v\xEDnculo."
     ] },
     { title: "Una persona, varios organismos", items: [
       "Una persona puede administrar m\xE1s de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>\xABTrabajas en\xBB</strong> la reemplaza y cambia la jurisdicci\xF3n de este \xE1rbol.",

@@ -164,7 +164,9 @@
     /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
     { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
     { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
-    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" }
+    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+    /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+    { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
   ];
   function seedAfiliaciones() {
     const out = [];
@@ -1190,10 +1192,13 @@
     const nombre = [d.nombre, d.segNombre, d.apellido, d.segApellido].filter(Boolean).join(" ");
     if (STATE.nature === "persona") {
       let id = null;
-      if (isAthlete()) {
+      if (!STATE.claim) {
         const nuevos = readStore("deportistas-nuevos", []) || [];
         id = `DEP-N${String(nuevos.length + 1).padStart(3, "0")}`;
-        nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: "", correo: d.correo, clubId: null, estado: "autodeclarado", origen: "registro-publico", fechaRegistro: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) });
+        const base = { id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, modalidad: "", correo: d.correo, fechaNac: d.fechaNac || "", origen: "registro-publico", fechaRegistro: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) };
+        if (isAthlete()) nuevos.push({ ...base, deporte: d.deporte });
+        else if (STATE.role === "SUPPORT_STAFF") nuevos.push({ ...base, deporte: d.deporte || "", esDeportista: false, rolApoyo: (CAT.rolApoyo.find((o) => o.v === d.rolApoyo) || {}).t || d.rolApoyo || "Personal deportivo" });
+        else nuevos.push({ ...base, deporte: "", esDeportista: false, rolTutor: true });
         writeStore("deportistas-nuevos", nuevos);
       }
       STATE.result = { tipo: "persona", id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim, doc: `${d.tipoDoc} ${d.numDoc}`, ubicacion: [d.ciudad, d.depto].filter(Boolean).join(", "), telefono: d.telefono, deporte: isAthlete() ? d.deporte : "" };
@@ -1264,7 +1269,7 @@
         ${profileRows([["Tipo", ENT_TXT[r.org.tipo]], ["NIT", r.org.nit], ["Deportes", (r.org.deportes || []).join(", ")], ["Organismo superior", sup == null ? void 0 : sup.nombre], ["Representante legal", [(_a = r.org.repLegal) == null ? void 0 : _a.nombre, (_b = r.org.repLegal) == null ? void 0 : _b.apellido].filter(Boolean).join(" ") + (((_c = r.org.repLegal) == null ? void 0 : _c.numDoc) ? ` \xB7 ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : "")], ["Sede", [(_d = r.org.ubicacion) == null ? void 0 : _d.ciudad, (_e = r.org.ubicacion) == null ? void 0 : _e.depto].filter(Boolean).join(", ")], ["Contacto", [(_f = r.org.contacto) == null ? void 0 : _f.correo, (_g = r.org.contacto) == null ? void 0 : _g.telefono].filter(Boolean).join(" \xB7 ")], ["Documentos", `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>\u{1F4AC} \xBFNECESITAS AYUDA?</b>Si tienes dudas o problemas con la activaci\xF3n de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="perfil.html?role=DEPORTISTA&persona=${esc(r.id)}">Solo demo \xB7 ver perfil del deportista</a>` : ""}
+      ${r.id ? `<a href="perfil.html?role=PERSONA&persona=${esc(r.id)}${STATE.role === "LEGAL_GUARDIAN" ? "&seccion=menores" : STATE.role === "SUPPORT_STAFF" ? "&seccion=vinculos" : ""}">Solo demo \xB7 entrar a mi perfil${STATE.role === "LEGAL_GUARDIAN" ? " y registrar a mi menor" : STATE.role === "SUPPORT_STAFF" ? " y pedir v\xEDnculo" : ""}</a>` : ""}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo \xB7 bandeja de ${esc(sup.nombre)}</a>` : ""}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo \xB7 bandeja del Ministerio</a>' : ""}
       ${persona ? "" : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo \xB7 ver en la jerarqu\xEDa</a>'}

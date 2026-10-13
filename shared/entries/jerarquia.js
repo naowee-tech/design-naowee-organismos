@@ -482,7 +482,9 @@
       'El deportista hereda la cadena de <strong>cada</strong> club en el que está Vinculado. En la demo, Mateo Restrepo patina en el Club Patín Cali y nada en Aguas del Valle: aparece en las dos ligas y federaciones, y se cuenta una vez (personas, no afiliaciones).',
       'Autodeclarado o vinculado no se guarda en la persona: se deriva de si tiene alguna afiliación vigente.',
       'Cada organismo tiene una <strong>lista de deportes</strong> dentro de los de su superior. Un deporte pertenece a una sola federación en todo el sistema (DEP-545). Los paradeportes son deportes aparte del catálogo (Para Natación ≠ Natación).',
-      'Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliación Vinculada. Lo activa la primera.'
+      'Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliación Vinculada. Lo activa la primera.',
+      'Deportes al registrar o cargar: la federación elige deportes del catálogo sin federación; la liga y el club, uno o varios de los de su superior. La plantilla de cargue suma la columna «Deportes (separados por coma)» y valida cada fila con la misma regla.',
+      'Personas: el store guarda a toda persona del SUID. Tutor y personal deportivo registrados por el formulario público quedan con <code>esDeportista: false</code> (no salen en listados de deportistas) y entran a su perfil para registrar a su menor o pedir vínculo.'
     ] },
     { title: 'Una persona, varios organismos', items: [
       'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>«Trabajas en»</strong> la reemplaza y cambia la jurisdicción de este árbol.',
