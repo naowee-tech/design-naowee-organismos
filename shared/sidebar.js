@@ -211,9 +211,11 @@ export function personaDe(roleCode) {
   let id = null;
   try {
     id = new URLSearchParams(window.location.search).get('como');
-    if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+    /* ?como=org: «entrar como» un organismo puntual (solo demo), sin la persona por defecto del rol. */
+    if (id && (PERSONAS[id] || id === 'org')) sessionStorage.setItem(PERSONA_KEY, id);
     else id = sessionStorage.getItem(PERSONA_KEY);
   } catch (_) {}
+  if (id === 'org') return null;
   if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode] || null;
   const p = PERSONAS[id];
   return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
@@ -228,6 +230,12 @@ export function personaDe(roleCode) {
     if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
     const org = getOrganismo(scopeFor(code));
     if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+    /* Solo demo: «entrar como» otro organismo del mismo nivel. Su administrador es el representante legal. */
+    if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
+      const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ''}`.trim();
+      Object.assign(ROLES[code], { userName: nombre, userEmail: org.repLegal.correo || '', userDoc: `${org.repLegal.tipoDoc || 'CC'} ${org.repLegal.numDoc || ''}`,
+        avatar: nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() });
+    }
   } catch (_) {}
 })();
 
@@ -236,12 +244,25 @@ export function getRoleFromQuery() {
   const code = params.get('role');
   return ROLES[code] ? code : 'MINDEPORTE';
 }
-export function getMenuForRole(code) { return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE; }
+/* Organismo que no está Activo (Preinscrito, En revisión, devuelto, suspendido o cancelado): su
+   administrador no opera (no aprueba, no carga, no confirma afiliaciones); solo ve «Mi organismo». */
+const ROLES_ORGANISMO = ['COMITE', 'FEDERACION', 'LIGA', 'CLUB'];
+export function organismoNoActivo(code) {
+  if (!ROLES_ORGANISMO.includes(code)) return null;
+  const o = getOrganismo(scopeFor(code));
+  return o && o.estado !== 'Activo' ? o : null;
+}
+const MENU_NO_ACTIVO = [{ section: null, items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }];
+export function getMenuForRole(code) {
+  if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
+  return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
+}
 
 /* Home por rol (handoff §10):
    MINDEPORTE/COMITE/FEDERACION/LIGA → Jerarquía · CLUB → Bandeja
    (Solicitudes) · DEPORTISTA → Mi afiliación. */
 export function homeForRole(code) {
+  if (organismoNoActivo(code)) return 'organismo-detalle.html';   // sin ?id = mi organismo
   if (code === 'CLUB') return 'bandeja.html';
   if (code === 'DEPORTISTA') return 'afiliacion.html';
   if (code === 'PERSONA') return 'perfil.html';

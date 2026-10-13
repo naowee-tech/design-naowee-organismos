@@ -16,7 +16,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   seedDemoData, allOrganismos, getOrganismo, activosDeTipo,
-  comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore
+  comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore, enviarRegistro
 } from './organismos-data.js';
 import { getRoleFromQuery, ROLES } from './sidebar.js';
 
@@ -102,6 +102,26 @@ function freshData() {
 let STATE = { tipo: '', step: 0, data: freshData() };
 let created = null;   // organismo creado (pantalla de éxito)
 
+/* ─── Completar / corregir (Fase 1) ───
+   ?completar=<id>: el administrador de un organismo Preinscrito (cargue masivo), En corrección
+   o Rechazado completa o corrige su formulario y lo envía; queda En revisión en la bandeja de su
+   superior. Mismo asistente, sin el paso Tipo y con el superior fijo. */
+const COMPLETAR = (() => {
+  const id = new URLSearchParams(window.location.search).get('completar');
+  const o = id ? getOrganismo(id) : null;
+  return o && ['Preinscrito', 'En corrección', 'Rechazado'].includes(o.estado) ? o : null;
+})();
+function dataDesde(o) {
+  const base = freshData();
+  return {
+    ...base, nombre: o.nombre || '', nit: o.nit || '', deporte: o.deporte && o.deporte !== '—' ? o.deporte : '',
+    sector: o.sector || '', tipoClub: o.tipoClub || '', ambito: o.ambito || '', superiorId: o.parentId || '',
+    repLegal: { ...base.repLegal, ...(o.repLegal || {}) }, ubicacion: { ...base.ubicacion, ...(o.ubicacion || {}) },
+    contacto: { ...base.contacto, ...(o.contacto || {}) }, documentos: { ...(o.documentos || {}) },
+    aceptaPoliticas: !!o.aceptaPoliticas
+  };
+}
+
 /* ─── Utilidades ─── */
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const norm = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -128,7 +148,10 @@ function fileSizeFmt(bytes) {
 }
 
 /* ─── Pasos aplicables (dinámico por tipo; índice visual continuo) ─── */
-function pasosAplicables() { return STATE.tipo ? STEPS_POR_ORGANISMO[STATE.tipo] : [0]; }
+function pasosAplicables() {
+  if (!STATE.tipo) return [0];
+  return COMPLETAR ? STEPS_POR_ORGANISMO[STATE.tipo].filter((x) => x !== 0) : STEPS_POR_ORGANISMO[STATE.tipo];
+}
 function indiceVisual(step) { return pasosAplicables().indexOf(step); }
 function docsDelTipo() { return DOCS_POR_TIPO[STATE.tipo] || []; }
 
@@ -499,7 +522,7 @@ function renderFooter() {
   const back = vi > 0
     ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="regBack">Atrás</button>`
     : `<span></span>`;
-  const nextLabel = esUltimoFormulario ? 'Enviar registro' : (STATE.step === 0 ? 'Comenzar' : 'Siguiente');
+  const nextLabel = esUltimoFormulario ? (COMPLETAR ? 'Enviar a revisión' : 'Enviar registro') : (STATE.step === 0 ? 'Comenzar' : 'Siguiente');
   const nextId = esUltimoFormulario ? 'regSubmit' : 'regNext';
   footer.innerHTML = `${back}<span class="reg-footer__spacer"></span>
     <button type="button" class="naowee-btn naowee-btn--loud" id="${nextId}">${nextLabel}</button>`;
@@ -855,7 +878,7 @@ function validateStep(step) {
       if (!d.tipoClub) errs.push({ field: 'dd-tipoClub', kind: 'choice' });
     }
     /* Anti-duplicado de NIT (paridad con el cargue masivo, cargue.js). */
-    if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim())
+    if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim() && (!COMPLETAR || o.id !== COMPLETAR.id))
       && !errs.some((e) => e.field === 'f-nit')) {
       errs.push({ field: 'f-nit', kind: 'tf', msg: 'Este NIT ya está registrado en el SUID.' });
     }
@@ -942,6 +965,20 @@ function submit() {
   const errs = validateStep(5);   // por si acaso
   if (errs.length) { shakeErrors(errs); return; }
   const d = STATE.data;
+  if (COMPLETAR) {
+    const patch = {
+      nombre: d.nombre.trim(), nit: d.nit.trim(), repLegal: { ...d.repLegal }, ubicacion: { ...d.ubicacion },
+      contacto: { ...d.contacto }, documentos: { ...d.documentos }, aceptaPoliticas: d.aceptaPoliticas
+    };
+    if (STATE.tipo === 'club') patch.tipoClub = d.tipoClub;
+    if (STATE.tipo === 'liga') patch.ambito = d.ambito;
+    const _actor = ROLES[roleCode] || {};
+    created = enviarRegistro(COMPLETAR.id, patch, { responsable: _actor.userName || roleCode, rol: _actor.label || roleCode });
+    STATE.step = 6;
+    window.naoweeToast && window.naoweeToast('Registro enviado a revisión', 'success');
+    render();
+    return;
+  }
   let parentId = null, sector = d.sector || '';
   if (STATE.tipo === 'federacion') { const c = comitePorSector(d.sector); parentId = c ? c.id : 'COC'; }
   else if (STATE.tipo === 'liga' || STATE.tipo === 'club') {
@@ -987,9 +1024,9 @@ function renderSuccess() {
         <div class="reg-confetti" id="regConfetti"></div>
         <div class="reg-success__hero">
           <div class="reg-success__check">${I.check}</div>
-          <h2 class="reg-success__title">¡Registro enviado con éxito!</h2>
-          <p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> quedó en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === 'comite' ? 'Como cabeza de sector queda Activo de inmediato, sin aprobación superior.' : 'Su nivel superior la revisará desde la Bandeja de aprobaciones.'}</p>
-          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto">
+          <h2 class="reg-success__title">${COMPLETAR ? 'Enviado a revisión' : '¡Registro enviado con éxito!'}</h2>
+          ${COMPLETAR ? `<p class="reg-success__lead"><strong>${esc(org.nombre)}</strong> quedó <strong>En revisión</strong>. ${sup ? esc(sup.nombre) : 'Tu superior'} lo revisa desde su bandeja y te avisamos por correo cuando decida.</p>` : `<p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> quedó en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === 'comite' ? 'Como cabeza de sector queda Activo de inmediato, sin aprobación superior.' : 'Su nivel superior la revisará desde la Bandeja de aprobaciones.'}</p>`}
+          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto${COMPLETAR ? ';display:none' : ''}">
             <span class="naowee-message__icon">${I.bang}</span>
             <div class="naowee-message__body"><p class="naowee-message__text">${org.tipo === 'comite' ? 'Como cabeza de sector del SND, este comité queda Activo de inmediato, sin aprobación superior. Ya aparece en la jerarquía como nodo raíz.' : 'Este registro ya aparece en la jerarquía del SND bajo su superior. La aprobación (En revisión → Activo) se ejercita en la Bandeja.'}</p></div>
           </div>
@@ -1011,14 +1048,16 @@ function renderSuccess() {
             </div>
           </div>
           <div class="reg-success__actions">
-            <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
-            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>
+            ${COMPLETAR
+              ? `<a class="naowee-btn naowee-btn--loud" href="organismo-detalle.html?role=${encodeURIComponent(roleCode)}">Ver mi organismo</a>`
+              : `<a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
+            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>`}
           </div>
         </div>
       </div>
     </div>`;
   spawnConfetti();
-  document.getElementById('regAnother').addEventListener('click', () => {
+  document.getElementById('regAnother')?.addEventListener('click', () => {
     created = null; STATE = { tipo: precargaTipo(), step: 0, data: freshData() };
     render();
   });
@@ -1085,4 +1124,14 @@ function startFresh() {
 }
 
 seedDemoData();
-offerDraft();
+if (COMPLETAR) {
+  const t = document.querySelector('.page-head__title'); const sub = document.querySelector('.page-head__sub');
+  if (t) t.textContent = COMPLETAR.estado === 'Preinscrito' ? 'Completar registro' : 'Corregir y reenviar';
+  if (sub) sub.textContent = COMPLETAR.estado === 'Preinscrito'
+    ? `Tu superior cargó los datos básicos de ${COMPLETAR.nombre}. Revísalos, completa lo que falta y sube los documentos. Al enviarlo queda En revisión en su bandeja.`
+    : `Corrige lo que te pidieron y vuelve a enviarlo. Queda En revisión en la bandeja de tu superior.`;
+  STATE = { tipo: COMPLETAR.tipo, step: 1, data: dataDesde(COMPLETAR) };
+  render();
+} else {
+  offerDraft();
+}

@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // shared/estados.js
+  // estados.js
   function estadoBadgeVariant(estado) {
     return BADGE_VARIANT[estado] || "neutral";
   }
   var BADGE_VARIANT;
   var init_estados = __esm({
-    "shared/estados.js"() {
+    "estados.js"() {
       BADGE_VARIANT = {
         "Preinscrito": "neutral",
         "En revisi\xF3n": "caution",
@@ -24,7 +24,7 @@
     }
   });
 
-  // shared/organismos-data.js
+  // organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -75,6 +75,7 @@
         return null;
       }
     }();
+    seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
     }
@@ -130,6 +131,34 @@
       writeStore("afiliaciones", list);
     }
     return list.map((a) => ({ ...a }));
+  }
+  function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
+    const list = allAfiliaciones();
+    const viva = list.find((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && ["Solicitada", "Vinculada"].includes(a.estado));
+    if (viva) return viva;
+    const rec = { id: "AF-" + String(list.length + 1).padStart(4, "0"), tipo, sujetoId, organismoId, deporte, estado: "Solicitada", desde: null, hasta: null, origen, proponenteId, fecha: _todayISO() };
+    writeStore("afiliaciones", [...list, rec]);
+    return { ...rec };
+  }
+  function cambiarAfiliacion(sujetoId, organismoId, estado, meta = {}) {
+    const list = allAfiliaciones();
+    const desde = estado === "Terminada" ? ["Vinculada"] : ["Solicitada"];
+    let i = list.findIndex((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && desde.includes(a.estado));
+    if (i < 0 && estado === "Vinculada") {
+      list.push({ id: "AF-" + String(list.length + 1).padStart(4, "0"), tipo: meta.tipo || "deportista", sujetoId, organismoId, deporte: meta.deporte || "", estado: "Solicitada", origen: meta.origen || "club", fecha: _todayISO() });
+      i = list.length - 1;
+    }
+    if (i < 0) return null;
+    const hoy = _todayISO();
+    list[i] = {
+      ...list[i],
+      estado,
+      motivo: meta.motivo || list[i].motivo || "",
+      ...estado === "Vinculada" ? { desde: hoy } : {},
+      ...estado === "Terminada" ? { hasta: hoy, fin: meta.fin || "retiro" } : {}
+    };
+    writeStore("afiliaciones", list);
+    return { ...list[i] };
   }
   function indexByParent(orgs) {
     const idx = {};
@@ -198,6 +227,56 @@
     c.deportistas = deportistasOf(orgId).length;
     return c;
   }
+  function updateOrganismo(id2, patch) {
+    const nuevos = readStore("organismos-nuevos", []) || [];
+    const i = nuevos.findIndex((o2) => o2.id === id2);
+    if (i >= 0) {
+      nuevos[i] = { ...nuevos[i], ...patch };
+      writeStore("organismos-nuevos", nuevos);
+    } else {
+      const overrides = readStore("organismos-overrides", {}) || {};
+      overrides[id2] = { ...overrides[id2] || {}, ...patch };
+      writeStore("organismos-overrides", overrides);
+    }
+    return getOrganismo(id2);
+  }
+  function setEstado(id2, estado, meta = {}) {
+    const prev = getOrganismo(id2);
+    const updated = updateOrganismo(id2, { estado, ...meta.patch || {} });
+    if (updated && updated.tipo === "club" && updated.parentId) {
+      if (estado === "Activo") cambiarAfiliacion(id2, updated.parentId, "Vinculada", { tipo: "club", origen: "activacion" });
+      if (estado === "Rechazado") cambiarAfiliacion(id2, updated.parentId, "Rechazada", { motivo: meta.motivo });
+      if (estado === "En revisi\xF3n") solicitarAfiliacion({ tipo: "club", sujetoId: id2, organismoId: updated.parentId, deporte: updated.deporte, origen: "activacion" });
+    }
+    auditLog({
+      orgId: id2,
+      notif: true,
+      fecha: meta.fecha || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      responsable: meta.responsable || "",
+      rol: meta.rol || "",
+      accion: meta.accion || "Cambio de estado",
+      de: prev ? prev.estado : "",
+      a: estado,
+      motivo: meta.motivo || ""
+    });
+    return updated;
+  }
+  function sancionar(id2, estado, meta = {}) {
+    const o2 = getOrganismo(id2);
+    if (!o2 || !["Suspendido", "Cancelado"].includes(estado)) return o2;
+    if (!(o2.estado === "Activo" || estado === "Cancelado" && o2.estado === "Suspendido")) return o2;
+    return setEstado(id2, estado, { ...meta, accion: estado === "Suspendido" ? "Suspendido por el Ministerio" : "Cancelado por el Ministerio" });
+  }
+  function reactivar(id2, meta = {}) {
+    const o2 = getOrganismo(id2);
+    if (!o2 || o2.estado !== "Suspendido") return o2;
+    const extra = o2.tipo === "federacion" ? { validacion: { mindeporte: "pendiente", comite: "pendiente" } } : {};
+    return setEstado(id2, "En revisi\xF3n", { ...meta, accion: "Reactivaci\xF3n: vuelve a revisi\xF3n", patch: extra });
+  }
+  function ultimoCambio(id2) {
+    const o2 = getOrganismo(id2);
+    return o2 ? allAudit(id2).find((a) => a.a === o2.estado && a.de !== a.a) || null : null;
+  }
   function auditLog(entry) {
     const list = readStore("audit", []) || [];
     const record = { id: "AU-" + String(list.length + 1).padStart(4, "0"), ...entry };
@@ -218,6 +297,7 @@
       }
     }();
     if (mode === "blank") return;
+    seedCicloDemo();
     if (allAudit("FED-040").length) return;
     const trail = [
       // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
@@ -237,15 +317,31 @@
     ];
     trail.forEach((e) => auditLog(e));
   }
+  function seedCicloDemo() {
+    if (allAudit("CLU-012").length) return;
+    const M = "Mar\xEDa F. Rojas";
+    [
+      { orgId: "CLU-002", fecha: "2026-06-10", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "LIG-005", fecha: "2026-06-01", responsable: "M\xF3nica Mart\xEDnez Ospina", rol: "Federaci\xF3n", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "FED-057", fecha: "2026-04-04", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-20", responsable: "Mauricio Gil Restrepo", rol: "Club", accion: "Registro p\xFAblico", de: "", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-24", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Correcci\xF3n solicitada", de: "En revisi\xF3n", a: "En correcci\xF3n", motivo: "Documentaci\xF3n incompleta \u2014 falta el reconocimiento deportivo del ente municipal" },
+      { orgId: "CLU-008", fecha: "2026-05-28", responsable: "Diego Ospina Mar\xEDn", rol: "Liga", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Reconocimiento deportivo no v\xE1lido o vencido \u2014 venci\xF3 en enero de 2026" },
+      { orgId: "LIG-007", fecha: "2026-04-15", responsable: "\xC1ngela Naranjo Rodr\xEDguez", rol: "Federaci\xF3n", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Datos del representante legal incorrectos" },
+      { orgId: "LIG-008", fecha: "2026-08-12", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Investigaci\xF3n disciplinaria abierta por la Inspecci\xF3n, Vigilancia y Control" },
+      { orgId: "CLU-010", fecha: "2026-07-30", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Reconocimiento deportivo vencido sin renovar" },
+      { orgId: "FED-037", fecha: "2026-06-18", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "No present\xF3 informe de gesti\xF3n anual" }
+    ].forEach((e) => auditLog(e));
+  }
   function allSolicitudes() {
     return (readStore("solicitudes", []) || []).map((s) => ({ ...s }));
   }
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO;
   var init_organismos_data = __esm({
-    "shared/organismos-data.js"() {
+    "organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -337,6 +433,8 @@
         { id: "CLU-008", tipo: "club", nombre: "Club Nataci\xF3n Pac\xEDfico", nit: "805020008-8", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "Rechazado", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000408", nombre: "Mateo", apellido: "Angulo Mena", correo: "admin@natacionpacifico.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buenaventura", zona: "Urbana", direccion: "Cra. 3 # 5-30" }, contacto: { telefono: "6025080808", correo: "contacto@natacionpacifico.demo.co" }, fechaRegistro: "2026-05-25" },
         { id: "CLU-009", tipo: "club", nombre: "Club Pat\xEDn Bogot\xE1", nit: "805020009-9", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-003", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000409", nombre: "Daniela", apellido: "Su\xE1rez Gil", correo: "admin@patinbogota.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Cra. 60 # 63-20" }, contacto: { telefono: "6015090909", correo: "contacto@patinbogota.demo.co" }, fechaRegistro: "2026-05-12" },
         { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" },
+        /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+        { id: "CLU-012", tipo: "club", nombre: "Club Halcones de Tulu\xE1", nit: "805020012-3", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-001", estado: "En correcci\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000412", nombre: "Mauricio", apellido: "Gil Restrepo", correo: "admin@halconestulua.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Tulu\xE1", zona: "Urbana", direccion: "Cra. 26 # 30-12" }, contacto: { telefono: "6022240012", correo: "contacto@halconestulua.demo.co" }, fechaRegistro: "2026-09-20" },
         /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
         { id: "CLU-011", tipo: "club", nombre: "Club Delfines de Buga", nit: "805020011-1", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000411", nombre: "Lorena", apellido: "Gil Ocampo", correo: "admin@delfinesbuga.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buga", zona: "Urbana", direccion: "Calle 4 # 14-30" }, contacto: { telefono: "6022360011", correo: "contacto@delfinesbuga.demo.co" }, fechaRegistro: "2026-09-28" }
       ];
@@ -386,10 +484,11 @@
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
       SEED_VERSION = "0.2.0";
+      _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     }
   });
 
-  // shared/permissions.js
+  // permissions.js
   function can(role3, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -430,7 +529,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY;
   var init_permissions = __esm({
-    "shared/permissions.js"() {
+    "permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -562,7 +661,7 @@
     }
   });
 
-  // shared/sidebar.js
+  // sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -574,10 +673,11 @@
     let id2 = null;
     try {
       id2 = new URLSearchParams(window.location.search).get("como");
-      if (id2 && PERSONAS[id2]) sessionStorage.setItem(PERSONA_KEY, id2);
+      if (id2 && (PERSONAS[id2] || id2 === "org")) sessionStorage.setItem(PERSONA_KEY, id2);
       else id2 = sessionStorage.getItem(PERSONA_KEY);
     } catch (_) {
     }
+    if (id2 === "org") return null;
     if (!PERSONAS[id2]) id2 = PERSONA_POR_ROL[roleCode3] || null;
     const p = PERSONAS[id2];
     return p && p.contextos.some((c) => c.role === roleCode3) ? { id: id2, ...p } : null;
@@ -587,10 +687,17 @@
     const code = params2.get("role");
     return ROLES[code] ? code : "MINDEPORTE";
   }
+  function organismoNoActivo(code) {
+    if (!ROLES_ORGANISMO.includes(code)) return null;
+    const o2 = getOrganismo(scopeFor(code));
+    return o2 && o2.estado !== "Activo" ? o2 : null;
+  }
   function getMenuForRole(code) {
+    if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
     return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
   }
   function homeForRole(code) {
+    if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
     if (code === "DEPORTISTA") return "afiliacion.html";
     if (code === "PERSONA") return "perfil.html";
@@ -1014,9 +1121,9 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "shared/sidebar.js"() {
+    "sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1232,9 +1339,20 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
+            const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ""}`.trim();
+            Object.assign(ROLES[code], {
+              userName: nombre,
+              userEmail: org.repLegal.correo || "",
+              userDoc: `${org.repLegal.tipoDoc || "CC"} ${org.repLegal.numDoc || ""}`,
+              avatar: nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+            });
+          }
         } catch (_) {
         }
       })();
+      ROLES_ORGANISMO = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
+      MENU_NO_ACTIVO = [{ section: null, items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }];
       _toastTimer = null;
       _tooltipEl = null;
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
@@ -1252,7 +1370,7 @@
     }
   });
 
-  // shared/devnotes.js
+  // devnotes.js
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -1266,16 +1384,226 @@
     });
   }
   var init_devnotes = __esm({
-    "shared/devnotes.js"() {
+    "devnotes.js"() {
     }
   });
 
-  // shared/detalle.js
+  // ciclo.js
+  function revisor(o2) {
+    const sup = o2.parentId ? getOrganismo(o2.parentId) : null;
+    if (o2.tipo === "federacion") return { nombre: `${sup ? sup.nombre : "el Comit\xE9"} y el Ministerio`, corto: "el Comit\xE9 y el Ministerio" };
+    return { nombre: sup ? sup.nombre : "tu superior", corto: sup ? `${EL[sup.tipo]} ${TIPO[sup.tipo]}` : "tu superior" };
+  }
+  function estadoPropioHtml(o2, roleCode3) {
+    const rev = revisor(o2);
+    const t = TIPO[o2.tipo];
+    const cambio = ultimoCambio(o2.id);
+    const desde = cambio ? fecha(cambio.fecha) : fecha(o2.enviadoFecha || o2.fechaRegistro);
+    const envio = allAudit(o2.id).find((a) => a.a === "En revisi\xF3n" && a.de !== "En revisi\xF3n");
+    const completar = `registro.html?role=${roleCode3}&completar=${encodeURIComponent(o2.id)}`;
+    let titulo, texto, cta = "", hint = "", pasos = [];
+    switch (o2.estado) {
+      case "Preinscrito":
+        titulo = "Completa tu registro y env\xEDalo";
+        texto = `<strong>${esc(rev.nombre)}</strong> carg\xF3 los datos b\xE1sicos de tu ${t}. Rev\xEDsalos, completa lo que falta y sube los documentos.`;
+        cta = `<a class="naowee-btn naowee-btn--loud" href="${completar}">${EDIT}Completar registro</a>`;
+        hint = `Al enviarlo llega a la bandeja de ${esc(rev.nombre)}.`;
+        pasos = [paso("done", `Te carg\xF3 ${rev.corto}`, desde), paso("now", "Completar y enviar", "", true), paso("next", `Revisi\xF3n de ${rev.corto}`), paso("next", "Activo", "Se habilita tu men\xFA completo")];
+        break;
+      case "En revisi\xF3n":
+        titulo = "Tu registro est\xE1 en revisi\xF3n";
+        texto = `Lo est\xE1 revisando <strong>${esc(rev.nombre)}</strong>. Te avisamos por correo cuando decida. Mientras tanto no tienes nada pendiente.`;
+        pasos = [paso("done", "Enviaste tu registro", envio ? fecha(envio.fecha) : desde), paso("now", `Revisi\xF3n de ${rev.corto}`, "", true), paso("next", "Activo", "Se habilita tu men\xFA completo")];
+        break;
+      case "En correcci\xF3n":
+        titulo = "Corrige tu registro y reenv\xEDalo";
+        texto = `<strong>${esc(rev.nombre)}</strong> revis\xF3 tu registro y te pide un ajuste. No empiezas de cero: tus datos y documentos siguen ah\xED y solo cambias lo necesario.`;
+        cta = `<a class="naowee-btn naowee-btn--loud" href="${completar}">${EDIT}Corregir y reenviar</a>`;
+        hint = `Al reenviarlo vuelve a la bandeja de ${esc(rev.nombre)}.`;
+        pasos = [paso("done", "Enviaste tu registro", ""), paso("warn", `${cap(rev.corto)} pidi\xF3 una correcci\xF3n`, desde), paso("now", "Corregir y reenviar", "", true), paso("next", "Nueva revisi\xF3n"), paso("next", "Activo", "Se habilita tu men\xFA completo")];
+        break;
+      case "Rechazado":
+        titulo = "Tu registro fue rechazado";
+        texto = `<strong>${esc(rev.nombre)}</strong> rechaz\xF3 tu registro. Puedes corregir lo que se indica y volver a enviarlo; tus datos siguen ah\xED.`;
+        cta = `<a class="naowee-btn naowee-btn--loud" href="${completar}">${EDIT}Corregir y reenviar</a>`;
+        hint = `Al reenviarlo vuelve a la bandeja de ${esc(rev.nombre)}.`;
+        pasos = [paso("done", "Enviaste tu registro", ""), paso("neg", `${cap(rev.corto)} lo rechaz\xF3`, desde), paso("now", "Corregir y reenviar", "", true), paso("next", "Nueva revisi\xF3n"), paso("next", "Activo", "Se habilita tu men\xFA completo")];
+        break;
+      case "Suspendido":
+        titulo = `Tu ${t} est\xE1 suspendid${EL[o2.tipo] === "la" ? "a" : "o"}`;
+        texto = `El Ministerio suspendi\xF3 ${EL[o2.tipo]} ${t}. Mientras dure no puedes operar; lo que depende de ti no cambia de estado. Para volver, el Ministerio debe reactivarl${EL[o2.tipo] === "la" ? "a" : "o"} y ${esc(rev.corto)} revisar${o2.tipo === "federacion" ? "" : "l" + (EL[o2.tipo] === "la" ? "a" : "o")} de nuevo.`;
+        pasos = [paso("done", "Activo", ""), paso("neg", "Suspendido por el Ministerio", desde, true), paso("next", "Reactivaci\xF3n del Ministerio"), paso("next", `Nueva revisi\xF3n de ${rev.corto}`)];
+        break;
+      case "Cancelado":
+        titulo = `Tu ${t} fue cancelad${EL[o2.tipo] === "la" ? "a" : "o"}`;
+        texto = `El Ministerio cancel\xF3 su registro: perdi\xF3 el reconocimiento en el SUID y no vuelve a operar. Si crees que es un error, comun\xEDcate con el Ministerio.`;
+        break;
+      default:
+        return "";
+    }
+    const motivo = cambio && cambio.motivo ? `<div class="oc-motivo">
+      <p class="oc-motivo__lbl">${o2.estado === "Suspendido" || o2.estado === "Cancelado" ? "Motivo" : o2.estado === "Rechazado" ? "Motivo del rechazo" : "Motivo de la devoluci\xF3n"}</p>
+      <p class="oc-motivo__txt">${esc(cambio.motivo)}</p>
+      <p class="oc-motivo__who"><b>${esc(cambio.responsable || "")}</b>${cambio.rol ? ` \xB7 ${esc(cambio.rol)}` : ""} \xB7 ${esc(fecha(cambio.fecha))}</p>
+    </div>` : "";
+    const club = o2.tipo === "club";
+    const lo = EL[o2.tipo] === "la" ? "la" : "lo";
+    const habil = o2.estado === "Suspendido" ? `cuando el Ministerio ${lo} reactive y ${esc(rev.corto)} ${lo} apruebe de nuevo` : o2.estado === "Cancelado" ? "" : `cuando ${esc(rev.corto)} apruebe tu registro`;
+    const puede = [
+      [true, "Consultar tu ficha y su historial"],
+      ...cta ? [[true, "Editar tu registro y enviarlo"]] : [],
+      ...club ? [[false, "Confirmar afiliaciones de deportistas"]] : [[false, "Aprobar o devolver registros"], [false, "Hacer cargues masivos"]],
+      [false, "Registrar deportistas"]
+    ];
+    return `<section class="oc-status${pasos.length ? "" : " oc-status--single"}" aria-label="Estado de tu ${t}">
+    <div class="oc-status__main">
+      <div class="oc-status__head">${badge(o2.estado)}<span class="oc-status__since">desde el ${esc(desde)}</span></div>
+      <h2 class="oc-status__title">${titulo}</h2>
+      <p class="oc-status__text">${texto}</p>
+      ${motivo}
+      ${cta ? `<div class="oc-status__cta">${cta}<span class="oc-status__hint">${hint}</span></div>` : ""}
+      <div class="oc-can">
+        <p class="oc-can__title">Mientras tu ${t} no est\xE9 activ${EL[o2.tipo] === "la" ? "a" : "o"}</p>
+        <ul class="oc-can__list">${puede.map(([si, txt]) => `<li class="${si ? "" : "is-no"}"><span class="oc-can__ico oc-can__ico--${si ? "yes" : "no"}">${si ? SI : NO}</span>${txt}</li>`).join("")}</ul>
+        ${habil ? `<p class="oc-can__foot">El resto se habilita ${habil}.</p>` : ""}
+      </div>
+    </div>
+    ${pasos.length ? `<div class="oc-cycle"><p class="oc-cycle__title">C\xF3mo sigue tu registro</p>${pasos.join("")}</div>` : ""}
+  </section>`;
+  }
+  function sancionesHtml(o2) {
+    if (!["Activo", "Suspendido", "Cancelado"].includes(o2.estado)) return "";
+    const t = TIPO[o2.tipo];
+    const rev = revisor(o2);
+    const cambio = ultimoCambio(o2.id);
+    const hist = allAudit(o2.id).filter(ES_SANCION);
+    const accion = (id2, label, hint, cls) => `<div class="oc-act"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small ${cls || ""}" data-sancion="${id2}">${label}</button><p class="oc-act__hint">${hint}</p></div>`;
+    const acciones = o2.estado === "Activo" ? accion("suspender", "Suspender", "Temporal: no opera mientras dure y puedes reactivarl" + (EL[o2.tipo] === "la" ? "a" : "o") + " despu\xE9s.") : o2.estado === "Suspendido" ? accion("reactivar", "Reactivar", `Vuelve a revisi\xF3n de ${esc(rev.corto)}; no se activa directo.`) : "";
+    const definitiva = o2.estado !== "Cancelado" ? `<div class="oc-def"><p class="oc-def__lbl">Acci\xF3n definitiva</p>${accion("cancelar", "Cancelar registro", `${cap(EL[o2.tipo])} ${t} pierde el reconocimiento en el SUID y no vuelve a operar.`, "oc-btn-neg")}</div>` : "";
+    return `<section class="oc-status oc-sanc" aria-label="Estado y sanciones">
+    <div class="oc-status__main">
+      <p class="oc-sanc__title">Estado y sanciones</p>
+      <div class="oc-status__head">${badge(o2.estado)}<span class="oc-status__since">${cambio ? "desde el " + esc(fecha(cambio.fecha)) : ""}</span></div>
+      <p class="oc-status__text">${o2.estado === "Activo" ? `Opera con normalidad en el SUID.` : o2.estado === "Suspendido" ? "No puede aprobar, cargar ni confirmar afiliaciones mientras dure la suspensi\xF3n." : "Registro cancelado: no vuelve a operar."}</p>
+      ${cambio && cambio.motivo && o2.estado !== "Activo" ? `<div class="oc-motivo"><p class="oc-motivo__lbl">Motivo</p><p class="oc-motivo__txt">${esc(cambio.motivo)}</p><p class="oc-motivo__who"><b>${esc(cambio.responsable || "")}</b> \xB7 ${esc(fecha(cambio.fecha))}</p></div>` : ""}
+    </div>
+    <div class="oc-sanc__side">
+      ${acciones ? `<div class="oc-acts">${acciones}</div>` : ""}
+      ${definitiva}
+      <div class="oc-sanc__hist"><p class="oc-cycle__title">Historial de sanciones</p>
+        ${hist.length ? hist.map((a) => `<div class="od-tl-row"><span class="od-tl-dot"></span><div><div class="od-tl-head"><strong>${esc(a.accion)}</strong></div><div class="od-tl-sub">${esc(fecha(a.fecha))}${a.responsable ? " \xB7 " + esc(a.responsable) : ""}${a.motivo ? " \xB7 " + esc(a.motivo) : ""}</div></div></div>`).join("") : `<p class="oc-act__hint">Sin sanciones registradas.</p>`}
+      </div>
+    </div>
+  </section>`;
+  }
+  function abrirSancion(tipoAccion, o2, meta, onDone) {
+    const t = TIPO[o2.tipo];
+    const rev = revisor(o2);
+    const cfg = {
+      suspender: { titulo: `Suspender ${EL[o2.tipo]} ${t}`, ok: "Suspender", danger: false, consq: [
+        `No podr\xE1 aprobar, cargar organismos ni confirmar afiliaciones mientras dure la suspensi\xF3n.`,
+        `Lo que depende de ${EL[o2.tipo] === "la" ? "ella" : "\xE9l"} no cambia de estado; sus deportistas siguen vinculados.`,
+        `Se le notifica por correo con el motivo. Lo puedes reactivar despu\xE9s.`
+      ] },
+      reactivar: { titulo: `Reactivar ${EL[o2.tipo]} ${t}`, ok: "Reactivar", danger: false, consq: [
+        `No queda activ${EL[o2.tipo] === "la" ? "a" : "o"} de inmediato: vuelve a En revisi\xF3n en la bandeja de ${rev.nombre}, sobre los datos que ya tiene.`,
+        `Cuando lo apruebe, recupera su operaci\xF3n normal.`
+      ] },
+      cancelar: { titulo: `Cancelar el registro ${EL[o2.tipo] === "el" ? "del" : "de la"} ${t}`, ok: "S\xED, cancelar definitivamente", danger: true, consq: [
+        `Pierde el reconocimiento en el SUID y no vuelve a operar. No hay forma de deshacerlo.`,
+        `No se borra: su ficha y su historial quedan para consulta.`,
+        `Qu\xE9 pasa con sus deportistas y lo que depende de ${EL[o2.tipo] === "la" ? "ella" : "\xE9l"} est\xE1 pendiente de definir con Negocio.`
+      ] }
+    }[tipoAccion];
+    const ov = document.createElement("div");
+    ov.className = "reg-modal-overlay bj-modal-ov";
+    ov.innerHTML = `<div class="reg-modal bj-modal bj-modal--sm oc-dlg" role="dialog" aria-modal="true" aria-labelledby="ocDlgT">
+    <div class="reg-modal__head"><h3 class="reg-modal__title" id="ocDlgT">${esc(cfg.titulo)}</h3><button type="button" class="reg-modal__close" data-x aria-label="Cerrar">${NO}</button></div>
+    <div class="reg-modal__body">
+      <p class="oc-dlg__lead">Vas a ${tipoAccion === "cancelar" ? "cancelar el registro de" : tipoAccion} <strong>${esc(o2.nombre)}</strong> \xB7 NIT ${esc(o2.nit)}.</p>
+      <div class="oc-dlg__consq"><p class="oc-motivo__lbl">Qu\xE9 pasa al confirmar</p><ul class="oc-consq">${cfg.consq.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></div>
+      <div class="bj-field"><label class="bj-label" for="ocMot">Motivo <span class="bj-req">*</span></label>
+        <select class="bj-select oc-select" id="ocMot"><option value="">Selecciona un motivo\u2026</option>${MOTIVOS[tipoAccion].map((m) => `<option>${esc(m)}</option>`).join("")}</select>
+        <p class="bj-err" id="ocMotErr" hidden>Selecciona un motivo.</p></div>
+      <div class="bj-field"><label class="bj-label" for="ocDet">Detalle${tipoAccion === "cancelar" ? ' <span class="bj-req">*</span>' : ""}</label>
+        <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="ocDet" rows="3" placeholder="Lo que ver\xE1 ${esc(EL[o2.tipo])} ${esc(t)} en su notificaci\xF3n\u2026"></textarea></div>
+        <p class="bj-err" id="ocDetErr" hidden>Escribe el detalle.</p></div>
+      ${tipoAccion === "cancelar" ? `<label class="oc-check"><input type="checkbox" id="ocOk"> Entiendo que la cancelaci\xF3n no se puede deshacer.</label><p class="bj-err" id="ocOkErr" hidden>Confirma que entiendes que no tiene vuelta.</p>` : ""}
+    </div>
+    <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" data-x>Volver</button><button type="button" class="naowee-btn ${cfg.danger ? "bj-btn-danger" : "naowee-btn--loud"}" id="ocGo">${esc(cfg.ok)}</button></div>
+  </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add("is-open"));
+    const opener = document.activeElement;
+    const cerrar = () => {
+      ov.classList.remove("is-open");
+      setTimeout(() => ov.remove(), 340);
+      document.removeEventListener("keydown", onKey);
+      opener && opener.focus && opener.focus();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") cerrar();
+    };
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => ov.querySelector("#ocMot").focus(), 60);
+    ov.addEventListener("click", (e) => {
+      if (e.target === ov || e.target.closest("[data-x]")) cerrar();
+    });
+    ov.querySelector("#ocGo").addEventListener("click", () => {
+      const mot = ov.querySelector("#ocMot").value;
+      const det = ov.querySelector("#ocDet").value.trim();
+      const okBox = ov.querySelector("#ocOk");
+      const faltaDet = (tipoAccion === "cancelar" || mot === "Otro") && !det;
+      ov.querySelector("#ocMotErr").hidden = !!mot;
+      ov.querySelector("#ocDetErr").hidden = !faltaDet;
+      if (okBox) ov.querySelector("#ocOkErr").hidden = okBox.checked;
+      if (!mot || faltaDet || okBox && !okBox.checked) return;
+      const motivo = det ? `${mot} \u2014 ${det}` : mot;
+      const m = { ...meta, motivo };
+      if (tipoAccion === "suspender") sancionar(o2.id, "Suspendido", m);
+      else if (tipoAccion === "cancelar") sancionar(o2.id, "Cancelado", m);
+      else reactivar(o2.id, m);
+      cerrar();
+      onDone && onDone(tipoAccion);
+    });
+  }
+  var esc, MESES, fecha, badge, TIPO, EL, SI, NO, EDIT, paso, cap, MOTIVOS, ES_SANCION;
+  var init_ciclo = __esm({
+    "ciclo.js"() {
+      init_organismos_data();
+      init_estados();
+      esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+      fecha = (iso) => {
+        if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || "";
+        const [y, m, d] = iso.slice(0, 10).split("-");
+        return `${Number(d)} ${MESES[Number(m) - 1]} ${y}`;
+      };
+      badge = (e) => `<span class="naowee-badge naowee-badge--${estadoBadgeVariant(e)} naowee-badge--quiet naowee-badge--small">${esc(e)}</span>`;
+      TIPO = { comite: "comit\xE9", federacion: "federaci\xF3n", liga: "liga", club: "club" };
+      EL = { comite: "el", federacion: "la", liga: "la", club: "el" };
+      SI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      NO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+      paso = (cls, titulo, sub, aqui) => `<div class="od-tl-row oc-step--${cls}"><span class="od-tl-dot"></span><div>
+  <div class="od-tl-head"><strong>${esc(titulo)}</strong>${aqui ? '<span class="oc-here">Est\xE1s aqu\xED</span>' : ""}</div>
+  ${sub ? `<div class="od-tl-sub">${esc(sub)}</div>` : ""}</div></div>`;
+      cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+      MOTIVOS = {
+        suspender: ["Investigaci\xF3n disciplinaria en curso", "Reconocimiento deportivo vencido", "Incumplimiento de obligaciones de reporte", "Orden de autoridad competente", "Otro"],
+        cancelar: ["P\xE9rdida del reconocimiento deportivo", "Disoluci\xF3n o liquidaci\xF3n de la entidad", "Sanci\xF3n en firme de autoridad competente", "Registro duplicado o fraudulento", "Otro"],
+        reactivar: ["Se resolvi\xF3 la causa de la suspensi\xF3n", "Renov\xF3 el reconocimiento deportivo", "Decisi\xF3n de autoridad competente", "Otro"]
+      };
+      ES_SANCION = (a) => /Ministerio|Reactivación/.test(a.accion || "");
+    }
+  });
+
+  // detalle.js
   var detalle_exports = {};
   function fmtDate(iso) {
     if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || "\u2014";
     const [y, m, d] = iso.slice(0, 10).split("-");
-    return `${Number(d)} ${MESES[Number(m) - 1] || m} ${y}`;
+    return `${Number(d)} ${MESES2[Number(m) - 1] || m} ${y}`;
   }
   function inJurisdiction(orgId) {
     if (isGlobalScope(roleCode)) return true;
@@ -1289,8 +1617,8 @@
     if (orgId === scopeId) return true;
     return subtreeOf(scopeId).some((x) => x.id === orgId);
   }
-  function badge(estado) {
-    return `<span class="naowee-badge naowee-badge--${estadoBadgeVariant(estado)} naowee-badge--quiet naowee-badge--small">${esc(estado)}</span>`;
+  function badge2(estado) {
+    return `<span class="naowee-badge naowee-badge--${estadoBadgeVariant(estado)} naowee-badge--quiet naowee-badge--small">${esc2(estado)}</span>`;
   }
   function depBadge(estado) {
     return estado === "vinculado" ? `<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Vinculado</span>` : `<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Autodeclarado</span>`;
@@ -1299,7 +1627,7 @@
     return `<div class="naowee-message naowee-message--${variant}"><span class="naowee-message__icon">${icon}</span><div class="naowee-message__body"><p class="naowee-message__text">${html}</p></div></div>`;
   }
   function emptyState(title, desc) {
-    return `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${I.inbox}</span><p class="naowee-empty-state__title">${esc(title)}</p><p class="naowee-empty-state__description">${esc(desc)}</p></div>`;
+    return `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${I.inbox}</span><p class="naowee-empty-state__title">${esc2(title)}</p><p class="naowee-empty-state__description">${esc2(desc)}</p></div>`;
   }
   function backBtnHtml() {
     return `<div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${I.back}Volver</button><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>`;
@@ -1320,7 +1648,7 @@
         <span class="naowee-empty-state__icon">${I.building}</span>
         <span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">Sin resultado</span>
         <p class="naowee-empty-state__title">Organismo no encontrado</p>
-        <p class="naowee-empty-state__description">${id ? `No existe ning\xFAn organismo con el identificador <strong>${esc(id)}</strong> en el SUID.` : "No se indic\xF3 qu\xE9 organismo abrir."} Vuelve a la jerarqu\xEDa y selecciona un organismo.</p>
+        <p class="naowee-empty-state__description">${id ? `No existe ning\xFAn organismo con el identificador <strong>${esc2(id)}</strong> en el SUID.` : "No se indic\xF3 qu\xE9 organismo abrir."} Vuelve a la jerarqu\xEDa y selecciona un organismo.</p>
       </div>
     </div>`;
     wireBack();
@@ -1332,21 +1660,21 @@
         <span class="naowee-empty-state__icon">${I.lock}</span>
         <span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">Fuera de tu jurisdicci\xF3n</span>
         <p class="naowee-empty-state__title">Sin acceso a este organismo</p>
-        <p class="naowee-empty-state__description">Como <strong>${esc(role.label || roleCode)}</strong> solo puedes consultar los organismos de tu jurisdicci\xF3n (tu sub\xE1rbol del SND). Este organismo est\xE1 fuera de tu dependencia.</p>
+        <p class="naowee-empty-state__description">Como <strong>${esc2(role.label || roleCode)}</strong> solo puedes consultar los organismos de tu jurisdicci\xF3n (tu sub\xE1rbol del SND). Este organismo est\xE1 fuera de tu dependencia.</p>
       </div>
     </div>`;
     wireBack();
   }
   function breadcrumbHtml(o2) {
     const chain = [...ancestorsOf(o2.id)].reverse();
-    const crumbs = chain.map((a) => inJurisdiction(a.id) ? `<a class="naowee-breadcrumb__item" href="organismo-detalle.html?id=${encodeURIComponent(a.id)}&role=${roleCode}">${esc(a.nombre)}</a>` : `<span class="naowee-breadcrumb__static" title="Fuera de tu jurisdicci\xF3n">${esc(a.nombre)}</span>`);
-    crumbs.push(`<span class="naowee-breadcrumb__current" aria-current="page">${esc(o2.nombre)}</span>`);
+    const crumbs = chain.map((a) => inJurisdiction(a.id) ? `<a class="naowee-breadcrumb__item" href="organismo-detalle.html?id=${encodeURIComponent(a.id)}&role=${roleCode}">${esc2(a.nombre)}</a>` : `<span class="naowee-breadcrumb__static" title="Fuera de tu jurisdicci\xF3n">${esc2(a.nombre)}</span>`);
+    crumbs.push(`<span class="naowee-breadcrumb__current" aria-current="page">${esc2(o2.nombre)}</span>`);
     return `<nav class="naowee-breadcrumb od-crumbs" aria-label="Ruta jer\xE1rquica ascendente">${crumbs.join(`<span class="naowee-breadcrumb__sep">${I.sep}</span>`)}</nav>`;
   }
   function heroHtml(o2) {
-    const metaParts = [`NIT <b>${esc(o2.nit)}</b>`];
-    if (o2.deporte && o2.deporte !== "\u2014") metaParts.push(esc(o2.deporte));
-    if (o2.sector) metaParts.push(`Sector ${esc(o2.sector)}`);
+    const metaParts = [`NIT <b>${esc2(o2.nit)}</b>`];
+    if (o2.deporte && o2.deporte !== "\u2014") metaParts.push(esc2(o2.deporte));
+    if (o2.sector) metaParts.push(`Sector ${esc2(o2.sector)}`);
     const recurso = RECURSO_BY_TIPO[o2.tipo];
     const accionable = recurso && can(roleCode, "A", recurso) && o2.estado === "En revisi\xF3n";
     const bandejaLink = accionable ? `<a class="naowee-btn naowee-btn--mute naowee-btn--small" href="bandeja.html?role=${roleCode}">${I.inbox}Gestionar en la Bandeja</a>` : "";
@@ -1355,19 +1683,19 @@
       <div class="od-hero__emoji">${EMOJI[o2.tipo] || "\u{1F3DB}\uFE0F"}</div>
       <div class="od-hero__main">
         <div class="od-hero__title-row">
-          <h1 class="od-hero__name">${esc(o2.nombre)}</h1>
-          ${badge(o2.estado)}
+          <h1 class="od-hero__name">${esc2(o2.nombre)}</h1>
+          ${conBloqueEstado(o2) ? "" : badge2(o2.estado)}
         </div>
         <p class="od-hero__meta">${metaParts.join('<span class="od-dot">\xB7</span>')}</p>
       </div>
       <div class="od-hero__actions">
-        <span class="od-ro" title="Perfil de solo lectura \u2014 las acciones viven en la Bandeja">${I.lock} Solo lectura</span>
+        ${roleCode === "MINDEPORTE" || esPropio(o2) ? "" : `<span class="od-ro" title="Perfil de solo lectura \u2014 las acciones viven en la Bandeja">${I.lock} Solo lectura</span>`}
         ${bandejaLink}
       </div>
     </div>`;
   }
   function kvRow(k, v) {
-    return v == null || v === "" ? "" : `<div class="od-kv__row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`;
+    return v == null || v === "" ? "" : `<div class="od-kv__row"><dt>${esc2(k)}</dt><dd>${esc2(v)}</dd></div>`;
   }
   function infoPanel(o2) {
     const u = o2.ubicacion || {};
@@ -1376,8 +1704,8 @@
     const contacto = [c.telefono, c.correo].filter(Boolean).join(" \xB7 ");
     const rows = [
       kvRow("Tipo de organismo", TYPE_LABEL[o2.tipo]),
-      o2.tipo === "club" && o2.tipoClub ? kvRow("Tipo de club", cap(o2.tipoClub)) : "",
-      o2.tipo === "liga" ? kvRow("\xC1mbito", cap(o2.ambito || "Departamental")) : "",
+      o2.tipo === "club" && o2.tipoClub ? kvRow("Tipo de club", cap2(o2.tipoClub)) : "",
+      o2.tipo === "liga" ? kvRow("\xC1mbito", cap2(o2.ambito || "Departamental")) : "",
       kvRow("NIT / RUT", o2.nit),
       kvRow("Naturaleza jur\xEDdica", o2.naturaleza || "Privada, sin \xE1nimo de lucro"),
       kvRow("Cobertura geogr\xE1fica", o2.cobertura || COBERTURA_BY_TIPO[o2.tipo] || "\u2014"),
@@ -1409,7 +1737,7 @@
       const f = docs[k];
       rows.push(docRow(DOC_LABELS[k], f && f.name || (typeof f === "string" ? f : "documento.pdf")));
     });
-    if (acto) rows.push(docRow(DOC_LABELS.actoAdministrativo, esc(acto)));
+    if (acto) rows.push(docRow(DOC_LABELS.actoAdministrativo, esc2(acto)));
     if (!rows.length) {
       return `<div class="od-block">${msg(
         "caution",
@@ -1421,7 +1749,7 @@
     <div class="od-block">${msg("informative", I.info, "El reconocimiento deportivo se tramita ante el <strong>IVC</strong> (Mindeporte / ente territorial). El SUID lo valida y registra como soporte; no lo emite.")}</div>`;
   }
   function docRow(label, file) {
-    return `<div class="od-doc"><span class="od-doc__ico">${I.doc}</span><div style="min-width:0"><div class="od-doc__name">${esc(label)}</div><div class="od-doc__file">${esc(file)}</div></div><span class="od-doc__tag"><span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Adjunto</span></span></div>`;
+    return `<div class="od-doc"><span class="od-doc__ico">${I.doc}</span><div style="min-width:0"><div class="od-doc__name">${esc2(label)}</div><div class="od-doc__file">${esc2(file)}</div></div><span class="od-doc__tag"><span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Adjunto</span></span></div>`;
   }
   function countsHtml(o2) {
     const c = countDescendants(o2.id);
@@ -1434,7 +1762,7 @@
   }
   function hierPanel(o2) {
     const parent = o2.parentId ? getOrganismo(o2.parentId) : null;
-    const parentLine = parent ? `<p class="od-parent">Pertenece a: ${inJurisdiction(parent.id) ? `<a href="organismo-detalle.html?id=${encodeURIComponent(parent.id)}&role=${roleCode}">${esc(parent.nombre)}</a>` : `<strong>${esc(parent.nombre)}</strong>`} \xB7 ${TYPE_LABEL[parent.tipo]}</p>` : `<p class="od-parent">Nodo ra\xEDz del SND (cabeza de sector, sin superior).</p>`;
+    const parentLine = parent ? `<p class="od-parent">Pertenece a: ${inJurisdiction(parent.id) ? `<a href="organismo-detalle.html?id=${encodeURIComponent(parent.id)}&role=${roleCode}">${esc2(parent.nombre)}</a>` : `<strong>${esc2(parent.nombre)}</strong>`} \xB7 ${TYPE_LABEL[parent.tipo]}</p>` : `<p class="od-parent">Nodo ra\xEDz del SND (cabeza de sector, sin superior).</p>`;
     let listHtml;
     if (o2.tipo === "club") {
       const deps = deportistasOf(o2.id);
@@ -1442,8 +1770,8 @@
         <div class="od-child">
           <span class="od-child__emoji">${EMOJI.deportista}</span>
           <div class="od-child__main">
-            <div class="od-child__name">${esc(d.nombre)}</div>
-            <div class="od-child__sub">${esc(d.deporte)}${d.modalidad ? " \u2014 " + esc(d.modalidad) : ""} \xB7 ${esc(d.tipoDoc)} ${esc(d.numDoc)}</div>
+            <div class="od-child__name">${esc2(d.nombre)}</div>
+            <div class="od-child__sub">${esc2(d.deporte)}${d.modalidad ? " \u2014 " + esc2(d.modalidad) : ""} \xB7 ${esc2(d.tipoDoc)} ${esc2(d.numDoc)}</div>
           </div>
           <span class="od-child__badge">${depBadge(d.estado)}</span>
         </div>`).join("") : emptyState("Sin deportistas afiliados", "Este club a\xFAn no tiene deportistas con afiliaci\xF3n confirmada.");
@@ -1452,15 +1780,15 @@
       listHtml = kids.length ? kids.map((k) => {
         const kc = countDescendants(k.id);
         const sub = k.tipo === "federacion" ? `${kc.ligas} ${kc.ligas === 1 ? "liga" : "ligas"} \xB7 ${kc.deportistas} dep.` : k.tipo === "liga" ? `${kc.clubes} ${kc.clubes === 1 ? "club" : "clubes"} \xB7 ${kc.deportistas} dep.` : `${kc.deportistas} ${kc.deportistas === 1 ? "deportista" : "deportistas"}`;
-        const dep = k.deporte && k.deporte !== "\u2014" ? ` \xB7 ${esc(k.deporte)}` : "";
+        const dep = k.deporte && k.deporte !== "\u2014" ? ` \xB7 ${esc2(k.deporte)}` : "";
         return `
             <a class="od-child" href="organismo-detalle.html?id=${encodeURIComponent(k.id)}&role=${roleCode}">
               <span class="od-child__emoji">${EMOJI[k.tipo]}</span>
               <div class="od-child__main">
-                <div class="od-child__name">${esc(k.nombre)}</div>
-                <div class="od-child__sub">${TYPE_LABEL[k.tipo]}${dep} \xB7 <b>${esc(sub)}</b></div>
+                <div class="od-child__name">${esc2(k.nombre)}</div>
+                <div class="od-child__sub">${TYPE_LABEL[k.tipo]}${dep} \xB7 <b>${esc2(sub)}</b></div>
               </div>
-              <span class="od-child__badge">${badge(k.estado)}</span>
+              <span class="od-child__badge">${badge2(k.estado)}</span>
               <span class="od-child__arrow">${I.arrow}</span>
             </a>`;
       }).join("") : emptyState("Sin organismos dependientes", `Este ${TYPE_LABEL[o2.tipo].toLowerCase()} a\xFAn no tiene organismos de nivel inferior registrados.`);
@@ -1476,11 +1804,11 @@
       );
     }
     const rows = audit.map((a, i) => {
-      const trans = a.de && a.a ? `${esc(a.de)} \u2192 ${esc(a.a)}` : esc(a.a || "");
-      const quien = a.deportistaNombre ? ` \xB7 ${esc(a.deportistaNombre)}` : "";
+      const trans = a.de && a.a ? `${esc2(a.de)} \u2192 ${esc2(a.a)}` : esc2(a.a || "");
+      const quien = a.deportistaNombre ? ` \xB7 ${esc2(a.deportistaNombre)}` : "";
       const who = [a.responsable, a.rol && a.rol !== a.responsable ? a.rol : ""].filter(Boolean).join(" \xB7 ");
-      const sub = [fmtDate(a.fecha), who, a.motivo].filter(Boolean).map(esc).join(" \xB7 ") + (a.notif ? " \xB7 \u{1F514} notificado por email/app" : "");
-      return `<div class="od-tl-row"><span class="od-tl-dot"></span><div><div class="od-tl-head"><strong>${esc(a.accion || "Cambio de estado")}</strong>${trans ? " \xB7 " + trans : ""}${quien}</div><div class="od-tl-sub">${sub}</div></div></div>`;
+      const sub = [fmtDate(a.fecha), who, a.motivo].filter(Boolean).map(esc2).join(" \xB7 ") + (a.notif ? " \xB7 \u{1F514} notificado por email/app" : "");
+      return `<div class="od-tl-row"><span class="od-tl-dot"></span><div><div class="od-tl-head"><strong>${esc2(a.accion || "Cambio de estado")}</strong>${trans ? " \xB7 " + trans : ""}${quien}</div><div class="od-tl-sub">${sub}</div></div></div>`;
     }).join("");
     return `<div class="od-block">${rows}</div>`;
   }
@@ -1493,12 +1821,14 @@
   }
   function renderProfile(o2) {
     let active = "info";
-    root.innerHTML = `${breadcrumbHtml(o2)}
-    ${backBtnHtml()}
+    root.innerHTML = `${esPropio(o2) ? "" : breadcrumbHtml(o2)}
+    ${esPropio(o2) ? '<div class="od-back"><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>' : backBtnHtml()}
+    ${conBloqueEstado(o2) ? estadoPropioHtml(o2, roleCode) : ""}
     ${heroHtml(o2)}
+    ${roleCode === "MINDEPORTE" ? sancionesHtml(o2) : ""}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
-        ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? "naowee-tab--selected" : ""}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc(l)}</button>`).join("")}
+        ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? "naowee-tab--selected" : ""}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc2(l)}</button>`).join("")}
       </div>
       <div id="odPanel"></div>
     </div>`;
@@ -1518,27 +1848,36 @@
     }));
     paint();
     wireBack();
+    root.querySelectorAll("[data-sancion]").forEach((b) => b.addEventListener("click", () => {
+      abrirSancion(b.dataset.sancion, o2, { responsable: role.userName || "Ministerio", rol: "Ministerio" }, (acc) => {
+        const msgs = { suspender: "qued\xF3 suspendido", cancelar: "qued\xF3 con el registro cancelado", reactivar: "volvi\xF3 a revisi\xF3n de su superior" };
+        window.naoweeToast && window.naoweeToast(`${o2.nombre} ${msgs[acc]}. Se le notific\xF3 por correo.`, "success");
+        renderProfile(getOrganismo(o2.id));
+      });
+    }));
+    mountDevnotes(DEVNOTES);
   }
   function wireBack() {
     var _a;
     (_a = document.getElementById("odBack")) == null ? void 0 : _a.addEventListener("click", goBack);
   }
-  var params, roleCode, role, id, fromParam, root, esc, cap, EMOJI, TYPE_LABEL, RECURSO_BY_TIPO, COBERTURA_BY_TIPO, DOC_LABELS, I, MESES, DEVNOTES, seg, TABS, o;
+  var params, roleCode, role, id, fromParam, root, esc2, cap2, EMOJI, TYPE_LABEL, RECURSO_BY_TIPO, COBERTURA_BY_TIPO, DOC_LABELS, I, MESES2, DEVNOTES, ROLES_ORG, esPropio, conBloqueEstado, seg, TABS, o;
   var init_detalle = __esm({
-    "shared/detalle.js"() {
+    "detalle.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
       init_devnotes();
       init_estados();
+      init_ciclo();
       params = new URLSearchParams(window.location.search);
       roleCode = getRoleFromQuery();
       role = ROLES[roleCode] || {};
-      id = params.get("id") || "";
+      id = params.get("id") || (["COMITE", "FEDERACION", "LIGA", "CLUB"].includes(roleCode) ? scopeFor(roleCode) : "") || "";
       fromParam = params.get("from") || "";
       root = document.getElementById("detalleRoot");
-      esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-      cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+      esc2 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      cap2 = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
       EMOJI = { comite: "\u{1F3DB}\uFE0F", federacion: "\u{1F3C5}", liga: "\u{1F6A9}", club: "\u{1F6E1}\uFE0F", deportista: "\u{1F3C3}" };
       TYPE_LABEL = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club", deportista: "Deportista" };
       RECURSO_BY_TIPO = { comite: "comites", federacion: "federaciones", liga: "ligas", club: "clubes" };
@@ -1562,13 +1901,29 @@
         inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
         building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 9h.01M12 9h.01M15 9h.01M9 13h.01M12 13h.01M15 13h.01"/></svg>'
       };
-      MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-      DEVNOTES = { detalle: { title: "Ficha de organismo \xB7 navegaci\xF3n", items: [
-        "Orden en la ficha: breadcrumb de ancestros (<code>breadcrumbHtml</code>) arriba y \xABVolver\xBB debajo; en los estados de error \xABVolver\xBB va solo.",
-        "\xABVolver\xBB (<code>goBack</code>): si hay historial interno hace <code>history.back()</code> y conserva el estado de la jerarqu\xEDa; si se lleg\xF3 directo, va a <code>?from=</code> (solo <code>nombre.html</code>, validado por regex) o al inicio del rol.",
-        "Entra desde \xABVer detalles\xBB de <code>jerarquia.html</code> (<code>?id=&amp;role=</code>). El alcance se valida con <code>scopeFor</code>: fuera de jurisdicci\xF3n muestra \xABsin acceso\xBB, sin datos.",
-        "Solo lectura: si el organismo est\xE1 \xABEn revisi\xF3n\xBB y el rol puede aprobar, enlaza a la Bandeja; las acciones no viven aqu\xED."
+      MESES2 = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+      DEVNOTES = { detalle: { title: "Ficha de organismo \xB7 c\xF3mo funciona por dentro", sections: [
+        { title: "Navegaci\xF3n", items: [
+          "Breadcrumb de ancestros arriba y \xABVolver\xBB debajo (<code>goBack</code>: <code>history.back()</code> si hay historial; si no, <code>?from=</code> o el inicio del rol).",
+          "El alcance se valida con <code>scopeFor</code>: fuera de jurisdicci\xF3n muestra \xABsin acceso\xBB, sin datos.",
+          "Si el organismo est\xE1 En revisi\xF3n y el rol puede aprobarlo, enlaza a la Bandeja: aprobar, devolver y rechazar viven all\xED."
+        ] },
+        { title: "\xABMi organismo\xBB (Fase 1)", items: [
+          "Sin <code>?id</code>, el administrador abre su propio organismo. Si no est\xE1 <strong>Activo</strong> su men\xFA se reduce a \xABMi organismo\xBB (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.",
+          "Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qu\xE9 pas\xF3, el motivo con qui\xE9n y cu\xE1ndo (\xFAltimo cambio en la trazabilidad), qu\xE9 le toca, lo que puede y no puede hacer y el recorrido.",
+          "Preinscrito, En correcci\xF3n y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisi\xF3n</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.",
+          "Solo demo: \xABEntrar como \u2026\xBB desde la bandeja del superior o despu\xE9s de un cargue masivo simula el acceso que le llega por correo al organismo. Su administrador es el representante legal."
+        ] },
+        { title: "Sanciones del Ministerio (Fase 1)", items: [
+          "Solo el Ministerio ve \xABEstado y sanciones\xBB (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acci\xF3n definitiva.",
+          "Cada acci\xF3n pide motivo; el detalle es obligatorio al cancelar o con \xABOtro\xBB, y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.",
+          "Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (propuesta P-18).",
+          "Reactivar no activa directo: vuelve a En revisi\xF3n en la bandeja del superior, sobre los datos que ya tiene (propuesta P-08). Causales y qu\xE9 pasa con los deportistas al cancelar siguen abiertos con Negocio."
+        ] }
       ] } };
+      ROLES_ORG = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
+      esPropio = (o2) => ROLES_ORG.includes(roleCode) && o2.id === scopeFor(roleCode);
+      conBloqueEstado = (o2) => esPropio(o2) && o2.estado !== "Activo";
       seg = (n, s, p) => `<span class="od-count"><b>${n}</b> ${n === 1 ? s : p}</span>`;
       TABS = [
         ["info", "Informaci\xF3n"],
@@ -1586,7 +1941,7 @@
     }
   });
 
-  // shared/entries/organismo-detalle.js
+  // entries/organismo-detalle.js
   init_sidebar();
   init_organismos_data();
   seedDemoData();

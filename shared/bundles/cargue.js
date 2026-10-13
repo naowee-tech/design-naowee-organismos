@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // shared/estados.js
+  // estados.js
   var init_estados = __esm({
-    "shared/estados.js"() {
+    "estados.js"() {
     }
   });
 
-  // shared/organismos-data.js
+  // organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -61,6 +61,7 @@
         return null;
       }
     }();
+    seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
     }
@@ -149,6 +150,55 @@
     writeStore("audit", list);
     return { ...record };
   }
+  function allAudit(orgId) {
+    const list = (readStore("audit", []) || []).map((a) => ({ ...a }));
+    return orgId ? list.filter((a) => a.orgId === orgId) : list;
+  }
+  function seedTrazabilidadDemo() {
+    const mode = function() {
+      try {
+        return localStorage.getItem("naowee-organismos-demo-mode");
+      } catch (_) {
+        return null;
+      }
+    }();
+    if (mode === "blank") return;
+    seedCicloDemo();
+    if (allAudit("FED-040").length) return;
+    const trail = [
+      // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
+      { orgId: "FED-040", fecha: "2026-02-10", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "FED-040", fecha: "2026-02-12", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Formulario enviado", de: "Preinscrito", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "FED-040", fecha: "2026-02-16", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Aval del Comit\xE9 registrado", de: "En revisi\xF3n", a: "En revisi\xF3n", motivo: "Doble validaci\xF3n: mitad del Comit\xE9 aprobada" },
+      { orgId: "FED-040", fecha: "2026-02-20", responsable: "Mar\xEDa F. Rojas", rol: "Ministerio", accion: "Habilitada por el Ministerio", de: "En revisi\xF3n", a: "Activo", motivo: "Doble validaci\xF3n completa (Ministerio + Comit\xE9)" },
+      // Liga del Valle: la cargó la Federación, completó y envió; la aprueba la Federación
+      { orgId: "LIG-001", fecha: "2026-03-02", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "LIG-001", fecha: "2026-03-05", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Formulario enviado", de: "Preinscrito", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "LIG-001", fecha: "2026-03-08", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Habilitada por la Federaci\xF3n", de: "En revisi\xF3n", a: "Activo", motivo: "Reconocimiento deportivo (IVC) verificado" },
+      // Club Patín Cali: autorregistro público; la Liga devuelve a corrección, el club corrige y reenvía
+      { orgId: "CLU-001", fecha: "2026-03-15", responsable: "\xD3scar Cardona", rol: "Club", accion: "Registro p\xFAblico", de: "", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-001", fecha: "2026-03-18", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Correcci\xF3n solicitada", de: "En revisi\xF3n", a: "En correcci\xF3n", motivo: "Falta el reconocimiento del ente municipal" },
+      { orgId: "CLU-001", fecha: "2026-03-21", responsable: "\xD3scar Cardona", rol: "Club", accion: "Corregido y reenviado", de: "En correcci\xF3n", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-001", fecha: "2026-03-25", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Habilitado por la Liga", de: "En revisi\xF3n", a: "Activo", motivo: "Documentaci\xF3n completa" }
+    ];
+    trail.forEach((e) => auditLog(e));
+  }
+  function seedCicloDemo() {
+    if (allAudit("CLU-012").length) return;
+    const M = "Mar\xEDa F. Rojas";
+    [
+      { orgId: "CLU-002", fecha: "2026-06-10", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "LIG-005", fecha: "2026-06-01", responsable: "M\xF3nica Mart\xEDnez Ospina", rol: "Federaci\xF3n", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "FED-057", fecha: "2026-04-04", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-20", responsable: "Mauricio Gil Restrepo", rol: "Club", accion: "Registro p\xFAblico", de: "", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-24", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Correcci\xF3n solicitada", de: "En revisi\xF3n", a: "En correcci\xF3n", motivo: "Documentaci\xF3n incompleta \u2014 falta el reconocimiento deportivo del ente municipal" },
+      { orgId: "CLU-008", fecha: "2026-05-28", responsable: "Diego Ospina Mar\xEDn", rol: "Liga", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Reconocimiento deportivo no v\xE1lido o vencido \u2014 venci\xF3 en enero de 2026" },
+      { orgId: "LIG-007", fecha: "2026-04-15", responsable: "\xC1ngela Naranjo Rodr\xEDguez", rol: "Federaci\xF3n", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Datos del representante legal incorrectos" },
+      { orgId: "LIG-008", fecha: "2026-08-12", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Investigaci\xF3n disciplinaria abierta por la Inspecci\xF3n, Vigilancia y Control" },
+      { orgId: "CLU-010", fecha: "2026-07-30", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Reconocimiento deportivo vencido sin renovar" },
+      { orgId: "FED-037", fecha: "2026-06-18", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "No present\xF3 informe de gesti\xF3n anual" }
+    ].forEach((e) => auditLog(e));
+  }
   function allSolicitudes() {
     return (readStore("solicitudes", []) || []).map((s) => ({ ...s }));
   }
@@ -157,7 +207,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
   var init_organismos_data = __esm({
-    "shared/organismos-data.js"() {
+    "organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -249,6 +299,8 @@
         { id: "CLU-008", tipo: "club", nombre: "Club Nataci\xF3n Pac\xEDfico", nit: "805020008-8", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "Rechazado", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000408", nombre: "Mateo", apellido: "Angulo Mena", correo: "admin@natacionpacifico.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buenaventura", zona: "Urbana", direccion: "Cra. 3 # 5-30" }, contacto: { telefono: "6025080808", correo: "contacto@natacionpacifico.demo.co" }, fechaRegistro: "2026-05-25" },
         { id: "CLU-009", tipo: "club", nombre: "Club Pat\xEDn Bogot\xE1", nit: "805020009-9", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-003", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000409", nombre: "Daniela", apellido: "Su\xE1rez Gil", correo: "admin@patinbogota.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Cra. 60 # 63-20" }, contacto: { telefono: "6015090909", correo: "contacto@patinbogota.demo.co" }, fechaRegistro: "2026-05-12" },
         { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" },
+        /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+        { id: "CLU-012", tipo: "club", nombre: "Club Halcones de Tulu\xE1", nit: "805020012-3", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-001", estado: "En correcci\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000412", nombre: "Mauricio", apellido: "Gil Restrepo", correo: "admin@halconestulua.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Tulu\xE1", zona: "Urbana", direccion: "Cra. 26 # 30-12" }, contacto: { telefono: "6022240012", correo: "contacto@halconestulua.demo.co" }, fechaRegistro: "2026-09-20" },
         /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
         { id: "CLU-011", tipo: "club", nombre: "Club Delfines de Buga", nit: "805020011-1", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000411", nombre: "Lorena", apellido: "Gil Ocampo", correo: "admin@delfinesbuga.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buga", zona: "Urbana", direccion: "Calle 4 # 14-30" }, contacto: { telefono: "6022360011", correo: "contacto@delfinesbuga.demo.co" }, fechaRegistro: "2026-09-28" }
       ];
@@ -302,7 +354,7 @@
     }
   });
 
-  // shared/permissions.js
+  // permissions.js
   function contextoDe(role3) {
     if (!TIPO_DE_ROL[role3]) return null;
     const valido = (id) => {
@@ -334,7 +386,7 @@
   }
   var ACCIONES, RECURSOS, SCOPE, TIPO_DE_ROL, CTX_KEY;
   var init_permissions = __esm({
-    "shared/permissions.js"() {
+    "permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -367,7 +419,7 @@
     }
   });
 
-  // shared/sidebar.js
+  // sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -379,10 +431,11 @@
     let id = null;
     try {
       id = new URLSearchParams(window.location.search).get("como");
-      if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+      if (id && (PERSONAS[id] || id === "org")) sessionStorage.setItem(PERSONA_KEY, id);
       else id = sessionStorage.getItem(PERSONA_KEY);
     } catch (_) {
     }
+    if (id === "org") return null;
     if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode3] || null;
     const p = PERSONAS[id];
     return p && p.contextos.some((c) => c.role === roleCode3) ? { id, ...p } : null;
@@ -392,10 +445,17 @@
     const code = params.get("role");
     return ROLES[code] ? code : "MINDEPORTE";
   }
+  function organismoNoActivo(code) {
+    if (!ROLES_ORGANISMO.includes(code)) return null;
+    const o = getOrganismo(scopeFor(code));
+    return o && o.estado !== "Activo" ? o : null;
+  }
   function getMenuForRole(code) {
+    if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
     return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
   }
   function homeForRole(code) {
+    if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
     if (code === "DEPORTISTA") return "afiliacion.html";
     if (code === "PERSONA") return "perfil.html";
@@ -819,9 +879,9 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "shared/sidebar.js"() {
+    "sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1037,9 +1097,20 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
+            const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ""}`.trim();
+            Object.assign(ROLES[code], {
+              userName: nombre,
+              userEmail: org.repLegal.correo || "",
+              userDoc: `${org.repLegal.tipoDoc || "CC"} ${org.repLegal.numDoc || ""}`,
+              avatar: nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+            });
+          }
         } catch (_) {
         }
       })();
+      ROLES_ORGANISMO = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
+      MENU_NO_ACTIVO = [{ section: null, items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }];
       _toastTimer = null;
       _tooltipEl = null;
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
@@ -1057,7 +1128,7 @@
     }
   });
 
-  // shared/cargue.js
+  // cargue.js
   var cargue_exports = {};
   function sampleRow(nombre, nit, rep) {
     const r = new Array(22).fill("");
@@ -1239,9 +1310,10 @@
     <div class="naowee-card cg-success">
       <div class="cg-success__check">${I.check}</div>
       <h2 class="cg-success__title">Cargue completado</h2>
-      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Ya aparecen en la jerarqu\xEDa; su registro se completa despu\xE9s.</p>
+      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Cada uno recibi\xF3 un correo con acceso para completar sus datos y documentos y enviarlo; cuando lo env\xEDe, te llega a la bandeja.</p>
       <div class="cg-success__actions">
         <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarqu\xEDa</a>
+        ${created[0] && ROL_DE_TIPO[created[0].tipo] ? `<a class="naowee-btn naowee-btn--quiet" title="Solo demo: simula el acceso que llega por correo" href="organismo-detalle.html?role=${ROL_DE_TIPO[created[0].tipo]}&org=${encodeURIComponent(created[0].id)}&como=org">Entrar como ${esc(created[0].nombre)}</a>` : ""}
         <button class="naowee-btn naowee-btn--mute" id="cgAgain">Cargar otro archivo</button>
       </div>
     </div>
@@ -1328,9 +1400,9 @@
     if (allCargues().some((c) => c.demo)) return;
     DEMO_CARGUES.forEach((d) => recordCargue({ ...d, demo: true }));
   }
-  var roleCode, role, TARGET, targetTipo, TIPO_PLURAL, TIPO_SING, scopeId, superior, HEADERS, COL, I, root, esc, today, fmtSize, parsed, SAMPLES, EMAIL_RE, created, DEMO_CARGUES;
+  var roleCode, role, TARGET, targetTipo, TIPO_PLURAL, TIPO_SING, scopeId, superior, HEADERS, COL, I, root, esc, today, fmtSize, parsed, SAMPLES, EMAIL_RE, created, ROL_DE_TIPO, DEMO_CARGUES;
   var init_cargue = __esm({
-    "shared/cargue.js"() {
+    "cargue.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
@@ -1418,6 +1490,7 @@
       };
       EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
       created = null;
+      ROL_DE_TIPO = { federacion: "FEDERACION", liga: "LIGA", club: "CLUB" };
       DEMO_CARGUES = [
         { rol: "COMITE", fecha: "2026-03-18", responsable: "Camilo Duarte", tipo: "federacion", archivo: { nombre: "federaciones-coc.xlsx", tamano: 41520 }, totales: { filas: 57, cargadas: 56, error: 1 }, version: "v0.4.0" },
         { rol: "FEDERACION", fecha: "2026-04-30", responsable: "Alberto Herrera", tipo: "liga", archivo: { nombre: "ligas-patinaje.xlsx", tamano: 18240 }, totales: { filas: 8, cargadas: 8, error: 0 }, version: "v0.4.0" },
@@ -1428,7 +1501,7 @@
     }
   });
 
-  // shared/entries/cargue.js
+  // entries/cargue.js
   init_sidebar();
   init_organismos_data();
   seedDemoData();

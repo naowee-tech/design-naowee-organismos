@@ -128,7 +128,7 @@ function renderOrgBandeja() {
   const totalPages = Math.max(1, Math.ceil(allRows.length / PAGE_SIZE));
   page = Math.min(Math.max(1, page), totalPages);
   const rows = allRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const FILTER_ICO = { 'Accionables': I.bolt, 'En revisión': I.clock, 'En corrección': I.edit, 'Rechazado': I.x, 'Activo': I.check, 'Todos': I.list };
+  const FILTER_ICO = { 'Accionables': I.bolt, 'En revisión': I.clock, 'Preinscrito': I.doc, 'En corrección': I.edit, 'Rechazado': I.x, 'Activo': I.check, 'Todos': I.list };
 
   root.innerHTML = `
     ${msg('informative', I.info, puedeAccionar
@@ -146,7 +146,7 @@ function renderOrgBandeja() {
         ${sectores.length > 1 ? `<label class="bj-filter"><span class="bj-filter__lbl">Sector</span><select class="bj-filter__select" id="bjSector"><option value="Todos"${sectorFiltro === 'Todos' ? ' selected' : ''}>Todos los sectores</option>${sectores.map((s) => `<option value="${esc(s)}"${sectorFiltro === s ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>` : ''}
       </div>
       <div class="naowee-tabs bj-tabs" id="bjFilters">
-        ${['Accionables', 'En revisión', 'En corrección', 'Rechazado', 'Activo', 'Todos'].map((f) => `<button type="button" class="naowee-tab ${estadoFiltro === f ? 'naowee-tab--selected' : ''}" data-f="${f}">${FILTER_ICO[f] || ''}${f}</button>`).join('')}
+        ${['Accionables', 'En revisión', 'Preinscrito', 'En corrección', 'Rechazado', 'Activo', 'Todos'].map((f) => `<button type="button" class="naowee-tab ${estadoFiltro === f ? 'naowee-tab--selected' : ''}" data-f="${f}">${FILTER_ICO[f] || ''}${f}</button>`).join('')}
       </div>
       ${rows.length ? `
         <div class="cg-table-wrap">
@@ -395,6 +395,12 @@ function mountDd(scope, onSelect) {
   scope.addEventListener('click', (e) => { if (!dd.contains(e.target)) dd.classList.remove('naowee-dropdown--open'); });
 }
 
+/* Solo demo: seguir el ciclo desde el otro lado, entrando como el organismo que debe actuar. */
+const ROL_DE_TIPO = { federacion: 'FEDERACION', liga: 'LIGA', club: 'CLUB' };
+function comoOrganismo(o) {
+  if (!['Preinscrito', 'En corrección', 'Rechazado'].includes(o.estado) || !ROL_DE_TIPO[o.tipo]) return '';
+  return `<a class="naowee-btn naowee-btn--quiet bj-como" href="organismo-detalle.html?role=${ROL_DE_TIPO[o.tipo]}&org=${encodeURIComponent(o.id)}&como=org" title="Solo demo">Entrar como ${esc(o.nombre)}</a>`;
+}
 function openDetail(id) {
   const o = getOrganismo(id);
   if (!o) return;
@@ -446,7 +452,7 @@ function openDetail(id) {
             <button type="button" class="naowee-btn bj-btn-danger" id="bjRej">Rechazar</button>
             <button type="button" class="naowee-btn bj-btn-success" id="bjApr">${esFed ? 'Aprobar mi mitad' : 'Aprobar'}</button>
           </div>`
-          : `<button type="button" class="naowee-btn naowee-btn--mute" id="bjCancel">Cerrar</button>`}
+          : `${comoOrganismo(o)}<button type="button" class="naowee-btn naowee-btn--mute" id="bjCancel">Cerrar</button>`}
       </div>
     </div>`);
   const close = () => closeModal(ov);

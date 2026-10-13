@@ -239,14 +239,16 @@ function render() {
   wire(supActivo);
 }
 
+const ROL_DE_TIPO = { federacion: 'FEDERACION', liga: 'LIGA', club: 'CLUB' };
 function renderSuccess() {
   root.innerHTML = `
     <div class="naowee-card cg-success">
       <div class="cg-success__check">${I.check}</div>
       <h2 class="cg-success__title">Cargue completado</h2>
-      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Ya aparecen en la jerarquía; su registro se completa después.</p>
+      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Cada uno recibió un correo con acceso para completar sus datos y documentos y enviarlo; cuando lo envíe, te llega a la bandeja.</p>
       <div class="cg-success__actions">
         <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
+        ${created[0] && ROL_DE_TIPO[created[0].tipo] ? `<a class="naowee-btn naowee-btn--quiet" title="Solo demo: simula el acceso que llega por correo" href="organismo-detalle.html?role=${ROL_DE_TIPO[created[0].tipo]}&org=${encodeURIComponent(created[0].id)}&como=org">Entrar como ${esc(created[0].nombre)}</a>` : ''}
         <button class="naowee-btn naowee-btn--mute" id="cgAgain">Cargar otro archivo</button>
       </div>
     </div>

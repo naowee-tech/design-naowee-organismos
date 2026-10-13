@@ -136,6 +136,8 @@ const CLUBES = [
   { id: 'CLU-008', tipo: 'club', nombre: 'Club Natación Pacífico', nit: '805020008-8', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'Rechazado', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000408', nombre: 'Mateo', apellido: 'Angulo Mena', correo: 'admin@natacionpacifico.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buenaventura', zona: 'Urbana', direccion: 'Cra. 3 # 5-30' }, contacto: { telefono: '6025080808', correo: 'contacto@natacionpacifico.demo.co' }, fechaRegistro: '2026-05-25' },
   { id: 'CLU-009', tipo: 'club', nombre: 'Club Patín Bogotá', nit: '805020009-9', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-003', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000409', nombre: 'Daniela', apellido: 'Suárez Gil', correo: 'admin@patinbogota.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Cra. 60 # 63-20' }, contacto: { telefono: '6015090909', correo: 'contacto@patinbogota.demo.co' }, fechaRegistro: '2026-05-12' },
   { id: 'CLU-010', tipo: 'club', nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000410', nombre: 'Andrés', apellido: 'Caicedo Mora', correo: 'admin@ruedalibrepalmira.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 31 # 29-10' }, contacto: { telefono: '6025101010', correo: 'contacto@ruedalibrepalmira.demo.co' }, fechaRegistro: '2026-01-28' },
+  /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+  { id: 'CLU-012', tipo: 'club', nombre: 'Club Halcones de Tuluá', nit: '805020012-3', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-001', estado: 'En corrección', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000412', nombre: 'Mauricio', apellido: 'Gil Restrepo', correo: 'admin@halconestulua.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Tuluá', zona: 'Urbana', direccion: 'Cra. 26 # 30-12' }, contacto: { telefono: '6022240012', correo: 'contacto@halconestulua.demo.co' }, fechaRegistro: '2026-09-20' },
   /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
   { id: 'CLU-011', tipo: 'club', nombre: 'Club Delfines de Buga', nit: '805020011-1', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000411', nombre: 'Lorena', apellido: 'Gil Ocampo', correo: 'admin@delfinesbuga.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buga', zona: 'Urbana', direccion: 'Calle 4 # 14-30' }, contacto: { telefono: '6022360011', correo: 'contacto@delfinesbuga.demo.co' }, fechaRegistro: '2026-09-28' }
 ];
@@ -271,6 +273,7 @@ export function clearStore(key) {
    copia a storage (se lee siempre desde el módulo). */
 export function seedDemoData() {
   const seeded = (function () { try { return localStorage.getItem(SEED_FLAG); } catch (_) { return null; } })();
+  seedTrazabilidadDemo();   // el motivo de cada estado lo leen la ficha y «Mi organismo»
   if (seeded === SEED_VERSION) {
     return { seeded: false, version: SEED_VERSION };
   }
@@ -604,6 +607,7 @@ export function setEstado(id, estado, meta = {}) {
   if (updated && updated.tipo === 'club' && updated.parentId) {
     if (estado === 'Activo') cambiarAfiliacion(id, updated.parentId, 'Vinculada', { tipo: 'club', origen: 'activacion' });
     if (estado === 'Rechazado') cambiarAfiliacion(id, updated.parentId, 'Rechazada', { motivo: meta.motivo });
+    if (estado === 'En revisión') solicitarAfiliacion({ tipo: 'club', sujetoId: id, organismoId: updated.parentId, deporte: updated.deporte, origen: 'activacion' });
   }
   auditLog({
     orgId: id, notif: true, fecha: meta.fecha || new Date().toISOString().slice(0, 10),
@@ -612,6 +616,45 @@ export function setEstado(id, estado, meta = {}) {
     de: prev ? prev.estado : '', a: estado, motivo: meta.motivo || ''
   });
   return updated;
+}
+
+/* ─── Ciclo del organismo (Fase 1) ─── */
+const DESDE_ENVIO = ['Preinscrito', 'En corrección', 'Rechazado'];
+
+/* El propio organismo envía su formulario: Preinscrito (cargue masivo) o devuelto → En revisión
+   en la bandeja de su superior. En federaciones, los dos avales vuelven a empezar. */
+export function enviarRegistro(id, patch = {}, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
+  const extra = o.tipo === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {};
+  return setEstado(id, 'En revisión', {
+    ...meta, accion: o.estado === 'Preinscrito' ? 'Formulario enviado' : 'Corregido y reenviado',
+    patch: { ...patch, ...extra, enviadoFecha: new Date().toISOString().slice(0, 10) }
+  });
+}
+
+/* Sanción del Ministerio (motivo obligatorio). Suspendido: el organismo no opera mientras dure;
+   sus hijos NO cambian de estado (propuesta P-18). Cancelado: reemplaza al borrado, no vuelve. */
+export function sancionar(id, estado, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || !['Suspendido', 'Cancelado'].includes(estado)) return o;
+  if (!(o.estado === 'Activo' || (estado === 'Cancelado' && o.estado === 'Suspendido'))) return o;
+  return setEstado(id, estado, { ...meta, accion: estado === 'Suspendido' ? 'Suspendido por el Ministerio' : 'Cancelado por el Ministerio' });
+}
+
+/* Reactivación (propuesta P-08): nueva validación sobre los datos que ya existen. El organismo
+   suspendido vuelve a En revisión en la bandeja de su superior; no se activa directo. */
+export function reactivar(id, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || o.estado !== 'Suspendido') return o;
+  const extra = o.tipo === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {};
+  return setEstado(id, 'En revisión', { ...meta, accion: 'Reactivación: vuelve a revisión', patch: extra });
+}
+
+/* Último cambio que dejó al organismo en su estado actual (quién, cuándo, motivo), o null. */
+export function ultimoCambio(id) {
+  const o = getOrganismo(id);
+  return o ? (allAudit(id).find((a) => a.a === o.estado && a.de !== a.a) || null) : null;
 }
 
 /* Log de auditoría (acciones sobre organismos). Más reciente primero. */
@@ -636,6 +679,7 @@ export function allAudit(orgId) {
 export function seedTrazabilidadDemo() {
   const mode = (function () { try { return localStorage.getItem('naowee-organismos-demo-mode'); } catch (_) { return null; } })();
   if (mode === 'blank') return;                         // modo guiado/vacío → sin historial sembrado
+  seedCicloDemo();
   if (allAudit('FED-040').length) return;               // idempotente
   const trail = [
     // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
@@ -654,6 +698,24 @@ export function seedTrazabilidadDemo() {
     { orgId: 'CLU-001', fecha: '2026-03-25', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Habilitado por la Liga', de: 'En revisión', a: 'Activo', motivo: 'Documentación completa' }
   ];
   trail.forEach((e) => auditLog(e));
+}
+/* Fase 1: quién y por qué dejó a cada organismo de la demo en su estado (motivo visible en
+   «Mi organismo» y en la ficha). Guarda propia para sesiones que ya tenían la traza del hilo. */
+function seedCicloDemo() {
+  if (allAudit('CLU-012').length) return;
+  const M = 'María F. Rojas';
+  [
+    { orgId: 'CLU-002', fecha: '2026-06-10', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'LIG-005', fecha: '2026-06-01', responsable: 'Mónica Martínez Ospina', rol: 'Federación', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'FED-057', fecha: '2026-04-04', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'CLU-012', fecha: '2026-09-20', responsable: 'Mauricio Gil Restrepo', rol: 'Club', accion: 'Registro público', de: '', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-012', fecha: '2026-09-24', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Corrección solicitada', de: 'En revisión', a: 'En corrección', motivo: 'Documentación incompleta — falta el reconocimiento deportivo del ente municipal' },
+    { orgId: 'CLU-008', fecha: '2026-05-28', responsable: 'Diego Ospina Marín', rol: 'Liga', accion: 'Rechazado', de: 'En revisión', a: 'Rechazado', motivo: 'Reconocimiento deportivo no válido o vencido — venció en enero de 2026' },
+    { orgId: 'LIG-007', fecha: '2026-04-15', responsable: 'Ángela Naranjo Rodríguez', rol: 'Federación', accion: 'Rechazado', de: 'En revisión', a: 'Rechazado', motivo: 'Datos del representante legal incorrectos' },
+    { orgId: 'LIG-008', fecha: '2026-08-12', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'Investigación disciplinaria abierta por la Inspección, Vigilancia y Control' },
+    { orgId: 'CLU-010', fecha: '2026-07-30', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'Reconocimiento deportivo vencido sin renovar' },
+    { orgId: 'FED-037', fecha: '2026-06-18', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'No presentó informe de gestión anual' }
+  ].forEach((e) => auditLog(e));
 }
 
 /* ═══════════════════════════════════════════════════════════════

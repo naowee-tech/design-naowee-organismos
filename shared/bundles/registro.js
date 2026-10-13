@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // shared/estados.js
+  // estados.js
   var init_estados = __esm({
-    "shared/estados.js"() {
+    "estados.js"() {
     }
   });
 
-  // shared/organismos-data.js
+  // organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -61,6 +61,7 @@
         return null;
       }
     }();
+    seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
     }
@@ -109,6 +110,26 @@
     writeStore("afiliaciones", [...list, rec]);
     return { ...rec };
   }
+  function cambiarAfiliacion(sujetoId, organismoId, estado, meta = {}) {
+    const list = allAfiliaciones();
+    const desde = estado === "Terminada" ? ["Vinculada"] : ["Solicitada"];
+    let i = list.findIndex((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && desde.includes(a.estado));
+    if (i < 0 && estado === "Vinculada") {
+      list.push({ id: "AF-" + String(list.length + 1).padStart(4, "0"), tipo: meta.tipo || "deportista", sujetoId, organismoId, deporte: meta.deporte || "", estado: "Solicitada", origen: meta.origen || "club", fecha: _todayISO() });
+      i = list.length - 1;
+    }
+    if (i < 0) return null;
+    const hoy = _todayISO();
+    list[i] = {
+      ...list[i],
+      estado,
+      motivo: meta.motivo || list[i].motivo || "",
+      ...estado === "Vinculada" ? { desde: hoy } : {},
+      ...estado === "Terminada" ? { hasta: hoy, fin: meta.fin || "retiro" } : {}
+    };
+    writeStore("afiliaciones", list);
+    return { ...list[i] };
+  }
   function nextOrgId(tipo) {
     const prefix = ID_PREFIX[tipo] || "ORG";
     const nuevos = readStore("organismos-nuevos", []) || [];
@@ -135,6 +156,50 @@
   function comitePorSector(sector) {
     return allOrganismos().find((o) => o.tipo === "comite" && o.sector === sector) || null;
   }
+  function updateOrganismo(id, patch) {
+    const nuevos = readStore("organismos-nuevos", []) || [];
+    const i = nuevos.findIndex((o) => o.id === id);
+    if (i >= 0) {
+      nuevos[i] = { ...nuevos[i], ...patch };
+      writeStore("organismos-nuevos", nuevos);
+    } else {
+      const overrides = readStore("organismos-overrides", {}) || {};
+      overrides[id] = { ...overrides[id] || {}, ...patch };
+      writeStore("organismos-overrides", overrides);
+    }
+    return getOrganismo(id);
+  }
+  function setEstado(id, estado, meta = {}) {
+    const prev = getOrganismo(id);
+    const updated = updateOrganismo(id, { estado, ...meta.patch || {} });
+    if (updated && updated.tipo === "club" && updated.parentId) {
+      if (estado === "Activo") cambiarAfiliacion(id, updated.parentId, "Vinculada", { tipo: "club", origen: "activacion" });
+      if (estado === "Rechazado") cambiarAfiliacion(id, updated.parentId, "Rechazada", { motivo: meta.motivo });
+      if (estado === "En revisi\xF3n") solicitarAfiliacion({ tipo: "club", sujetoId: id, organismoId: updated.parentId, deporte: updated.deporte, origen: "activacion" });
+    }
+    auditLog({
+      orgId: id,
+      notif: true,
+      fecha: meta.fecha || (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+      responsable: meta.responsable || "",
+      rol: meta.rol || "",
+      accion: meta.accion || "Cambio de estado",
+      de: prev ? prev.estado : "",
+      a: estado,
+      motivo: meta.motivo || ""
+    });
+    return updated;
+  }
+  function enviarRegistro(id, patch = {}, meta = {}) {
+    const o = getOrganismo(id);
+    if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
+    const extra = o.tipo === "federacion" ? { validacion: { mindeporte: "pendiente", comite: "pendiente" } } : {};
+    return setEstado(id, "En revisi\xF3n", {
+      ...meta,
+      accion: o.estado === "Preinscrito" ? "Formulario enviado" : "Corregido y reenviado",
+      patch: { ...patch, ...extra, enviadoFecha: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) }
+    });
+  }
   function auditLog(entry) {
     const list = readStore("audit", []) || [];
     const record = { id: "AU-" + String(list.length + 1).padStart(4, "0"), ...entry };
@@ -142,15 +207,64 @@
     writeStore("audit", list);
     return { ...record };
   }
+  function allAudit(orgId) {
+    const list = (readStore("audit", []) || []).map((a) => ({ ...a }));
+    return orgId ? list.filter((a) => a.orgId === orgId) : list;
+  }
+  function seedTrazabilidadDemo() {
+    const mode = function() {
+      try {
+        return localStorage.getItem("naowee-organismos-demo-mode");
+      } catch (_) {
+        return null;
+      }
+    }();
+    if (mode === "blank") return;
+    seedCicloDemo();
+    if (allAudit("FED-040").length) return;
+    const trail = [
+      // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
+      { orgId: "FED-040", fecha: "2026-02-10", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "FED-040", fecha: "2026-02-12", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Formulario enviado", de: "Preinscrito", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "FED-040", fecha: "2026-02-16", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Aval del Comit\xE9 registrado", de: "En revisi\xF3n", a: "En revisi\xF3n", motivo: "Doble validaci\xF3n: mitad del Comit\xE9 aprobada" },
+      { orgId: "FED-040", fecha: "2026-02-20", responsable: "Mar\xEDa F. Rojas", rol: "Ministerio", accion: "Habilitada por el Ministerio", de: "En revisi\xF3n", a: "Activo", motivo: "Doble validaci\xF3n completa (Ministerio + Comit\xE9)" },
+      // Liga del Valle: la cargó la Federación, completó y envió; la aprueba la Federación
+      { orgId: "LIG-001", fecha: "2026-03-02", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "LIG-001", fecha: "2026-03-05", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Formulario enviado", de: "Preinscrito", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "LIG-001", fecha: "2026-03-08", responsable: "Alberto Herrera", rol: "Federaci\xF3n", accion: "Habilitada por la Federaci\xF3n", de: "En revisi\xF3n", a: "Activo", motivo: "Reconocimiento deportivo (IVC) verificado" },
+      // Club Patín Cali: autorregistro público; la Liga devuelve a corrección, el club corrige y reenvía
+      { orgId: "CLU-001", fecha: "2026-03-15", responsable: "\xD3scar Cardona", rol: "Club", accion: "Registro p\xFAblico", de: "", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-001", fecha: "2026-03-18", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Correcci\xF3n solicitada", de: "En revisi\xF3n", a: "En correcci\xF3n", motivo: "Falta el reconocimiento del ente municipal" },
+      { orgId: "CLU-001", fecha: "2026-03-21", responsable: "\xD3scar Cardona", rol: "Club", accion: "Corregido y reenviado", de: "En correcci\xF3n", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-001", fecha: "2026-03-25", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Habilitado por la Liga", de: "En revisi\xF3n", a: "Activo", motivo: "Documentaci\xF3n completa" }
+    ];
+    trail.forEach((e) => auditLog(e));
+  }
+  function seedCicloDemo() {
+    if (allAudit("CLU-012").length) return;
+    const M = "Mar\xEDa F. Rojas";
+    [
+      { orgId: "CLU-002", fecha: "2026-06-10", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "LIG-005", fecha: "2026-06-01", responsable: "M\xF3nica Mart\xEDnez Ospina", rol: "Federaci\xF3n", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "FED-057", fecha: "2026-04-04", responsable: "Camilo Duarte", rol: "Comit\xE9 (COC)", accion: "Cargue masivo", de: "", a: "Preinscrito", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-20", responsable: "Mauricio Gil Restrepo", rol: "Club", accion: "Registro p\xFAblico", de: "", a: "En revisi\xF3n", motivo: "" },
+      { orgId: "CLU-012", fecha: "2026-09-24", responsable: "Sandra Mej\xEDa", rol: "Liga", accion: "Correcci\xF3n solicitada", de: "En revisi\xF3n", a: "En correcci\xF3n", motivo: "Documentaci\xF3n incompleta \u2014 falta el reconocimiento deportivo del ente municipal" },
+      { orgId: "CLU-008", fecha: "2026-05-28", responsable: "Diego Ospina Mar\xEDn", rol: "Liga", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Reconocimiento deportivo no v\xE1lido o vencido \u2014 venci\xF3 en enero de 2026" },
+      { orgId: "LIG-007", fecha: "2026-04-15", responsable: "\xC1ngela Naranjo Rodr\xEDguez", rol: "Federaci\xF3n", accion: "Rechazado", de: "En revisi\xF3n", a: "Rechazado", motivo: "Datos del representante legal incorrectos" },
+      { orgId: "LIG-008", fecha: "2026-08-12", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Investigaci\xF3n disciplinaria abierta por la Inspecci\xF3n, Vigilancia y Control" },
+      { orgId: "CLU-010", fecha: "2026-07-30", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "Reconocimiento deportivo vencido sin renovar" },
+      { orgId: "FED-037", fecha: "2026-06-18", responsable: M, rol: "Ministerio", accion: "Suspendido por el Ministerio", de: "Activo", a: "Suspendido", motivo: "No present\xF3 informe de gesti\xF3n anual" }
+    ].forEach((e) => auditLog(e));
+  }
   function allSolicitudes() {
     return (readStore("solicitudes", []) || []).map((s) => ({ ...s }));
   }
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
   var init_organismos_data = __esm({
-    "shared/organismos-data.js"() {
+    "organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -242,6 +356,8 @@
         { id: "CLU-008", tipo: "club", nombre: "Club Nataci\xF3n Pac\xEDfico", nit: "805020008-8", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "Rechazado", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000408", nombre: "Mateo", apellido: "Angulo Mena", correo: "admin@natacionpacifico.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buenaventura", zona: "Urbana", direccion: "Cra. 3 # 5-30" }, contacto: { telefono: "6025080808", correo: "contacto@natacionpacifico.demo.co" }, fechaRegistro: "2026-05-25" },
         { id: "CLU-009", tipo: "club", nombre: "Club Pat\xEDn Bogot\xE1", nit: "805020009-9", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-003", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000409", nombre: "Daniela", apellido: "Su\xE1rez Gil", correo: "admin@patinbogota.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Cra. 60 # 63-20" }, contacto: { telefono: "6015090909", correo: "contacto@patinbogota.demo.co" }, fechaRegistro: "2026-05-12" },
         { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" },
+        /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+        { id: "CLU-012", tipo: "club", nombre: "Club Halcones de Tulu\xE1", nit: "805020012-3", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-001", estado: "En correcci\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000412", nombre: "Mauricio", apellido: "Gil Restrepo", correo: "admin@halconestulua.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Tulu\xE1", zona: "Urbana", direccion: "Cra. 26 # 30-12" }, contacto: { telefono: "6022240012", correo: "contacto@halconestulua.demo.co" }, fechaRegistro: "2026-09-20" },
         /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
         { id: "CLU-011", tipo: "club", nombre: "Club Delfines de Buga", nit: "805020011-1", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000411", nombre: "Lorena", apellido: "Gil Ocampo", correo: "admin@delfinesbuga.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buga", zona: "Urbana", direccion: "Calle 4 # 14-30" }, contacto: { telefono: "6022360011", correo: "contacto@delfinesbuga.demo.co" }, fechaRegistro: "2026-09-28" }
       ];
@@ -291,11 +407,12 @@
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
       SEED_VERSION = "0.2.0";
       ID_PREFIX = { comite: "COM", federacion: "FED", liga: "LIG", club: "CLU" };
+      DESDE_ENVIO = ["Preinscrito", "En correcci\xF3n", "Rechazado"];
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     }
   });
 
-  // shared/permissions.js
+  // permissions.js
   function contextoDe(role3) {
     if (!TIPO_DE_ROL[role3]) return null;
     const valido = (id) => {
@@ -327,7 +444,7 @@
   }
   var ACCIONES, RECURSOS, SCOPE, TIPO_DE_ROL, CTX_KEY;
   var init_permissions = __esm({
-    "shared/permissions.js"() {
+    "permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -360,7 +477,7 @@
     }
   });
 
-  // shared/sidebar.js
+  // sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -372,10 +489,11 @@
     let id = null;
     try {
       id = new URLSearchParams(window.location.search).get("como");
-      if (id && PERSONAS[id]) sessionStorage.setItem(PERSONA_KEY, id);
+      if (id && (PERSONAS[id] || id === "org")) sessionStorage.setItem(PERSONA_KEY, id);
       else id = sessionStorage.getItem(PERSONA_KEY);
     } catch (_) {
     }
+    if (id === "org") return null;
     if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode3] || null;
     const p = PERSONAS[id];
     return p && p.contextos.some((c) => c.role === roleCode3) ? { id, ...p } : null;
@@ -385,10 +503,17 @@
     const code = params.get("role");
     return ROLES[code] ? code : "MINDEPORTE";
   }
+  function organismoNoActivo(code) {
+    if (!ROLES_ORGANISMO.includes(code)) return null;
+    const o = getOrganismo(scopeFor(code));
+    return o && o.estado !== "Activo" ? o : null;
+  }
   function getMenuForRole(code) {
+    if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
     return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
   }
   function homeForRole(code) {
+    if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
     if (code === "DEPORTISTA") return "afiliacion.html";
     if (code === "PERSONA") return "perfil.html";
@@ -812,9 +937,9 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "shared/sidebar.js"() {
+    "sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1030,9 +1155,20 @@
           if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
           const org = getOrganismo(scopeFor(code));
           if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+          if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
+            const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ""}`.trim();
+            Object.assign(ROLES[code], {
+              userName: nombre,
+              userEmail: org.repLegal.correo || "",
+              userDoc: `${org.repLegal.tipoDoc || "CC"} ${org.repLegal.numDoc || ""}`,
+              avatar: nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+            });
+          }
         } catch (_) {
         }
       })();
+      ROLES_ORGANISMO = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
+      MENU_NO_ACTIVO = [{ section: null, items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }];
       _toastTimer = null;
       _tooltipEl = null;
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
@@ -1050,7 +1186,7 @@
     }
   });
 
-  // shared/registro.js
+  // registro.js
   var registro_exports = {};
   function freshData() {
     return {
@@ -1068,6 +1204,24 @@
       contacto: { telefono: "", correo: "" },
       documentos: {},
       aceptaPoliticas: false
+    };
+  }
+  function dataDesde(o) {
+    const base = freshData();
+    return {
+      ...base,
+      nombre: o.nombre || "",
+      nit: o.nit || "",
+      deporte: o.deporte && o.deporte !== "\u2014" ? o.deporte : "",
+      sector: o.sector || "",
+      tipoClub: o.tipoClub || "",
+      ambito: o.ambito || "",
+      superiorId: o.parentId || "",
+      repLegal: { ...base.repLegal, ...o.repLegal || {} },
+      ubicacion: { ...base.ubicacion, ...o.ubicacion || {} },
+      contacto: { ...base.contacto, ...o.contacto || {} },
+      documentos: { ...o.documentos || {} },
+      aceptaPoliticas: !!o.aceptaPoliticas
     };
   }
   function applyMask(type, raw) {
@@ -1095,7 +1249,8 @@
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   }
   function pasosAplicables() {
-    return STATE.tipo ? STEPS_POR_ORGANISMO[STATE.tipo] : [0];
+    if (!STATE.tipo) return [0];
+    return COMPLETAR ? STEPS_POR_ORGANISMO[STATE.tipo].filter((x) => x !== 0) : STEPS_POR_ORGANISMO[STATE.tipo];
   }
   function indiceVisual(step) {
     return pasosAplicables().indexOf(step);
@@ -1444,7 +1599,7 @@
     const vi = indiceVisual(STATE.step);
     const esUltimoFormulario = STATE.step === 5;
     const back2 = vi > 0 ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="regBack">Atr\xE1s</button>` : `<span></span>`;
-    const nextLabel = esUltimoFormulario ? "Enviar registro" : STATE.step === 0 ? "Comenzar" : "Siguiente";
+    const nextLabel = esUltimoFormulario ? COMPLETAR ? "Enviar a revisi\xF3n" : "Enviar registro" : STATE.step === 0 ? "Comenzar" : "Siguiente";
     const nextId = esUltimoFormulario ? "regSubmit" : "regNext";
     footer.innerHTML = `${back2}<span class="reg-footer__spacer"></span>
     <button type="button" class="naowee-btn naowee-btn--loud" id="${nextId}">${nextLabel}</button>`;
@@ -1867,7 +2022,7 @@
         reqTf("f-nit", d.nit.trim());
         if (!d.tipoClub) errs.push({ field: "dd-tipoClub", kind: "choice" });
       }
-      if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim()) && !errs.some((e) => e.field === "f-nit")) {
+      if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim() && (!COMPLETAR || o.id !== COMPLETAR.id)) && !errs.some((e) => e.field === "f-nit")) {
         errs.push({ field: "f-nit", kind: "tf", msg: "Este NIT ya est\xE1 registrado en el SUID." });
       }
     } else if (step === 2) {
@@ -1975,6 +2130,25 @@
       return;
     }
     const d = STATE.data;
+    if (COMPLETAR) {
+      const patch = {
+        nombre: d.nombre.trim(),
+        nit: d.nit.trim(),
+        repLegal: { ...d.repLegal },
+        ubicacion: { ...d.ubicacion },
+        contacto: { ...d.contacto },
+        documentos: { ...d.documentos },
+        aceptaPoliticas: d.aceptaPoliticas
+      };
+      if (STATE.tipo === "club") patch.tipoClub = d.tipoClub;
+      if (STATE.tipo === "liga") patch.ambito = d.ambito;
+      const _actor2 = ROLES[roleCode] || {};
+      created = enviarRegistro(COMPLETAR.id, patch, { responsable: _actor2.userName || roleCode, rol: _actor2.label || roleCode });
+      STATE.step = 6;
+      window.naoweeToast && window.naoweeToast("Registro enviado a revisi\xF3n", "success");
+      render();
+      return;
+    }
     let parentId = null, sector = d.sector || "";
     if (STATE.tipo === "federacion") {
       const c = comitePorSector(d.sector);
@@ -2022,6 +2196,7 @@
     render();
   }
   function renderSuccess() {
+    var _a;
     const org = created;
     const sup = org.parentId ? getOrganismo(org.parentId) : null;
     root.innerHTML = `
@@ -2034,9 +2209,9 @@
         <div class="reg-confetti" id="regConfetti"></div>
         <div class="reg-success__hero">
           <div class="reg-success__check">${I.check}</div>
-          <h2 class="reg-success__title">\xA1Registro enviado con \xE9xito!</h2>
-          <p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> qued\xF3 en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === "comite" ? "Como cabeza de sector queda Activo de inmediato, sin aprobaci\xF3n superior." : "Su nivel superior la revisar\xE1 desde la Bandeja de aprobaciones."}</p>
-          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto">
+          <h2 class="reg-success__title">${COMPLETAR ? "Enviado a revisi\xF3n" : "\xA1Registro enviado con \xE9xito!"}</h2>
+          ${COMPLETAR ? `<p class="reg-success__lead"><strong>${esc(org.nombre)}</strong> qued\xF3 <strong>En revisi\xF3n</strong>. ${sup ? esc(sup.nombre) : "Tu superior"} lo revisa desde su bandeja y te avisamos por correo cuando decida.</p>` : `<p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> qued\xF3 en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === "comite" ? "Como cabeza de sector queda Activo de inmediato, sin aprobaci\xF3n superior." : "Su nivel superior la revisar\xE1 desde la Bandeja de aprobaciones."}</p>`}
+          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto${COMPLETAR ? ";display:none" : ""}">
             <span class="naowee-message__icon">${I.bang}</span>
             <div class="naowee-message__body"><p class="naowee-message__text">${org.tipo === "comite" ? "Como cabeza de sector del SND, este comit\xE9 queda Activo de inmediato, sin aprobaci\xF3n superior. Ya aparece en la jerarqu\xEDa como nodo ra\xEDz." : "Este registro ya aparece en la jerarqu\xEDa del SND bajo su superior. La aprobaci\xF3n (En revisi\xF3n \u2192 Activo) se ejercita en la Bandeja."}</p></div>
           </div>
@@ -2058,14 +2233,14 @@
             </div>
           </div>
           <div class="reg-success__actions">
-            <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarqu\xEDa</a>
-            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>
+            ${COMPLETAR ? `<a class="naowee-btn naowee-btn--loud" href="organismo-detalle.html?role=${encodeURIComponent(roleCode)}">Ver mi organismo</a>` : `<a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarqu\xEDa</a>
+            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>`}
           </div>
         </div>
       </div>
     </div>`;
     spawnConfetti();
-    document.getElementById("regAnother").addEventListener("click", () => {
+    (_a = document.getElementById("regAnother")) == null ? void 0 : _a.addEventListener("click", () => {
       created = null;
       STATE = { tipo: precargaTipo(), step: 0, data: freshData() };
       render();
@@ -2131,9 +2306,9 @@
     STATE = { tipo: precargaTipo(), step: 0, data: freshData() };
     render();
   }
-  var I, TIPO_META, TIPO_SINGULAR, SECTORES, TIPO_DOC, ZONAS, AMBITOS, TIPOS_CLUB, TIPOS_VIA, LETRAS_VIA, DEPARTAMENTOS, DEPORTES, PRECARGA_TIPO, STEP_LABELS, STEPS_POR_ORGANISMO, DOCS_POR_TIPO, roleCode, role, DRAFT_KEY, STATE, created, esc, norm, EMAIL_RE, saveTimer, root;
+  var I, TIPO_META, TIPO_SINGULAR, SECTORES, TIPO_DOC, ZONAS, AMBITOS, TIPOS_CLUB, TIPOS_VIA, LETRAS_VIA, DEPARTAMENTOS, DEPORTES, PRECARGA_TIPO, STEP_LABELS, STEPS_POR_ORGANISMO, DOCS_POR_TIPO, roleCode, role, DRAFT_KEY, STATE, created, COMPLETAR, esc, norm, EMAIL_RE, saveTimer, root;
   var init_registro = __esm({
-    "shared/registro.js"() {
+    "registro.js"() {
       init_organismos_data();
       init_sidebar();
       I = {
@@ -2195,6 +2370,11 @@
       DRAFT_KEY = "registro-draft";
       STATE = { tipo: "", step: 0, data: freshData() };
       created = null;
+      COMPLETAR = (() => {
+        const id = new URLSearchParams(window.location.search).get("completar");
+        const o = id ? getOrganismo(id) : null;
+        return o && ["Preinscrito", "En correcci\xF3n", "Rechazado"].includes(o.estado) ? o : null;
+      })();
       esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]);
       norm = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
       EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -2204,11 +2384,20 @@
       });
       root = document.getElementById("regRoot");
       seedDemoData();
-      offerDraft();
+      if (COMPLETAR) {
+        const t = document.querySelector(".page-head__title");
+        const sub = document.querySelector(".page-head__sub");
+        if (t) t.textContent = COMPLETAR.estado === "Preinscrito" ? "Completar registro" : "Corregir y reenviar";
+        if (sub) sub.textContent = COMPLETAR.estado === "Preinscrito" ? `Tu superior carg\xF3 los datos b\xE1sicos de ${COMPLETAR.nombre}. Rev\xEDsalos, completa lo que falta y sube los documentos. Al enviarlo queda En revisi\xF3n en su bandeja.` : `Corrige lo que te pidieron y vuelve a enviarlo. Queda En revisi\xF3n en la bandeja de tu superior.`;
+        STATE = { tipo: COMPLETAR.tipo, step: 1, data: dataDesde(COMPLETAR) };
+        render();
+      } else {
+        offerDraft();
+      }
     }
   });
 
-  // shared/entries/registro.js
+  // entries/registro.js
   init_sidebar();
   var roleCode2 = getRoleFromQuery();
   var role2 = ROLES[roleCode2];

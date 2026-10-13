@@ -25,11 +25,13 @@ import {
 import { can, scopeFor, isGlobalScope } from './permissions.js';
 import { mountDevnotes } from './devnotes.js';
 import { estadoBadgeVariant } from './estados.js';
+import { estadoPropioHtml, sancionesHtml, abrirSancion } from './ciclo.js';
 
 const params = new URLSearchParams(window.location.search);
 const roleCode = getRoleFromQuery();
 const role = ROLES[roleCode] || {};
-const id = params.get('id') || '';
+/* Sin ?id, el administrador de un organismo abre el suyo («Mi organismo»). */
+const id = params.get('id') || (['COMITE', 'FEDERACION', 'LIGA', 'CLUB'].includes(roleCode) ? scopeFor(roleCode) : '') || '';
 const fromParam = params.get('from') || '';
 const root = document.getElementById('detalleRoot');
 
@@ -83,7 +85,7 @@ function inJurisdiction(orgId) {
     const chain = new Set(dep.clubIds.flatMap((c) => [c, ...ancestorsOf(c).map((a) => a.id)]));
     return chain.has(orgId);
   }
-  if (orgId === scopeId) return true;                    // su propio nodo (raíz de su jurisdicción)
+  if (orgId === scopeId) return true;                    // su propio nodo («Mi organismo» incluido)
   return subtreeOf(scopeId).some((x) => x.id === orgId); // o su subárbol
 }
 
@@ -105,11 +107,24 @@ function emptyState(title, desc) {
 function backBtnHtml() {
   return `<div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${I.back}Volver</button><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>`;
 }
-const DEVNOTES = { detalle: { title: 'Ficha de organismo · navegación', items: [
-  'Orden en la ficha: breadcrumb de ancestros (<code>breadcrumbHtml</code>) arriba y «Volver» debajo; en los estados de error «Volver» va solo.',
-  '«Volver» (<code>goBack</code>): si hay historial interno hace <code>history.back()</code> y conserva el estado de la jerarquía; si se llegó directo, va a <code>?from=</code> (solo <code>nombre.html</code>, validado por regex) o al inicio del rol.',
-  'Entra desde «Ver detalles» de <code>jerarquia.html</code> (<code>?id=&amp;role=</code>). El alcance se valida con <code>scopeFor</code>: fuera de jurisdicción muestra «sin acceso», sin datos.',
-  'Solo lectura: si el organismo está «En revisión» y el rol puede aprobar, enlaza a la Bandeja; las acciones no viven aquí.'
+const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por dentro', sections: [
+  { title: 'Navegación', items: [
+    'Breadcrumb de ancestros arriba y «Volver» debajo (<code>goBack</code>: <code>history.back()</code> si hay historial; si no, <code>?from=</code> o el inicio del rol).',
+    'El alcance se valida con <code>scopeFor</code>: fuera de jurisdicción muestra «sin acceso», sin datos.',
+    'Si el organismo está En revisión y el rol puede aprobarlo, enlaza a la Bandeja: aprobar, devolver y rechazar viven allí.'
+  ] },
+  { title: '«Mi organismo» (Fase 1)', items: [
+    'Sin <code>?id</code>, el administrador abre su propio organismo. Si no está <strong>Activo</strong> su menú se reduce a «Mi organismo» (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.',
+    'Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qué pasó, el motivo con quién y cuándo (último cambio en la trazabilidad), qué le toca, lo que puede y no puede hacer y el recorrido.',
+    'Preinscrito, En corrección y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisión</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.',
+    'Solo demo: «Entrar como …» desde la bandeja del superior o después de un cargue masivo simula el acceso que le llega por correo al organismo. Su administrador es el representante legal.'
+  ] },
+  { title: 'Sanciones del Ministerio (Fase 1)', items: [
+    'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
+    'Cada acción pide motivo; el detalle es obligatorio al cancelar o con «Otro», y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.',
+    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (propuesta P-18).',
+    'Reactivar no activa directo: vuelve a En revisión en la bandeja del superior, sobre los datos que ya tiene (propuesta P-08). Causales y qué pasa con los deportistas al cancelar siguen abiertos con Negocio.'
+  ] }
 ] } };
 function goBack() {
   const target = fromParam && /^[a-z-]+\.html$/.test(fromParam)
@@ -159,6 +174,11 @@ function breadcrumbHtml(o) {
   return `<nav class="naowee-breadcrumb od-crumbs" aria-label="Ruta jerárquica ascendente">${crumbs.join(`<span class="naowee-breadcrumb__sep">${I.sep}</span>`)}</nav>`;
 }
 
+/* «Mi organismo»: el administrador mirando el suyo. */
+const ROLES_ORG = ['COMITE', 'FEDERACION', 'LIGA', 'CLUB'];
+const esPropio = (o) => ROLES_ORG.includes(roleCode) && o.id === scopeFor(roleCode);
+const conBloqueEstado = (o) => esPropio(o) && o.estado !== 'Activo';
+
 function heroHtml(o) {
   const metaParts = [`NIT <b>${esc(o.nit)}</b>`];
   if (o.deporte && o.deporte !== '—') metaParts.push(esc(o.deporte));
@@ -175,12 +195,12 @@ function heroHtml(o) {
       <div class="od-hero__main">
         <div class="od-hero__title-row">
           <h1 class="od-hero__name">${esc(o.nombre)}</h1>
-          ${badge(o.estado)}
+          ${conBloqueEstado(o) ? '' : badge(o.estado)}
         </div>
         <p class="od-hero__meta">${metaParts.join('<span class="od-dot">·</span>')}</p>
       </div>
       <div class="od-hero__actions">
-        <span class="od-ro" title="Perfil de solo lectura — las acciones viven en la Bandeja">${I.lock} Solo lectura</span>
+        ${roleCode === 'MINDEPORTE' || esPropio(o) ? '' : `<span class="od-ro" title="Perfil de solo lectura — las acciones viven en la Bandeja">${I.lock} Solo lectura</span>`}
         ${bandejaLink}
       </div>
     </div>`;
@@ -335,9 +355,11 @@ function panelFor(tab, o) {
 
 function renderProfile(o) {
   let active = 'info';
-  root.innerHTML = `${breadcrumbHtml(o)}
-    ${backBtnHtml()}
+  root.innerHTML = `${esPropio(o) ? '' : breadcrumbHtml(o)}
+    ${esPropio(o) ? '<div class="od-back"><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>' : backBtnHtml()}
+    ${conBloqueEstado(o) ? estadoPropioHtml(o, roleCode) : ''}
     ${heroHtml(o)}
+    ${roleCode === 'MINDEPORTE' ? sancionesHtml(o) : ''}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
         ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? 'naowee-tab--selected' : ''}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc(l)}</button>`).join('')}
@@ -359,6 +381,14 @@ function renderProfile(o) {
   }));
   paint();
   wireBack();
+  root.querySelectorAll('[data-sancion]').forEach((b) => b.addEventListener('click', () => {
+    abrirSancion(b.dataset.sancion, o, { responsable: role.userName || 'Ministerio', rol: 'Ministerio' }, (acc) => {
+      const msgs = { suspender: 'quedó suspendido', cancelar: 'quedó con el registro cancelado', reactivar: 'volvió a revisión de su superior' };
+      window.naoweeToast && window.naoweeToast(`${o.nombre} ${msgs[acc]}. Se le notificó por correo.`, 'success');
+      renderProfile(getOrganismo(o.id));
+    });
+  }));
+  mountDevnotes(DEVNOTES);
 }
 
 /* ─── Wiring común ─── */
