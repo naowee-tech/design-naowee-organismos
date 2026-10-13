@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // estados.js
+  // shared/estados.js
   function estadoBadgeVariant(estado) {
     return BADGE_VARIANT[estado] || "neutral";
   }
   var BADGE_VARIANT;
   var init_estados = __esm({
-    "estados.js"() {
+    "shared/estados.js"() {
       BADGE_VARIANT = {
         "Preinscrito": "neutral",
         "En revisi\xF3n": "caution",
@@ -24,7 +24,7 @@
     }
   });
 
-  // organismos-data.js
+  // shared/organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -369,7 +369,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, _todayISO, enTerritorio, EVENTOS;
   var init_organismos_data = __esm({
-    "organismos-data.js"() {
+    "shared/organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -537,7 +537,7 @@
     }
   });
 
-  // permissions.js
+  // shared/permissions.js
   function can(role3, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -600,7 +600,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
-    "permissions.js"() {
+    "shared/permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -750,7 +750,7 @@
     }
   });
 
-  // sidebar.js
+  // shared/sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -1234,7 +1234,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "sidebar.js"() {
+    "shared/sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1527,7 +1527,7 @@
     }
   });
 
-  // devnotes.js
+  // shared/devnotes.js
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -1541,11 +1541,11 @@
     });
   }
   var init_devnotes = __esm({
-    "devnotes.js"() {
+    "shared/devnotes.js"() {
     }
   });
 
-  // ciclo.js
+  // shared/ciclo.js
   function revisor(o2) {
     const sup = o2.parentId ? getOrganismo(o2.parentId) : null;
     if (o2.tipo === "federacion") return { nombre: `${sup ? sup.nombre : "el Comit\xE9"} y el Ministerio`, corto: "el Comit\xE9 y el Ministerio" };
@@ -1726,7 +1726,7 @@
   }
   var esc, MESES, fecha, badge, TIPO, EL, SI, NO, EDIT, paso, cap, MOTIVOS, ES_SANCION;
   var init_ciclo = __esm({
-    "ciclo.js"() {
+    "shared/ciclo.js"() {
       init_organismos_data();
       init_estados();
       esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -1755,7 +1755,7 @@
     }
   });
 
-  // detalle.js
+  // shared/detalle.js
   var detalle_exports = {};
   function fmtDate(iso) {
     if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || "\u2014";
@@ -2070,7 +2070,7 @@
   }
   var params, roleCode, role, id, fromParam, root, esc2, cap2, EMOJI, TYPE_LABEL, RECURSO_BY_TIPO, COBERTURA_BY_TIPO, DOC_LABELS, I, MESES2, DEVNOTES, ROLES_ORG, esPropio, conBloqueEstado, ROL_DE_TIPO, seg, TABS, o;
   var init_detalle = __esm({
-    "detalle.js"() {
+    "shared/detalle.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
@@ -2157,7 +2157,7 @@
     }
   });
 
-  // entries/organismo-detalle.js
+  // shared/entries/organismo-detalle.js
   init_sidebar();
   init_organismos_data();
   seedDemoData();

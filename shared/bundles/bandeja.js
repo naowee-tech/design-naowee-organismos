@@ -9,7 +9,7 @@
       __defProp(target2, name, { get: all[name], enumerable: true });
   };
 
-  // estados.js
+  // shared/estados.js
   function estadoBadgeVariant(estado) {
     return BADGE_VARIANT[estado] || "neutral";
   }
@@ -31,7 +31,7 @@
   }
   var BADGE_VARIANT, TRANSICIONES;
   var init_estados = __esm({
-    "estados.js"() {
+    "shared/estados.js"() {
       BADGE_VARIANT = {
         "Preinscrito": "neutral",
         "En revisi\xF3n": "caution",
@@ -56,7 +56,7 @@
     }
   });
 
-  // organismos-data.js
+  // shared/organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -434,7 +434,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO, TER_PREFIX, nombreTerritorio, USUARIOS_SEED;
   var init_organismos_data = __esm({
-    "organismos-data.js"() {
+    "shared/organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -609,7 +609,7 @@
     }
   });
 
-  // permissions.js
+  // shared/permissions.js
   function can(role3, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -669,7 +669,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
-    "permissions.js"() {
+    "shared/permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -819,7 +819,7 @@
     }
   });
 
-  // sidebar.js
+  // shared/sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -1312,7 +1312,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "sidebar.js"() {
+    "shared/sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1605,7 +1605,7 @@
     }
   });
 
-  // bandeja.js
+  // shared/bandeja.js
   var bandeja_exports = {};
   function seedBandejaDemo() {
     if (getDemoMode() !== "demo") return;
@@ -2212,7 +2212,7 @@
   }
   var roleCode, role, enNombreDe, TARGET, target, scopeId, halfOf, TIPO_EMOJI, TIPO_SING, MOTIVOS, VISIBLES, root, esc, norm, today, I, query, estadoFiltro, sectorFiltro, page, PAGE_SIZE, puedeAccionar, afilFiltro, AFIL_ESTADO, AFIL_SOL_VARIANT, MOTIVOS_AFIL, puedeAfil, VAL_VARIANT, ROL_DE_TIPO, DOC_LABELS;
   var init_bandeja = __esm({
-    "bandeja.js"() {
+    "shared/bandeja.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
@@ -2295,7 +2295,7 @@
     }
   });
 
-  // devnotes.js
+  // shared/devnotes.js
   var devnotes_exports = {};
   __export(devnotes_exports, {
     mountDevnotes: () => mountDevnotes
@@ -2313,11 +2313,11 @@
     });
   }
   var init_devnotes = __esm({
-    "devnotes.js"() {
+    "shared/devnotes.js"() {
     }
   });
 
-  // entries/bandeja.js
+  // shared/entries/bandeja.js
   init_sidebar();
   init_organismos_data();
   seedDemoData();

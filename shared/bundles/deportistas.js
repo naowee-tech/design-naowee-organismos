@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // estados.js
+  // shared/estados.js
   var init_estados = __esm({
-    "estados.js"() {
+    "shared/estados.js"() {
     }
   });
 
-  // organismos-data.js
+  // shared/organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -383,7 +383,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, _todayISO, _norm, TER_PREFIX, territorioId, nombreTerritorio, enTerritorio;
   var init_organismos_data = __esm({
-    "organismos-data.js"() {
+    "shared/organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -546,7 +546,7 @@
     }
   });
 
-  // permissions.js
+  // shared/permissions.js
   function can(role2, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -606,7 +606,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY, TER_DEFAULT;
   var init_permissions = __esm({
-    "permissions.js"() {
+    "shared/permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -756,7 +756,7 @@
     }
   });
 
-  // sidebar.js
+  // shared/sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -1240,7 +1240,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "sidebar.js"() {
+    "shared/sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1533,7 +1533,7 @@
     }
   });
 
-  // deportista-detalle.js
+  // shared/deportista-detalle.js
   function seedFromDoc(numDoc) {
     let h = 2166136261 >>> 0;
     const s = String(numDoc || "");
@@ -1643,7 +1643,7 @@
   }
   var MESES, TIER_LABEL, DOC_LABEL, DEPORTE_EMOJI, SANGRES, PERFIL_EXTRA;
   var init_deportista_detalle = __esm({
-    "deportista-detalle.js"() {
+    "shared/deportista-detalle.js"() {
       init_organismos_data();
       MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
       TIER_LABEL = { olimpico: "Ol\xEDmpico", profesional: "Profesional", juvenil: "Juvenil", amateur: "Amateur" };
@@ -1788,11 +1788,11 @@
     }
   });
 
-  // deportistas.js
+  // shared/deportistas.js
   var deportistas_exports = {};
   var root;
   var init_deportistas = __esm({
-    "deportistas.js"() {
+    "shared/deportistas.js"() {
       init_organismos_data();
       init_permissions();
       init_deportista_detalle();
@@ -2483,12 +2483,12 @@
     }
   });
 
-  // entries/deportistas.js
+  // shared/entries/deportistas.js
   init_sidebar();
   init_organismos_data();
   init_permissions();
 
-  // devnotes.js
+  // shared/devnotes.js
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -2502,7 +2502,7 @@
     });
   }
 
-  // entries/deportistas.js
+  // shared/entries/deportistas.js
   seedDemoData();
   var roleCode = getRoleFromQuery();
   var role = ROLES[roleCode];

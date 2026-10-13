@@ -623,7 +623,30 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
-const MODULE_VERSION = 'v1.7.1';
+/* v1.8.0 —  DEMO COMPLETA DE JERARQUÍA DE ORGANIZACIONES (fases 0 a 3):
+             · Modelo: afiliación como una sola relación con estado y vigencia
+               (deportista→club, personal→organismo, club→liga); un deportista en
+               varios clubes; deportes por organismo (un deporte = una federación;
+               paradeportes aparte); el estado del deportista se deriva.
+             · Varios organismos por persona (P-15): franja «Trabajas en» (variante
+               C de la ronda de diseño); contextos por persona; quien administra
+               un organismo y su superior no decide sobre el de abajo (P-24, lo
+               decide el Revisor de registros).
+             · Ciclo del organismo: «Mi organismo» (estado, motivo, recorrido, qué
+               puede hacer), completar y corregir y reenviar con el mismo asistente,
+               pestaña Preinscrito; sanciones del Ministerio (suspender, reactivar
+               a revisión P-08, cancelar registro) con historial.
+             · Personas: perfil multi-rol sobre los datos; afiliación a varios
+               clubes y retiro; registrar menor (flujo de sports); vínculos de
+               personal deportivo con cualquier organismo; el club asocia
+               autodeclarados y pide entrar a otra liga (P-20).
+             · Territorial (departamental o municipal), Ministro de consulta (P-01),
+               usuarios del organismo y del Ministerio (cuenta principal, roles
+               internos, territoriales), eventos asociados al organismo.
+             · Casos para mostrar en el inicio, recorrido guiado con las fases
+               nuevas, «Cambiar de perfil» en el chip, notas para devs.
+             Cache-busters ?v=1.8.0. */
+const MODULE_VERSION = 'v1.8.0';
 
 (function () {
   function mount() {
