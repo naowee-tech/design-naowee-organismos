@@ -17,7 +17,7 @@
     mountDevnotes({ clubTitulo: { title: 'Plantel del club', items: [
       'El rol CLUB ve el nombre de su club como título; roles superiores conservan la etiqueta del menú.',
       'Con multi-afiliación, el plantel son los deportistas con afiliación Vinculada a este club. Si también están en otro club se indica en la fila.',
-      '<strong>Desvincular</strong> termina solo la afiliación a este club (P-04, decisión de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.',
+      '<strong>Desvincular</strong> termina solo la afiliación a este club (P-04, cerrada: sin apelación; le avisa al deportista y a la liga). Si el deportista no tiene otro club, vuelve a autodeclarado.',
       '<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya está en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club.',
       '<strong>Registrar deportista</strong> desde el club: si el documento ya está en el SUID no se crea otra persona; se asocia al club y conserva su correo. Al nuevo le llega un correo para completar su perfil.',
       '<strong>Cargue masivo de deportistas</strong> (DEP-609): el club carga los suyos con plantilla y quedan vinculados a él.'

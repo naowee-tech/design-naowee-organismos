@@ -623,6 +623,15 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.1 —  DECISIONES CERRADAS EL 13-10:
+             · P-18: cancelar un club termina sus afiliaciones (deportistas, personal
+               y sus ligas); sus deportistas quedan autodeclarados si no tienen otro
+               club. Suspender sigue sin cambiar lo que depende del organismo.
+             · P-08: sin estado Inactivo (sale de estados, leyendas y filtros);
+               motivo libre obligatorio; reactivar → En revisión del superior.
+             · P-04/P-10: desvincular sin apelación, con aviso al deportista y a la
+               liga. P-06, P-19, P-21 y P-24 pasan de propuesta/pendiente a firmes
+               en notas para devs. Siguen abiertas P-01, P-16, P-23, C-7 y C-8. */
 /* v1.9.0 —  CARGA MASIVA DE DEPORTISTAS Y DECISIONES DEL 09-10 Y 13-10:
              · Carga masiva de deportistas desde club, liga, federación y comité
                (Deportistas › Cargue masivo): plantilla según quién carga, filas
@@ -658,7 +667,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.0';
+const MODULE_VERSION = 'v1.9.1';
 
 (function () {
   function mount() {

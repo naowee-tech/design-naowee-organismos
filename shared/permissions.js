@@ -9,7 +9,7 @@
    Acciones (leyenda §11.2):
      C crear/pre-registrar · R consultar · U editar datos ·
      A aprobar/rechazar/corrección · S sancionar (suspender/inactivar/cancelar) ·
-     X retirar (lo propio). NO existe D (borrado duro) para NADIE — el ciclo
+     X retirar (lo propio). NO existe D (borrado duro) para NADIE: «Eliminar» es Cancelado (P-06) — el ciclo
      de vida es por estados (ORG-07).
    `*` en el handoff = supuesto pendiente de confirmación del Ministerio (§6);
    en la demo se codifica como permiso real y se marca aquí en comentario.
@@ -74,7 +74,7 @@ const PERMS = {
      DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
      Nicolás Mosquera en la mesa del 2026-09-08. VA MÁS ALLÁ del handoff §11.2
      y de la matriz oficial de negocio, que NO tienen columna de
-     desvinculación — pendiente de validar (P-04).
+     desvinculación — cerrada el 2026-10-13 (P-04/P-10): sin apelación, aviso al deportista y a la liga.
      Alcance: solo sobre deportistas de SU propio club, con motivo obligatorio
      y traza. No es borrado (sigue sin existir D): el deportista vuelve a
      'autodeclarado' y puede re-afiliarse. */

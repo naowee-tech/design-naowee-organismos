@@ -510,7 +510,7 @@ export function organismoActivoSiVarios(roleCode) {
   if (!role || (role.contextos || []).length < 2) return null;
   return getOrganismo(scopeFor(roleCode));
 }
-/* ¿La persona también administra este organismo desde otro contexto? (P-24, propuesta (b):
+/* ¿La persona también administra este organismo desde otro contexto? (P-24, opción (b) decidida:
    puede tener los dos roles, pero no decide sobre un organismo que ella misma administra). */
 export function administraTambien(roleCode, orgId) {
   const role = ROLES[roleCode];

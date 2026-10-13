@@ -419,7 +419,7 @@ function openDetail(id) {
   const half = halfOf[roleCode];
   const v = o.validacion || { mindeporte: 'pendiente', comite: 'pendiente' };
   const yaVote = esFed && half && v[half] !== 'pendiente';
-  /* P-24 (propuesta b): quien también administra este organismo no decide sobre él. */
+  /* P-24 (b, decidida el 2026-10-13): quien también administra este organismo no decide sobre él. */
   const conflicto = administraTambien(roleCode, id);
   const accionable = puedeAccionar && o.estado === 'En revisión' && !conflicto &&
     puedeTransicionar(roleCode, o, 'Activo', superior) && (!esFed || !yaVote);

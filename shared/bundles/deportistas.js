@@ -393,7 +393,7 @@
       fecha: _todayISO(),
       responsable: meta.responsable || "",
       rol: "CLUB",
-      accion: "Deportista desvinculado",
+      accion: "Deportista desvinculado (aviso al deportista y a la liga)",
       de: "Vinculado",
       a: quedan ? "Vinculado en otro club" : "Autodeclarado",
       motivo: meta.motivo || ""
@@ -743,7 +743,7 @@
            DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
            Nicolás Mosquera en la mesa del 2026-09-08. VA MÁS ALLÁ del handoff §11.2
            y de la matriz oficial de negocio, que NO tienen columna de
-           desvinculación — pendiente de validar (P-04).
+           desvinculación — cerrada el 2026-10-13 (P-04/P-10): sin apelación, aviso al deportista y a la liga.
            Alcance: solo sobre deportistas de SU propio club, con motivo obligatorio
            y traza. No es borrado (sigue sin existir D): el deportista vuelve a
            'autodeclarado' y puede re-afiliarse. */
@@ -2135,7 +2135,7 @@
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
-          ${msg("caution", I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : "tu club")}</strong>. Quedar\xE1 <strong>autodeclarado</strong> y perder\xE1 la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : "liga")} \xB7 ${esc(p && p.federacionNombre ? p.federacionNombre : "federaci\xF3n")}). Podr\xE1 volver a solicitar afiliaci\xF3n cuando quiera.`)}
+          ${msg("caution", I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : "tu club")}</strong>. Quedar\xE1 <strong>autodeclarado</strong> y perder\xE1 la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : "liga")} \xB7 ${esc(p && p.federacionNombre ? p.federacionNombre : "federaci\xF3n")}). No tiene apelaci\xF3n: le avisamos a la persona y a la liga del club. Podr\xE1 volver a solicitar afiliaci\xF3n cuando quiera.`)}
           <div class="dp-desv__field">
             <span class="bj-filter__lbl" id="dpDesvLbl">Motivo de la desvinculaci\xF3n <span aria-hidden="true">*</span></span>
             <div class="naowee-dropdown dp-desv__dd" id="dpDesvDd">
@@ -2219,7 +2219,7 @@
             cerrar();
             render();
             if (window.naoweeToast) {
-              window.naoweeToast(`${dep.nombre} qued\xF3 desvinculado de tu club.`, "success");
+              window.naoweeToast(`${dep.nombre} qued\xF3 desvinculado de tu club. Le avisamos a la persona y a la liga.`, "success");
             }
           });
         }, openRegistro = function(depId) {
@@ -3016,7 +3016,7 @@
     mountDevnotes({ clubTitulo: { title: "Plantel del club", items: [
       "El rol CLUB ve el nombre de su club como t\xEDtulo; roles superiores conservan la etiqueta del men\xFA.",
       "Con multi-afiliaci\xF3n, el plantel son los deportistas con afiliaci\xF3n Vinculada a este club. Si tambi\xE9n est\xE1n en otro club se indica en la fila.",
-      "<strong>Desvincular</strong> termina solo la afiliaci\xF3n a este club (P-04, decisi\xF3n de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.",
+      "<strong>Desvincular</strong> termina solo la afiliaci\xF3n a este club (P-04, cerrada: sin apelaci\xF3n; le avisa al deportista y a la liga). Si el deportista no tiene otro club, vuelve a autodeclarado.",
       "<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya est\xE1 en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club.",
       "<strong>Registrar deportista</strong> desde el club: si el documento ya est\xE1 en el SUID no se crea otra persona; se asocia al club y conserva su correo. Al nuevo le llega un correo para completar su perfil.",
       "<strong>Cargue masivo de deportistas</strong> (DEP-609): el club carga los suyos con plantilla y quedan vinculados a \xE9l."

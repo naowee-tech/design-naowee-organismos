@@ -39,7 +39,6 @@
         "Activo": "positive",
         "Rechazado": "negative",
         "Suspendido": "caution",
-        "Inactivo": "neutral",
         "Cancelado": "negative"
       };
       TRANSICIONES = [
@@ -50,7 +49,6 @@
         { de: "En correcci\xF3n", a: "En revisi\xF3n", quien: "organismo", regla: "Corrige y reenv\xEDa; reingresa al mismo flujo." },
         { de: "Rechazado", a: "En revisi\xF3n", quien: "organismo", regla: "Corrige y reenv\xEDa; reingresa al mismo flujo." },
         { de: "Activo", a: "Suspendido", quien: "MINDEPORTE", regla: "Sanci\xF3n temporal (supuesto de demo)." },
-        { de: "Activo", a: "Inactivo", quien: "MINDEPORTE", regla: "Sin uso / p\xE9rdida de v\xEDnculos (condici\xF3n pendiente de definir)." },
         { de: "*", a: "Cancelado", quien: "MINDEPORTE", regla: "P\xE9rdida de reconocimiento; NO reingresa." }
       ];
     }
@@ -762,7 +760,7 @@
            DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
            Nicolás Mosquera en la mesa del 2026-09-08. VA MÁS ALLÁ del handoff §11.2
            y de la matriz oficial de negocio, que NO tienen columna de
-           desvinculación — pendiente de validar (P-04).
+           desvinculación — cerrada el 2026-10-13 (P-04/P-10): sin apelación, aviso al deportista y a la liga.
            Alcance: solo sobre deportistas de SU propio club, con motivo obligatorio
            y traza. No es borrado (sigue sin existir D): el deportista vuelve a
            'autodeclarado' y puede re-afiliarse. */
@@ -2337,7 +2335,7 @@
   Promise.resolve().then(() => (init_devnotes(), devnotes_exports)).then(({ mountDevnotes: mountDevnotes2 }) => mountDevnotes2({ bandeja: { title: "Bandeja \xB7 c\xF3mo funciona por dentro", sections: [
     { title: "Qui\xE9n ve qu\xE9", items: [
       "Cada organismo Activo ve lo que cuelga directamente de \xE9l y est\xE1 <strong>En revisi\xF3n</strong>: lo que carg\xF3 y lo que se autorregistr\xF3 eligi\xE9ndolo como superior. Aprobar, devolver a correcci\xF3n y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.",
-      "Nadie decide si su propio organismo no est\xE1 Activo. Federaciones: doble validaci\xF3n Comit\xE9 + Ministerio, sin orden (pendiente de confirmar, P-19).",
+      "Nadie decide si su propio organismo no est\xE1 Activo. Federaciones: doble validaci\xF3n Comit\xE9 + Ministerio, sin orden; queda Activa con los dos avales (P-19, cerrada el 2026-10-13).",
       "El club ve aqu\xED sus solicitudes de afiliaci\xF3n. Las marcadas <strong>Propuesta</strong> no las pidi\xF3 el deportista: las abri\xF3 otro nivel que lo registr\xF3, uno a uno o por carga masiva (P-07 respondida: todos los organismos), y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene."
     ] },
     { title: "Una persona, varios organismos (P-15)", items: [
@@ -2349,7 +2347,7 @@
     ] },
     { title: "Organismo y superior a la vez (P-24)", items: [
       "Si la persona tambi\xE9n administra el organismo que est\xE1 revisando (Sandra, desde la federaci\xF3n, ve su propia Liga de Patinaje), la fila dice <strong>\xABTambi\xE9n la administras\xBB</strong> y el di\xE1logo no muestra Aprobar, Rechazar ni Correcci\xF3n: decide otra persona del organismo superior.",
-      "Es la opci\xF3n (b) de P-24, propuesta de Arquitectura pendiente con Negocio. Las otras: (a) permitirlo con trazabilidad, (c) prohibir administrar un organismo y su superior a la vez.",
+      "Es la opci\xF3n (b) de P-24, decidida el 2026-10-13. Se descartaron (a) permitirlo con trazabilidad y (c) prohibir administrar un organismo y su superior a la vez.",
       "Con (b), cada organismo necesita al menos otra persona que pueda decidir: un rol interno con esa facultad o el administrador principal."
     ] }
   ] } }));

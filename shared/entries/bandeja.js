@@ -21,7 +21,7 @@
   import('../devnotes.js').then(({ mountDevnotes }) => mountDevnotes({ bandeja: { title: 'Bandeja · cómo funciona por dentro', sections: [
     { title: 'Quién ve qué', items: [
       'Cada organismo Activo ve lo que cuelga directamente de él y está <strong>En revisión</strong>: lo que cargó y lo que se autorregistró eligiéndolo como superior. Aprobar, devolver a corrección y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.',
-      'Nadie decide si su propio organismo no está Activo. Federaciones: doble validación Comité + Ministerio, sin orden (pendiente de confirmar, P-19).',
+      'Nadie decide si su propio organismo no está Activo. Federaciones: doble validación Comité + Ministerio, sin orden; queda Activa con los dos avales (P-19, cerrada el 2026-10-13).',
       'El club ve aquí sus solicitudes de afiliación. Las marcadas <strong>Propuesta</strong> no las pidió el deportista: las abrió otro nivel que lo registró, uno a uno o por carga masiva (P-07 respondida: todos los organismos), y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene.'
     ] },
     { title: 'Una persona, varios organismos (P-15)', items: [
@@ -33,7 +33,7 @@
     ] },
     { title: 'Organismo y superior a la vez (P-24)', items: [
       'Si la persona también administra el organismo que está revisando (Sandra, desde la federación, ve su propia Liga de Patinaje), la fila dice <strong>«También la administras»</strong> y el diálogo no muestra Aprobar, Rechazar ni Corrección: decide otra persona del organismo superior.',
-      'Es la opción (b) de P-24, propuesta de Arquitectura pendiente con Negocio. Las otras: (a) permitirlo con trazabilidad, (c) prohibir administrar un organismo y su superior a la vez.',
+      'Es la opción (b) de P-24, decidida el 2026-10-13. Se descartaron (a) permitirlo con trazabilidad y (c) prohibir administrar un organismo y su superior a la vez.',
       'Con (b), cada organismo necesita al menos otra persona que pueda decidir: un rol interno con esa facultad o el administrador principal.'
     ] }
   ] } }));

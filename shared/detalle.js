@@ -134,8 +134,8 @@ const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por d
   { title: 'Sanciones del Ministerio (Fase 1)', items: [
     'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
     'Cada acción pide motivo; el detalle es obligatorio al cancelar o con «Otro», y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.',
-    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (propuesta P-18).',
-    'Reactivar no activa directo: vuelve a En revisión en la bandeja del superior, sobre los datos que ya tiene (propuesta P-08). Causales y qué pasa con los deportistas al cancelar siguen abiertos con Negocio.'
+    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si no tienen otro club.',
+    'Reactivar no activa directo: vuelve a En revisión en la bandeja del superior, sobre los datos que ya tiene (P-08). El motivo es libre y obligatorio; no hay lista de causales ni estado Inactivo.'
   ] }
 ] } };
 function goBack() {
