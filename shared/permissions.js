@@ -15,6 +15,8 @@
    en la demo se codifica como permiso real y se marca aquí en comentario.
    ═══════════════════════════════════════════════════════════════ */
 
+import { getOrganismo } from './organismos-data.js';
+
 export const ACCIONES = Object.freeze({
   CREAR: 'C', LEER: 'R', EDITAR: 'U', APROBAR: 'A', SANCIONAR: 'S', RETIRAR: 'X'
 });
@@ -29,20 +31,26 @@ const PERMS = {
   comites: {
     MINDEPORTE: 'CRUS',  // único creador (ORG-01)
     COMITE: 'RU',        // el propio
-    FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   federaciones: {
     MINDEPORTE: 'RAS',   // A = su mitad de la doble validación
     COMITE: 'CRA',       // C pre-registro/cargue · A = su mitad — solo su sector
     FEDERACION: 'RU',    // la propia
-    LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   ligas: {
     MINDEPORTE: 'RS',    // S* supuesto
     COMITE: 'R',         // su sector
     FEDERACION: 'CRA',   // las suyas
     LIGA: 'RU',          // la propia
-    CLUB: 'R', DEPORTISTA: 'R'
+    CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   clubes: {
     MINDEPORTE: 'RS',    // S* supuesto
@@ -50,13 +58,17 @@ const PERMS = {
     FEDERACION: 'R',     // subárbol
     LIGA: 'CRA',         // los suyos
     CLUB: 'RU',          // el propio
-    DEPORTISTA: 'R'      // solo buscar clubes Activos (se acota en la UI de afiliación)
+    DEPORTISTA: 'R',      // solo buscar clubes Activos (se acota en la UI de afiliación)
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   },
   deportistas: {
     MINDEPORTE: 'R',
-    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar y asociar hacia abajo
+    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar autodeclarados y proponer club (P-07)
     CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
-    DEPORTISTA: 'RU'     // el propio (nunca documento / fecha nac.)
+    DEPORTISTA: 'RU',     // el propio (nunca documento / fecha nac.)
+    TERRITORIAL: 'CR',   // registra autodeclarados y propone club (P-12); no aprueba
+    MINISTRO: 'R'
   },
   /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
      DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
@@ -70,7 +82,9 @@ const PERMS = {
     MINDEPORTE: 'R',     // auditoría
     COMITE: '', FEDERACION: '', LIGA: '',
     CLUB: 'RA',          // las dirigidas a su club (ORG-05, único aprobador)
-    DEPORTISTA: 'CRX'    // crea / ve estado / retira las propias
+    DEPORTISTA: 'CRX',    // crea / ve estado / retira las propias
+    TERRITORIAL: '',
+    MINISTRO: 'R'
   },
   cargue: {
     MINDEPORTE: 'R',     // historial global*
@@ -78,10 +92,14 @@ const PERMS = {
     FEDERACION: 'CR',    // ligas
     LIGA: 'CR',          // clubes
     CLUB: '',            // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
-    DEPORTISTA: ''
+    DEPORTISTA: '',
+    TERRITORIAL: '',
+    MINISTRO: 'R'
   },
   auditoria: {
-    MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R'
+    MINDEPORTE: 'R', COMITE: 'R', FEDERACION: 'R', LIGA: 'R', CLUB: 'R', DEPORTISTA: 'R',
+    TERRITORIAL: 'R',
+    MINISTRO: 'R'
   }
 };
 
@@ -117,11 +135,48 @@ const SCOPE = {
   DEPORTISTA: 'DEP-001'
 };
 
+/* ─── Contexto: una persona administra varios organismos (P-15, A-6) ───
+   El ancla por defecto de cada rol es la de SCOPE; si la persona tiene más de un
+   organismo, el contexto elegido (?org=… o el último elegido en la sesión) la
+   reemplaza. Solo vale un organismo del nivel del rol. */
+const TIPO_DE_ROL = { COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club' };
+const CTX_KEY = 'naowee-organismos-ctx-';
+export function contextoDe(role) {
+  if (!TIPO_DE_ROL[role]) return null;
+  const valido = (id) => { const o = id && getOrganismo(id); return o && o.tipo === TIPO_DE_ROL[role] ? id : null; };
+  let porUrl = null;
+  try { porUrl = valido(new URLSearchParams(window.location.search).get('org')); } catch (_) {}
+  if (porUrl) { try { sessionStorage.setItem(CTX_KEY + role, porUrl); } catch (_) {} return porUrl; }
+  try { return valido(sessionStorage.getItem(CTX_KEY + role)); } catch (_) { return null; }
+}
+
 export function scopeFor(role) {
+  const ctx = contextoDe(role);
+  if (ctx) return ctx;
   return role in SCOPE ? SCOPE[role] : null;
 }
 
 /* ¿El rol ve TODO el SND? (solo Mindeporte — ancla en la raíz). */
+/* Territorial (Fase 3): su ancla no es un organismo sino un departamento o un municipio. Lo crea
+   el Ministerio. Demo: Valle del Cauca; ?territorio=Cali (o cualquier municipio de la demo) lo vuelve municipal. */
+const TER_DEFAULT = { depto: 'Valle del Cauca' };
+export function territorioDe(role) {
+  if (role !== 'TERRITORIAL') return null;
+  let mun = null;
+  try { mun = new URLSearchParams(window.location.search).get('territorio'); if (mun) sessionStorage.setItem('naowee-organismos-territorio', mun); else mun = sessionStorage.getItem('naowee-organismos-territorio'); } catch (_) {}
+  if (mun && mun !== TER_DEFAULT.depto) {
+    const club = getOrganismoByCiudad(mun);
+    if (club) return { depto: club.ubicacion.depto, municipio: mun };
+  }
+  return { ...TER_DEFAULT };
+}
+function getOrganismoByCiudad(ciudad) {
+  for (const id of ['CLU-001', 'CLU-002', 'CLU-003', 'CLU-004', 'CLU-005', 'CLU-006', 'CLU-007', 'CLU-008', 'CLU-009', 'CLU-010', 'CLU-011', 'CLU-012']) {
+    const o = getOrganismo(id); if (o && o.ubicacion && o.ubicacion.ciudad === ciudad) return o;
+  }
+  return null;
+}
+
 export function isGlobalScope(role) {
-  return scopeFor(role) === null && role === 'MINDEPORTE';
+  return scopeFor(role) === null && (role === 'MINDEPORTE' || role === 'MINISTRO');
 }

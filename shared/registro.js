@@ -5,8 +5,9 @@
    Patrón: wizard-recipe v1.8 del DS (.naowee-stepper --distributed + shake)
    con pasos DINÁMICOS por tipo (STEPS_POR_ORGANISMO, estilo IVC). Autoregistro
    público Federación/Liga/Club (ORG-02/03/04) + creación interna de Comité
-   por el Ministerio (ORG-01). Al enviar crea un organismo 'Preinscrito' vía
-   addOrganismo() → aparece en la jerarquía bajo su superior.
+   por el Ministerio (ORG-01). Al enviar crea un organismo 'En revisión' (el comité,
+   'Activo') vía addOrganismo() → aparece en la bandeja y la jerarquía de su superior.
+   Preinscrito es solo para lo que llega por cargue masivo.
 
    Reglas duras aplicadas: solo .naowee-*; dropdowns toggle --open en el
    WRAPPER (verificar por screenshot); validación POR PASO con shake (nunca
@@ -15,7 +16,8 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   seedDemoData, allOrganismos, getOrganismo, activosDeTipo,
-  comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore
+  comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore, enviarRegistro,
+  deportesDe, duenoDeporte, catalogoDeportes
 } from './organismos-data.js';
 import { getRoleFromQuery, ROLES } from './sidebar.js';
 
@@ -89,7 +91,7 @@ const DRAFT_KEY = 'registro-draft';
 
 function freshData() {
   return {
-    nombre: '', nit: '', deporte: '', sector: '', tipoClub: '', ambito: '',
+    nombre: '', nit: '', deporte: '', deportes: [], sector: '', tipoClub: '', ambito: '',
     superiorId: '', actoAdministrativo: '',
     repLegal: { tipoDoc: 'CC', numDoc: '', nombre: '', apellido: '', correo: '' },
     ubicacion: { depto: '', ciudad: '', zona: 'Urbana', direccion: '' },
@@ -100,6 +102,26 @@ function freshData() {
 }
 let STATE = { tipo: '', step: 0, data: freshData() };
 let created = null;   // organismo creado (pantalla de éxito)
+
+/* ─── Completar / corregir (Fase 1) ───
+   ?completar=<id>: el administrador de un organismo Preinscrito (cargue masivo), En corrección
+   o Rechazado completa o corrige su formulario y lo envía; queda En revisión en la bandeja de su
+   superior. Mismo asistente, sin el paso Tipo y con el superior fijo. */
+const COMPLETAR = (() => {
+  const id = new URLSearchParams(window.location.search).get('completar');
+  const o = id ? getOrganismo(id) : null;
+  return o && ['Preinscrito', 'En corrección', 'Rechazado'].includes(o.estado) ? o : null;
+})();
+function dataDesde(o) {
+  const base = freshData();
+  return {
+    ...base, nombre: o.nombre || '', nit: o.nit || '', deporte: o.deporte && o.deporte !== '—' ? o.deporte : '', deportes: deportesDe(o),
+    sector: o.sector || '', tipoClub: o.tipoClub || '', ambito: o.ambito || '', superiorId: o.parentId || '',
+    repLegal: { ...base.repLegal, ...(o.repLegal || {}) }, ubicacion: { ...base.ubicacion, ...(o.ubicacion || {}) },
+    contacto: { ...base.contacto, ...(o.contacto || {}) }, documentos: { ...(o.documentos || {}) },
+    aceptaPoliticas: !!o.aceptaPoliticas
+  };
+}
 
 /* ─── Utilidades ─── */
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -127,7 +149,10 @@ function fileSizeFmt(bytes) {
 }
 
 /* ─── Pasos aplicables (dinámico por tipo; índice visual continuo) ─── */
-function pasosAplicables() { return STATE.tipo ? STEPS_POR_ORGANISMO[STATE.tipo] : [0]; }
+function pasosAplicables() {
+  if (!STATE.tipo) return [0];
+  return COMPLETAR ? STEPS_POR_ORGANISMO[STATE.tipo].filter((x) => x !== 0) : STEPS_POR_ORGANISMO[STATE.tipo];
+}
 function indiceVisual(step) { return pasosAplicables().indexOf(step); }
 function docsDelTipo() { return DOCS_POR_TIPO[STATE.tipo] || []; }
 
@@ -223,7 +248,7 @@ function paneTipo() {
   }).join('');
   const nota = roleCode === 'MINDEPORTE'
     ? 'Como Ministerio del Deporte creas Comités (cabezas de sector), el nivel raíz del SND que reconoce y avala a las federaciones.'
-    : 'El registro es público. Se precargó el tipo coherente con tu rol; puedes cambiarlo. El organismo quedará <strong>Preinscrito</strong> hasta que su nivel superior lo valide.';
+    : 'El registro es público. Se precargó el tipo coherente con tu rol; puedes cambiarlo. El organismo quedará <strong>En revisión</strong> en la bandeja de su nivel superior hasta que lo valide.';
   return `
     <h2 class="reg-pane__title">¿Qué organismo vas a registrar?</h2>
     <p class="reg-pane__sub">${nota}</p>
@@ -237,20 +262,20 @@ function paneDatos() {
   if (STATE.tipo === 'federacion') {
     fields = `
       ${ddPlaceholder('sector', 'Sector', true)}
-      ${ddPlaceholder('deporte', 'Deporte', true)}
+      ${deportesChecks()}
       ${tf({ id: 'f-nombre', label: 'Nombre de la federación', required: true, path: 'nombre', value: d.nombre, placeholder: 'Ej: Federación Colombiana de …' })}
       ${tf({ id: 'f-nit', label: 'NIT', required: true, path: 'nit', value: d.nit, placeholder: '800123456-7', mask: 'tel', maxLength: 13 })}`;
   } else if (STATE.tipo === 'liga') {
     fields = `
       ${ddPlaceholder('superior', 'Federación a la que pertenece', true)}
-      ${deporteReadonly()}
+      ${deportesChecks()}
       ${tf({ id: 'f-nombre', label: 'Nombre de la liga', required: true, path: 'nombre', value: d.nombre, placeholder: 'Ej: Liga de … del Valle' })}
       ${tf({ id: 'f-nit', label: 'NIT / RUT', required: true, path: 'nit', value: d.nit, placeholder: '805010001-1', mask: 'tel', maxLength: 13 })}
       ${choiceGroup('ambito', 'Ámbito', AMBITOS, d.ambito, true)}`;
   } else if (STATE.tipo === 'club') {
     fields = `
       ${ddPlaceholder('superior', 'Liga a la que se afilia', true)}
-      ${deporteReadonly()}
+      ${deportesChecks()}
       ${tf({ id: 'f-nombre', label: 'Nombre del club', required: true, path: 'nombre', value: d.nombre, placeholder: 'Ej: Club Deportivo …' })}
       ${tf({ id: 'f-nit', label: 'NIT / RUT', required: true, path: 'nit', value: d.nit, placeholder: '805020001-1', mask: 'tel', maxLength: 13 })}
       ${choiceGroup('tipoClub', 'Tipo de club', TIPOS_CLUB, d.tipoClub, true)}`;
@@ -341,7 +366,7 @@ function paneConfirmar() {
     ['Nombre', d.nombre],
     ['NIT / RUT', d.nit],
     ['Sector', d.sector],
-    ['Deporte', d.deporte],
+    ['Deportes', (d.deportes || []).join(', ') || d.deporte],
     ['Ámbito', d.ambito],
     ['Tipo de club', d.tipoClub],
     ['Superior', sup ? sup.nombre : ''],
@@ -400,6 +425,24 @@ function tf(o) {
   return `<div class="naowee-textfield" data-field="${o.id}">
     <label class="naowee-textfield__label${req}" for="${o.id}">${esc(o.label)}</label>
     <div class="naowee-textfield__input-wrap"><input ${attrs}></div>
+  </div>`;
+}
+/* Deportes del organismo (uno o varios). Federación: deportes del catálogo que aún no tienen
+   federación (un deporte = una federación, DEP-545). Liga y club: dentro de los de su superior. */
+function deportesOpciones() {
+  if (STATE.tipo === 'federacion') return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || (COMPLETAR && deportesDe(COMPLETAR).includes(dp)));
+  const sup = getOrganismo(STATE.data.superiorId);
+  return sup ? deportesDe(sup) : [];
+}
+function deportesChecks() {
+  const ops = deportesOpciones();
+  const sel = STATE.data.deportes || [];
+  const ayuda = STATE.tipo === 'federacion' ? 'Solo aparecen deportes que aún no tienen federación.' : 'Elige uno o varios de los deportes de tu superior.';
+  return `<div class="reg-deportes" data-field="f-deportes" id="f-deportes">
+    <span class="naowee-textfield__label naowee-textfield__label--required">Deportes</span>
+    ${ops.length ? `<div class="reg-deportes__list">${ops.map((dp) => `<label class="naowee-checkbox${sel.includes(dp) ? ' naowee-checkbox--checked' : ''}"><input type="checkbox" data-dep="${esc(dp)}"${sel.includes(dp) ? ' checked' : ''}><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">${esc(dp)}</span></label>`).join('')}</div>
+      <span class="reg-deportes__hint">${ayuda}</span>`
+      : `<span class="reg-deportes__hint">${STATE.tipo === 'federacion' ? 'No hay deportes del catálogo sin federación.' : 'Elige primero el organismo superior.'}</span>`}
   </div>`;
 }
 function deporteReadonly() {
@@ -498,14 +541,25 @@ function renderFooter() {
   const back = vi > 0
     ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="regBack">Atrás</button>`
     : `<span></span>`;
-  const nextLabel = esUltimoFormulario ? 'Enviar registro' : (STATE.step === 0 ? 'Comenzar' : 'Siguiente');
+  const nextLabel = esUltimoFormulario ? (COMPLETAR ? 'Enviar a revisión' : 'Enviar registro') : (STATE.step === 0 ? 'Comenzar' : 'Siguiente');
   const nextId = esUltimoFormulario ? 'regSubmit' : 'regNext';
   footer.innerHTML = `${back}<span class="reg-footer__spacer"></span>
     <button type="button" class="naowee-btn naowee-btn--loud" id="${nextId}">${nextLabel}</button>`;
 }
 
 /* ═══════════════════════════════ Bind ═══════════════════════════════ */
+function bindDeportes() {
+  root.querySelectorAll('input[data-dep]').forEach((cb) => cb.addEventListener('change', () => {
+    const d = STATE.data; const dp = cb.dataset.dep;
+    d.deportes = cb.checked ? [...new Set([...(d.deportes || []), dp])] : (d.deportes || []).filter((x) => x !== dp);
+    d.deporte = d.deportes.join(', ');
+    cb.closest('.naowee-checkbox').classList.toggle('naowee-checkbox--checked', cb.checked);
+    clearFieldError(cb.closest('[data-field]'));
+    scheduleSave();
+  }));
+}
 function bindPane() {
+  bindDeportes();
   /* Inputs de texto (data-model + máscara) */
   root.querySelectorAll('input[data-model]').forEach((inp) => {
     inp.addEventListener('input', () => {
@@ -609,7 +663,14 @@ function ddApply(key, opt) {
   else if (key === 'superior') {
     d.superiorId = opt.v;
     const sup = getOrganismo(opt.v);
-    if (sup) { d.deporte = sup.deporte; if (sup.sector) d.sector = sup.sector; const ro = document.getElementById('f-deporte-ro'); if (ro) ro.value = sup.deporte; }
+    if (sup) {
+      if (sup.sector) d.sector = sup.sector;
+      const deps = deportesDe(sup);
+      d.deportes = deps.length === 1 ? deps.slice() : (d.deportes || []).filter((x) => deps.includes(x));
+      d.deporte = d.deportes.join(', ');
+      const box = document.getElementById('f-deportes');
+      if (box) { box.outerHTML = deportesChecks(); bindDeportes(); }
+    }
   }
 }
 function mountDropdown(el) {
@@ -839,22 +900,24 @@ function validateStep(step) {
       if (!d.aceptaPoliticas) errs.push({ field: 'f-politicas', kind: 'check' });
     } else if (STATE.tipo === 'federacion') {
       if (!d.sector) errs.push({ field: 'dd-sector', kind: 'dd' });
-      if (!d.deporte) errs.push({ field: 'dd-deporte', kind: 'dd' });
+      if (!(d.deportes || []).length) errs.push({ field: 'f-deportes', kind: 'tf', msg: 'Elige al menos un deporte' });
       reqTf('f-nombre', d.nombre.trim());
       reqTf('f-nit', d.nit.trim());
     } else if (STATE.tipo === 'liga') {
       if (!d.superiorId) errs.push({ field: 'dd-superior', kind: 'dd' });
+      else if (!(d.deportes || []).length) errs.push({ field: 'f-deportes', kind: 'tf', msg: 'Elige al menos un deporte' });
       reqTf('f-nombre', d.nombre.trim());
       reqTf('f-nit', d.nit.trim());
       if (!d.ambito) errs.push({ field: 'dd-ambito', kind: 'choice' });
     } else if (STATE.tipo === 'club') {
       if (!d.superiorId) errs.push({ field: 'dd-superior', kind: 'dd' });
+      else if (!(d.deportes || []).length) errs.push({ field: 'f-deportes', kind: 'tf', msg: 'Elige al menos un deporte' });
       reqTf('f-nombre', d.nombre.trim());
       reqTf('f-nit', d.nit.trim());
       if (!d.tipoClub) errs.push({ field: 'dd-tipoClub', kind: 'choice' });
     }
     /* Anti-duplicado de NIT (paridad con el cargue masivo, cargue.js). */
-    if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim())
+    if (d.nit.trim() && allOrganismos().some((o) => String(o.nit).trim() === d.nit.trim() && (!COMPLETAR || o.id !== COMPLETAR.id))
       && !errs.some((e) => e.field === 'f-nit')) {
       errs.push({ field: 'f-nit', kind: 'tf', msg: 'Este NIT ya está registrado en el SUID.' });
     }
@@ -941,6 +1004,21 @@ function submit() {
   const errs = validateStep(5);   // por si acaso
   if (errs.length) { shakeErrors(errs); return; }
   const d = STATE.data;
+  if (COMPLETAR) {
+    const patch = {
+      nombre: d.nombre.trim(), nit: d.nit.trim(), repLegal: { ...d.repLegal }, ubicacion: { ...d.ubicacion },
+      contacto: { ...d.contacto }, documentos: { ...d.documentos }, aceptaPoliticas: d.aceptaPoliticas,
+      deportes: d.deportes || []
+    };
+    if (STATE.tipo === 'club') patch.tipoClub = d.tipoClub;
+    if (STATE.tipo === 'liga') patch.ambito = d.ambito;
+    const _actor = ROLES[roleCode] || {};
+    created = enviarRegistro(COMPLETAR.id, patch, { responsable: _actor.userName || roleCode, rol: _actor.label || roleCode });
+    STATE.step = 6;
+    window.naoweeToast && window.naoweeToast('Registro enviado a revisión', 'success');
+    render();
+    return;
+  }
   let parentId = null, sector = d.sector || '';
   if (STATE.tipo === 'federacion') { const c = comitePorSector(d.sector); parentId = c ? c.id : 'COC'; }
   else if (STATE.tipo === 'liga' || STATE.tipo === 'club') {
@@ -949,7 +1027,7 @@ function submit() {
 
   const org = {
     tipo: STATE.tipo, nombre: d.nombre.trim(), nit: d.nit.trim(),
-    sector, deporte: STATE.tipo === 'comite' ? '—' : (d.deporte || '—'),
+    sector, deporte: STATE.tipo === 'comite' ? '—' : ((d.deportes || []).join(', ') || '—'), deportes: STATE.tipo === 'comite' ? [] : (d.deportes || []),
     parentId, estado: STATE.tipo === 'comite' ? 'Activo' : 'En revisión',
     repLegal: { ...d.repLegal }, ubicacion: { ...d.ubicacion }, contacto: { ...d.contacto },
     documentos: { ...d.documentos }, aceptaPoliticas: d.aceptaPoliticas
@@ -986,9 +1064,9 @@ function renderSuccess() {
         <div class="reg-confetti" id="regConfetti"></div>
         <div class="reg-success__hero">
           <div class="reg-success__check">${I.check}</div>
-          <h2 class="reg-success__title">¡Registro enviado con éxito!</h2>
-          <p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> quedó en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === 'comite' ? 'Como cabeza de sector queda Activo de inmediato, sin aprobación superior.' : 'Su nivel superior la revisará desde la Bandeja de aprobaciones.'}</p>
-          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto">
+          <h2 class="reg-success__title">${COMPLETAR ? 'Enviado a revisión' : '¡Registro enviado con éxito!'}</h2>
+          ${COMPLETAR ? `<p class="reg-success__lead"><strong>${esc(org.nombre)}</strong> quedó <strong>En revisión</strong>. ${sup ? esc(sup.nombre) : 'Tu superior'} lo revisa desde su bandeja y te avisamos por correo cuando decida.</p>` : `<p class="reg-success__lead">${esc(TIPO_SINGULAR[org.tipo])} <strong>${esc(org.nombre)}</strong> quedó en estado <strong>${esc(org.estado)}</strong>. ${org.tipo === 'comite' ? 'Como cabeza de sector queda Activo de inmediato, sin aprobación superior.' : 'Su nivel superior la revisará desde la Bandeja de aprobaciones.'}</p>`}
+          <div class="naowee-message naowee-message--informative" style="max-width:460px;margin:0 auto${COMPLETAR ? ';display:none' : ''}">
             <span class="naowee-message__icon">${I.bang}</span>
             <div class="naowee-message__body"><p class="naowee-message__text">${org.tipo === 'comite' ? 'Como cabeza de sector del SND, este comité queda Activo de inmediato, sin aprobación superior. Ya aparece en la jerarquía como nodo raíz.' : 'Este registro ya aparece en la jerarquía del SND bajo su superior. La aprobación (En revisión → Activo) se ejercita en la Bandeja.'}</p></div>
           </div>
@@ -1010,14 +1088,16 @@ function renderSuccess() {
             </div>
           </div>
           <div class="reg-success__actions">
-            <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
-            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>
+            ${COMPLETAR
+              ? `<a class="naowee-btn naowee-btn--loud" href="organismo-detalle.html?role=${encodeURIComponent(roleCode)}">Ver mi organismo</a>`
+              : `<a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
+            <button type="button" class="naowee-btn naowee-btn--quiet" id="regAnother">Registrar otro organismo</button>`}
           </div>
         </div>
       </div>
     </div>`;
   spawnConfetti();
-  document.getElementById('regAnother').addEventListener('click', () => {
+  document.getElementById('regAnother')?.addEventListener('click', () => {
     created = null; STATE = { tipo: precargaTipo(), step: 0, data: freshData() };
     render();
   });
@@ -1084,4 +1164,14 @@ function startFresh() {
 }
 
 seedDemoData();
-offerDraft();
+if (COMPLETAR) {
+  const t = document.querySelector('.page-head__title'); const sub = document.querySelector('.page-head__sub');
+  if (t) t.textContent = COMPLETAR.estado === 'Preinscrito' ? 'Completar registro' : 'Corregir y reenviar';
+  if (sub) sub.textContent = COMPLETAR.estado === 'Preinscrito'
+    ? `Tu superior cargó los datos básicos de ${COMPLETAR.nombre}. Revísalos, completa lo que falta y sube los documentos. Al enviarlo queda En revisión en su bandeja.`
+    : `Corrige lo que te pidieron y vuelve a enviarlo. Queda En revisión en la bandeja de tu superior.`;
+  STATE = { tipo: COMPLETAR.tipo, step: 1, data: dataDesde(COMPLETAR) };
+  render();
+} else {
+  offerDraft();
+}

@@ -5,7 +5,7 @@
   const role = ROLES[roleCode];
   /* El perfil se llega desde la jerarquía o la bandeja; no es un ítem del menú.
      El activo del sidebar queda en Jerarquía SND (contexto de navegación). */
-  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'jerarquia' });
+  mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: new URLSearchParams(location.search).get('id') ? 'jerarquia' : new URLSearchParams(location.search).get('tab') === 'eventos' ? 'eventos' : 'mi-organismo' });
   mountHeader({ headerEl: document.getElementById('topHeader'), role });
   mountBackdrop();
   mountDemoSwitcher({ roleCode });

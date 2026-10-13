@@ -65,9 +65,9 @@
     { id: "FED-057", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Remo", nit: "901375567-1", sector: "Ol\xEDmpico", deporte: "Remo", parentId: "COC", estado: "Preinscrito", repLegal: { tipoDoc: "CC", numDoc: "10000057", nombre: "Alberto", apellido: "Rojas Bravo", correo: "presidencia@federemo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 9 # 37-06 Secretaria de Deportes de Cali" }, contacto: { telefono: "6015550058", correo: "contacto@federemo.demo.co" }, fechaRegistro: "2026-04-04" }
   ];
   var FEDERACIONES_FICTICIAS = [
-    { id: "FED-P01", tipo: "federacion", nombre: "Federaci\xF3n Paral\xEDmpica de Atletismo", nit: "901500001-1", sector: "Paral\xEDmpico", deporte: "Atletismo", parentId: "CPC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000201", nombre: "Laura", apellido: "Mendoza R\xEDos", correo: "presidencia@fedeparaatletismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06 Of. 201" }, contacto: { telefono: "6014809090", correo: "contacto@fedeparaatletismo.demo.co" }, fechaRegistro: "2026-02-18" },
-    { id: "FED-P02", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Nataci\xF3n Paral\xEDmpica", nit: "901500002-2", sector: "Paral\xEDmpico", deporte: "Nataci\xF3n", parentId: "CPC", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000202", nombre: "Diego", apellido: "Vargas Pe\xF1a", correo: "presidencia@fedeparanatacion.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Cra. 36 # 5B-62" }, contacto: { telefono: "6024889090", correo: "contacto@fedeparanatacion.demo.co" }, fechaRegistro: "2026-05-09" },
-    { id: "FED-S01", tipo: "federacion", nombre: "Federaci\xF3n Deportiva de Sordos de Baloncesto", nit: "901500003-3", sector: "Sordol\xEDmpico", deporte: "Baloncesto", parentId: "FSC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000203", nombre: "Sof\xEDa", apellido: "Guerrero Le\xF3n", correo: "presidencia@fedesordosbaloncesto.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medell\xEDn", zona: "Urbana", direccion: "Cra. 48 # 20-114 Of. 3" }, contacto: { telefono: "6045553030", correo: "contacto@fedesordosbaloncesto.demo.co" }, fechaRegistro: "2026-03-28" }
+    { id: "FED-P01", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Para Atletismo", nit: "901500001-1", sector: "Paral\xEDmpico", deporte: "Para Atletismo", parentId: "CPC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000201", nombre: "Laura", apellido: "Mendoza R\xEDos", correo: "presidencia@fedeparaatletismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06 Of. 201" }, contacto: { telefono: "6014809090", correo: "contacto@fedeparaatletismo.demo.co" }, fechaRegistro: "2026-02-18" },
+    { id: "FED-P02", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Para Nataci\xF3n", nit: "901500002-2", sector: "Paral\xEDmpico", deporte: "Para Nataci\xF3n", parentId: "CPC", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000202", nombre: "Diego", apellido: "Vargas Pe\xF1a", correo: "presidencia@fedeparanatacion.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Cra. 36 # 5B-62" }, contacto: { telefono: "6024889090", correo: "contacto@fedeparanatacion.demo.co" }, fechaRegistro: "2026-05-09" },
+    { id: "FED-S01", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Atletismo de Sordos", nit: "901500003-3", sector: "Sordol\xEDmpico", deporte: "Atletismo de Sordos", parentId: "FSC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000203", nombre: "Sof\xEDa", apellido: "Guerrero Le\xF3n", correo: "presidencia@fedesordosbaloncesto.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medell\xEDn", zona: "Urbana", direccion: "Cra. 48 # 20-114 Of. 3" }, contacto: { telefono: "6045553030", correo: "contacto@fedesordosbaloncesto.demo.co" }, fechaRegistro: "2026-03-28" }
   ];
   var LIGAS = [
     { id: "LIG-001", tipo: "liga", nombre: "Liga de Patinaje del Valle", nit: "805010001-1", sector: "Ol\xEDmpico", deporte: "Patinaje", parentId: "FED-040", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000301", nombre: "Sandra", apellido: "Mej\xEDa", correo: "direccion@ligapatinajevalle.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 5 # 42-00 Unidad Deportiva Alberto Galindo" }, contacto: { telefono: "6024010101", correo: "contacto@ligapatinajevalle.demo.co" }, fechaRegistro: "2026-03-10" },
@@ -89,7 +89,11 @@
     { id: "CLU-007", tipo: "club", nombre: "Club Deportivo Aguas del Valle", nit: "805020007-7", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "profesional", parentId: "LIG-006", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000407", nombre: "Isabella", apellido: "Torres Pe\xF1a", correo: "admin@aguasdelvalle.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 5 # 42-42" }, contacto: { telefono: "6025070707", correo: "contacto@aguasdelvalle.demo.co" }, fechaRegistro: "2026-03-16" },
     { id: "CLU-008", tipo: "club", nombre: "Club Nataci\xF3n Pac\xEDfico", nit: "805020008-8", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "Rechazado", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000408", nombre: "Mateo", apellido: "Angulo Mena", correo: "admin@natacionpacifico.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buenaventura", zona: "Urbana", direccion: "Cra. 3 # 5-30" }, contacto: { telefono: "6025080808", correo: "contacto@natacionpacifico.demo.co" }, fechaRegistro: "2026-05-25" },
     { id: "CLU-009", tipo: "club", nombre: "Club Pat\xEDn Bogot\xE1", nit: "805020009-9", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-003", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000409", nombre: "Daniela", apellido: "Su\xE1rez Gil", correo: "admin@patinbogota.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Cra. 60 # 63-20" }, contacto: { telefono: "6015090909", correo: "contacto@patinbogota.demo.co" }, fechaRegistro: "2026-05-12" },
-    { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" }
+    { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" },
+    /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+    { id: "CLU-012", tipo: "club", nombre: "Club Halcones de Tulu\xE1", nit: "805020012-3", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-001", estado: "En correcci\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000412", nombre: "Mauricio", apellido: "Gil Restrepo", correo: "admin@halconestulua.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Tulu\xE1", zona: "Urbana", direccion: "Cra. 26 # 30-12" }, contacto: { telefono: "6022240012", correo: "contacto@halconestulua.demo.co" }, fechaRegistro: "2026-09-20" },
+    /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
+    { id: "CLU-011", tipo: "club", nombre: "Club Delfines de Buga", nit: "805020011-1", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000411", nombre: "Lorena", apellido: "Gil Ocampo", correo: "admin@delfinesbuga.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buga", zona: "Urbana", direccion: "Calle 4 # 14-30" }, contacto: { telefono: "6022360011", correo: "contacto@delfinesbuga.demo.co" }, fechaRegistro: "2026-09-28" }
   ];
   var DEPORTISTAS = [
     { id: "DEP-001", nombre: "Valentina Ortiz", tipoDoc: "CC", numDoc: "1144556778", deporte: "Patinaje", modalidad: "Carreras", correo: "valentina.ortiz@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
@@ -113,7 +117,11 @@
     { id: "DEP-018", nombre: "Felipe Quintero S\xE1enz", tipoDoc: "TI", numDoc: "1029778899", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "felipe.quintero@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-019", nombre: "Valeria Mosquera Renter\xEDa", tipoDoc: "CC", numDoc: "1144992277", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "valeria.mosquera@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-020", nombre: "Sebasti\xE1n Toro Aguirre", tipoDoc: "CC", numDoc: "1144110099", deporte: "Patinaje", modalidad: "Carreras", correo: "sebastian.toro@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
-    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" }
+    { id: "DEP-021", nombre: "Luciana Palacio Hoyos", tipoDoc: "TI", numDoc: "1029223344", deporte: "Patinaje", modalidad: "Freestyle", correo: "luciana.palacio@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
+    /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+    { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
+    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
   ];
   var SEED_ORGANISMOS = [
     ...COMITES,
@@ -123,6 +131,55 @@
     ...CLUBES
   ];
   var SEED_DEPORTISTAS = DEPORTISTAS;
+  var DEPORTES_SEED = {
+    "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
+    "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"],
+    "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
+    "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
+  };
+  var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+  var PARADEPORTES = ["Para Atletismo", "Para Nataci\xF3n", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa", "Atletismo de Sordos"];
+  var ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
+  function deportesDe(org) {
+    if (!org) return [];
+    if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
+    if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
+  }
+  function conDeportes(org) {
+    const deportes = deportesDe(org);
+    return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
+  }
+  function duenoDeporte(dep) {
+    return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
+  }
+  function catalogoDeportes() {
+    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
+    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
+  }
+  var AF_DESDE = "2026-03-25";
+  var AFILIACIONES_EXTRA = [
+    /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
+    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" },
+    /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+    { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
+    { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
+    { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+    /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+    { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
+  ];
+  function seedAfiliaciones() {
+    const out = [];
+    DEPORTISTAS.forEach((d) => {
+      if (!d.clubId) return;
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: d.id === "DEP-022" ? "2022-03-12" : AF_DESDE, origen: d.tutorId ? "tutor" : "solicitud" });
+    });
+    CLUBES.forEach((c) => {
+      const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
+      out.push({ id: `AF-C${c.id.slice(4)}`, tipo: "club", sujetoId: c.id, organismoId: c.parentId, deporte: c.deporte, estado, desde: estado === "Vinculada" ? c.fechaRegistro : null, origen: "activacion" });
+    });
+    return [...out, ...AFILIACIONES_EXTRA];
+  }
   var STORE_PREFIX = "naowee-organismos-";
   var SEED_FLAG = STORE_PREFIX + "demo-seeded";
   function readStore(key, fallback = null) {
@@ -146,8 +203,8 @@
   function allOrganismos() {
     const nuevos = readStore("organismos-nuevos", []) || [];
     const overrides = readStore("organismos-overrides", {}) || {};
-    const base = SEED_ORGANISMOS.map((o) => applyOverride(o, overrides));
-    const extra = nuevos.map((o) => ({ ...o }));
+    const base = SEED_ORGANISMOS.map((o) => conDeportes(applyOverride(o, overrides)));
+    const extra = nuevos.map(conDeportes);
     return [...base, ...extra];
   }
   function getOrganismo(id) {
@@ -157,7 +214,30 @@
     const nuevos = readStore("deportistas-nuevos", []) || [];
     const ov = readStore("deportistas-overrides", {}) || {};
     const base = SEED_DEPORTISTAS.map((d) => ov[d.id] ? { ...d, ...ov[d.id] } : { ...d });
-    return [...base, ...nuevos.map((d) => ({ ...d }))];
+    const clubesDe = {};
+    allAfiliaciones().forEach((a) => {
+      if (a.tipo === "deportista" && a.estado === "Vinculada") (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+    });
+    return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+      const clubIds = clubesDe[d.id] || [];
+      return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? "vinculado" : "autodeclarado" };
+    });
+  }
+  function allAfiliaciones() {
+    let list = readStore("afiliaciones", null);
+    if (!list) {
+      list = seedAfiliaciones();
+      writeStore("afiliaciones", list);
+    }
+    return list.map((a) => ({ ...a }));
+  }
+  function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
+    const list = allAfiliaciones();
+    const viva = list.find((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && ["Solicitada", "Vinculada"].includes(a.estado));
+    if (viva) return viva;
+    const rec = { id: "AF-" + String(list.length + 1).padStart(4, "0"), tipo, sujetoId, organismoId, deporte, estado: "Solicitada", desde: null, hasta: null, origen, proponenteId, fecha: _todayISO() };
+    writeStore("afiliaciones", [...list, rec]);
+    return { ...rec };
   }
   var ID_PREFIX = { comite: "COM", federacion: "FED", liga: "LIG", club: "CLU" };
   function nextOrgId(tipo) {
@@ -177,6 +257,7 @@
     };
     nuevos.push(record);
     writeStore("organismos-nuevos", nuevos);
+    if (record.tipo === "club" && record.parentId) solicitarAfiliacion({ tipo: "club", sujetoId: record.id, organismoId: record.parentId, deporte: record.deporte, origen: "activacion" });
     return { ...record };
   }
   function activosDeTipo(tipo) {
@@ -192,8 +273,9 @@
     writeStore("audit", list);
     return { ...record };
   }
+  var _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 
-  // shared/devnotes.js?v=1.6.0
+  // shared/devnotes.js?v=1.7.0
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -299,26 +381,13 @@
     "Valle del Cauca": ["Cali", "Buenaventura", "Palmira", "Tulu\xE1", "Cartago", "Buga", "Jamund\xED"]
   };
   var DEPTOS = Object.keys(MUNICIPIOS).sort((a, b) => a.localeCompare(b, "es"));
-  var DEPORTES_POR_FED = {
-    "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
-    "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"]
-  };
-  var deportesDe = (org) => {
-    if (!org) return [];
-    if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes;
-    if (DEPORTES_POR_FED[org.id]) return DEPORTES_POR_FED[org.id];
-    return org.deporte && org.deporte !== "\u2014" ? [org.deporte] : [];
-  };
-  var FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === "federacion");
-  var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"];
-  var CATALOGO_DEPORTES = () => [.../* @__PURE__ */ new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
-  var duenoDeporte = (dep, sector) => FEDERACIONES().find((f) => f.sector === sector && deportesDe(f).includes(dep) && !["Rechazado", "Cancelado"].includes(f.estado));
+  var CATALOGO_DEPORTES = catalogoDeportes;
   var CONJUNTO = ["Baloncesto", "Balonmano", "B\xE9isbol", "F\xFAtbol", "F\xFAtbol de Sal\xF3n", "Hockey", "Polo Acu\xE1tico", "Rugby", "Softbol", "Voleibol"];
   var deportesPorTipo = (t) => {
     const all = CATALOGO_DEPORTES();
     if (t === "CONJ") return all.filter((d) => CONJUNTO.includes(d));
-    if (t === "PARA") return ["Boccia", "Goalball", "Para Atletismo", "Para Nataci\xF3n", "Baloncesto en silla de ruedas"];
-    return all.filter((d) => !CONJUNTO.includes(d));
+    if (t === "PARA") return all.filter((d) => PARADEPORTES.includes(d));
+    return all.filter((d) => !CONJUNTO.includes(d) && !PARADEPORTES.includes(d));
   };
   var DOC_MENOR = "1098765432";
   var DOC_SIN_RECLAMAR = "1055512345";
@@ -597,8 +666,8 @@
   function unclaimedAlert() {
     return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
     <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
-    <p class="naowee-message__text">Est\xE1 asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
-    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es m\xEDo</button></div>
+    <p class="naowee-message__text">Est\xE1 asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, activa tu cuenta: te enviamos a ese correo el enlace para crear tu contrase\xF1a y, al entrar, revisas y actualizas tus datos desde tu perfil.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Activar mi cuenta</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es m\xEDo</button></div>
   </div></div>`;
   }
   function notMineAlert() {
@@ -703,7 +772,7 @@
     const chips = libres.map((dep) => {
       const on = d.deportes.includes(dep);
       return `<button type="button" class="rp-chip${on ? " is-on" : ""}" data-dep="${esc(dep)}">${on ? I.check : ""}${esc(dep)}</button>`;
-    }).join("") + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen federaci\xF3n en el sector ${esc(d.sector)}.</p>` : "");
+    }).join("") + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen una federaci\xF3n.</p>` : "");
     return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label>
     <p class="rp-inline-note">${t === "federacion" ? "Una federaci\xF3n puede gobernar varios deportes; cada deporte pertenece a una sola federaci\xF3n." : `Elige entre los deportes de tu ${SUPERIOR_TXT[t]}.`}</p>
     <div class="rp-chips">${chips}</div></div>`;
@@ -966,10 +1035,10 @@
       bindPane();
     }));
     (_a = root().querySelector('[data-act="claim"]')) == null ? void 0 : _a.addEventListener("click", () => {
-      STATE.claim = { ...SIN_RECLAMAR };
-      STATE.lookup = "ok";
-      renderPane();
-      bindPane();
+      STATE.result = { tipo: "persona", reclamado: true, nombre: "Tu perfil", rol: ROL_TXT[STATE.role], doc: `${STATE.d.tipoDoc} ${STATE.d.numDoc}`, correo: SIN_RECLAMAR.emailHint };
+      STATE.created = true;
+      render();
+      window.scrollTo({ top: 0 });
     });
     (_b = root().querySelector('[data-act="notMine"]')) == null ? void 0 : _b.addEventListener("click", () => {
       STATE.lookup = "notMine";
@@ -1123,10 +1192,13 @@
     const nombre = [d.nombre, d.segNombre, d.apellido, d.segApellido].filter(Boolean).join(" ");
     if (STATE.nature === "persona") {
       let id = null;
-      if (isAthlete()) {
+      if (!STATE.claim) {
         const nuevos = readStore("deportistas-nuevos", []) || [];
         id = `DEP-N${String(nuevos.length + 1).padStart(3, "0")}`;
-        nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: "", correo: d.correo, clubId: null, estado: "autodeclarado", origen: "registro-publico", fechaRegistro: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) });
+        const base = { id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, modalidad: "", correo: d.correo, fechaNac: d.fechaNac || "", origen: "registro-publico", fechaRegistro: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) };
+        if (isAthlete()) nuevos.push({ ...base, deporte: d.deporte });
+        else if (STATE.role === "SUPPORT_STAFF") nuevos.push({ ...base, deporte: d.deporte || "", esDeportista: false, rolApoyo: (CAT.rolApoyo.find((o) => o.v === d.rolApoyo) || {}).t || d.rolApoyo || "Personal deportivo" });
+        else nuevos.push({ ...base, deporte: "", esDeportista: false, rolTutor: true });
         writeStore("deportistas-nuevos", nuevos);
       }
       STATE.result = { tipo: "persona", id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim, doc: `${d.tipoDoc} ${d.numDoc}`, ubicacion: [d.ciudad, d.depto].filter(Boolean).join(", "), telefono: d.telefono, deporte: isAthlete() ? d.deporte : "" };
@@ -1177,14 +1249,14 @@
     <div class="ur-devnote-wrap ur-devnote-wrap--center"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${persona ? "resultPersona" : "resultEntidad"}"></span></div>
     <div class="ur-result__ava">${I.check}</div>
     ${persona ? `
-      ${r.reclamado ? `<h1 class="ur-title">\xA1Perfil reclamado!</h1>
-      <p>Actualizamos tu perfil con los datos que ingresaste y activamos tu cuenta.</p>
+      ${r.reclamado ? `<h1 class="ur-title">\xA1Cuenta activada!</h1>
+      <p>Activamos la cuenta del perfil que ya exist\xEDa con tu documento.</p>
       <p>Enviamos el enlace para crear tu contrase\xF1a a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">\xA1Registro completado!</h1>
       <p>\xA1Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
       <p>\xA1Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmaci\xF3n.</p>`}
       <div class="ur-profile"><div class="ur-profile__head"><strong>${esc(r.nombre)}</strong><span class="ur-badge">Cuenta activa</span></div>
         ${profileRows([["Rol", r.rol], ["Documento", r.doc], ["Fecha de nacimiento", r.fechaNac ? r.fechaNac.split("-").reverse().join("/") : ""], ["Deporte", r.deporte], ["Correo", r.correo], ["Tel\xE9fono", r.telefono], ["Ubicaci\xF3n", r.ubicacion]])}</div>
-      ${msg("informative", "", esc(siguiente))}
+      ${msg("informative", "", esc(r.reclamado ? "Al entrar, revisa tus datos y actual\xEDzalos desde tu perfil. Si no tienes acceso a ese correo, escribe a soporte@naowee.com." : siguiente))}
       ${msg("caution", "", "Si no recibiste el correo, revisa bandeja de SPAM o solicita reenv\xEDo.")}
       <div class="ur-actions"><a class="ur-btn ur-btn--block" href="index.html">Ir a Iniciar sesi\xF3n</a></div>` : `
       <h1 class="ur-title">\xA1Solicitud enviada!</h1>
@@ -1197,7 +1269,7 @@
         ${profileRows([["Tipo", ENT_TXT[r.org.tipo]], ["NIT", r.org.nit], ["Deportes", (r.org.deportes || []).join(", ")], ["Organismo superior", sup == null ? void 0 : sup.nombre], ["Representante legal", [(_a = r.org.repLegal) == null ? void 0 : _a.nombre, (_b = r.org.repLegal) == null ? void 0 : _b.apellido].filter(Boolean).join(" ") + (((_c = r.org.repLegal) == null ? void 0 : _c.numDoc) ? ` \xB7 ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : "")], ["Sede", [(_d = r.org.ubicacion) == null ? void 0 : _d.ciudad, (_e = r.org.ubicacion) == null ? void 0 : _e.depto].filter(Boolean).join(", ")], ["Contacto", [(_f = r.org.contacto) == null ? void 0 : _f.correo, (_g = r.org.contacto) == null ? void 0 : _g.telefono].filter(Boolean).join(" \xB7 ")], ["Documentos", `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>\u{1F4AC} \xBFNECESITAS AYUDA?</b>Si tienes dudas o problemas con la activaci\xF3n de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo \xB7 ver perfil del deportista</a>` : ""}
+      ${r.id ? `<a href="perfil.html?role=PERSONA&persona=${esc(r.id)}${STATE.role === "LEGAL_GUARDIAN" ? "&seccion=menores" : STATE.role === "SUPPORT_STAFF" ? "&seccion=vinculos" : ""}">Solo demo \xB7 entrar a mi perfil${STATE.role === "LEGAL_GUARDIAN" ? " y registrar a mi menor" : STATE.role === "SUPPORT_STAFF" ? " y pedir v\xEDnculo" : ""}</a>` : ""}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo \xB7 bandeja de ${esc(sup.nombre)}</a>` : ""}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo \xB7 bandeja del Ministerio</a>' : ""}
       ${persona ? "" : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo \xB7 ver en la jerarqu\xEDa</a>'}
@@ -1220,10 +1292,11 @@
       { title: "Se mantiene de producci\xF3n", items: ["Documento CC / CE / PA. Con 7 d\xEDgitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los dem\xE1s campos quedan bloqueados hasta verificar.", '<code>isMinor</code> \u2192 alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> \u2192 "Ya tienes una cuenta registrada" + Iniciar sesi\xF3n.', 'Fecha de nacimiento: 18+ obligatorio, tambi\xE9n para el tutor. "Rol espec\xEDfico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
       { title: "Perfil existente sin reclamar (reconciliaci\xF3n)", items: [
         "Caso: el documento existe con <code>has_login=false</code> porque lo cre\xF3 otro actor (una instituci\xF3n al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la b\xFAsqueda, no al final del formulario.",
-        'Se muestra el correo <b>enmascarado</b> y sin opci\xF3n de editar: dos primeras letras y la \xFAltima del usuario y el dominio completo (<code>ju\u2022\u2022\u2022\u2022\u2022z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra qui\xE9n cre\xF3 el registro: averiguarlo exige cruzar todos los eventos y no aporta para reconocer el correo. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es m\xEDo" lleva a soporte, que verifica identidad y cambia el correo.',
-        "Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ah\xED queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contrase\xF1a.",
-        "<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza tel\xE9fono, nacionalidad, ubicaci\xF3n, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemogr\xE1fico se descartan sin avisar.",
-        "<b>Cambios de back</b>: (1) la b\xFAsqueda devuelve <code>email_hint</code> enmascarado; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditor\xEDa con los valores anteriores.",
+        "Se muestra el correo <b>enmascarado</b> y sin opci\xF3n de editar: dos primeras letras y la \xFAltima del usuario y el dominio completo (<code>ju\u2022\u2022\u2022\u2022\u2022z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra qui\xE9n cre\xF3 el registro.",
+        "<b>Regla (decisi\xF3n 2026-10-09, Juan Manuel Armero y Daniel Pizarro, DEP-545)</b>: \xABActivar mi cuenta\xBB <b>solo activa la cuenta</b> y env\xEDa al correo guardado el enlace para crear la contrase\xF1a. En el registro <b>no se editan datos</b>: reclamar con solo el documento y dejar editar permit\xEDa que cualquiera con la c\xE9dula de otra persona cambiara su perfil. Los datos se actualizan despu\xE9s de entrar, desde el perfil. Queda <code>has_login=true</code> con el mismo <code>user_code</code>.",
+        '"Ese correo no es m\xEDo" lleva a soporte, que verifica identidad y cambia el correo.',
+        "<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el mismo correo guardado (si escribe otro, 409 <code>document_registered_different_email</code>) y actualiza parte de los datos. Ya hay una primera implementaci\xF3n en staging que se ajusta a la regla (ver DEP-550).",
+        "<b>Cambios de back</b>: (1) la b\xFAsqueda devuelve <code>email_hint</code> enmascarado; (2) reclamar sin enviar correo, usando el guardado, y sin actualizar datos; (3) el reclamo queda en auditor\xEDa.",
         "<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, tel\xE9fono, direcci\xF3n, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>."
       ] },
       { title: "Menores (pendiente P-21)", items: ["Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio tambi\xE9n puede, se agrega en el registro asistido, no aqu\xED."] },
@@ -1248,14 +1321,14 @@
       { title: "Se mantiene", items: ["NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisi\xF3n \u2192 mensaje de revisi\xF3n pendiente; con cuenta \u2192 Iniciar sesi\xF3n.", "Naturaleza jur\xEDdica, tama\xF1o y representante legal. <b>Corregir al migrar</b>: hoy no se env\xEDa el apellido del representante."] },
       { title: "Solo demo", items: ["La b\xFAsqueda de NIT est\xE1 simulada: <code>805010003-3</code> devuelve en revisi\xF3n y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la b\xFAsqueda; el que no tiene registro adem\xE1s deja el formulario lleno para poder dar Siguiente."] },
       { title: "Nuevo: organismo superior", items: ["Federaci\xF3n \u2192 elige sector y queda adscrita al comit\xE9 del sector. Liga \u2192 elige federaci\xF3n. Club \u2192 filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).", "La lista solo trae organismos <b>Activos</b>. Si el suyo no est\xE1: soporte, que escala al Ministerio (P-17).", "En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden despu\xE9s como afiliaci\xF3n."] },
-      { title: "Nuevo: deportes", items: ["Lista de deportes del cat\xE1logo. Federaci\xF3n: del cat\xE1logo, sin repetir deportes que ya tiene otra federaci\xF3n del mismo sector. Liga: de su federaci\xF3n. Club: de su liga.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
+      { title: "Nuevo: deportes", items: ["Lista de deportes del cat\xE1logo. Federaci\xF3n: del cat\xE1logo, sin repetir deportes que ya tiene otra federaci\xF3n. <b>Un deporte pertenece a una sola federaci\xF3n en todo el sistema</b>, sin importar el comit\xE9 (decisi\xF3n 2026-10-09, Daniel Pizarro, DEP-545). Liga: de su federaci\xF3n. Club: de su liga.", "Sin carga hist\xF3rica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio env\xEDe el listado.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
       { title: "Contrato propuesto", items: ["<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.", "El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> \u2286 deportes del superior, NIT \xFAnico, un deporte en una sola federaci\xF3n."] },
       { title: "Brecha con user-auth-ms (revisado 07-10-2026, rama staging)", items: [
         "<b>Ya soportado</b> en <code>organizations_details</code>: NIT \xFAnico, nombre, naturaleza jur\xEDdica, tama\xF1o, representante (tipo y n\xFAmero de documento, nombre, correo), departamento, municipio, direcci\xF3n, tel\xE9fono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.",
         "<b>Tipo</b>: <code>organization_type</code> acepta <code>FEDERATION</code> y <code>CLUB</code>, pero no <code>LEAGUE</code>. No agregar otro valor al <code>oneof</code>: los tipos deben ser cat\xE1logo.",
         "<b>Subordinaci\xF3n configurable</b>: comit\xE9 \u2192 federaci\xF3n \u2192 liga \u2192 club es el esquema de SUID, no una regla del c\xF3digo. Cada proyecto declara su esquema con reglas (tipo padre, tipo hijo, varios padres, deporte compartido, qui\xE9n aprueba). El alta y la bandeja leen las reglas; no preguntan por tipos concretos. Ver nao-docs, Modelo \u2192 Pendientes t\xE9cnicos.",
         "<b>Superior</b>: no hay relaci\xF3n entre organizaciones; el <code>HierarchyPath</code> del token ABAC es solo territorial (<code>/COL/{dpto}/{mun}/</code>). Como un club puede estar en varias ligas (P-20), se necesita una tabla de afiliaci\xF3n (hijo, padre, estado, vigencia), no una columna <code>parent_code</code>.",
-        "<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organizaci\xF3n \u2194 deporte, con un deporte en una sola federaci\xF3n por sector y cada nivel dentro de su superior.",
+        "<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organizaci\xF3n \u2194 deporte, con un deporte en una sola federaci\xF3n en todo el sistema y cada nivel dentro de su superior.",
         "<b>Sin campo</b>: \xE1mbito de la liga (el cat\xE1logo <code>COVERAGE</code> no tiene Distrital), tipo de club, apellido del representante (hoy el front lo descarta).",
         "<b>Estados que faltan</b>: En correcci\xF3n (devuelto con motivo), Preinscrito (cargue masivo), Cancelado. Tampoco hay d\xF3nde guardar los dos avales de la federaci\xF3n (P-19).",
         "<b>Revisor</b>: un <code>PENDING_REVIEW</code> no tiene revisor asignado; para que caiga en la bandeja del superior hace falta la relaci\xF3n de afiliaci\xF3n y una jurisdicci\xF3n por jerarqu\xEDa deportiva.",
@@ -1270,7 +1343,7 @@
     ] },
     resultPersona: { title: "Resultado (Persona)", sections: [
       { title: "Se mantiene", items: ["Textos de producci\xF3n. Cuenta activa; el correo trae el enlace para crear la contrase\xF1a."] },
-      { title: "Nuevo", items: ["Siguiente paso seg\xFAn el rol: deportista \u2192 afiliaci\xF3n a uno o varios clubes; tutor \u2192 registrar menores; personal deportivo \u2192 v\xEDnculo con cualquier organismo (P-05)."] },
+      { title: "Nuevo", items: ["Siguiente paso seg\xFAn el rol: deportista \u2192 afiliaci\xF3n a uno o varios clubes; tutor \u2192 registrar menores; personal deportivo \u2192 v\xEDnculo con cualquier organismo (P-05).", "Perfil reclamado: \xAB\xA1Cuenta activada!\xBB, sin datos del formulario; la persona actualiza sus datos desde el perfil al entrar (decisi\xF3n 2026-10-09)."] },
       { title: "Solo demo", items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".', 'Los enlaces "Solo demo" al pie de la pantalla tambi\xE9n se ocultan con el switch de notas para devs (queda "Registrar otro").'] }
     ] },
     resultEntidad: { title: "Resultado (Entidad)", sections: [

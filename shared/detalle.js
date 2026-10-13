@@ -20,16 +20,18 @@ import { getRoleFromQuery, ROLES, homeForRole } from './sidebar.js';
 import {
   getOrganismo, childrenOf, subtreeOf, ancestorsOf,
   countDescendants, deportistasOf, allAudit, allDeportistas,
-  seedTrazabilidadDemo
+  seedTrazabilidadDemo, afiliacionesDe, ligasDisponiblesPara, solicitarLiga, organismosDeTerritorio, eventosDe
 } from './organismos-data.js';
-import { can, scopeFor, isGlobalScope } from './permissions.js';
+import { can, scopeFor, isGlobalScope, territorioDe } from './permissions.js';
 import { mountDevnotes } from './devnotes.js';
 import { estadoBadgeVariant } from './estados.js';
+import { estadoPropioHtml, sancionesHtml, abrirSancion } from './ciclo.js';
 
 const params = new URLSearchParams(window.location.search);
 const roleCode = getRoleFromQuery();
 const role = ROLES[roleCode] || {};
-const id = params.get('id') || '';
+/* Sin ?id, el administrador de un organismo abre el suyo («Mi organismo»). */
+const id = params.get('id') || (['COMITE', 'FEDERACION', 'LIGA', 'CLUB'].includes(roleCode) ? scopeFor(roleCode) : '') || '';
 const fromParam = params.get('from') || '';
 const root = document.getElementById('detalleRoot');
 
@@ -75,14 +77,20 @@ function fmtDate(iso) {
 /* ─── RBAC / jurisdicción (§11) ─── */
 function inJurisdiction(orgId) {
   if (isGlobalScope(roleCode)) return true;              // MINDEPORTE ve todo
+  const terr = territorioDe(roleCode);
+  if (terr) {                                            // territorial: lo ubicado en su territorio y lo que cuelga de ello
+    const base = organismosDeTerritorio(terr).map((o) => o.id);
+    return base.includes(orgId) || base.some((b) => subtreeOf(b).some((x) => x.id === orgId));
+  }
   const scopeId = scopeFor(roleCode);
   if (roleCode === 'DEPORTISTA') {                       // solo su cadena heredada
     const dep = allDeportistas().find((d) => d.id === scopeId);
-    if (!dep || !dep.clubId) return false;
-    const chain = new Set([dep.clubId, ...ancestorsOf(dep.clubId).map((a) => a.id)]);
+    if (!dep || !dep.clubIds.length) return false;
+    /* Hereda la cadena de cada club en el que está vinculado. */
+    const chain = new Set(dep.clubIds.flatMap((c) => [c, ...ancestorsOf(c).map((a) => a.id)]));
     return chain.has(orgId);
   }
-  if (orgId === scopeId) return true;                    // su propio nodo (raíz de su jurisdicción)
+  if (orgId === scopeId) return true;                    // su propio nodo («Mi organismo» incluido)
   return subtreeOf(scopeId).some((x) => x.id === orgId); // o su subárbol
 }
 
@@ -104,11 +112,31 @@ function emptyState(title, desc) {
 function backBtnHtml() {
   return `<div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${I.back}Volver</button><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>`;
 }
-const DEVNOTES = { detalle: { title: 'Ficha de organismo · navegación', items: [
-  'Orden en la ficha: breadcrumb de ancestros (<code>breadcrumbHtml</code>) arriba y «Volver» debajo; en los estados de error «Volver» va solo.',
-  '«Volver» (<code>goBack</code>): si hay historial interno hace <code>history.back()</code> y conserva el estado de la jerarquía; si se llegó directo, va a <code>?from=</code> (solo <code>nombre.html</code>, validado por regex) o al inicio del rol.',
-  'Entra desde «Ver detalles» de <code>jerarquia.html</code> (<code>?id=&amp;role=</code>). El alcance se valida con <code>scopeFor</code>: fuera de jurisdicción muestra «sin acceso», sin datos.',
-  'Solo lectura: si el organismo está «En revisión» y el rol puede aprobar, enlaza a la Bandeja; las acciones no viven aquí.'
+const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por dentro', sections: [
+  { title: 'Navegación', items: [
+    'Breadcrumb de ancestros arriba y «Volver» debajo (<code>goBack</code>: <code>history.back()</code> si hay historial; si no, <code>?from=</code> o el inicio del rol).',
+    'El alcance se valida con <code>scopeFor</code>: fuera de jurisdicción muestra «sin acceso», sin datos.',
+    'Si el organismo está En revisión y el rol puede aprobarlo, enlaza a la Bandeja: aprobar, devolver y rechazar viven allí.'
+  ] },
+  { title: '«Mi organismo» (Fase 1)', items: [
+    'Sin <code>?id</code>, el administrador abre su propio organismo. Si no está <strong>Activo</strong> su menú se reduce a «Mi organismo» (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.',
+    'Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qué pasó, el motivo con quién y cuándo (último cambio en la trazabilidad), qué le toca, lo que puede y no puede hacer y el recorrido.',
+    'Preinscrito, En corrección y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisión</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.',
+    'Solo demo: «Entrar como …» (en esta ficha si el organismo no está Activo, en la bandeja del superior y después de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene «Cambiar de perfil».'
+  ] },
+  { title: 'Eventos asociados', items: [
+    'La pestaña <strong>Eventos</strong> lista los eventos asociados al organismo y a su subárbol: el Comité Olímpico ve los del Ciclo Olímpico aunque los cree Naowee; la federación, los de sus ligas y clubes. Solo consulta: se gestionan en el módulo de eventos.',
+    'Pendiente técnico: hoy events-lite asocia el evento a una organización global «Comité Olímpico Colombiano»; debe apuntar al nodo del SND para que la jurisdicción funcione.'
+  ] },
+  { title: 'Ministro (P-01, propuesta)', items: [
+    'Rol de consulta anclado a la raíz: ve toda la jerarquía, las fichas, los eventos y los deportistas, sin aprobar, sancionar, cargar ni crear usuarios. Lo crea Naowee. Negocio debe confirmar si es un rol distinto del Administrador del Ministerio (P-01).'
+  ] },
+  { title: 'Sanciones del Ministerio (Fase 1)', items: [
+    'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
+    'Cada acción pide motivo; el detalle es obligatorio al cancelar o con «Otro», y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.',
+    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (propuesta P-18).',
+    'Reactivar no activa directo: vuelve a En revisión en la bandeja del superior, sobre los datos que ya tiene (propuesta P-08). Causales y qué pasa con los deportistas al cancelar siguen abiertos con Negocio.'
+  ] }
 ] } };
 function goBack() {
   const target = fromParam && /^[a-z-]+\.html$/.test(fromParam)
@@ -158,6 +186,12 @@ function breadcrumbHtml(o) {
   return `<nav class="naowee-breadcrumb od-crumbs" aria-label="Ruta jerárquica ascendente">${crumbs.join(`<span class="naowee-breadcrumb__sep">${I.sep}</span>`)}</nav>`;
 }
 
+/* «Mi organismo»: el administrador mirando el suyo. */
+const ROLES_ORG = ['COMITE', 'FEDERACION', 'LIGA', 'CLUB'];
+const esPropio = (o) => ROLES_ORG.includes(roleCode) && o.id === scopeFor(roleCode);
+const conBloqueEstado = (o) => esPropio(o) && o.estado !== 'Activo';
+const ROL_DE_TIPO = { federacion: 'FEDERACION', liga: 'LIGA', club: 'CLUB' };   // solo demo: «Entrar como»
+
 function heroHtml(o) {
   const metaParts = [`NIT <b>${esc(o.nit)}</b>`];
   if (o.deporte && o.deporte !== '—') metaParts.push(esc(o.deporte));
@@ -174,15 +208,36 @@ function heroHtml(o) {
       <div class="od-hero__main">
         <div class="od-hero__title-row">
           <h1 class="od-hero__name">${esc(o.nombre)}</h1>
-          ${badge(o.estado)}
+          ${conBloqueEstado(o) ? '' : badge(o.estado)}
         </div>
         <p class="od-hero__meta">${metaParts.join('<span class="od-dot">·</span>')}</p>
       </div>
       <div class="od-hero__actions">
-        <span class="od-ro" title="Perfil de solo lectura — las acciones viven en la Bandeja">${I.lock} Solo lectura</span>
+        ${roleCode === 'MINDEPORTE' || esPropio(o) ? '' : `<span class="od-ro" title="Perfil de solo lectura — las acciones viven en la Bandeja">${I.lock} Solo lectura</span>`}
+        ${!esPropio(o) && o.estado !== 'Activo' && ROL_DE_TIPO[o.tipo] ? `<a class="naowee-btn naowee-btn--quiet naowee-btn--small" title="Solo demo: simula el acceso del administrador de este organismo" href="organismo-detalle.html?role=${ROL_DE_TIPO[o.tipo]}&org=${encodeURIComponent(o.id)}&como=org">Entrar como este organismo</a>` : ''}
         ${bandejaLink}
       </div>
     </div>`;
+}
+
+/* ─── Fase 2 · el club en varias ligas de sus deportes (P-20) ───
+   La primera liga lo activó; puede pedir afiliación a otra liga que comparta un deporte y esa liga
+   aprueba solo el vínculo. Deportes de combate: pendiente con Negocio. */
+function ligasClubHtml(o) {
+  const afs = afiliacionesDe(o.id).filter((a) => a.tipo === 'club' && ['Vinculada', 'Solicitada', 'Rechazada'].includes(a.estado));
+  const disp = ligasDisponiblesPara(o.id);
+  const EST = { Vinculada: ['positive', 'Afiliado'], Solicitada: ['caution', 'Solicitada'], Rechazada: ['negative', 'Rechazada'] };
+  return `<section class="oc-status oc-status--single od-ligas" aria-label="Ligas de tu club">
+    <div class="oc-status__main">
+      <p class="oc-sanc__title">Ligas de tu club</p>
+      <p class="oc-status__text">Tu club puede estar en varias ligas de sus deportes. Cada liga aprueba su vínculo; de cada una heredan tus deportistas su cadena.</p>
+      <ul class="od-ligas__list">${afs.map((a) => { const l = getOrganismo(a.organismoId) || {}; const e = EST[a.estado];
+        return `<li><span><strong>${esc(l.nombre || a.organismoId)}</strong><small>${esc(l.deporte || '')} · ${esc(l.ubicacion ? l.ubicacion.depto : '')}${a.organismoId === o.parentId ? ' · la activó' : ''}${a.motivo && a.estado === 'Rechazada' ? ' · ' + esc(a.motivo) : ''}</small></span><span class="naowee-badge naowee-badge--${e[0]} naowee-badge--quiet naowee-badge--small">${e[1]}</span></li>`; }).join('')}</ul>
+      <div class="oc-status__cta">${disp.length
+        ? `<label class="od-ligas__pick"><span class="sr-only">Liga</span><select id="odLiga" class="oc-select"><option value="">Elige una liga de tus deportes…</option>${disp.map((l) => `<option value="${l.id}">${esc(l.nombre)} · ${esc(l.deporte)}</option>`).join('')}</select></label><button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" id="odLigaOk">Solicitar afiliación</button>`
+        : '<span class="oc-status__hint">No hay otras ligas activas de tus deportes.</span>'}</div>
+    </div>
+  </section>`;
 }
 
 /* ─── Paneles ─── */
@@ -316,12 +371,29 @@ function histPanel(o) {
   return `<div class="od-block">${rows}</div>`;
 }
 
+/* Eventos asociados al organismo y a su subárbol (el COC ve los del Ciclo Olímpico). Solo consulta. */
+function eventosPanel(o) {
+  const evs = eventosDe(o.id).sort((a, b) => a.desde.localeCompare(b.desde));
+  if (!evs.length) return emptyState('Sin eventos asociados', 'Ningún evento está asociado a este organismo ni a los que dependen de él.');
+  const propio = (e) => e.organismoId === o.id;
+  return `<p class="od-ev__note">Eventos asociados a ${esc(o.nombre)} y a los organismos que dependen de él. Se consultan aquí; se gestionan en el módulo de eventos.</p>
+    <div class="cg-table-wrap"><table class="cg-table bj-table"><thead><tr><th>Evento</th><th>Fechas</th><th>Asociado a</th><th>Estado</th></tr></thead><tbody>
+    ${evs.map((e) => `<tr>
+      <td data-label="Evento"><div class="bj-org"><span class="bj-org__emoji">${e.tipo === 'Ciclo Olímpico' ? '🏅' : '🏁'}</span><div><div class="bj-org__name">${esc(e.nombre)}</div><div class="bj-org__sub">${esc(e.tipo)} · ${esc(e.sede)} · ${esc(e.deportes.join(', '))}</div></div></div></td>
+      <td data-label="Fechas" class="cg-table__nit">${esc(fmtDate(e.desde))}${e.hasta !== e.desde ? ' – ' + esc(fmtDate(e.hasta)) : ''}</td>
+      <td data-label="Asociado a"><div class="bj-org__name" style="font-weight:500">${propio(e) ? 'Este organismo' : esc((getOrganismo(e.organismoId) || {}).nombre || e.organismoId)}</div><div class="bj-org__sub">Lo creó ${esc(e.creadoPor)} · ${e.inscritos} inscritos</div></td>
+      <td data-label="Estado"><span class="naowee-badge naowee-badge--${e.estado === 'Inscripciones abiertas' ? 'positive' : 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(e.estado)}</span></td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
 /* ─── Tabs ─── */
 const TABS = [
   ['info', 'Información'],
   ['rep', 'Representante legal'],
   ['docs', 'Documentos'],
   ['hier', 'Jerarquía'],
+  ['eventos', 'Eventos'],
   ['hist', 'Historial']
 ];
 function panelFor(tab, o) {
@@ -329,14 +401,18 @@ function panelFor(tab, o) {
   if (tab === 'docs') return docsPanel(o);
   if (tab === 'hier') return hierPanel(o);
   if (tab === 'hist') return histPanel(o);
+  if (tab === 'eventos') return eventosPanel(o);
   return infoPanel(o);
 }
 
 function renderProfile(o) {
-  let active = 'info';
-  root.innerHTML = `${breadcrumbHtml(o)}
-    ${backBtnHtml()}
+  let active = TABS.some(([t]) => t === params.get('tab')) ? params.get('tab') : 'info';
+  root.innerHTML = `${esPropio(o) ? '' : breadcrumbHtml(o)}
+    ${esPropio(o) ? '<div class="od-back"><span class="wz-devnote" tabindex="0" role="button" data-devnote="detalle"></span></div>' : backBtnHtml()}
+    ${conBloqueEstado(o) ? estadoPropioHtml(o, roleCode) : ''}
     ${heroHtml(o)}
+    ${roleCode === 'MINDEPORTE' ? sancionesHtml(o) : ''}
+    ${esPropio(o) && o.tipo === 'club' && o.estado === 'Activo' ? ligasClubHtml(o) : ''}
     <div class="naowee-card od-tabs-card">
       <div class="naowee-tabs" id="odTabs" role="tablist">
         ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === active ? 'naowee-tab--selected' : ''}" role="tab" data-tab="${t}" aria-selected="${t === active}">${esc(l)}</button>`).join('')}
@@ -358,6 +434,21 @@ function renderProfile(o) {
   }));
   paint();
   wireBack();
+  root.querySelectorAll('[data-sancion]').forEach((b) => b.addEventListener('click', () => {
+    abrirSancion(b.dataset.sancion, o, { responsable: role.userName || 'Ministerio', rol: 'Ministerio' }, (acc) => {
+      const msgs = { suspender: 'quedó suspendido', cancelar: 'quedó con el registro cancelado', reactivar: 'volvió a revisión de su superior' };
+      window.naoweeToast && window.naoweeToast(`${o.nombre} ${msgs[acc]}. Se le notificó por correo.`, 'success');
+      renderProfile(getOrganismo(o.id));
+    });
+  }));
+  root.querySelector('#odLigaOk')?.addEventListener('click', () => {
+    const v = root.querySelector('#odLiga').value;
+    if (!v) { root.querySelector('#odLiga').focus(); return; }
+    solicitarLiga(o.id, v, { responsable: role.userName || '' });
+    window.naoweeToast && window.naoweeToast(`Solicitud enviada a ${getOrganismo(v).nombre}. La liga la aprueba desde su bandeja.`, 'success');
+    renderProfile(getOrganismo(o.id));
+  });
+  mountDevnotes(DEVNOTES);
 }
 
 /* ─── Wiring común ─── */

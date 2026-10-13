@@ -11,6 +11,9 @@
      - Cambio de perfil = homeForRole(next) + '?role=' + next.
    ═══════════════════════════════════════════════════════════════ */
 
+import { contextoDe, scopeFor, territorioDe } from './permissions.js';
+import { getOrganismo, allOrganismos, solicitudesDeClub, getDeportista } from './organismos-data.js';
+
 const COLLAPSED_KEY = 'naowee-organismos-sidebar-collapsed';
 
 /* ─── Iconos inline (stroke currentColor, paridad shell canónico) ─── */
@@ -85,6 +88,24 @@ export const ROLES = {
     color: '#0e7490', short: 'Gestiona su afiliación a un club deportivo',
     group: 'Personas', deportistaId: 'DEP-001'
   },
+  /* Ministro (P-01, propuesta): visualizador anclado a la raíz. Consulta todo el SND —jerarquía,
+     deportistas, eventos y fichas— sin aprobar, sancionar ni crear nada. Lo crea Naowee. */
+  MINISTRO: {
+    code: 'MINISTRO', label: 'Ministro (consulta)',
+    userName: 'Despacho del Ministro', userEmail: 'despacho@mindeporte.demo.co',
+    userDoc: 'Cuenta institucional', org: 'Ministerio del Deporte', avatar: 'DM',
+    color: '#334155', short: 'Consulta todo el SND sin aprobar, sancionar ni crear',
+    group: 'Rectoría'
+  },
+  /* Fase 3 · usuario territorial: lo crea el Ministerio; consulta su territorio y registra
+     deportistas autodeclarados con club propuesto (P-11, P-12). No aprueba. */
+  TERRITORIAL: {
+    code: 'TERRITORIAL', label: 'Encargado departamental',
+    userName: 'Ana Lucía Valencia', userEmail: 'avalencia@valledelcauca.demo.gov.co',
+    userDoc: 'CC 66.912.345', org: 'Valle del Cauca', avatar: 'AV',
+    color: '#b45309', short: 'Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados',
+    group: 'Territorio'
+  },
   /* v1.6.0 · perfil multi-rol: una persona con varias facetas
      (deportista + tutora legal + personal de apoyo) en un solo perfil. */
   PERSONA: {
@@ -103,9 +124,12 @@ export const ROLES = {
 /* Jerarquía SND con un subítem por nivel: cada uno abre las columnas con ese nivel ya abierto. */
 const NIVELES_JERARQUIA = [['comite', 'Comités'], ['federacion', 'Federaciones'], ['liga', 'Ligas'], ['club', 'Clubes'], ['deportista', 'Deportistas']];
 /* Cada rol ve los niveles que tiene debajo (Mindeporte, todos); nunca a sí mismo ni a sus ancestros. */
-const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista' };
+const NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
+const NIVEL_PROPIO = { MINDEPORTE: null, MINISTRO: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista', TERRITORIAL: 'federacion' };
 export function nivelesForRole(code) {
-  const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
+  /* El encargado municipal no tiene ligas en su territorio: sus niveles empiezan en clubes. */
+  const nivel = code === 'TERRITORIAL' && (territorioDe(code) || {}).municipio ? 'liga' : NIVEL_PROPIO[code];
+  const propio = NIVEL_JERARQUIA_IDX(nivel);
   return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
 }
 const jerarquiaItems = (code) => {
@@ -123,7 +147,8 @@ const MENU_BY_ROLE = {
     { section: null,        items: jerarquiaItems('MINDEPORTE') },
     { section: 'GESTIÓN',   items: [
         { id: 'bandeja',   label: 'Bandeja de aprobaciones', icon: 'inbox',    route: 'bandeja.html' },
-        { id: 'registro',  label: 'Registro de organismo',   icon: 'filePlus', route: 'registro.html' }
+        { id: 'registro',  label: 'Registro de organismo',   icon: 'filePlus', route: 'registro.html' },
+        { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }
     ] }
   ],
   COMITE: [
@@ -134,7 +159,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   FEDERACION: [
     { section: null,        items: jerarquiaItems('FEDERACION') },
@@ -144,7 +170,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   LIGA: [
     { section: null,          items: jerarquiaItems('LIGA') },
@@ -154,7 +181,8 @@ const MENU_BY_ROLE = {
     ] },
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas', icon: 'users', route: 'deportistas.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   CLUB: [
     { section: null,          items: jerarquiaItems('CLUB') },
@@ -163,47 +191,115 @@ const MENU_BY_ROLE = {
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas',            icon: 'users', route: 'deportistas.html' },
         { id: 'bandeja',     label: 'Solicitudes de deportistas', icon: 'inbox', route: 'bandeja.html' }
-    ] }
+    ] },
+    { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
-  /* Las secciones del perfil son páginas (afiliacion.html?sec=…): el menú lateral las lista, no hay nav interna */
+  /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
   DEPORTISTA: [
-    { section: 'PERFIL',      items: [
-        { id: 'afiliacion-resumen',    label: 'Resumen',          icon: 'id',     route: 'afiliacion.html?sec=resumen' },
-        { id: 'afiliacion-documentos', label: 'Documentos',       icon: 'doc',    route: 'afiliacion.html?sec=documentos', badge: '1' },
-        { id: 'afiliacion-carne',      label: 'Carné digital',    icon: 'id',     route: 'afiliacion.html?sec=carne' }
-    ] },
-    { section: 'AFILIACIÓN',  items: [
-        { id: 'afiliacion-miclub',      label: 'Mi club',         icon: 'club',   route: 'afiliacion.html?sec=miclub' },
-        { id: 'afiliacion-solicitudes', label: 'Solicitudes',     icon: 'link',   route: 'afiliacion.html?sec=solicitudes' }
-    ] },
-    { section: 'DEPORTIVO',   items: [
-        { id: 'afiliacion-eventos',    label: 'Eventos',          icon: 'cal',    route: 'afiliacion.html?sec=eventos' },
-        { id: 'afiliacion-historial',  label: 'Historial',        icon: 'award',  route: 'afiliacion.html?sec=historial' }
-    ] },
-    { section: 'CUENTA',      items: [
-        { id: 'afiliacion-config',     label: 'Configuraciones',  icon: 'gear',   route: 'afiliacion.html?sec=config' },
-        { id: 'afiliacion-notif',      label: 'Notificaciones',   icon: 'bell',   route: 'afiliacion.html?sec=notif' },
-        { id: 'afiliacion-seguridad',  label: 'Seguridad',        icon: 'shield', route: 'afiliacion.html?sec=seguridad' }
+    { section: null,          items: [
+        { id: 'perfil', label: 'Mi perfil',     icon: 'user', route: 'perfil.html' },
+        { id: 'carne',  label: 'Carné digital', icon: 'id',   route: 'afiliacion.html?sec=carne' }
     ] }
   ],
   PERSONA: [
     { section: null,          items: [{ id: 'perfil',     label: 'Mi perfil',            icon: 'user',     route: 'perfil.html' }] }
+  ],
+  MINISTRO: [
+    { section: null,          items: jerarquiaItems('MINISTRO') },
+    { section: 'CONSULTA',    items: [
+        { id: 'deportistas', label: 'Deportistas', icon: 'users', route: 'deportistas.html' }
+    ] }
+  ],
+  TERRITORIAL: [
+    { section: null,          items: jerarquiaItems('TERRITORIAL') },
+    { section: 'MI TERRITORIO', items: [
+        { id: 'deportistas', label: 'Deportistas', icon: 'users', route: 'deportistas.html' }
+    ] }
   ]
 };
+
+/* ─── Personas con varios organismos (P-15) ───
+   Los contextos son de la PERSONA, no del rol: cada uno es { role, org } y al cambiar de
+   uno a otro cambian el rol, el menú y la jurisdicción. Sandra administra dos ligas y la
+   federación de la que cuelga una de ellas (caso de P-24: no decide sobre lo que también
+   administra). La persona viaja con ?como= y queda en la sesión; «Cambiar perfil» la limpia. */
+export const PERSONAS = {
+  sandra: {
+    userName: 'Sandra Mejía', userEmail: 'sandra.mejia@correo.demo.co', userDoc: 'CC 31.567.890', avatar: 'SM',
+    contextos: [{ role: 'LIGA', org: 'LIG-001' }, { role: 'LIGA', org: 'LIG-006' }, { role: 'FEDERACION', org: 'FED-040' }]
+  }
+};
+const PERSONA_KEY = 'naowee-organismos-persona';
+const PERSONA_POR_ROL = { LIGA: 'sandra' };   // la persona que ve por defecto el rol Liga de la demo
+export function personaDe(roleCode) {
+  let id = null;
+  try {
+    id = new URLSearchParams(window.location.search).get('como');
+    /* ?como=org: «entrar como» un organismo puntual (solo demo), sin la persona por defecto del rol. */
+    if (id && (PERSONAS[id] || id === 'org')) sessionStorage.setItem(PERSONA_KEY, id);
+    else id = sessionStorage.getItem(PERSONA_KEY);
+  } catch (_) {}
+  if (id === 'org') return null;
+  if (!PERSONAS[id]) id = PERSONA_POR_ROL[roleCode] || null;
+  const p = PERSONAS[id];
+  return p && p.contextos.some((c) => c.role === roleCode) ? { id, ...p } : null;
+}
+
+/* Identidad por defecto de cada rol (antes de aplicar persona o contexto), para el cambio de perfil. */
+const ROLE_DEFAULT = Object.fromEntries(Object.entries(ROLES).map(([k, r]) => [k, { userName: r.userName, org: r.org }]));
+
+/* La persona y el organismo del contexto activo reemplazan a los de la ficha del rol. */
+(function aplicarContexto() {
+  try {
+    const code = new URLSearchParams(window.location.search).get('role');
+    if (!ROLES[code]) return;
+    const p = personaDe(code);
+    if (p) Object.assign(ROLES[code], { userName: p.userName, userEmail: p.userEmail, userDoc: p.userDoc, avatar: p.avatar, persona: p.id, contextos: p.contextos });
+    const org = getOrganismo(scopeFor(code));
+    if (org && contextoDe(code)) ROLES[code].org = org.nombre;
+    /* Una persona recién registrada (o cualquiera de la demo) entra a su propio perfil con ?persona=. */
+    const pid = new URLSearchParams(window.location.search).get('persona');
+    const per = ['PERSONA', 'DEPORTISTA'].includes(code) && pid && pid !== 'laura' && pid !== 'ajena' ? getDeportista(pid) : null;
+    if (per && !per.tutorId) Object.assign(ROLES[code], { userName: per.nombre, userEmail: per.correo || '', userDoc: `${per.tipoDoc} ${per.numDoc}`,
+      avatar: per.nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase(), label: per.esDeportista === false ? (per.rolTutor ? 'Tutor legal' : 'Personal deportivo') : 'Deportista' });
+    const terr = territorioDe(code);
+    if (terr) Object.assign(ROLES[code], { org: terr.municipio ? `${terr.municipio} (${terr.depto})` : terr.depto, label: terr.municipio ? 'Encargado municipal' : 'Encargado departamental' });
+    /* Solo demo: «entrar como» otro organismo del mismo nivel. Su administrador es el representante legal. */
+    if (!p && org && contextoDe(code) && org.repLegal && org.repLegal.nombre) {
+      const nombre = `${org.repLegal.nombre} ${org.repLegal.apellido || ''}`.trim();
+      Object.assign(ROLES[code], { userName: nombre, userEmail: org.repLegal.correo || '', userDoc: `${org.repLegal.tipoDoc || 'CC'} ${org.repLegal.numDoc || ''}`,
+        avatar: nombre.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() });
+    }
+  } catch (_) {}
+})();
 
 export function getRoleFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('role');
   return ROLES[code] ? code : 'MINDEPORTE';
 }
-export function getMenuForRole(code) { return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE; }
+/* Organismo que no está Activo (Preinscrito, En revisión, devuelto, suspendido o cancelado): su
+   administrador no opera (no aprueba, no carga, no confirma afiliaciones); solo ve «Mi organismo». */
+const ROLES_ORGANISMO = ['COMITE', 'FEDERACION', 'LIGA', 'CLUB'];
+export function organismoNoActivo(code) {
+  if (!ROLES_ORGANISMO.includes(code)) return null;
+  const o = getOrganismo(scopeFor(code));
+  return o && o.estado !== 'Activo' ? o : null;
+}
+const MENU_NO_ACTIVO = [{ section: null, items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }];
+export function getMenuForRole(code) {
+  if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
+  if (code === 'TERRITORIAL') return [{ section: null, items: jerarquiaItems(code) }, ...MENU_BY_ROLE.TERRITORIAL.slice(1)];
+  return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
+}
 
 /* Home por rol (handoff §10):
    MINDEPORTE/COMITE/FEDERACION/LIGA → Jerarquía · CLUB → Bandeja
    (Solicitudes) · DEPORTISTA → Mi afiliación. */
 export function homeForRole(code) {
+  if (organismoNoActivo(code)) return 'organismo-detalle.html';   // sin ?id = mi organismo
   if (code === 'CLUB') return 'bandeja.html';
-  if (code === 'DEPORTISTA') return 'afiliacion.html';
+  if (code === 'DEPORTISTA') return 'perfil.html';
   if (code === 'PERSONA') return 'perfil.html';
   return 'jerarquia.html';
 }
@@ -375,10 +471,122 @@ export function mountHeader({ headerEl, role }) {
             </span>
           </div>
         </div>
+        ${perfilesDemoHtml(role.code)}
       </div>
     </div>
   `;
   bindHeaderEvents(headerEl);
+  mountContexto(role);
+}
+
+/* ─── Franja de contexto (P-15) ─────────────────────────────────────
+   Si la persona administra más de un organismo, encima del título de cada página
+   va «Trabajas en <organismo>» con «Cambiar de organismo». Ganó en la ronda de
+   diseñadores y jueces (variante C, sin la pantalla de elección al entrar): queda
+   donde el ojo ya está antes de aprobar. Con un solo organismo no aparece nada. */
+const TIPO_TXT = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
+const COLOR_TIPO = { comite: '#d74009', federacion: '#1f78d1', liga: '#7c3aed', club: '#1f8923' };
+const NO_INICIAL = new Set(['liga', 'club', 'federación', 'federacion', 'comité', 'comite', 'colombiana', 'colombiano', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'deportivo']);
+function inicialesOrg(nombre) {
+  const w = String(nombre).split(/\s+/).filter((x) => x && !NO_INICIAL.has(x.toLowerCase()));
+  const ini = w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 2).map((x) => x[0]).join('');
+  return (ini || String(nombre).slice(0, 2)).toUpperCase();
+}
+/* Lo que espera a este organismo: el nivel de abajo En revisión, o las solicitudes si es club. */
+export function pendientesDe(orgId) {
+  const o = getOrganismo(orgId);
+  if (!o) return { n: 0, txt: '' };
+  if (o.tipo === 'club') {
+    const n = solicitudesDeClub(orgId).filter((x) => x.estado === 'Enviada').length;
+    return { n, txt: n ? `${n} ${n === 1 ? 'solicitud' : 'solicitudes'} por confirmar` : '' };
+  }
+  const hijo = { comite: ['federación', 'federaciones'], federacion: ['liga', 'ligas'], liga: ['club', 'clubes'] }[o.tipo];
+  const n = allOrganismos().filter((x) => x.parentId === orgId && x.estado === 'En revisión').length;
+  return { n, txt: n && hijo ? `${n} ${n === 1 ? hijo[0] : hijo[1]} por revisar` : '' };
+}
+/* Nombre del organismo activo si la persona tiene varios (para «en nombre de …»), o null. */
+export function organismoActivoSiVarios(roleCode) {
+  const role = ROLES[roleCode];
+  if (!role || (role.contextos || []).length < 2) return null;
+  return getOrganismo(scopeFor(roleCode));
+}
+/* ¿La persona también administra este organismo desde otro contexto? (P-24, propuesta (b):
+   puede tener los dos roles, pero no decide sobre un organismo que ella misma administra). */
+export function administraTambien(roleCode, orgId) {
+  const role = ROLES[roleCode];
+  return !!(role && (role.contextos || []).some((c) => c.org === orgId && !(c.role === roleCode && c.org === scopeFor(roleCode))));
+}
+function orgIco(o, size) {
+  const c = COLOR_TIPO[o.tipo] || '#d74009';
+  return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
+}
+function mountContexto(role) {
+  const lista = (role.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
+  const head = document.querySelector('.page-inner > .page-head, .page-inner .page-head');
+  if (lista.length < 2 || !head || document.getElementById('ctxBar')) return;
+  const actual = getOrganismo(scopeFor(role.code)) || lista[0].o;
+  /* Cambiar de organismo deja a la persona en la misma página si el otro rol la tiene; si no, va a su inicio. */
+  const pagina = location.pathname.split('/').pop() || 'index.html';
+  const COMUNES = ['jerarquia.html', 'bandeja.html', 'cargue.html', 'deportistas.html'];
+  const destino = (rol) => (COMUNES.includes(pagina) ? pagina : homeForRole(rol));
+  const href = (c) => `${destino(c.role)}?role=${c.role}&org=${c.org}${role.persona ? `&como=${role.persona}` : ''}`;
+  const deportesTxt = (o) => (o.deportes.length > 2 ? `${o.deportes[0]} y ${o.deportes.length - 1} deportes más` : o.deporte);
+  const meta = (o) => `${TIPO_TXT[o.tipo]} · ${deportesTxt(o)} · ${o.tipo === 'federacion' ? 'Nacional' : (o.ubicacion ? o.ubicacion.depto : '')}`;
+  const otros = lista.filter((c) => c.o.id !== actual.id).map((c) => ({ o: c.o, p: pendientesDe(c.o.id) })).filter((x) => x.p.n);
+  const aviso = otros.length === 1 ? `${otros[0].p.txt} en ${otros[0].o.nombre}`
+    : otros.length ? `${otros.reduce((a, x) => a + x.p.n, 0)} pendientes en tus otros organismos` : '';
+  const bar = document.createElement('section');
+  bar.className = 'ctx-bar';
+  bar.id = 'ctxBar';
+  bar.setAttribute('aria-label', 'Organismo en el que trabajas');
+  bar.innerHTML = `
+    ${orgIco(actual, 38)}
+    <div class="ctx-bar__txt">
+      <span class="ctx-bar__lbl">Trabajas en</span>
+      <span class="ctx-bar__name">${actual.nombre}<span class="ctx-bar__meta">${meta(actual)}</span></span>
+    </div>
+    ${aviso ? `<span class="ctx-bar__aviso">${aviso}</span>` : ''}
+    <div class="naowee-dropdown ctx-dd" id="ctxDd">
+      <button type="button" class="naowee-dropdown__trigger" id="ctxTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="ctxMenu">
+        <span class="ctx-dd__long">Cambiar de organismo</span><span class="ctx-dd__short">Cambiar</span>
+        <span class="naowee-dropdown__chevron" aria-hidden="true">${getIcon('chevron')}</span>
+      </button>
+      <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos">
+        ${lista.map((c) => {
+          const o = c.o; const p = pendientesDe(o.id); const sel = o.id === actual.id;
+          return `<a class="naowee-dropdown__opt ctx-opt${sel ? ' is-selected' : ''}" role="option" aria-selected="${sel}" href="${href(c)}">
+            ${orgIco(o, 34)}
+            <span class="ctx-opt__txt">
+              <span class="ctx-opt__name">${o.nombre}</span>
+              <span class="ctx-opt__meta">${meta(o)}</span>
+              <span class="ctx-opt__pend${p.n ? '' : ' is-clear'}">${p.n ? p.txt : 'Sin pendientes'}</span>
+            </span>
+            ${sel ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${getIcon('check')}</span>` : ''}
+          </a>`;
+        }).join('')}
+      </div>
+    </div>`;
+  head.parentNode.insertBefore(bar, head);
+  const dd = bar.querySelector('#ctxDd');
+  const trg = bar.querySelector('#ctxTrigger');
+  const set = (open) => { dd.classList.toggle('naowee-dropdown--open', open); trg.setAttribute('aria-expanded', String(open)); };
+  trg.addEventListener('click', (e) => { e.stopPropagation(); set(!dd.classList.contains('naowee-dropdown--open')); });
+  document.addEventListener('click', (e) => { if (!dd.contains(e.target)) set(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dd.classList.contains('naowee-dropdown--open')) { set(false); trg.focus(); } });
+}
+
+/* Solo demo: cambiar de perfil también desde el chip (el usuario no lo encontraba dentro del
+   panel «Recorrido por HU»). Mismas personas que el switcher; limpia persona y contexto. */
+const HOME_DEMO = { CLUB: 'bandeja.html', DEPORTISTA: 'perfil.html', PERSONA: 'perfil.html' };
+function perfilesDemoHtml(actual) {
+  const codes = ['MINDEPORTE', 'MINISTRO', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  return `<div class="profile-dd__sep"></div>
+    <div class="profile-dd__demo"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Solo demo</span> Cambiar de perfil</div>
+    ${codes.map((c) => { const r = ROLES[c]; const def = ROLE_DEFAULT[c] || r;
+      return `<a class="profile-dd__item profile-dd__item--role profile-dd__perfil${c === actual && r.userName === def.userName ? ' is-current' : ''}" href="${HOME_DEMO[c] || 'jerarquia.html'}?role=${c}" data-perfil-chip="${c}">
+        <span class="role-meta"><span>${def.userName}</span><small>${r.label}${def.org && def.org !== '—' ? ' · ' + def.org : ''}</small></span>
+      </a>`; }).join('')}
+    <a class="profile-dd__item profile-dd__perfil profile-dd__casos" href="index.html#casos">Ver los casos para mostrar</a>`;
 }
 
 function bindHeaderEvents(headerEl) {
@@ -386,6 +594,9 @@ function bindHeaderEvents(headerEl) {
   const trigger = headerEl.querySelector('#userChipTrigger');
   const burger = headerEl.querySelector('#headerBurger');
   if (burger) burger.addEventListener('click', openDrawer);
+  headerEl.querySelectorAll('[data-perfil-chip]').forEach((a) => a.addEventListener('click', () => {
+    try { [PERSONA_KEY, 'naowee-organismos-territorio', ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
+  }));
   if (!switcher || !trigger) return;
   const toggle = (e) => { e.stopPropagation(); switcher.classList.toggle('open'); };
   trigger.addEventListener('click', toggle);
@@ -429,7 +640,8 @@ export function getDemoMode() {
 /* Persona multi-rol: visible solo en local (file:// o localhost), oculta en la publicación. */
 export const esLocal = () => location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 const ROLE_GROUPS = [
-  { label: 'Rectoría',          codes: ['MINDEPORTE'] },
+  { label: 'Rectoría',          codes: ['MINDEPORTE', 'MINISTRO'] },
+  { label: 'Territorio',        codes: ['TERRITORIAL'] },
   { label: 'Cabezas de sector', codes: ['COMITE'] },
   { label: 'Organismos',        codes: ['FEDERACION', 'LIGA', 'CLUB'] },
   { label: 'Personas',          codes: ['DEPORTISTA', 'PERSONA'] }
@@ -516,7 +728,9 @@ function bindDemoSwitcher(root) {
       const next = item.getAttribute('data-perfil');
       if (!ROLES[next]) return;
       const params = new URLSearchParams(window.location.search);
-      if (params.get('role') === next) { root.classList.remove('is-open'); return; }
+      if (params.get('role') === next && !params.get('como')) { root.classList.remove('is-open'); return; }
+      /* Cambiar de perfil es entrar como otra persona: se olvida la persona y el contexto de la sesión. */
+      try { [PERSONA_KEY, 'naowee-organismos-territorio', ...Object.keys(ROLES).map((r) => 'naowee-organismos-ctx-' + r)].forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
       window.location.href = `${homeForRole(next)}?role=${next}`;
     });
   });

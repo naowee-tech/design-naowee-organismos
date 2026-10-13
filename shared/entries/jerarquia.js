@@ -4,15 +4,23 @@
   } from '../sidebar.js';
   import {
     seedDemoData, getOrganismo, childrenOf, allDeportistas,
-    ancestorsOf, countDescendants, deportistasOf, estadoBadgeVariant
+    ancestorsOf, countDescendants, deportistasOf, estadoBadgeVariant,
+    organismosDeTerritorio, deportistasDeTerritorio, nombreTerritorio
   } from '../organismos-data.js';
   import { ESTADOS } from '../estados.js';
-  import { scopeFor } from '../permissions.js';
+  import { scopeFor, territorioDe } from '../permissions.js';
   import { mountDevnotes } from '../devnotes.js';
 
   seedDemoData();
   const roleCode = getRoleFromQuery();
   const role = ROLES[roleCode];
+  /* Ven todo el SND: el Administrador del Ministerio y el Ministro (consulta, P-01). */
+  const VE_TODO = roleCode === 'MINDEPORTE' || roleCode === 'MINISTRO';
+  /* Quien solo consulta no tiene bandeja: el aviso no lo manda allá. */
+  if (roleCode === 'MINISTRO' || roleCode === 'TERRITORIAL') {
+    const nota = document.getElementById('scopeNoteText');
+    if (nota) nota.textContent = 'Toca un organismo para ver lo que contiene, y «Ver detalles» para abrir su ficha. Tu rol es de consulta: no apruebas ni sancionas.';
+  }
 
   /* Nivel de entrada (subítems del sidebar): con él las columnas abren ya posicionadas */
   const NIVELES = ['comite', 'federacion', 'liga', 'club', 'deportista'];
@@ -77,6 +85,14 @@
     } else if (dep) {
       roots = [depNode(dep)];   // autodeclarado — sin cadena
     }
+  } else if (territorioDe(roleCode)) {
+    /* Territorial (Fase 3): raíz virtual con los organismos ubicados en su territorio (ligas del
+       departamento y clubes de sus municipios; el municipio, solo sus clubes). Solo lectura. */
+    const terr = territorioDe(roleCode);
+    const orgs = organismosDeTerritorio(terr);
+    const ids = new Set(orgs.map((o) => o.id));
+    const top = orgs.filter((o) => !(o.parentId && ids.has(o.parentId)));
+    roots = [{ kind: 'org', id: 'TER', tipo: 'territorio', name: nombreTerritorio(terr), nit: '', deporte: '', estado: '', children: top.map(orgNode) }];
   } else if (scope === null) {
     roots = childrenOf(null).map(orgNode);   // Mindeporte → los 3 comités
   } else {
@@ -134,7 +150,8 @@
   }
 
   function scopeInfo() {
-    if (roleCode === 'MINDEPORTE') return { emoji: '🇨🇴', label: 'Jurisdicción · rectoría del SND', name: 'Sistema Nacional del Deporte' };
+    if (VE_TODO) return { emoji: '🇨🇴', label: roleCode === 'MINISTRO' ? 'Consulta · todo el SND' : 'Jurisdicción · rectoría del SND', name: 'Sistema Nacional del Deporte' };
+    if (territorioDe(roleCode)) { const t = territorioDe(roleCode); return { emoji: '📍', label: `${t.municipio ? 'Municipio' : 'Departamento'} · tu territorio`, name: nombreTerritorio(t) }; }
     if (roleCode === 'DEPORTISTA') {
       const dep = allDeportistas().find((d) => d.id === scope);
       const club = dep && dep.clubId ? getOrganismo(dep.clubId) : null;
@@ -154,8 +171,13 @@
         { val: n, lbl: 'Liga' }, { val: n, lbl: 'Club' }
       ];
     }
+    if (territorioDe(roleCode)) {
+      const t = territorioDe(roleCode); const orgs = organismosDeTerritorio(t);
+      return [...(t.municipio ? [] : [{ val: orgs.filter((o) => o.tipo === 'liga').length, lbl: 'Ligas', accent: true }]),
+        { val: orgs.filter((o) => o.tipo === 'club').length, lbl: 'Clubes', accent: !!t.municipio }, { val: deportistasDeTerritorio(t).length, lbl: 'Deportistas' }];
+    }
     const c = countDescendants(scope);
-    if (roleCode === 'MINDEPORTE') {
+    if (VE_TODO) {
       return [
         { val: childrenOf(null).length, lbl: 'Comités', accent: true },
         { val: c.federaciones, lbl: 'Federaciones' }, { val: c.ligas, lbl: 'Ligas' },
@@ -239,7 +261,7 @@
       return { list: fullRoots, ids: [] };
     }
     // Lo que está debajo de mí: el rol no se ve a sí mismo; el nivel elegido en el sidebar es la raíz
-    const base = roleCode === 'MINDEPORTE' ? fullRoots : fullRoots.flatMap((n) => n.children);
+    const base = VE_TODO ? fullRoots : fullRoots.flatMap((n) => n.children);
     const collect = (list) => list.flatMap((n) => (n.tipo === nivel ? [n] : []).concat(collect(n.children)));
     const list = collect(base);
     return { list, ids: [] };   // se entra con la lista sola; el usuario abre cada nivel
@@ -254,7 +276,7 @@
   const emptyState = document.getElementById('emptyState');
 
   const colsFor = () => { const w = treeCard.clientWidth; return w < 560 ? 1 : w < 900 ? 2 : 3; };
-  const fichaUrl = (id) => `afiliacion.html?role=${roleCode}&id=${encodeURIComponent(id)}&from=jerarquia`;
+  const fichaUrl = (id) => `perfil.html?role=${roleCode}&persona=${encodeURIComponent(id)}&from=${encodeURIComponent('jerarquia.html?role=' + roleCode)}`;
   const detailUrl = (id) => `organismo-detalle.html?id=${encodeURIComponent(id)}&role=${roleCode}`;
   const CHILD_LABEL = { comite: 'Federaciones', federacion: 'Ligas', liga: 'Clubes', club: 'Deportistas' };
 
@@ -302,7 +324,7 @@
     const parent = level.parent;
     const kickerLabel = parent ? CHILD_LABEL[parent.tipo] : PLURAL[level.nodes[0] ? level.nodes[0].tipo : nivel];
     const kicker = `${kickerLabel}<span class="jq-col__count">${level.nodes.length}</span>`;
-    const title = parent ? parent.name : (roleCode === 'MINDEPORTE' ? 'Sistema Nacional del Deporte' : (fullRoots[0] ? fullRoots[0].name : 'Inicio'));
+    const title = parent ? parent.name : (VE_TODO ? 'Sistema Nacional del Deporte' : (fullRoots[0] ? fullRoots[0].name : 'Inicio'));
     const btnClose = depth > 0
       ? `<button type="button" class="jq-col__close" data-close="${depth}" aria-label="Cerrar ${esc(title)}" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>` : '';
     const actions = btnClose;
@@ -432,7 +454,7 @@
       searchInput.value = ''; searchBox.classList.remove('naowee-searchbox--has-value');
       currentEstado = 'todos'; estadoValue.textContent = 'Todos los estados';
       estadoMenu.querySelectorAll('.naowee-dropdown__opt').forEach((o) => o.classList.toggle('is-selected', o.dataset.value === 'todos'));
-        const own = roleCode !== 'MINDEPORTE' && roleCode !== 'DEPORTISTA' ? fullRoots[0] : null;
+        const own = !VE_TODO && roleCode !== 'DEPORTISTA' ? fullRoots[0] : null;
       const trail = node.children.length ? anc.concat(node.id) : anc;
       if (own && node.id !== own.id) { roots = own.children; path = trail.filter((id) => id !== own.id); }   // sin verme a mí
       else { roots = fullRoots; path = trail; }
@@ -462,6 +484,25 @@
 
   /* ─── Notas para devs (solo demo) ─── */
   mountDevnotes({ jerarquia: { title: 'Jerarquía SND · cómo funciona por dentro', sections: [
+    { title: 'Modelo: afiliación múltiple y deportes', items: [
+      '<strong>Una sola relación de afiliación</strong> para deportista → club, personal deportivo → cualquier organismo y club → liga, con estado (Solicitada, Vinculada, Rechazada, Terminada) y vigencia (desde, hasta). Ya no hay un <code>clubId</code> ni un <code>parentId</code> únicos.',
+      'El deportista hereda la cadena de <strong>cada</strong> club en el que está Vinculado. En la demo, Mateo Restrepo patina en el Club Patín Cali y nada en Aguas del Valle: aparece en las dos ligas y federaciones, y se cuenta una vez (personas, no afiliaciones).',
+      'Autodeclarado o vinculado no se guarda en la persona: se deriva de si tiene alguna afiliación vigente.',
+      'Cada organismo tiene una <strong>lista de deportes</strong> dentro de los de su superior. Un deporte pertenece a una sola federación en todo el sistema (DEP-545). Los paradeportes son deportes aparte del catálogo (Para Natación ≠ Natación).',
+      'Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliación Vinculada. Lo activa la primera.',
+      'Deportes al registrar o cargar: la federación elige deportes del catálogo sin federación; la liga y el club, uno o varios de los de su superior. La plantilla de cargue suma la columna «Deportes (separados por coma)» y valida cada fila con la misma regla.',
+      'Personas: el store guarda a toda persona del SUID. Tutor y personal deportivo registrados por el formulario público quedan con <code>esDeportista: false</code> (no salen en listados de deportistas) y entran a su perfil para registrar a su menor o pedir vínculo.'
+    ] },
+    { title: 'Una persona, varios organismos', items: [
+      'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>«Trabajas en»</strong> la reemplaza y cambia la jurisdicción de este árbol.',
+      'En la demo, Sandra Mejía administra dos ligas y la federación de la que cuelga una de ellas; desde la federación ve su propia liga en el árbol, pero no decide sobre ella (P-24). Detalle en la nota de la Bandeja.'
+    ] },
+    { title: 'Usuario territorial (Fase 3)', items: [
+      'Ancla en un <strong>departamento o municipio</strong>, no en un organismo (<code>territorioDe</code> en shared/permissions.js; demo: <code>?territorio=Cali</code> lo vuelve municipal). Lo crea el Ministerio (A-2).',
+      'Ve los organismos <strong>ubicados</strong> en su territorio (el departamento: ligas y clubes de sus municipios; el municipio: sus clubes) y sus deportistas. Comités y federaciones son nacionales: no los ve.',
+      'Solo consulta; además registra deportistas autodeclarados y les propone un club de su territorio, que el club confirma (P-12). No aprueba organismos ni afiliaciones.',
+      'Pendiente técnico: la identidad ya trae la ruta territorial <code>/COL/{dpto}/{mun}/</code> firmada y ningún handler la evalúa.'
+    ] },
     { title: 'Alcance por rol', items: [
       '<code>scopeFor(rol)</code> da el organismo ancla; el árbol es su subárbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.',
       'Un rol nunca se ve a sí mismo ni a sus ancestros: la primera columna arranca en los hijos de su ancla. DEPORTISTA ve solo su cadena hasta el club (<code>minimalChain</code>, sin contadores heredados).',
@@ -483,7 +524,7 @@
     { title: 'Botones de cada fila', items: [
       '<strong>Fila</strong> (botón): abre el siguiente nivel con <code>aria-pressed</code>. Solo es botón si tiene hijos (o viene de resultados); si no, es estática.',
       '<strong>Chevron</strong>: aparece solo con hijos; en hover <strong>del propio botón</strong> (no de toda la fila; solo ≥1024px) o foco de la fila se despliega «Ver &lt;siguiente nivel&gt;» (<code>CHILD_LABEL</code>).',
-      '<strong>Ver detalles</strong>: organismos → <code>organismo-detalle.html?id=</code>. <strong>Ver ficha</strong>: deportistas → <code>afiliacion.html?id=…&amp;from=jerarquia</code>; el «Volver» de la ficha honra <code>from</code>.',
+      '<strong>Ver detalles</strong>: organismos → <code>organismo-detalle.html?id=</code>. <strong>Ver ficha</strong>: deportistas → <code>perfil.html?persona=…&amp;from=…</code> (perfil multi-rol en modo visor); el «Volver» de la ficha honra <code>from</code>.',
       '<strong>X</strong> de la columna: cierra esa columna y las de su derecha (<code>data-close</code>) con animación de salida; es la única forma de subir de nivel en móvil.'
     ] },
     { title: 'Búsqueda y filtro', items: [

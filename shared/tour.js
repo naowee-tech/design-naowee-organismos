@@ -69,7 +69,7 @@
       title: 'Pre-registrar federaciones (cargue masivo)',
       purpose: 'Cada Comité pre-registra por plantilla a las federaciones de su sector; quedan Preinscritas para completar su registro (cascada del Ministerio).',
       steps: [
-        { sel: '#cgTpl', body: 'Descarga la <b>plantilla oficial</b> (.xlsx, 22 columnas). No cambies los encabezados ni el nombre de las hojas.' },
+        { sel: '#cgTpl', body: 'Descarga la <b>plantilla oficial</b> (.xlsx, 23 columnas, la última con los deportes). No cambies los encabezados ni el nombre de las hojas.' },
         { sel: '#cgDrop', body: 'Arrastra el archivo diligenciado: se valida <b>fila por fila</b> con vista previa; las filas con error no se crean (carga parcial).' }
       ]
     },
@@ -85,22 +85,37 @@
     'ORG-04': {
       ph: '1 · Registro y jerarquía', page: 'registro.html', role: 'LIGA', demo: true,
       title: 'Registrar un Club deportivo',
-      purpose: 'El club se registra bajo su liga adjuntando el reconocimiento del ente municipal; queda Preinscrito hasta que la Liga lo valide.',
+      purpose: 'El club se registra bajo su liga adjuntando el reconocimiento del ente municipal; queda En revisión hasta que la Liga lo valide.',
       steps: [
         { sel: '.reg-tipo-card[data-tipo="club"]', body: 'Elige el tipo <b>Club</b>. El formulario pedirá su <b>liga</b>, el tipo de club y la sede con geolocalización.' },
         { sel: '#regStepper', body: 'Recorre los pasos del <b>club</b>: datos, representante legal, sede y documentos (reconocimiento del ente municipal).' },
-        { sel: '#regFooter', body: 'Al enviar, el club queda <b>Preinscrito</b> bajo su liga; desde ahí la Liga lo aprueba y podrá inscribir deportistas.' }
+        { sel: '#regFooter', body: 'Al enviar, el club queda <b>En revisión</b> en la bandeja de su liga; cuando la Liga lo aprueba queda Activo y puede confirmar deportistas.' }
       ]
     },
     'ORG-05': {
-      ph: '2 · Afiliación del deportista', page: 'afiliacion.html', role: 'DEPORTISTA', demo: true, q: { id: 'DEP-009' },
-      title: 'Solicitar afiliación a un club',
-      purpose: 'Un deportista autodeclarado busca un club Activo y envía su solicitud; al aprobarla el club, hereda automáticamente su liga y federación (ORG-05).',
+      ph: '2 · Personas y afiliación', page: 'perfil.html', role: 'PERSONA', demo: true, q: { seccion: 'afiliaciones' },
+      title: 'Afiliarse a uno o varios clubes',
+      purpose: 'Un deportista puede estar en varios clubes a la vez; cada club aprueba su afiliación y de cada uno hereda su liga y su federación (P-13).',
       steps: [
-        { sel: '#heroAsociar', body: 'Estás <b>autodeclarado</b> (sin club). Pulsa <b>Asociar a club</b> para iniciar tu solicitud.', click: true },
-        { sel: '#afSearch', body: 'Escribe al menos <b>3 letras</b> del nombre o el NIT del club (prueba con <b>“cali”</b>). Solo aparecen clubes en estado <b>Activo</b>.' },
-        { sel: '#afResults, #afBody', body: 'Elige un club del resultado: se muestra la <b>vista previa de la herencia</b> (liga y federación que recibirás). Si no aparece, se avisa “club no encontrado”.' },
-        { sel: '#afSend', body: 'Envía la solicitud: queda <b>pendiente de confirmación</b> del club, con notificación por email y app en cada cambio.' }
+        { sel: '.mp-list', body: 'Laura está <b>vinculada</b> al Club Patín Cali (con la cadena que hereda) y tiene una solicitud <b>pendiente</b> en otro club. Puede retirarse de uno sin perder los demás.' },
+        { sel: '[data-solicitar-af]', body: '<b>Solicitar afiliación</b> busca clubes <b>Activos</b> por nombre o NIT; la solicitud llega a la bandeja del club, que la confirma.' }
+      ]
+    },
+    'ORG-11': {
+      ph: '2 · Personas y afiliación', page: 'perfil.html', role: 'PERSONA', demo: true, q: { seccion: 'menores' },
+      title: 'El tutor registra a un menor',
+      purpose: 'Solo el tutor registra a su menor, con el mismo flujo de sports: documentos (vínculo, TI o RC, parentesco, consentimiento) y datos básicos. Queda en revisión mientras se valida el parentesco.',
+      steps: [
+        { sel: '.mp-minors', body: 'Los menores a cargo, con su estado. <b>Gestionar perfil</b> abre el perfil del menor, que administra su tutor.' },
+        { sel: '[data-menor-nuevo]', body: '<b>Registrar menor</b> abre los dos pasos. Valida que sea menor de 18 y que el documento no esté ya registrado.' }
+      ]
+    },
+    'ORG-12': {
+      ph: '2 · Personas y afiliación', page: 'deportistas.html', role: 'CLUB', demo: true,
+      title: 'El club asocia a un deportista autodeclarado',
+      purpose: 'El club busca a quien ya está en el SUID sin club, solo de sus deportes, y lo asocia: queda vinculado y hereda la cadena del club.',
+      steps: [
+        { sel: '#dpBuscar', body: '<b>Asociar autodeclarado</b> busca por nombre o documento (prueba con <b>“Daniela”</b>). Los menores no salen: a ellos los afilia su tutor.' }
       ]
     },
     'ORG-06': {
@@ -157,9 +172,54 @@
         { sel: '#odTabs .naowee-tab[data-tab="hist"]', body: 'Abre <b>Historial</b>: la <b>trazabilidad</b> lista cada cambio de estado con responsable, fecha y motivo.', click: true },
         { sel: '#odPanel', body: 'Cada línea registra la <b>transición</b> (estado anterior → nuevo). Todo cambio genera notificación al organismo (email + app).' }
       ]
+    },
+    'ORG-13': {
+      ph: '4 · Estados y trazabilidad', page: 'organismo-detalle.html', role: 'CLUB', demo: true, q: { org: 'CLU-012', como: 'org' },
+      title: 'El organismo devuelto corrige y reenvía',
+      purpose: 'Un organismo que no está Activo solo ve «Mi organismo»: qué pasó, el motivo, qué le toca y qué puede hacer mientras tanto. Al reenviar vuelve a la bandeja de su superior.',
+      steps: [
+        { sel: '.oc-status__main', body: 'El estado, el <b>motivo</b> de la liga (quién y cuándo) y lo que puede y no puede hacer mientras no esté activo.' },
+        { sel: '.oc-cycle', body: 'El <b>recorrido</b>: dónde está («Estás aquí») y qué sigue.' },
+        { sel: '.oc-status__cta', body: '<b>Corregir y reenviar</b> abre el mismo asistente con sus datos; al enviar queda <b>En revisión</b> en la bandeja de la liga.' }
+      ]
+    },
+    'ORG-14': {
+      ph: '4 · Estados y trazabilidad', page: 'organismo-detalle.html', role: 'MINDEPORTE', demo: true, q: { id: 'CLU-003' },
+      title: 'El Ministerio suspende, reactiva o cancela',
+      purpose: 'Solo el Ministerio sanciona. Suspender bloquea al organismo sin cambiar lo que depende de él (P-18); reactivar lo devuelve a revisión de su superior (P-08); cancelar no tiene vuelta.',
+      steps: [
+        { sel: '.oc-sanc', body: '<b>Estado y sanciones</b>: el estado vivo, la acción posible con su consecuencia y el historial de sanciones.' },
+        { sel: '.oc-def', body: '<b>Cancelar registro</b> va aparte como acción definitiva: pide detalle y confirmar que no se puede deshacer.' }
+      ]
+    },
+    'ORG-15': {
+      ph: '5 · Varios organismos, territorio y usuarios', page: 'bandeja.html', role: 'LIGA', demo: true, q: { org: 'LIG-001', como: 'sandra' },
+      title: 'Una persona administra varios organismos',
+      purpose: 'Una persona puede administrar varios organismos (P-15). Elige en cuál trabaja y todo el menú cambia; nunca decide sobre un organismo que también administra (P-24).',
+      steps: [
+        { sel: '#ctxBar', body: 'La franja <b>Trabajas en</b> dice en qué organismo estás y avisa los pendientes de los otros.' },
+        { sel: '#ctxTrigger', body: '<b>Cambiar de organismo</b>: Sandra pasa entre sus dos ligas y la federación; cambian el rol, el menú y la bandeja.' }
+      ]
+    },
+    'ORG-16': {
+      ph: '5 · Varios organismos, territorio y usuarios', page: 'jerarquia.html', role: 'TERRITORIAL', demo: true, q: { territorio: 'Valle del Cauca' },
+      title: 'El territorio consulta su jurisdicción',
+      purpose: 'El encargado departamental o municipal (lo crea el Ministerio) ve los organismos ubicados en su territorio y sus deportistas; registra autodeclarados y propone club, pero no aprueba (P-12).',
+      steps: [
+        { sel: '#treeCard', body: 'Las <b>ligas y clubes ubicados</b> en el Valle del Cauca y sus deportistas, en solo lectura. Comités y federaciones son nacionales.' }
+      ]
+    },
+    'ORG-17': {
+      ph: '5 · Varios organismos, territorio y usuarios', page: 'usuarios.html', role: 'COMITE', demo: true,
+      title: 'Usuarios del organismo',
+      purpose: 'Una sola cuenta principal por organismo; ella crea los usuarios internos según el catálogo de roles (en el COC, gestor y metodólogo por su marca olímpica). Desactivar no borra.',
+      steps: [
+        { sel: '#usPanel', body: 'Los usuarios internos con su rol, estado y quién los creó; búsqueda y filtro por estado. La pestaña <b>Roles del organismo</b> explica cada rol y quién lo crea.' },
+        { sel: '[data-act="invite"]', body: '<b>Invitar usuario</b>: solo ofrece los roles que tú puedes crear y muestra qué puede y qué no cada uno.' }
+      ]
     }
   };
-  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-10', 'ORG-07'];
+  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-11', 'ORG-12', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-10', 'ORG-07', 'ORG-13', 'ORG-14', 'ORG-15', 'ORG-16', 'ORG-17'];
 
   /* ── Estado ── */
   var curHu = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _spotFresh = false;

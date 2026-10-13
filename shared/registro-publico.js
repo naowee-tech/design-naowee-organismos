@@ -11,7 +11,7 @@
        su superior. Pasos: Básicos · Documentos · Sede y contacto.
    Notas para devs (Solo demo) por paso: shared/devnotes.js.
    ═══════════════════════════════════════════════════════════════ */
-import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore } from './organismos-data.js';
+import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore, deportesDe, duenoDeporte, catalogoDeportes, SIN_FEDERACION, PARADEPORTES } from './organismos-data.js';
 import { mountDevnotes } from './devnotes.js?v=1.7.0';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -85,32 +85,15 @@ const MUNICIPIOS = {
 };
 const DEPTOS = Object.keys(MUNICIPIOS).sort((a, b) => a.localeCompare(b, 'es'));
 
-/* Deportes por federación (PR nao-docs #32): una federación gobierna uno o más
-   deportes del catálogo; un deporte pertenece a una sola federación. El seed solo
-   trae `deporte`; estas son las federaciones con varios deportes en catalog-ms. */
-const DEPORTES_POR_FED = {
-  'FED-038': ['Natación', 'Natación Artística', 'Polo Acuático'],
-  'FED-040': ['Patinaje', 'Patinaje Artístico', 'Patinaje de Velocidad']
-};
-const deportesDe = (org) => {
-  if (!org) return [];
-  if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes;
-  if (DEPORTES_POR_FED[org.id]) return DEPORTES_POR_FED[org.id];
-  return org.deporte && org.deporte !== '—' ? [org.deporte] : [];
-};
-const FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === 'federacion');
-/* Catálogo de deportes = unión de los deportes de las federaciones (demo; el real es GET /sports). */
-/* Solo demo: deportes del catálogo que aún no tienen federación, para poder probar el alta de una federación. */
-const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding'];
-const CATALOGO_DEPORTES = () => [...new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
-/* Dueño de cada deporte: federación existente que ya lo gobierna (bloquea duplicar). */
-const duenoDeporte = (dep, sector) => FEDERACIONES().find((f) => f.sector === sector && deportesDe(f).includes(dep) && !['Rechazado', 'Cancelado'].includes(f.estado));
+/* Deportes del organismo, catálogo y dueño de cada deporte: fuente única en organismos-data.js
+   (un deporte = una federación en todo el sistema, DEP-545). */
+const CATALOGO_DEPORTES = catalogoDeportes;
 const CONJUNTO = ['Baloncesto', 'Balonmano', 'Béisbol', 'Fútbol', 'Fútbol de Salón', 'Hockey', 'Polo Acuático', 'Rugby', 'Softbol', 'Voleibol'];
 const deportesPorTipo = (t) => {
   const all = CATALOGO_DEPORTES();
   if (t === 'CONJ') return all.filter((d) => CONJUNTO.includes(d));
-  if (t === 'PARA') return ['Boccia', 'Goalball', 'Para Atletismo', 'Para Natación', 'Baloncesto en silla de ruedas'];
-  return all.filter((d) => !CONJUNTO.includes(d));
+  if (t === 'PARA') return all.filter((d) => PARADEPORTES.includes(d));
+  return all.filter((d) => !CONJUNTO.includes(d) && !PARADEPORTES.includes(d));
 };
 
 /* Documentos de la búsqueda simulada (Solo demo). */
@@ -316,8 +299,8 @@ function paneBasicos() {
 function unclaimedAlert() {
   return `<div class="naowee-message naowee-message--informative rp-alert"><span class="naowee-message__icon">${I.bang}</span><div class="naowee-message__body">
     <p class="naowee-message__title">Ya tenemos un registro con este documento</p>
-    <p class="naowee-message__text">Está asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, completa el registro para reclamar tu perfil: tus datos se actualizan con lo que ingreses y el correo se mantiene.</p>
-    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Continuar con este correo</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es mío</button></div>
+    <p class="naowee-message__text">Está asociado al correo <strong>${esc(SIN_RECLAMAR.emailHint)}</strong>. Si es tuyo, activa tu cuenta: te enviamos a ese correo el enlace para crear tu contraseña y, al entrar, revisas y actualizas tus datos desde tu perfil.</p>
+    <div class="rp-alert__actions"><button type="button" class="ur-btn" data-act="claim">Activar mi cuenta</button><button type="button" class="ur-back" data-act="notMine">Ese correo no es mío</button></div>
   </div></div>`;
 }
 function notMineAlert() {
@@ -429,7 +412,7 @@ function deportesField() {
   const chips = libres.map((dep) => {
     const on = d.deportes.includes(dep);
     return `<button type="button" class="rp-chip${on ? ' is-on' : ''}" data-dep="${esc(dep)}">${on ? I.check : ''}${esc(dep)}</button>`;
-  }).join('') + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen federación en el sector ${esc(d.sector)}.</p>` : '');
+  }).join('') + (ocupados ? `<p class="rp-inline-note">${ocupados} deportes no aparecen porque ya tienen una federación.</p>` : '');
   return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label>
     <p class="rp-inline-note">${t === 'federacion' ? 'Una federación puede gobernar varios deportes; cada deporte pertenece a una sola federación.' : `Elige entre los deportes de tu ${SUPERIOR_TXT[t]}.`}</p>
     <div class="rp-chips">${chips}</div></div>`;
@@ -592,7 +575,8 @@ function bindPane() {
     STATE.d.deportes = list.includes(dep) ? list.filter((x) => x !== dep) : [...list, dep];
     renderPane(); bindPane();
   }));
-  root().querySelector('[data-act="claim"]')?.addEventListener('click', () => { STATE.claim = { ...SIN_RECLAMAR }; STATE.lookup = 'ok'; renderPane(); bindPane(); });
+  /* Reclamar solo activa la cuenta y envía el acceso al correo guardado; no se editan datos en el registro (decisión 2026-10-09, DEP-545). */
+  root().querySelector('[data-act="claim"]')?.addEventListener('click', () => { STATE.result = { tipo: 'persona', reclamado: true, nombre: 'Tu perfil', rol: ROL_TXT[STATE.role], doc: `${STATE.d.tipoDoc} ${STATE.d.numDoc}`, correo: SIN_RECLAMAR.emailHint }; STATE.created = true; render(); window.scrollTo({ top: 0 }); });
   root().querySelector('[data-act="notMine"]')?.addEventListener('click', () => { STATE.lookup = 'notMine'; renderPane(); bindPane(); });
   root().querySelector('[data-act="backToClaim"]')?.addEventListener('click', () => { STATE.lookup = 'unclaimed'; renderPane(); bindPane(); });
   root().querySelector('[data-act="asTutor"]')?.addEventListener('click', () => {
@@ -688,10 +672,16 @@ function submit() {
   const nombre = [d.nombre, d.segNombre, d.apellido, d.segApellido].filter(Boolean).join(' ');
   if (STATE.nature === 'persona') {
     let id = null;
-    if (isAthlete()) {
+    /* Toda persona queda guardada (Fase 3): el deportista como autodeclarado; el tutor y el personal
+       deportivo como personas sin rol de deportista, para que sigan a su perfil (registrar menor,
+       pedir vínculo). El reclamo de un perfil existente no crea nada nuevo. */
+    if (!STATE.claim) {
       const nuevos = readStore('deportistas-nuevos', []) || [];
       id = `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`;
-      nuevos.push({ id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, deporte: d.deporte, modalidad: '', correo: d.correo, clubId: null, estado: 'autodeclarado', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) });
+      const base = { id, nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc, modalidad: '', correo: d.correo, fechaNac: d.fechaNac || '', origen: 'registro-publico', fechaRegistro: new Date().toISOString().slice(0, 10) };
+      if (isAthlete()) nuevos.push({ ...base, deporte: d.deporte });
+      else if (STATE.role === 'SUPPORT_STAFF') nuevos.push({ ...base, deporte: d.deporte || '', esDeportista: false, rolApoyo: (CAT.rolApoyo.find((o) => o.v === d.rolApoyo) || {}).t || d.rolApoyo || 'Personal deportivo' });
+      else nuevos.push({ ...base, deporte: '', esDeportista: false, rolTutor: true });
       writeStore('deportistas-nuevos', nuevos);
     }
     STATE.result = { tipo: 'persona', id, nombre, rol: ROL_TXT[STATE.role], fechaNac: d.fechaNac, correo: STATE.claim ? STATE.claim.emailHint : d.correo, reclamado: !!STATE.claim, doc: `${d.tipoDoc} ${d.numDoc}`, ubicacion: [d.ciudad, d.depto].filter(Boolean).join(', '), telefono: d.telefono, deporte: isAthlete() ? d.deporte : '' };
@@ -731,14 +721,14 @@ function renderResult() {
     <div class="ur-devnote-wrap ur-devnote-wrap--center"><span class="wz-devnote" tabindex="0" role="button" data-devnote="${persona ? 'resultPersona' : 'resultEntidad'}"></span></div>
     <div class="ur-result__ava">${I.check}</div>
     ${persona ? `
-      ${r.reclamado ? `<h1 class="ur-title">¡Perfil reclamado!</h1>
-      <p>Actualizamos tu perfil con los datos que ingresaste y activamos tu cuenta.</p>
+      ${r.reclamado ? `<h1 class="ur-title">¡Cuenta activada!</h1>
+      <p>Activamos la cuenta del perfil que ya existía con tu documento.</p>
       <p>Enviamos el enlace para crear tu contraseña a <strong>${esc(r.correo)}</strong>.</p>` : `<h1 class="ur-title">¡Registro completado!</h1>
       <p>¡Ya formas parte! Registro recibido. Confirma tu email y empieza a superar tus marcas.</p>
       <p>¡Bienvenido! Tu cuenta ha sido creada correctamente. Hemos enviado un correo con la confirmación.</p>`}
       <div class="ur-profile"><div class="ur-profile__head"><strong>${esc(r.nombre)}</strong><span class="ur-badge">Cuenta activa</span></div>
         ${profileRows([['Rol', r.rol], ['Documento', r.doc], ['Fecha de nacimiento', r.fechaNac ? r.fechaNac.split('-').reverse().join('/') : ''], ['Deporte', r.deporte], ['Correo', r.correo], ['Teléfono', r.telefono], ['Ubicación', r.ubicacion]])}</div>
-      ${msg('informative', '', esc(siguiente))}
+      ${msg('informative', '', esc(r.reclamado ? 'Al entrar, revisa tus datos y actualízalos desde tu perfil. Si no tienes acceso a ese correo, escribe a soporte@naowee.com.' : siguiente))}
       ${msg('caution', '', 'Si no recibiste el correo, revisa bandeja de SPAM o solicita reenvío.')}
       <div class="ur-actions"><a class="ur-btn ur-btn--block" href="index.html">Ir a Iniciar sesión</a></div>`
     : `
@@ -752,7 +742,7 @@ function renderResult() {
         ${profileRows([['Tipo', ENT_TXT[r.org.tipo]], ['NIT', r.org.nit], ['Deportes', (r.org.deportes || []).join(', ')], ['Organismo superior', sup?.nombre], ['Representante legal', [r.org.repLegal?.nombre, r.org.repLegal?.apellido].filter(Boolean).join(' ') + (r.org.repLegal?.numDoc ? ` · ${r.org.repLegal.tipoDoc} ${r.org.repLegal.numDoc}` : '')], ['Sede', [r.org.ubicacion?.ciudad, r.org.ubicacion?.depto].filter(Boolean).join(', ')], ['Contacto', [r.org.contacto?.correo, r.org.contacto?.telefono].filter(Boolean).join(' · ')], ['Documentos', `${Object.keys(r.org.docs || {}).length} adjuntos`]])}</div>`}
     <div class="ur-help"><b>💬 ¿NECESITAS AYUDA?</b>Si tienes dudas o problemas con la activación de tu cuenta, puedes comunicarte con el equipo de soporte <strong>soporte@naowee.com</strong></div>
     <div class="ur-demo-links">
-      ${r.id ? `<a href="afiliacion.html?role=DEPORTISTA&id=${esc(r.id)}">Solo demo · ver perfil del deportista</a>` : ''}
+      ${r.id ? `<a href="perfil.html?role=PERSONA&persona=${esc(r.id)}${STATE.role === 'LEGAL_GUARDIAN' ? '&seccion=menores' : STATE.role === 'SUPPORT_STAFF' ? '&seccion=vinculos' : ''}">Solo demo · entrar a mi perfil${STATE.role === 'LEGAL_GUARDIAN' ? ' y registrar a mi menor' : STATE.role === 'SUPPORT_STAFF' ? ' y pedir vínculo' : ''}</a>` : ''}
       ${rolBandeja ? `<a href="bandeja.html?role=${rolBandeja}">Solo demo · bandeja de ${esc(sup.nombre)}</a>` : ''}
       ${esFed ? '<a href="bandeja.html?role=MINDEPORTE">Solo demo · bandeja del Ministerio</a>' : ''}
       ${persona ? '' : '<a href="jerarquia.html?role=MINDEPORTE">Solo demo · ver en la jerarquía</a>'}
@@ -779,10 +769,11 @@ const DEVNOTES = {
     { title: 'Se mantiene de producción', items: ['Documento CC / CE / PA. Con 7 dígitos (6 para CE) consulta <code>GET /user/public/individual/search</code> tras 1 s; los demás campos quedan bloqueados hasta verificar.', '<code>isMinor</code> → alerta "Deportista menor de edad detectado/a" + "Continuar como padre/tutor" (cambia el rol a <code>LEGAL_GUARDIAN</code> y limpia el formulario).', '<code>hasLogin</code> → "Ya tienes una cuenta registrada" + Iniciar sesión.', 'Fecha de nacimiento: 18+ obligatorio, también para el tutor. "Rol específico" solo para personal deportivo (<code>/catalogs/support-personnel-role</code>).'] },
     { title: 'Perfil existente sin reclamar (reconciliación)', items: [
       'Caso: el documento existe con <code>has_login=false</code> porque lo creó otro actor (una institución al inscribirlo en un evento, un cargue) con <b>su</b> correo. Se detecta en la búsqueda, no al final del formulario.',
-      'Se muestra el correo <b>enmascarado</b> y sin opción de editar: dos primeras letras y la última del usuario y el dominio completo (<code>ju•••••z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra quién creó el registro: averiguarlo exige cruzar todos los eventos y no aporta para reconocer el correo. "Continuar con este correo" sigue el formulario normal y reclama el perfil. "Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
-      'Regla: al reclamar, <b>los datos del perfil se actualizan con lo que ingrese el usuario, excepto el correo</b> (y el documento, que es la llave). Ahí queda reclamado: <code>has_login=true</code>, mismo <code>user_code</code>, cuenta en Keycloak y correo para crear la contraseña.',
-      '<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el <b>mismo</b> correo guardado; si escribe otro devuelve 409 <code>document_registered_different_email</code> al final. Y solo actualiza teléfono, nacionalidad, ubicación, zona, deporte y rol de apoyo: nombres, fecha de nacimiento, sexo y sociodemográfico se descartan sin avisar.',
-      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado; (2) el registro permite reclamar sin enviar correo (usa el guardado) y actualiza todos los campos del formulario menos correo y documento; (3) el reclamo queda en auditoría con los valores anteriores.',
+      'Se muestra el correo <b>enmascarado</b> y sin opción de editar: dos primeras letras y la última del usuario y el dominio completo (<code>ju•••••z@colegiosanjose.edu.co</code>), para que la persona lo reconozca. El enmascarado lo hace el back. No se muestra quién creó el registro.',
+      '<b>Regla (decisión 2026-10-09, Juan Manuel Armero y Daniel Pizarro, DEP-545)</b>: «Activar mi cuenta» <b>solo activa la cuenta</b> y envía al correo guardado el enlace para crear la contraseña. En el registro <b>no se editan datos</b>: reclamar con solo el documento y dejar editar permitía que cualquiera con la cédula de otra persona cambiara su perfil. Los datos se actualizan después de entrar, desde el perfil. Queda <code>has_login=true</code> con el mismo <code>user_code</code>.',
+      '"Ese correo no es mío" lleva a soporte, que verifica identidad y cambia el correo.',
+      '<b>Hoy en user-auth-ms</b> (<code>publicActivateExisting</code>, <code>registration/service.go</code>): solo reclama si el usuario escribe el mismo correo guardado (si escribe otro, 409 <code>document_registered_different_email</code>) y actualiza parte de los datos. Ya hay una primera implementación en staging que se ajusta a la regla (ver DEP-550).',
+      '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado; (2) reclamar sin enviar correo, usando el guardado, y sin actualizar datos; (3) el reclamo queda en auditoría.',
       '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
     ] },
     { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
@@ -807,14 +798,14 @@ const DEVNOTES = {
     { title: 'Se mantiene', items: ['NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisión → mensaje de revisión pendiente; con cuenta → Iniciar sesión.', 'Naturaleza jurídica, tamaño y representante legal. <b>Corregir al migrar</b>: hoy no se envía el apellido del representante.'] },
     { title: 'Solo demo', items: ['La búsqueda de NIT está simulada: <code>805010003-3</code> devuelve en revisión y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la búsqueda; el que no tiene registro además deja el formulario lleno para poder dar Siguiente.'] },
     { title: 'Nuevo: organismo superior', items: ['Federación → elige sector y queda adscrita al comité del sector. Liga → elige federación. Club → filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).', 'La lista solo trae organismos <b>Activos</b>. Si el suyo no está: soporte, que escala al Ministerio (P-17).', 'En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden después como afiliación.'] },
-    { title: 'Nuevo: deportes', items: ['Lista de deportes del catálogo. Federación: del catálogo, sin repetir deportes que ya tiene otra federación del mismo sector. Liga: de su federación. Club: de su liga.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
+    { title: 'Nuevo: deportes', items: ['Lista de deportes del catálogo. Federación: del catálogo, sin repetir deportes que ya tiene otra federación. <b>Un deporte pertenece a una sola federación en todo el sistema</b>, sin importar el comité (decisión 2026-10-09, Daniel Pizarro, DEP-545). Liga: de su federación. Club: de su liga.', 'Sin carga histórica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio envíe el listado.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
     { title: 'Contrato propuesto', items: ['<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.', 'El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> ⊆ deportes del superior, NIT único, un deporte en una sola federación.'] },
     { title: 'Brecha con user-auth-ms (revisado 07-10-2026, rama staging)', items: [
       '<b>Ya soportado</b> en <code>organizations_details</code>: NIT único, nombre, naturaleza jurídica, tamaño, representante (tipo y número de documento, nombre, correo), departamento, municipio, dirección, teléfono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.',
       '<b>Tipo</b>: <code>organization_type</code> acepta <code>FEDERATION</code> y <code>CLUB</code>, pero no <code>LEAGUE</code>. No agregar otro valor al <code>oneof</code>: los tipos deben ser catálogo.',
       '<b>Subordinación configurable</b>: comité → federación → liga → club es el esquema de SUID, no una regla del código. Cada proyecto declara su esquema con reglas (tipo padre, tipo hijo, varios padres, deporte compartido, quién aprueba). El alta y la bandeja leen las reglas; no preguntan por tipos concretos. Ver nao-docs, Modelo → Pendientes técnicos.',
       '<b>Superior</b>: no hay relación entre organizaciones; el <code>HierarchyPath</code> del token ABAC es solo territorial (<code>/COL/{dpto}/{mun}/</code>). Como un club puede estar en varias ligas (P-20), se necesita una tabla de afiliación (hijo, padre, estado, vigencia), no una columna <code>parent_code</code>.',
-      '<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organización ↔ deporte, con un deporte en una sola federación por sector y cada nivel dentro de su superior.',
+      '<b>Deportes</b>: no existe la lista; solo <code>federation_code</code> (un texto). Tabla organización ↔ deporte, con un deporte en una sola federación en todo el sistema y cada nivel dentro de su superior.',
       '<b>Sin campo</b>: ámbito de la liga (el catálogo <code>COVERAGE</code> no tiene Distrital), tipo de club, apellido del representante (hoy el front lo descarta).',
       '<b>Estados que faltan</b>: En corrección (devuelto con motivo), Preinscrito (cargue masivo), Cancelado. Tampoco hay dónde guardar los dos avales de la federación (P-19).',
       '<b>Revisor</b>: un <code>PENDING_REVIEW</code> no tiene revisor asignado; para que caiga en la bandeja del superior hace falta la relación de afiliación y una jurisdicción por jerarquía deportiva.',
@@ -829,7 +820,7 @@ const DEVNOTES = {
   ] },
   resultPersona: { title: 'Resultado (Persona)', sections: [
     { title: 'Se mantiene', items: ['Textos de producción. Cuenta activa; el correo trae el enlace para crear la contraseña.'] },
-    { title: 'Nuevo', items: ['Siguiente paso según el rol: deportista → afiliación a uno o varios clubes; tutor → registrar menores; personal deportivo → vínculo con cualquier organismo (P-05).'] },
+    { title: 'Nuevo', items: ['Siguiente paso según el rol: deportista → afiliación a uno o varios clubes; tutor → registrar menores; personal deportivo → vínculo con cualquier organismo (P-05).', 'Perfil reclamado: «¡Cuenta activada!», sin datos del formulario; la persona actualiza sus datos desde el perfil al entrar (decisión 2026-10-09).'] },
     { title: 'Solo demo', items: ['El deportista queda guardado como autodeclarado y aparece en "Ver mi perfil".', 'Los enlaces "Solo demo" al pie de la pantalla también se ocultan con el switch de notas para devs (queda "Registrar otro").'] }
   ] },
   resultEntidad: { title: 'Resultado (Entidad)', sections: [

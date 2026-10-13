@@ -8,7 +8,7 @@
    Solo componentes .naowee-* + layout local .cg-*.
    ═══════════════════════════════════════════════════════════════ */
 import { getRoleFromQuery, ROLES, getDemoMode } from './sidebar.js';
-import { allOrganismos, getOrganismo, addOrganismosBulk, recordCargue, allCargues, auditLog } from './organismos-data.js';
+import { allOrganismos, getOrganismo, addOrganismosBulk, recordCargue, allCargues, auditLog, deportesDe, duenoDeporte, catalogoDeportes } from './organismos-data.js';
 import { scopeFor } from './permissions.js';
 
 const roleCode = getRoleFromQuery();
@@ -29,12 +29,12 @@ const HEADERS = [
   'Nombre (Rep. Legal)', 'Apellido (Rep. Legal)', 'Correo electrónico (Rep. Legal)',
   'RUT (nombre de archivo)', 'Certificado personería jurídica (nombre de archivo)',
   'Reconocimiento deportivo vigente (nombre de archivo)', 'Acepto políticas de privacidad',
-  'Departamento', 'Ciudad', 'Zona', 'Dirección', 'Teléfono', 'Correo electrónico (Contacto)'
+  'Departamento', 'Ciudad', 'Zona', 'Dirección', 'Teléfono', 'Correo electrónico (Contacto)', 'Deportes (separados por coma)'
 ];
 const COL = {
   nit: 0, sndTipo: 5, nombre: 6, repTipoDoc: 7, repNumDoc: 8, repNombre: 9,
   repApellido: 10, repCorreo: 11, depto: 16, ciudad: 17, zona: 18, direccion: 19,
-  telefono: 20, contactoCorreo: 21
+  telefono: 20, contactoCorreo: 21, deportes: 22
 };
 
 const I = {
@@ -58,8 +58,8 @@ let parsed = null;   // { fileName, fileSize, rows: [{row, raw, nombre, nit, val
 /* ── Plantilla: filas de ejemplo (3 válidas + 1 inválida "SIN REP. LEGAL") ── */
 const SAMPLES = {
   federacion: [
-    ['Federación Colombiana de Ultimate', '901700101-1', { doc: '79800101', nom: 'Andrés', ape: 'Cortés Lara', correo: 'presidencia@fedeultimate.demo.co' }],
-    ['Federación Colombiana de Parkour', '901700102-2', { doc: '52800102', nom: 'Diana', ape: 'Ríos Mejía', correo: 'presidencia@fedeparkour.demo.co' }],
+    ['Federación Colombiana de Flag Football', '901700101-1', { doc: '79800101', nom: 'Andrés', ape: 'Cortés Lara', correo: 'presidencia@fedeultimate.demo.co' }],
+    ['Federación Colombiana de Skateboarding', '901700102-2', { doc: '52800102', nom: 'Diana', ape: 'Ríos Mejía', correo: 'presidencia@fedeparkour.demo.co' }],
     ['Federación Colombiana de Breaking', '901700103-3', { doc: '80800103', nom: 'Julián', ape: 'Ospina Cano', correo: 'presidencia@fedebreaking.demo.co' }],
     ['Federación Colombiana de Remo Demo (SIN REP. LEGAL)', '901700104-4', null]
   ],
@@ -77,8 +77,11 @@ const SAMPLES = {
   ]
 };
 
+/* Deportes de ejemplo: la federación toma uno sin dueño (el nombre de la fila); la liga y el club, los de su superior. */
+const SAMPLE_DEP = { 'Federación Colombiana de Flag Football': 'Flag Football', 'Federación Colombiana de Skateboarding': 'Skateboarding', 'Federación Colombiana de Breaking': 'Breaking' };
 function sampleRow(nombre, nit, rep) {
-  const r = new Array(22).fill('');
+  const r = new Array(23).fill('');
+  r[COL.deportes] = targetTipo === 'federacion' ? (SAMPLE_DEP[nombre] || '') : deportesDe(superior).join(', ');
   r[COL.nit] = nit;
   r[1] = TIPO_SING[targetTipo]; r[2] = 'Privada'; r[3] = 'Nacional';
   r[4] = 'Organización sin ánimo de lucro'; r[COL.sndTipo] = TIPO_SING[targetTipo];
@@ -134,8 +137,22 @@ function validate(body) {
     if (!cell('repNumDoc') || !cell('repNombre') || !cell('repApellido')) errors.push('Representante legal incompleto');
     if (cell('repCorreo') && !EMAIL_RE.test(cell('repCorreo'))) errors.push('Correo del rep. legal inválido');
     if (!cell('depto') || !cell('ciudad')) errors.push('Departamento/Ciudad vacíos');
+    /* Deportes del organismo: la federación, deportes del catálogo sin federación (un deporte = una
+       federación); la liga y el club, dentro de los de su superior. */
+    const deps = cell('deportes').split(',').map((x) => x.trim()).filter(Boolean);
+    if (!deps.length) errors.push('Deportes vacíos');
+    else if (targetTipo === 'federacion') {
+      const cat = catalogoDeportes();
+      deps.forEach((dp) => {
+        if (!cat.includes(dp)) errors.push(`«${dp}» no está en el catálogo`);
+        else if (duenoDeporte(dp)) errors.push(`«${dp}» ya tiene federación (${duenoDeporte(dp).nombre})`);
+      });
+    } else {
+      const sup = deportesDe(superior);
+      deps.filter((dp) => !sup.includes(dp)).forEach((dp) => errors.push(`«${dp}» no es deporte de ${superior.nombre}`));
+    }
     if (nit) seen.add(nit);
-    return { row: i + 2, raw, nombre: nombre || '(sin nombre)', nit: nit || '—', valid: errors.length === 0, errors };
+    return { row: i + 2, raw, nombre: nombre || '(sin nombre)', nit: nit || '—', valid: errors.length === 0, errors, deportes: deps };
   });
 }
 
@@ -143,7 +160,7 @@ function toRecord(v) {
   const raw = v.raw, cell = (k) => String(raw[COL[k]] == null ? '' : raw[COL[k]]).trim();
   return {
     tipo: targetTipo, nombre: v.nombre, nit: v.nit, sector: superior.sector,
-    deporte: targetTipo === 'federacion' ? '—' : (superior.deporte || '—'),
+    deportes: v.deportes, deporte: v.deportes.join(', '),
     parentId: superior.id,
     repLegal: { tipoDoc: cell('repTipoDoc') || 'CC', numDoc: cell('repNumDoc'), nombre: cell('repNombre'), apellido: cell('repApellido'), correo: cell('repCorreo') },
     ubicacion: { depto: cell('depto'), ciudad: cell('ciudad'), zona: cell('zona') || 'Urbana', direccion: cell('direccion') },
@@ -189,7 +206,7 @@ function render() {
       <div class="cg-template__body">
         <span class="cg-template__ico">${I.file}</span>
         <div>
-          <p class="cg-template__title">Plantilla de cargue · ${esc(TIPO_SING[targetTipo])} (22 columnas)</p>
+          <p class="cg-template__title">Plantilla de cargue · ${esc(TIPO_SING[targetTipo])} (${HEADERS.length} columnas)</p>
           <p class="cg-template__sub">Descarga el .xlsx con los encabezados y filas de ejemplo. Los 3 adjuntos y la aceptación de políticas se completan al registrarse.</p>
         </div>
       </div>
@@ -239,14 +256,16 @@ function render() {
   wire(supActivo);
 }
 
+const ROL_DE_TIPO = { federacion: 'FEDERACION', liga: 'LIGA', club: 'CLUB' };
 function renderSuccess() {
   root.innerHTML = `
     <div class="naowee-card cg-success">
       <div class="cg-success__check">${I.check}</div>
       <h2 class="cg-success__title">Cargue completado</h2>
-      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Ya aparecen en la jerarquía; su registro se completa después.</p>
+      <p class="cg-success__lead">Se cargaron <strong>${created.length} ${TIPO_PLURAL[targetTipo]}</strong> en estado <strong>Preinscrito</strong> bajo ${esc(superior.nombre)}. Cada uno recibió un correo con acceso para completar sus datos y documentos y enviarlo; cuando lo envíe, te llega a la bandeja.</p>
       <div class="cg-success__actions">
         <a class="naowee-btn naowee-btn--loud" href="jerarquia.html?role=${encodeURIComponent(roleCode)}">Ver en la jerarquía</a>
+        ${created[0] && ROL_DE_TIPO[created[0].tipo] ? `<a class="naowee-btn naowee-btn--quiet" title="Solo demo: simula el acceso que llega por correo" href="organismo-detalle.html?role=${ROL_DE_TIPO[created[0].tipo]}&org=${encodeURIComponent(created[0].id)}&como=org">Entrar como ${esc(created[0].nombre)}</a>` : ''}
         <button class="naowee-btn naowee-btn--mute" id="cgAgain">Cargar otro archivo</button>
       </div>
     </div>
