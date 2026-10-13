@@ -11,7 +11,7 @@
        su superior. Pasos: Básicos · Documentos · Sede y contacto.
    Notas para devs (Solo demo) por paso: shared/devnotes.js.
    ═══════════════════════════════════════════════════════════════ */
-import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore } from './organismos-data.js';
+import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore, deportesDe, duenoDeporte, catalogoDeportes, SIN_FEDERACION, PARADEPORTES } from './organismos-data.js';
 import { mountDevnotes } from './devnotes.js?v=1.7.0';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -85,33 +85,15 @@ const MUNICIPIOS = {
 };
 const DEPTOS = Object.keys(MUNICIPIOS).sort((a, b) => a.localeCompare(b, 'es'));
 
-/* Deportes por federación (PR nao-docs #32): una federación gobierna uno o más
-   deportes del catálogo; un deporte pertenece a una sola federación. El seed solo
-   trae `deporte`; estas son las federaciones con varios deportes en catalog-ms. */
-const DEPORTES_POR_FED = {
-  'FED-038': ['Natación', 'Natación Artística', 'Polo Acuático'],
-  'FED-040': ['Patinaje', 'Patinaje Artístico', 'Patinaje de Velocidad']
-};
-const deportesDe = (org) => {
-  if (!org) return [];
-  if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes;
-  if (DEPORTES_POR_FED[org.id]) return DEPORTES_POR_FED[org.id];
-  return org.deporte && org.deporte !== '—' ? [org.deporte] : [];
-};
-const FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === 'federacion');
-/* Catálogo de deportes = unión de los deportes de las federaciones (demo; el real es GET /sports). */
-/* Solo demo: deportes del catálogo que aún no tienen federación, para poder probar el alta de una federación. */
-const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding'];
-const CATALOGO_DEPORTES = () => [...new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
-/* Dueño de cada deporte: federación existente que ya lo gobierna (bloquea duplicar). */
-/* Un deporte pertenece a una sola federación en todo el sistema, sin importar el comité (decisión 2026-10-09, DEP-545). */
-const duenoDeporte = (dep) => FEDERACIONES().find((f) => deportesDe(f).includes(dep) && !['Rechazado', 'Cancelado'].includes(f.estado));
+/* Deportes del organismo, catálogo y dueño de cada deporte: fuente única en organismos-data.js
+   (un deporte = una federación en todo el sistema, DEP-545). */
+const CATALOGO_DEPORTES = catalogoDeportes;
 const CONJUNTO = ['Baloncesto', 'Balonmano', 'Béisbol', 'Fútbol', 'Fútbol de Salón', 'Hockey', 'Polo Acuático', 'Rugby', 'Softbol', 'Voleibol'];
 const deportesPorTipo = (t) => {
   const all = CATALOGO_DEPORTES();
   if (t === 'CONJ') return all.filter((d) => CONJUNTO.includes(d));
-  if (t === 'PARA') return ['Boccia', 'Goalball', 'Para Atletismo', 'Para Natación', 'Baloncesto en silla de ruedas'];
-  return all.filter((d) => !CONJUNTO.includes(d));
+  if (t === 'PARA') return all.filter((d) => PARADEPORTES.includes(d));
+  return all.filter((d) => !CONJUNTO.includes(d) && !PARADEPORTES.includes(d));
 };
 
 /* Documentos de la búsqueda simulada (Solo demo). */

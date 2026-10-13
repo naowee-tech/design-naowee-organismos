@@ -11,6 +11,9 @@
      - Cambio de perfil = homeForRole(next) + '?role=' + next.
    ═══════════════════════════════════════════════════════════════ */
 
+import { contextoDe, scopeFor } from './permissions.js';
+import { getOrganismo } from './organismos-data.js';
+
 const COLLAPSED_KEY = 'naowee-organismos-sidebar-collapsed';
 
 /* ─── Iconos inline (stroke currentColor, paridad shell canónico) ─── */
@@ -69,7 +72,10 @@ export const ROLES = {
     userName: 'Sandra Mejía', userEmail: 'direccion@ligapatinajevalle.demo.co',
     userDoc: 'CC 31.567.890', org: 'Liga de Patinaje del Valle', avatar: 'SM',
     color: '#7c3aed', short: 'Aprueba sus clubes · cargue masivo de clubes de su liga',
-    group: 'Organismos'
+    group: 'Organismos',
+    /* Una persona puede administrar varios organismos (P-15): Sandra es la administradora de
+       dos ligas del Valle y elige en cuál trabaja desde su chip de usuario. */
+    contextos: ['LIG-001', 'LIG-006']
   },
   CLUB: {
     code: 'CLUB', label: 'Club',
@@ -190,6 +196,16 @@ const MENU_BY_ROLE = {
     { section: null,          items: [{ id: 'perfil',     label: 'Mi perfil',            icon: 'user',     route: 'perfil.html' }] }
   ]
 };
+
+/* El organismo del contexto activo reemplaza al de la ficha del rol (nombre en chip y switcher). */
+(function aplicarContexto() {
+  try {
+    const code = new URLSearchParams(window.location.search).get('role');
+    const ctx = ROLES[code] && contextoDe(code);
+    const org = ctx && getOrganismo(ctx);
+    if (org) ROLES[code].org = org.nombre;
+  } catch (_) {}
+})();
 
 export function getRoleFromQuery() {
   const params = new URLSearchParams(window.location.search);
@@ -360,11 +376,11 @@ export function mountHeader({ headerEl, role }) {
         </div>
         <div class="user-info">
           <span class="user-name">${role.userName}</span>
-          <span class="user-role">${role.label}</span>
+          <span class="user-role">${(role.contextos || []).length > 1 && role.org ? role.org : role.label}</span>
         </div>
         <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true">${getIcon('chevron')}</button>
       </div>
-      <div class="profile-dd profile-dd--identity-only" role="menu">
+      <div class="profile-dd profile-dd--identity-only${(role.contextos || []).length > 1 ? ' profile-dd--ctx' : ''}" role="menu">
         <div class="profile-dd__header">
           <span class="ava-ring" style="width:42px;height:42px;font-size:14px;background:${role.color}22;color:${role.color}">${initials}</span>
           <div class="profile-dd__user">
@@ -375,10 +391,25 @@ export function mountHeader({ headerEl, role }) {
             </span>
           </div>
         </div>
+        ${contextosHtml(role)}
       </div>
     </div>
   `;
   bindHeaderEvents(headerEl);
+}
+
+/* Selector de contexto (P-15): solo aparece si la persona administra más de un organismo.
+   Cambiar de contexto cambia la jurisdicción de todo el menú (bandeja, jerarquía, deportistas). */
+function contextosHtml(role) {
+  const lista = (role.contextos || []).map((id) => getOrganismo(id)).filter(Boolean);
+  if (lista.length < 2) return '';
+  const actual = scopeFor(role.code);
+  return `<div class="profile-dd__sep"></div>
+    <div class="profile-dd__label">Trabajas en</div>
+    ${lista.map((o) => `<a class="profile-dd__item profile-dd__item--role profile-dd__ctx${o.id === actual ? ' is-current' : ''}" role="menuitemradio" aria-checked="${o.id === actual}" href="${homeForRole(role.code)}?role=${role.code}&org=${o.id}">
+      <span class="role-meta"><span>${o.nombre}</span><small>${o.deporte} · ${o.ubicacion ? o.ubicacion.depto : ''}</small></span>
+      ${o.id === actual ? `<span class="profile-dd__check-ico" style="color:${role.color}">${getIcon('check')}</span>` : ''}
+    </a>`).join('')}`;
 }
 
 function bindHeaderEvents(headerEl) {

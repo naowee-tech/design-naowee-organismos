@@ -10,8 +10,7 @@ import { getRoleFromQuery, ROLES, getDemoMode } from './sidebar.js';
 import {
   allOrganismos, getOrganismo, subtreeOf, addOrganismo,
   updateOrganismo, setEstado, auditLog, allAudit,
-  solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo,
-  allPreinscritos, getPreinscrito, resolverPreinscrito, updatePreinscrito, seedPreinscritosDemo
+  solicitudesDeClub, resolverAfiliacion, getDeportista, ancestorsOf, seedAfiliacionesDemo
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './estados.js';
@@ -43,74 +42,6 @@ const MOTIVOS = [
 /* Estados que se muestran en la bandeja (accionables + visibilidad). */
 const VISIBLES = ['En revisión', 'En corrección', 'Preinscrito', 'Rechazado', 'Activo'];
 
-/* ── Registro público (HURU-09) — cola de validación del Registro Único ──
-   El validador central (Admin Mindeporte) revisa los usuarios/entidades
-   autoinscritos desde el formulario público. Reusa la máquina de estados. */
-const PRE_EMOJI = { deportista: '🏃', personal: '🧑‍🏫', entidad: '🏛️' };
-const PRE_TIPO_SING = { deportista: 'Deportista', personal: 'Personal deportivo', entidad: 'Entidad deportiva' };
-const PRE_DOC_LABELS = {
-  parentesco: 'Documento de parentesco (registro civil / custodia)',
-  cert: 'Certificaciones profesionales',
-  tarjeta: 'Tarjeta profesional vigente',
-  existencia: 'Certificado de existencia y representación legal',
-  representacion: 'Documento de representación legal',
-  personeria: 'Certificado de personería jurídica',
-  estatutos: 'Estatutos vigentes',
-  reconocimiento: 'Reconocimiento deportivo (trámite IVC)',
-  reconocimientoMunicipal: 'Reconocimiento del ente municipal',
-  aval: 'Aval del Comité',
-  rut: 'RUT'
-};
-const MOTIVOS_PRE = [
-  'Documento de identidad no válido o ilegible',
-  'Certificación / soporte incompleto o vencido',
-  'Datos personales inconsistentes',
-  'Documento de la entidad incompleto',
-  'Registro duplicado',
-  'Otro (ver comentario)'
-];
-/* Enrutamiento DESCENDENTE del registro público (HURU-09 + ORG-06): cada preinscrito
-   lo valida el rol del nivel inmediatamente superior, dentro de su jurisdicción.
-   - personal → Admin Mindeporte (Registro Único central; no está en el árbol).
-   - entidad federación → Ministerio + Comité (doble validación).
-   - entidad liga → su Federación · entidad club/escuela → su Liga.
-   El rol ve un preinscrito si valida ese nivel Y el superior (parentId) está en su scope. */
-const tieneColaPublica = !!target;   // MINDEPORTE/COMITE/FEDERACION/LIGA tienen bandeja de organismos
-function orgTipoDe(p) {
-  if (!p || p.tipo === 'personal' || p.tipo === 'deportista') return 'personal';
-  return p.orgTipo || (p.entTipo === 'federacion' ? 'federacion' : p.entTipo === 'liga' ? 'liga' : 'club');
-}
-function enScope(parentId) {
-  if (scopeId === null) return true;            // Mindeporte: todo el SND
-  if (!parentId) return false;
-  return parentId === scopeId || subtreeOf(scopeId).some((o) => o.id === parentId);
-}
-function enScopeDe(anchorId, parentId) {
-  if (!anchorId || !parentId) return false;
-  return parentId === anchorId || subtreeOf(anchorId).some((o) => o.id === parentId);
-}
-/* ¿un rol ANCLADO del nivel (FEDERACION=FED-040, LIGA=LIG-001) alcanza este preinscrito? */
-function cubiertoPorRolAnclado(p) {
-  const ot = orgTipoDe(p);
-  if (ot === 'liga') return enScopeDe(scopeFor('FEDERACION'), p.parentId);
-  if (ot === 'club') return enScopeDe(scopeFor('LIGA'), p.parentId);
-  return true; // federación la cubren Ministerio+Comité; personal → Mindeporte
-}
-/* ¿este rol valida este preinscrito? */
-function validaPre(p) {
-  const ot = orgTipoDe(p);
-  if (ot === 'personal') return roleCode === 'MINDEPORTE';
-  // rol del nivel superior dentro de su jurisdicción
-  if (target && target.tipo === ot && enScope(p.parentId)) return true;
-  // Fallback: el Registro Único (Mindeporte, rectoría) valida lo que ningún rol
-  // anclado alcanza — sus federaciones + huérfanos sin validador de nivel (superior
-  // no anclado o parentId vacío) — para que nada quede sin poder aprobarse.
-  if (roleCode === 'MINDEPORTE') return ot === 'federacion' || !cubiertoPorRolAnclado(p);
-  return false;
-}
-/* Preinscritos que le corresponde ver/validar a este rol. */
-function preinscritosDeRol() { return allPreinscritos().filter(validaPre); }
-const capFirst = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 const root = document.getElementById('bandejaRoot');
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -137,30 +68,28 @@ const I = {
 /* State (UI) */
 let query = '';
 let estadoFiltro = 'Accionables';
-let vista = 'federaciones';      // MINDEPORTE: 'federaciones' | 'publico' (registro público)
-let preFiltro = 'Accionables';   // filtro de la cola de registro público
 let sectorFiltro = 'Todos';      // filtro por sector (solo se muestra si hay >1 sector visible)
 let page = 1;                    // página actual de la tabla de organismos
 const PAGE_SIZE = 10;
-let _segPrev = null;             // vista previa (para animar la pill del segment)
 
-/* ── Datos demo: federaciones En revisión con doble validación a medias ── */
+/* ── Datos demo: federaciones En revisión con doble validación a medias ──
+   Con deportes que aún no tienen federación (un deporte = una federación, DEP-545). */
 function seedBandejaDemo() {
   if (getDemoMode() !== 'demo') return;
   if (allOrganismos().some((o) => o.ficticioBandeja)) return;
   const base = { tipo: 'federacion', sector: 'Olímpico', parentId: 'COC', estado: 'En revisión', ficticioBandeja: true };
-  addOrganismo({ ...base, nombre: 'Federación Colombiana de Triatlón', nit: '901620001-1', deporte: 'Triatlón',
+  addOrganismo({ ...base, nombre: 'Federación Colombiana de Breaking', nit: '901620001-1', deporte: 'Breaking',
     validacion: { mindeporte: 'pendiente', comite: 'pendiente' },
-    documentos: { reconocimiento: { name: 'reconocimiento-deportivo-mindeporte.pdf' }, aval: { name: 'aval-comite-olimpico.pdf' }, rut: { name: 'rut-fedetriatlon.pdf' }, personeria: { name: 'personeria-juridica.pdf' } },
-    repLegal: { tipoDoc: 'CC', numDoc: '79620001', nombre: 'Andrés', apellido: 'Vélez Mora', correo: 'presidencia@fedetriatlon.demo.co' },
+    documentos: { reconocimiento: { name: 'reconocimiento-deportivo-mindeporte.pdf' }, aval: { name: 'aval-comite-olimpico.pdf' }, rut: { name: 'rut-fedebreaking.pdf' }, personeria: { name: 'personeria-juridica.pdf' } },
+    repLegal: { tipoDoc: 'CC', numDoc: '79620001', nombre: 'Andrés', apellido: 'Vélez Mora', correo: 'presidencia@fedebreaking.demo.co' },
     ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Calle 63 # 47-06' },
-    contacto: { telefono: '6014801122', correo: 'contacto@fedetriatlon.demo.co' } });
-  addOrganismo({ ...base, nombre: 'Federación Colombiana de Surf', nit: '901620002-2', deporte: 'Surf',
+    contacto: { telefono: '6014801122', correo: 'contacto@fedebreaking.demo.co' } });
+  addOrganismo({ ...base, nombre: 'Federación Colombiana de Pádel', nit: '901620002-2', deporte: 'Pádel',
     validacion: { mindeporte: 'aprobado', comite: 'pendiente' },
-    documentos: { reconocimiento: { name: 'reconocimiento-deportivo-mindeporte.pdf' }, aval: { name: 'aval-comite-olimpico.pdf' }, rut: { name: 'rut-fedesurf.pdf' }, personeria: { name: 'personeria-juridica.pdf' } },
-    repLegal: { tipoDoc: 'CC', numDoc: '79620002', nombre: 'Laura', apellido: 'Peña Gil', correo: 'presidencia@fedesurf.demo.co' },
+    documentos: { reconocimiento: { name: 'reconocimiento-deportivo-mindeporte.pdf' }, aval: { name: 'aval-comite-olimpico.pdf' }, rut: { name: 'rut-fedepadel.pdf' }, personeria: { name: 'personeria-juridica.pdf' } },
+    repLegal: { tipoDoc: 'CC', numDoc: '79620002', nombre: 'Laura', apellido: 'Peña Gil', correo: 'presidencia@fedepadel.demo.co' },
     ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buenaventura', zona: 'Urbana', direccion: 'Cra 2 # 1-40' },
-    contacto: { telefono: '6022410033', correo: 'contacto@fedesurf.demo.co' } });
+    contacto: { telefono: '6022410033', correo: 'contacto@fedepadel.demo.co' } });
 }
 
 /* ── Datos de la bandeja del rol ── */
@@ -184,44 +113,8 @@ const puedeAccionar = target && can(roleCode, 'A', target.recurso);
 /* ═══════════════ Render ═══════════════ */
 function render() {
   if (roleCode === 'CLUB') return renderAfiliaciones();
-  if (tieneColaPublica && vista === 'publico') return renderPreinscritos();
   if (!target) return renderNoBandeja();
   return renderOrgBandeja();
-}
-
-/* Switch de sub-vista para el Admin Mindeporte: gestiona federaciones (doble
-   validación) Y valida el registro público. Los demás roles no lo ven. */
-function vistaSwitch() {
-  if (!tieneColaPublica) return '';
-  const pend = preinscritosDeRol().filter((p) => p.estado === 'En revisión').length;
-  return `<div class="bj-vista-wrap">
-    <div class="naowee-segment" id="bjVista" data-segmented role="tablist" aria-label="Sub-vista de la bandeja">
-      <span class="naowee-segment__pill naowee-segment__pill--no-anim" data-pill></span>
-      <button type="button" class="naowee-segment__item ${vista === 'federaciones' ? 'naowee-segment__item--active' : ''}" data-vista="federaciones" data-idx="0" role="tab" aria-selected="${vista === 'federaciones'}">${I.bldg}${esc(capFirst(target.plural))}</button>
-      <button type="button" class="naowee-segment__item ${vista === 'publico' ? 'naowee-segment__item--active' : ''}" data-vista="publico" data-idx="1" role="tab" aria-selected="${vista === 'publico'}">${I.inbox}Registro público${pend ? ` · ${pend}` : ''}</button>
-    </div>
-  </div>`;
-}
-/* Posiciona la pill deslizante bajo el ítem activo. Si cambió la vista, anima
-   desde la posición anterior; en el primer render (o re-render sin cambio de
-   vista) la coloca sin animación. */
-function layoutPill() {
-  const seg = document.getElementById('bjVista'); if (!seg) return;
-  const pill = seg.querySelector('[data-pill]');
-  const active = seg.querySelector('.naowee-segment__item--active');
-  if (!pill || !active) return;
-  const put = (el) => { pill.style.transform = `translate3d(${el.offsetLeft}px,0,0)`; pill.style.width = el.offsetWidth + 'px'; };
-  // Síncrono (sin rAF, que un re-render podía clobberear): fija el punto de partida
-  // con --no-anim + reflow, luego mueve al activo con la transición activa → desliza.
-  if (_segPrev !== null && _segPrev !== vista) {
-    const prev = seg.querySelector(`[data-vista="${_segPrev}"]`) || active;
-    pill.classList.add('naowee-segment__pill--no-anim'); put(prev); void pill.offsetWidth;
-    pill.classList.remove('naowee-segment__pill--no-anim'); put(active);
-  } else {
-    pill.classList.add('naowee-segment__pill--no-anim'); put(active); void pill.offsetWidth;
-    pill.classList.remove('naowee-segment__pill--no-anim');
-  }
-  _segPrev = vista;
 }
 
 function renderOrgBandeja() {
@@ -236,7 +129,6 @@ function renderOrgBandeja() {
   const FILTER_ICO = { 'Accionables': I.bolt, 'En revisión': I.clock, 'En corrección': I.edit, 'Rechazado': I.x, 'Activo': I.check, 'Todos': I.list };
 
   root.innerHTML = `
-    ${vistaSwitch()}
     ${msg('informative', I.info, puedeAccionar
       ? `Bandeja de <strong>${target.plural}</strong> ${anchor ? `de <strong>${esc(anchor.nombre)}</strong>` : 'del SND'}. Aprueba, rechaza o solicita corrección (motivo obligatorio). ${target.tipo === 'federacion' ? 'La federación requiere <strong>doble validación</strong>: Ministerio + Comité.' : ''}`
       : `Vista de <strong>oversight</strong> (solo lectura) de ${target.plural}.`)}
@@ -310,7 +202,7 @@ function renderAfiliaciones() {
 
   root.innerHTML = `
     ${msg('informative', I.info, puedeAfil
-      ? `Solicitudes de afiliación a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Al <strong>aprobar</strong>, el deportista queda vinculado y hereda automáticamente tu liga y federación (ORG-05). El club es el único aprobador.`
+      ? `Solicitudes de afiliación a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Al <strong>aprobar</strong>, el deportista queda vinculado y hereda tu liga y federación, sin perder los clubes que ya tenga. Las <strong>propuestas</strong> vienen de otro nivel que registró al deportista; igual las confirmas tú.`
       : `Vista de <strong>oversight</strong> (solo lectura) de solicitudes de afiliación.`)}
 
     <div class="naowee-card bj-panel">
@@ -334,7 +226,7 @@ function renderAfiliaciones() {
                 <tr>
                   <td data-label="Deportista"><div class="bj-org"><span class="bj-org__emoji">🏃</span><div><div class="bj-org__name">${esc(r.dep.nombre)}</div><div class="bj-org__sub">${esc(r.dep.tipoDoc)} ${esc(r.dep.numDoc)}</div></div></div></td>
                   <td data-label="Deporte"><div class="bj-org__name" style="font-weight:500">${esc(r.dep.deporte)}</div><div class="bj-org__sub">${esc(r.dep.modalidad || '')}</div></td>
-                  <td data-label="Estado"><div class="bj-sol-cell">${r.tipo === 'retiro' ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Baja</span>' : '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Afiliación</span>'}${solBadge(r.estado)}</div></td>
+                  <td data-label="Estado"><div class="bj-sol-cell">${r.tipo === 'retiro' ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Baja</span>' : r.origen === 'propuesta' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta</span>' : '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Afiliación</span>'}${solBadge(r.estado)}</div>${r.origen === 'propuesta' && r.proponenteId ? `<div class="bj-org__sub">Propuesto por ${esc((getOrganismo(r.proponenteId) || {}).nombre || r.proponenteId)}</div>` : ''}</td>
                   <td class="cg-table__nit" data-label="Fecha">${esc(r.fecha || '—')}</td>
                   <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-openafil="${esc(r.id)}">${puedeAfil && r.estado === 'Enviada' ? 'Revisar' : 'Ver'}</button></td>
                 </tr>`).join('')}
@@ -373,10 +265,12 @@ function openAfilDetail(sid) {
           ${kv('Modalidad', dep.modalidad || '—')}
           ${kv('Correo', dep.correo || '—')}
           ${kv(esRetiro ? 'Baja solicitada' : 'Solicitud', sol.fecha || '—')}
+          ${sol.origen === 'propuesta' && sol.proponenteId ? kv('Propuesto por', esc((getOrganismo(sol.proponenteId) || {}).nombre || sol.proponenteId)) : ''}
+          ${!esRetiro && dep.clubIds.filter((c) => c !== sol.clubId).length ? kv('Otros clubes', esc(dep.clubIds.filter((c) => c !== sol.clubId).map((c) => (getOrganismo(c) || {}).nombre || c).join(', '))) : ''}
           ${(sol.estado === 'Aprobada' || sol.estado === 'Rechazada') && sol.responsable ? kv('Revisado por', `${esc(sol.responsable)}${sol.resueltaFecha ? ' · ' + esc(sol.resueltaFecha) : ''}`) : ''}
         </dl>
         ${sol.estado === 'Rechazada' && sol.motivo ? msg('negative', I.alert, `<strong>Motivo del rechazo:</strong> ${esc(sol.motivo)}`) : ''}
-        ${sol.estado === 'Aprobada' ? msg('positive', I.check, esRetiro ? `La baja fue confirmada: el deportista quedó <strong>desvinculado</strong> del club.` : `El deportista quedó <strong>vinculado</strong> a tu club y heredó tu liga y federación.`) : ''}
+        ${sol.estado === 'Aprobada' ? msg('positive', I.check, esRetiro ? `La baja fue confirmada: el deportista dejó <strong>este club</strong>; sigue en los demás que tenga.` : `El deportista quedó <strong>vinculado</strong> a tu club y heredó tu liga y federación.`) : ''}
         ${accionable ? `<p class="bj-detail__note">${esRetiro
           ? `Al confirmar la baja, <strong>${esc(dep.nombre)}</strong> dejará de estar afiliado a <strong>${clubNm}</strong> y perderá la liga y la federación heredadas.`
           : `Al aprobar, <strong>${esc(dep.nombre)}</strong> quedará vinculado a <strong>${clubNm}</strong> y heredará automáticamente la liga y la federación (ORG-05).`}</p>` : ''}
@@ -675,234 +569,6 @@ function doReject(id, tipoAccion, motivo) {
   toast(`${tipoAccion} registrada — se notificó a ${o.nombre} por email y app`, 'success');
 }
 
-/* ═══════════════ Registro público — cola de validación (HURU-09) ═══════════════
-   Reusa el mismo panel/tabla/modal/visor/motivo de la bandeja de organismos. El
-   Admin Mindeporte aprueba (→ Activo + notificación), rechaza o solicita
-   corrección (motivo obligatorio). La traza vive en el propio registro. */
-function renderPreinscritos() {
-  const all = preinscritosDeRol();
-  let view = all;
-  if (preFiltro === 'Accionables') view = view.filter((p) => p.estado === 'En revisión');
-  else if (preFiltro !== 'Todos') view = view.filter((p) => p.estado === preFiltro);
-  if (query) { const q = norm(query); view = view.filter((p) => norm(p.nombre).includes(q) || norm(p.numDoc || p.nit || '').includes(q) || norm(p.subtipo || '').includes(q)); }
-  view = view.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-  root.innerHTML = `
-    ${vistaSwitch()}
-    ${msg('informative', I.info, roleCode === 'MINDEPORTE'
-      ? `Validación del <strong>registro público</strong> del SUID: <strong>federaciones</strong> autoinscritas (doble validación Ministerio + Comité) y <strong>personal deportivo</strong> del Registro Único. Aprueba, rechaza o solicita corrección (motivo obligatorio); al aprobar quedan <strong>Activos</strong> y se notifica.`
-      : `Validación del <strong>registro público</strong> a tu cargo según la jerarquía del SND: <strong>${esc(target.plural)}</strong> autoinscritas dentro de tu jurisdicción. Aprueba, rechaza o solicita corrección (motivo obligatorio); requiere que su superior esté <strong>Activo</strong> (ORG-06).`)}
-
-    <div class="naowee-card bj-panel">
-      <div class="bj-panel__bar">
-        <div class="naowee-searchbox bj-search">
-          <div class="naowee-searchbox__input-wrap">
-            <span class="naowee-searchbox__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-            <input class="naowee-searchbox__input" id="bjSearch" placeholder="Buscar por nombre, documento o tipo…" value="${esc(query)}">
-          </div>
-        </div>
-      </div>
-      <div class="naowee-tabs bj-tabs" id="bjFilters">
-        ${['Accionables', 'Activo', 'En corrección', 'Rechazado', 'Todos'].map((f) => `<button type="button" class="naowee-tab ${preFiltro === f ? 'naowee-tab--selected' : ''}" data-pf="${f}">${f === 'Activo' ? 'Validados' : f}</button>`).join('')}
-      </div>
-      ${view.length ? `
-        <div class="cg-table-wrap">
-          <table class="cg-table bj-table">
-            <thead><tr><th>Solicitante</th><th>Tipo</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
-            <tbody>
-              ${view.map((p) => `
-                <tr>
-                  <td data-label="Solicitante"><div class="bj-org"><span class="bj-org__emoji">${PRE_EMOJI[p.tipo] || '📄'}</span><div><div class="bj-org__name">${esc(p.nombre)}</div><div class="bj-org__sub">${esc(p.numDoc ? `${p.tipoDoc || ''} ${p.numDoc}`.trim() : (p.nit ? 'NIT ' + p.nit : ''))}</div></div></div></td>
-                  <td data-label="Tipo"><div class="bj-sol-cell"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">${esc(PRE_TIPO_SING[p.tipo] || 'Registro')}</span><span class="bj-org__sub">${esc(p.subtipo || '')}</span></div></td>
-                  <td data-label="Estado">${badge(p.estado)}</td>
-                  <td class="cg-table__nit" data-label="Fecha">${esc(p.fecha || '—')}</td>
-                  <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-openpre="${esc(p.id)}">${p.estado === 'En revisión' ? 'Revisar' : 'Ver'}</button></td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>` : emptyState('Sin registros públicos', preFiltro === 'Accionables' ? 'No hay registros públicos pendientes de validación por ahora.' : 'No hay registros que coincidan con el filtro.')}
-    </div>`;
-  wire();
-}
-
-function preDocsBlock(p) {
-  const docs = p.documentos || {};
-  const items = Object.keys(docs).filter((k) => docs[k]).map((k) => ({ label: PRE_DOC_LABELS[k] || k, file: (docs[k] && docs[k].name) || docs[k] }));
-  return `<div class="bj-docs">
-    <p class="bj-docs__title">Documentos de soporte</p>
-    ${items.length
-      ? items.map((d) => `<div class="bj-doc"><span class="bj-doc__ico">${I.doc}</span><div style="min-width:0"><div class="bj-doc__name">${esc(d.label)}</div><div class="bj-doc__file">${esc(d.file)}</div></div><button type="button" class="bj-doc__view" data-doc-view="${esc(d.label)}||${esc(d.file)}">Ver</button></div>`).join('')
-      : `<div class="naowee-message naowee-message--caution"><span class="naowee-message__icon">${I.alert}</span><div class="naowee-message__body"><p class="naowee-message__text">Este registro no adjuntó documentos de soporte.</p></div></div>`}
-  </div>`;
-}
-
-function openPreDetail(id) {
-  const p = getPreinscrito(id);
-  if (!p) return;
-  const esFed = orgTipoDe(p) === 'federacion';
-  const half = halfOf[roleCode];                                   // mindeporte|comite
-  const v = p.validacion || { mindeporte: 'pendiente', comite: 'pendiente' };
-  const yaVote = esFed && half && v[half] !== 'pendiente';
-  const superior = p.parentId ? getOrganismo(p.parentId) : null;
-  const supActivo = !superior || superior.estado === 'Activo';
-  const accionable = validaPre(p) && p.estado === 'En revisión' && supActivo && !(esFed && yaVote);
-  const tipoBadge = `<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">${esc(PRE_TIPO_SING[p.tipo] || 'Registro público')}</span>`;
-  const hist = p.historial || [];
-
-  const ov = openModal(`
-    <div class="reg-modal bj-modal" role="dialog" aria-modal="true">
-      <div class="reg-modal__head">
-        <h3 class="reg-modal__title">${PRE_EMOJI[p.tipo] || '📄'} ${esc(p.nombre)}</h3>
-        <button type="button" class="reg-modal__close" id="prClose" aria-label="Cerrar">${I.x}</button>
-      </div>
-      <div class="reg-modal__body bj-detail">
-        <div class="bj-detail__badges">${badge(p.estado)}${tipoBadge}${esFed ? valChips(p) : ''}</div>
-        <dl class="bj-kv">
-          ${kv('Tipo', PRE_TIPO_SING[p.tipo] || '—')}
-          ${p.subtipo ? kv(p.tipo === 'entidad' ? 'Tipo de entidad' : 'Rol', p.subtipo) : ''}
-          ${p.numDoc ? kv('Documento', `${p.tipoDoc || ''} ${p.numDoc}`) : ''}
-          ${p.nit ? kv('NIT / RUT', p.nit) : ''}
-          ${p.deporte ? kv('Deporte', p.deporte) : ''}
-          ${p.sector ? kv('Sector', p.sector) : ''}
-          ${superior ? kv('Superior', `${superior.nombre} · ${superior.estado}`) : ''}
-          ${p.profesion ? kv('Profesión', p.profesion) : ''}
-          ${p.experiencia ? kv('Experiencia', p.experiencia + ' años') : ''}
-          ${p.repLegal && p.repLegal.nombre ? kv('Rep. legal', `${p.repLegal.nombre}${p.repLegal.doc ? ' · ' + p.repLegal.doc : ''}`) : ''}
-          ${(p.ciudad || p.depto) ? kv('Sede', `${p.ciudad || ''}${p.ciudad && p.depto ? ', ' : ''}${p.depto || ''}`) : ''}
-          ${p.correo ? kv('Correo', p.correo) : ''}
-          ${p.telefono ? kv('Teléfono', p.telefono) : ''}
-          ${kv('Registro', p.fecha || '—')}
-          ${(p.estado !== 'En revisión') && p.responsable ? kv('Revisado por', `${esc(p.responsable)}${p.resueltaFecha ? ' · ' + esc(p.resueltaFecha) : ''}`) : ''}
-        </dl>
-        ${preDocsBlock(p)}
-        ${msg('informative', I.info, `<strong>Integración externa (demo):</strong> el número de documento se validó contra la Registraduría / entidades externas vía API al procesar el registro.`)}
-        ${!supActivo ? msg('caution', I.info, `Su superior (<strong>${esc(superior.nombre)}</strong>) no está <strong>Activo</strong>: no puede validarse hasta que se habilite (ORG-06).`) : ''}
-        ${esFed && p.estado === 'En revisión' ? `<p class="bj-detail__note">Doble validación de federación: registras la mitad de <strong>${roleCode === 'MINDEPORTE' ? 'Ministerio' : 'Comité'}</strong>. Ambas aprobadas → Activo.</p>` : ''}
-        ${p.estado === 'Rechazado' && p.motivo ? msg('negative', I.alert, `<strong>Motivo del rechazo:</strong> ${esc(p.motivo)}`) : ''}
-        ${p.estado === 'En corrección' && p.motivo ? msg('caution', I.alert, `<strong>Corrección solicitada:</strong> ${esc(p.motivo)}`) : ''}
-        ${p.estado === 'Activo' ? msg('positive', I.check, `Registro <strong>validado</strong>: quedó Activo en el Registro Único del SUID.`) : ''}
-        ${accionable ? `<p class="bj-detail__note">Al <strong>aprobar</strong>, <strong>${esc(p.nombre)}</strong> quedará Activo en el Registro Único y se notificará por email/SMS. También puedes solicitar corrección o rechazar con motivo.</p>` : ''}
-        <div class="bj-timeline">
-          <p class="bj-timeline__title">Trazabilidad</p>
-          ${hist.length ? hist.slice().reverse().map((a) => `
-            <div class="bj-tl-row"><span class="bj-tl-dot"></span><div><div class="bj-tl-head"><strong>${esc(a.accion)}</strong> · ${esc(a.a)}</div><div class="bj-tl-sub">${esc(a.fecha)} · ${esc(a.responsable || a.rol || '—')}${a.motivo ? ' · ' + esc(a.motivo) : ''}${a.notif ? ' · 🔔 notificado por email/app' : ''}</div></div></div>`).join('')
-            : '<p class="bj-tl-empty">Sin movimientos registrados.</p>'}
-        </div>
-      </div>
-      <div class="reg-modal__foot bj-actions">
-        ${accionable ? `
-          <button type="button" class="naowee-btn naowee-btn--mute" id="prCorr">Solicitar corrección</button>
-          <div class="bj-actions__main">
-            <button type="button" class="naowee-btn bj-btn-danger" id="prRej">Rechazar</button>
-            <button type="button" class="naowee-btn bj-btn-success" id="prApr">${esFed ? 'Aprobar mi mitad' : 'Validar y activar'}</button>
-          </div>`
-          : `<button type="button" class="naowee-btn naowee-btn--mute" id="prCancel">Cerrar</button>`}
-      </div>
-    </div>`);
-  const close = () => closeModal(ov);
-  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
-  ov.querySelector('#prClose').addEventListener('click', close);
-  ov.querySelector('#prCancel')?.addEventListener('click', close);
-  ov.querySelectorAll('[data-doc-view]').forEach((b) => b.addEventListener('click', () => {
-    const [label, file] = b.dataset.docView.split('||');
-    closeModal(ov, () => openDocViewer(label, file, () => openPreDetail(id)));   // sin apilar
-  }));
-  if (accionable) {
-    ov.querySelector('#prApr').addEventListener('click', () => { doApprovePre(id); close(); });
-    ov.querySelector('#prRej').addEventListener('click', () => openPreMotivo(id, 'Rechazado', ov));
-    ov.querySelector('#prCorr').addEventListener('click', () => openPreMotivo(id, 'Corrección solicitada', ov));
-  }
-}
-
-/* Al APROBAR una entidad del registro público se materializa como nodo REAL de la
-   jerarquía (addOrganismo, Activo), bajo su superior (parentId). Así queda operable y
-   seleccionable como superior del siguiente nivel — cierra la cadena descendente
-   (Comité→Federación→Liga→Club). El personal no es organismo (no se materializa). */
-function materializarEntidad(p) {
-  if (orgTipoDe(p) === 'personal') return;
-  addOrganismo({
-    tipo: orgTipoDe(p), nombre: p.nombre, nit: p.nit || '',
-    deporte: p.deporte || '—', sector: p.sector || '', parentId: p.parentId || null,
-    estado: 'Activo', origen: 'registro-publico',
-    repLegal: p.repLegal || {}, documentos: p.documentos || {},
-    contacto: { correo: p.correo || '', telefono: p.telefono || '' },
-    ubicacion: { depto: p.depto || '', ciudad: p.ciudad || '' }
-  });
-}
-function doApprovePre(id) {
-  const p = getPreinscrito(id);
-  if (!p) return;
-  const resp = role.userName || roleCode;
-  // ORG-06: una entidad no se activa si su superior no está Activo.
-  if (orgTipoDe(p) !== 'personal' && p.parentId) {
-    const sup = getOrganismo(p.parentId);
-    if (sup && sup.estado !== 'Activo') { toast(`No se puede activar: su superior (${sup.nombre}) no está Activo`, 'error'); return; }
-  }
-  // Federación pública → doble validación Ministerio + Comité (ORG-02).
-  if (orgTipoDe(p) === 'federacion') {
-    const half = halfOf[roleCode];
-    const nv = { mindeporte: 'pendiente', comite: 'pendiente', ...(p.validacion || {}), [half]: 'aprobado' };
-    const lbl = roleCode === 'MINDEPORTE' ? 'Ministerio aprobó' : 'Comité aprobó';
-    if (nv.mindeporte === 'aprobado' && nv.comite === 'aprobado') {
-      resolverPreinscrito(id, 'aprobado', { responsable: resp, rol: roleCode, patch: { validacion: nv } });
-      materializarEntidad(p);
-      toast(`Doble validación completa — ${p.nombre} quedó Activa en la jerarquía; se notificó`, 'success');
-    } else {
-      updatePreinscrito(id, { validacion: nv }, { accion: lbl, responsable: resp, rol: roleCode });
-      toast(`${lbl} su mitad — falta la otra validación`, 'success');
-    }
-  } else {
-    resolverPreinscrito(id, 'aprobado', { responsable: resp, rol: roleCode });
-    materializarEntidad(p);
-    toast(`Registro validado — ${p.nombre} quedó Activo${orgTipoDe(p) !== 'personal' ? ' en la jerarquía' : ''}; se notificó por email y app`, 'success');
-  }
-  render();
-}
-
-function openPreMotivo(id, tipoAccion, detailOv) {
-  closeModal(detailOv);                    // no apilar: se cierra el detalle (con su animación)
-  const p = getPreinscrito(id);
-  let selMotivo = '';
-  const ov = openModal(`
-    <div class="reg-modal bj-modal bj-modal--sm bj-modal--overflow" role="dialog" aria-modal="true">
-      <div class="reg-modal__head"><h3 class="reg-modal__title">${esc(tipoAccion)} · ${esc(p ? p.nombre : '')}</h3><button type="button" class="reg-modal__close" id="pmClose" aria-label="Cerrar">${I.x}</button></div>
-      <div class="reg-modal__body">
-        <div class="bj-field">
-          <label class="bj-label">Motivo <span class="bj-req">*</span></label>
-          <div class="naowee-dropdown" id="pmDd">
-            <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value is-placeholder">Selecciona un motivo…</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
-            <div class="naowee-dropdown__menu" role="listbox">${MOTIVOS_PRE.map((m) => `<div class="naowee-dropdown__opt" role="option" data-value="${esc(m)}">${esc(m)}</div>`).join('')}</div>
-          </div>
-          <p class="bj-err" id="pmErr" style="display:none">Selecciona un motivo para continuar.</p>
-        </div>
-        <div class="bj-field">
-          <label class="bj-label">Comentario</label>
-          <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="pmTxt" rows="3" placeholder="Detalle para el solicitante…"></textarea></div>
-        </div>
-      </div>
-      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" id="pmCancel">Cancelar</button><button type="button" class="naowee-btn bj-btn-danger" id="pmOk">Confirmar ${esc(tipoAccion.toLowerCase())}</button></div>
-    </div>`);
-  mountDd(ov, (val) => { selMotivo = val; ov.querySelector('#pmErr').style.display = 'none'; });
-  const backToDetail = () => closeModal(ov, () => openPreDetail(id));
-  ov.addEventListener('click', (e) => { if (e.target === ov) backToDetail(); });
-  ov.querySelector('#pmClose').addEventListener('click', backToDetail);
-  ov.querySelector('#pmCancel').addEventListener('click', backToDetail);
-  ov.querySelector('#pmOk').addEventListener('click', () => {
-    if (!selMotivo) { ov.querySelector('#pmErr').style.display = 'block'; ov.querySelector('#pmDd').classList.add('naowee-dropdown--error'); return; }
-    const txt = ov.querySelector('#pmTxt').value.trim();
-    const motivo = txt ? `${selMotivo} — ${txt}` : selMotivo;
-    const resultado = tipoAccion === 'Corrección solicitada' ? 'correccion' : 'rechazado';
-    // Rechazar una federación registra su mitad como 'rechazado' (chips consistentes);
-    // la corrección NO (queda pendiente para reingreso), igual que la bandeja de orgs.
-    const pp = getPreinscrito(id);
-    const patch = (resultado === 'rechazado' && orgTipoDe(pp) === 'federacion' && halfOf[roleCode])
-      ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente', ...(pp.validacion || {}), [halfOf[roleCode]]: 'rechazado' } } : {};
-    resolverPreinscrito(id, resultado, { motivo, responsable: role.userName || roleCode, rol: roleCode, patch });
-    toast(`${tipoAccion} registrada${p ? ' — se notificó a ' + p.nombre + ' por email y app' : ''}`, 'success');
-    closeModal(ov); render();
-  });
-}
-
 /* ── Wiring ── */
 function wire() {
   const s = document.getElementById('bjSearch');
@@ -911,7 +577,6 @@ function wire() {
   if (f) {
     f.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => { estadoFiltro = b.dataset.f; page = 1; render(); }));
     f.querySelectorAll('[data-af]').forEach((b) => b.addEventListener('click', () => { afilFiltro = b.dataset.af; render(); }));
-    f.querySelectorAll('[data-pf]').forEach((b) => b.addEventListener('click', () => { preFiltro = b.dataset.pf; render(); }));
   }
   // Filtro de sector (native select) + paginación de la tabla de organismos.
   const sec = document.getElementById('bjSector');
@@ -919,17 +584,11 @@ function wire() {
   root.querySelectorAll('[data-pg]').forEach((b) => b.addEventListener('click', () => { page = b.dataset.pg === 'prev' ? page - 1 : page + 1; render(); }));
   const pi = document.getElementById('bjPageInput');
   if (pi) pi.addEventListener('change', (e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) { page = v; render(); } });
-  root.querySelectorAll('[data-vista]').forEach((b) => b.addEventListener('click', () => { vista = b.dataset.vista; page = 1; render(); }));
   root.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openDetail(b.dataset.open)));
   root.querySelectorAll('[data-openafil]').forEach((b) => b.addEventListener('click', () => openAfilDetail(b.dataset.openafil)));
-  root.querySelectorAll('[data-openpre]').forEach((b) => b.addEventListener('click', () => openPreDetail(b.dataset.openpre)));
-  layoutPill();
 }
-let _segResizeWired = false;
-if (!_segResizeWired) { _segResizeWired = true; window.addEventListener('resize', () => layoutPill()); }
 function toast(text, variant) { window.naoweeToast && window.naoweeToast(text, variant === 'negative' ? 'error' : 'success'); }
 
 seedBandejaDemo();
 seedAfiliacionesDemo(getDemoMode());
-seedPreinscritosDemo(getDemoMode());
 render();

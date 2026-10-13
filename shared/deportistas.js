@@ -3,12 +3,11 @@
    Ejerce el permiso que la matriz §11.2 YA concedía y que no tenía
    pantalla: PERMS.deportistas[CLUB] = 'R' — «sus afiliados».
 
-   ALCANCE (deliberadamente de CONSULTA, no de gestión):
-   el CLUB tiene sobre `deportistas` solo la acción R. La baja de un
-   afiliado NO la inicia el club: el deportista la solicita
-   (crearSolicitudRetiro) y el club la resuelve en su bandeja, donde
-   sí tiene 'RA' sobre `solicitudes`. Por eso aquí no hay ningún botón
-   de desafiliar — sería inventar un permiso que el handoff no da.
+   ALCANCE: el club ve su plantel y puede DESVINCULAR con motivo (P-04,
+   decisión de Producto pendiente de ratificar); el deportista también
+   puede pedir la baja y el club la confirma en su bandeja. Con
+   multi-afiliación, desvincular termina solo la afiliación a este club.
+   Los niveles de arriba registran autodeclarados y proponen club (P-07).
 
    La pantalla es GENÉRICA POR JURISDICCIÓN: usa scopeFor(role) +
    deportistasOf(), que resuelve el subárbol (§2 handoff: el deportista
@@ -29,7 +28,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import {
   getOrganismo, deportistasOf, getDeportista, solicitudesDeClub, desvincularPorClub,
-  childrenOf, ancestorsOf, registrarDeportista, asociarDeportista, faltaAsociar
+  childrenOf, ancestorsOf, registrarDeportista, proponerClub, allSolicitudes
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { buildDeportistaDetalle } from './deportista-detalle.js';
@@ -72,9 +71,8 @@ if (root) {
   };
 
   /* Estado de vinculación — mapa semántico ÚNICO del módulo. */
-  const EST_VARIANT = { vinculado: 'positive', autodeclarado: 'neutral', registrado: 'caution' };
-  const EST_LABEL = { vinculado: 'Vinculado', autodeclarado: 'Autodeclarado', registrado: 'Sin asociar' };
-  const NIVEL_LBL = { federacion: 'federación', liga: 'liga', club: 'club' };
+  const EST_VARIANT = { vinculado: 'positive', autodeclarado: 'neutral' };
+  const EST_LABEL = { vinculado: 'Vinculado', autodeclarado: 'Autodeclarado' };
   const estBadge = (e) => `<span class="naowee-badge naowee-badge--${EST_VARIANT[e] || 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(EST_LABEL[e] || e)}</span>`;
 
   /* Categoría (tier) = dimensión distinta al estado → NO compite en color:
@@ -107,7 +105,9 @@ if (root) {
       let p = null;
       try { p = buildDeportistaDetalle(d); } catch (_) { /* registrado sin perfil derivado */ }
       return {
-        faltan: faltaAsociar(d), id: d.id, nombre: d.nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc,
+        propuesta: allSolicitudes().find((s) => s.deportistaId === d.id && s.origen === 'propuesta' && s.estado === 'Enviada') || null,
+        sinClub: d.estado === 'autodeclarado',
+        otrosClubes: d.clubIds.filter((c) => c !== scopeId).length, id: d.id, nombre: d.nombre, tipoDoc: d.tipoDoc, numDoc: d.numDoc,
         deporte: d.deporte, modalidad: d.modalidad || '—', estado: d.estado,
         edad: p ? p.edad : null, cat: p ? p.tierLabel : '—',
         emoji: p ? p.deporteEmoji : '🏅', medallas: p ? p.medalleria.length : 0
@@ -148,11 +148,11 @@ if (root) {
       { k: 'ok', ico: I.medal, val: conMedalla, lbl: 'Con medallería registrada' },
       { k: menores ? 'warn' : 'neutral', ico: I.minor, val: menores, lbl: menores === 1 ? 'Menor de edad' : 'Menores de edad', sub: menores ? 'Requieren consentimiento del tutor' : '' }
     ];
-    const sinAsociar = rows.filter((r) => r.estado === 'registrado').length;
+    const sinClub = rows.filter((r) => r.sinClub && !r.propuesta).length;
     if (puedeCrear && !esClub) {
-      tiles.push({ k: sinAsociar ? 'warn' : 'neutral', ico: I.link, val: sinAsociar,
-        lbl: sinAsociar === 1 ? 'Pendiente de asociar' : 'Pendientes de asociar',
-        sub: sinAsociar ? 'Completa su cadena de organismos' : '' });
+      tiles.push({ k: sinClub ? 'warn' : 'neutral', ico: I.link, val: sinClub,
+        lbl: sinClub === 1 ? 'Autodeclarado sin club' : 'Autodeclarados sin club',
+        sub: sinClub ? 'Propónles un club; el club confirma' : '' });
     }
     /* Solicitudes por confirmar SOLO para el club: es su bandeja (ORG-08). */
     if (esClub && scopeId) {
@@ -276,7 +276,7 @@ if (root) {
     root.innerHTML = `
       ${msg('informative', I.info, esClub
         ? `Deportistas con afiliación <strong>confirmada</strong> a <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Cada ficha muestra la <strong>cadena heredada</strong> (club → liga → federación → comité) que el deportista recibió al ser aprobado (ORG-05). Registra deportistas con <strong>Registrar deportista</strong>; las solicitudes de afiliación y bajas se confirman en <a href="bandeja.html?role=${encodeURIComponent(roleCode)}">Solicitudes de deportistas</a>.`
-        : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. Registra deportistas y asócialos a la cadena de organismos que tienes debajo.`,
+        : `Deportistas vinculados a clubes de tu jurisdicción${club ? ` (<strong>${esc(club.nombre)}</strong> y su subárbol)` : ''}. También ves los autodeclarados que registraste: propónles un club y ese club confirma.`,
         'margin-bottom:16px')}
 
       ${esClub && club && club.id === 'CLU-001' ? `
@@ -334,9 +334,9 @@ if (root) {
                     </td>
                     <td data-label="Categoría">${catBadge(r.cat)}</td>
                     <td class="cg-table__nit" data-label="Edad">${r.edad != null ? `${r.edad} años` : '—'}${r.edad != null && r.edad < 18 ? ` <span class="dp-minor" title="Menor de edad — requiere consentimiento del tutor">menor</span>` : ''}</td>
-                    <td data-label="Estado">${estBadge(r.estado)}${r.faltan.length ? `<div class="bj-org__sub dp-falta">Falta: ${esc(r.faltan.map((n) => NIVEL_LBL[n]).join(' → '))}</div>` : ''}</td>
+                    <td data-label="Estado">${estBadge(r.estado)}${r.propuesta ? `<div class="bj-org__sub dp-falta">Club propuesto: ${esc((getOrganismo(r.propuesta.clubId) || {}).nombre || r.propuesta.clubId)} · espera al club</div>` : ''}${esClub && r.otrosClubes ? `<div class="bj-org__sub">También en ${r.otrosClubes} club${r.otrosClubes > 1 ? 'es' : ''} más</div>` : ''}</td>
                     <td class="bj-row-action" data-label="">
-                      ${r.faltan.length && puedeCrear ? `<button type="button" class="naowee-btn naowee-btn--small" data-asoc="${esc(r.id)}">Completar asociación</button>` : ''}
+                      ${r.sinClub && !r.propuesta && puedeCrear && !esClub ? `<button type="button" class="naowee-btn naowee-btn--small" data-asoc="${esc(r.id)}">Proponer club</button>` : ''}
                       <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-ficha="${esc(r.id)}">Ver ficha</button>
                       ${puedeDesvincular && r.estado === 'vinculado'
                         ? `<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small dp-btn-danger" data-desv="${esc(r.id)}">Desvincular</button>`
@@ -486,7 +486,7 @@ if (root) {
         return;
       }
       const texto = /^Otro/.test(motivo) ? `${motivo}: ${comentario}` : motivo;
-      desvincularPorClub(id, { motivo: texto, responsable: (ROLES[roleCode] || {}).userName || '' });
+      desvincularPorClub(id, { clubId: scopeId, motivo: texto, responsable: (ROLES[roleCode] || {}).userName || '' });
       cerrar();
       render();
       if (window.naoweeToast) {
@@ -495,8 +495,10 @@ if (root) {
     });
   }
 
-  /* ─── Registrar → Asociar (dos momentos, visibles en el modal) ───
-     Lo de arriba del actor viene fijo; lo de abajo se elige en cascada. */
+  /* ─── Registrar → Proponer club (dos momentos, visibles en el modal) ───
+     El deportista registrado por un nivel distinto al club queda AUTODECLARADO. Si quien lo
+     registra sabe su club, lo propone: se abre una afiliación Solicitada que el club confirma
+     en su bandeja (la confirmación siempre es del club). Quién carga deportistas es P-07. */
   const DEPORTES = ['Patinaje', 'Natación', 'Fútbol', 'Ciclismo'];
   const NIVELES_ABAJO = { comite: ['federacion', 'liga', 'club'], federacion: ['liga', 'club'], liga: ['club'], club: [] };
   const TIPO_LBL = { comite: 'Comité', federacion: 'Federación', liga: 'Liga', club: 'Club' };
@@ -510,7 +512,7 @@ if (root) {
     const st = {
       step: existente ? 2 : 1, id: existente ? existente.id : null, err: '',
       d: { nombre: '', tipoDoc: 'CC', numDoc: '', deporte: DEPORTES[0], correo: '' },
-      sel: { ...((existente && existente.asocParcial) || {}) }
+      sel: {}
     };
     const ov = document.createElement('div');
     ov.className = 'reg-modal-overlay dp-modal-ov';
@@ -548,7 +550,7 @@ if (root) {
       <div class="naowee-textfield"><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="${id}" type="${type || 'text'}" value="${esc(val)}"></div></div></div>`;
 
     function draw() {
-      const pasos = ['Registro', 'Asociación'].map((t, i) => {
+      const pasos = ['Registro', 'Club'].map((t, i) => {
         const n = i + 1; const estado = st.step > n ? 'done' : st.step === n ? 'on' : '';
         return `<li class="dp-step ${estado ? `dp-step--${estado}` : ''}"><span class="dp-step__n">${estado === 'done' ? I.check : n}</span>${t}</li>`;
       }).join('<li class="dp-step__sep" aria-hidden="true"></li>');
@@ -556,7 +558,7 @@ if (root) {
       ov.innerHTML = `
       <div class="reg-modal bj-modal bj-modal--overflow dp-desv">
         <div class="reg-modal__head">
-          <h3 class="reg-modal__title">${existente ? 'Completar asociación' : 'Registrar deportista'}</h3>
+          <h3 class="reg-modal__title">${existente ? 'Proponer club' : 'Registrar deportista'}</h3>
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
@@ -568,16 +570,16 @@ if (root) {
             <div class="dp-desv__field"><span class="bj-filter__lbl">Deporte</span>
               <div class="naowee-dropdown dp-desv__dd" data-dd="deporte"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">${esc(st.d.deporte)}</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
               <div class="naowee-dropdown__menu" role="listbox">${DEPORTES.map((x) => `<div class="naowee-dropdown__opt${x === st.d.deporte ? ' is-selected' : ''}" role="option" data-value="${x}">${x}<span class="naowee-dropdown__opt-check">${I.check}</span></div>`).join('')}</div></div></div>
-            <p class="bj-detail__note">Momento 1 de 2: el deportista queda registrado. Luego lo asocias a la cadena de organismos (puedes dejarlo para después).</p>`
+            <p class="bj-detail__note">${abajo.length ? 'Momento 1 de 2: el deportista queda registrado como autodeclarado. Luego puedes proponerle un club (o dejarlo para después).' : 'El deportista queda vinculado a tu club.'}</p>`
           : `
-            ${msg('informative', I.info, `Momento 2 de 2: asocia a <strong>${esc(nombre)}</strong>. Lo de arriba ya viene de dónde entraste y no se cambia.`)}
+            ${msg('informative', I.info, `Momento 2 de 2: propón el club de <strong>${esc(nombre)}</strong>. El club recibe la propuesta en su bandeja y es quien la confirma; mientras tanto sigue autodeclarado.`)}
             <div class="dp-chain">${fijos.map((o) => `<span class="dp-chain__chip" title="Fijo: según tu organismo">${esc(TIPO_LBL[o.tipo])} · ${esc(o.nombre)}</span>`).join('')}</div>
             ${abajo.map((t) => dd(t, t)).join('') || '<p class="bj-detail__note">Como club, el deportista queda asociado a tu club automáticamente.</p>'}`}
           ${st.err ? `<p class="naowee-helper dp-desv__err">${esc(st.err)}</p>` : ''}
         </div>
         <div class="reg-modal__foot bj-modal__foot">
-          <button type="button" class="naowee-btn naowee-btn--mute" data-close>${st.step === 2 ? 'Asociar después' : 'Cancelar'}</button>
-          <button type="button" class="naowee-btn" id="rdOk">${st.step === 1 ? 'Registrar y continuar' : 'Guardar asociación'}</button>
+          <button type="button" class="naowee-btn naowee-btn--mute" data-close>${st.step === 2 ? 'Proponer después' : 'Cancelar'}</button>
+          <button type="button" class="naowee-btn" id="rdOk">${st.step === 1 ? (abajo.length ? 'Registrar y continuar' : 'Registrar') : 'Proponer club'}</button>
         </div>
       </div>`;
     }
@@ -613,13 +615,14 @@ if (root) {
         if (!st.d.nombre || !st.d.numDoc || !/.+@.+\..+/.test(st.d.correo)) { st.err = 'Completa nombre, documento y un correo válido.'; draw(); return; }
         const dep = registrarDeportista(st.d, actor.id);
         st.id = dep.id; st.step = 2;
-        if (!abajo.length) { render(); cerrar(); toast(`${dep.nombre} quedó registrado y asociado a tu club.`); return; }
+        if (!abajo.length) { render(); cerrar(); toast(`${dep.nombre} quedó registrado y vinculado a tu club.`); return; }
         render(); draw(); return;
       }
-      const falta = abajo.filter((t) => !st.sel[`${t}Id`]);
-      const dep = asociarDeportista(st.id, st.sel);
+      if (!st.sel.clubId) { st.err = 'Elige el club que propones.'; draw(); return; }
+      proponerClub(st.id, st.sel.clubId, actor.id);
+      const dep = getDeportista(st.id);
       render(); cerrar();
-      toast(falta.length ? `${dep.nombre}: asociación parcial, falta ${falta.map((t) => NIVEL_LBL[t]).join(' y ')}.` : `${dep.nombre} quedó asociado.`);
+      toast(`Propuesta enviada: ${(getOrganismo(st.sel.clubId) || {}).nombre} confirma a ${dep.nombre} desde su bandeja.`);
     }
     draw();
   }
@@ -630,7 +633,7 @@ if (root) {
     const ov = document.createElement('div');
     ov.className = 'reg-modal-overlay dp-modal-ov';
     ov.innerHTML = `<div class="reg-modal bj-modal bj-modal--sm"><div class="reg-modal__head"><h3 class="reg-modal__title">Cargue masivo de deportistas</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button></div>
-      <div class="reg-modal__body">${msg('informative', I.info, 'Próximamente: subirás una plantilla .xlsx con los deportistas y la asociación quedará como segundo paso, igual que en el registro manual.')}</div>
+      <div class="reg-modal__body">${msg('informative', I.info, 'Próximamente: subirás una plantilla .xlsx con los deportistas. Quedarán autodeclarados y el club propuesto los confirma, igual que en el registro manual. Quién puede cargarlos está abierto (P-07).')}</div>
       <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn" data-close>Entendido</button></div></div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(() => ov.classList.add('is-open'));

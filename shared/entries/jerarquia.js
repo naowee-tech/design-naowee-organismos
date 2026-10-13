@@ -462,6 +462,17 @@
 
   /* ─── Notas para devs (solo demo) ─── */
   mountDevnotes({ jerarquia: { title: 'Jerarquía SND · cómo funciona por dentro', sections: [
+    { title: 'Modelo: afiliación múltiple y deportes', items: [
+      '<strong>Una sola relación de afiliación</strong> para deportista → club, personal deportivo → cualquier organismo y club → liga, con estado (Solicitada, Vinculada, Rechazada, Terminada) y vigencia (desde, hasta). Ya no hay un <code>clubId</code> ni un <code>parentId</code> únicos.',
+      'El deportista hereda la cadena de <strong>cada</strong> club en el que está Vinculado. En la demo, Mateo Restrepo patina en el Club Patín Cali y nada en Aguas del Valle: aparece en las dos ligas y federaciones, y se cuenta una vez (personas, no afiliaciones).',
+      'Autodeclarado o vinculado no se guarda en la persona: se deriva de si tiene alguna afiliación vigente.',
+      'Cada organismo tiene una <strong>lista de deportes</strong> dentro de los de su superior. Un deporte pertenece a una sola federación en todo el sistema (DEP-545). Los paradeportes son deportes aparte del catálogo (Para Natación ≠ Natación).',
+      'Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliación Vinculada. Lo activa la primera.'
+    ] },
+    { title: 'Una persona, varios organismos', items: [
+      'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el <strong>contexto</strong> elegido en el chip de usuario la reemplaza y cambia la jurisdicción de todo el menú.',
+      'En la demo: Sandra Mejía (rol Liga) administra la Liga de Patinaje y la Liga de Natación del Valle. La identidad debe llevar los pares rol ↔ organismo; cómo viajan en el token es un pendiente técnico de Arquitectura.'
+    ] },
     { title: 'Alcance por rol', items: [
       '<code>scopeFor(rol)</code> da el organismo ancla; el árbol es su subárbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.',
       'Un rol nunca se ve a sí mismo ni a sus ancestros: la primera columna arranca en los hijos de su ancla. DEPORTISTA ve solo su cadena hasta el club (<code>minimalChain</code>, sin contadores heredados).',

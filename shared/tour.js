@@ -85,11 +85,11 @@
     'ORG-04': {
       ph: '1 · Registro y jerarquía', page: 'registro.html', role: 'LIGA', demo: true,
       title: 'Registrar un Club deportivo',
-      purpose: 'El club se registra bajo su liga adjuntando el reconocimiento del ente municipal; queda Preinscrito hasta que la Liga lo valide.',
+      purpose: 'El club se registra bajo su liga adjuntando el reconocimiento del ente municipal; queda En revisión hasta que la Liga lo valide.',
       steps: [
         { sel: '.reg-tipo-card[data-tipo="club"]', body: 'Elige el tipo <b>Club</b>. El formulario pedirá su <b>liga</b>, el tipo de club y la sede con geolocalización.' },
         { sel: '#regStepper', body: 'Recorre los pasos del <b>club</b>: datos, representante legal, sede y documentos (reconocimiento del ente municipal).' },
-        { sel: '#regFooter', body: 'Al enviar, el club queda <b>Preinscrito</b> bajo su liga; desde ahí la Liga lo aprueba y podrá inscribir deportistas.' }
+        { sel: '#regFooter', body: 'Al enviar, el club queda <b>En revisión</b> en la bandeja de su liga; cuando la Liga lo aprueba queda Activo y puede confirmar deportistas.' }
       ]
     },
     'ORG-05': {

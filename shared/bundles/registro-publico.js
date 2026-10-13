@@ -1,5 +1,5 @@
 (() => {
-  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/organismos-data.js
+  // organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -65,9 +65,9 @@
     { id: "FED-057", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Remo", nit: "901375567-1", sector: "Ol\xEDmpico", deporte: "Remo", parentId: "COC", estado: "Preinscrito", repLegal: { tipoDoc: "CC", numDoc: "10000057", nombre: "Alberto", apellido: "Rojas Bravo", correo: "presidencia@federemo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 9 # 37-06 Secretaria de Deportes de Cali" }, contacto: { telefono: "6015550058", correo: "contacto@federemo.demo.co" }, fechaRegistro: "2026-04-04" }
   ];
   var FEDERACIONES_FICTICIAS = [
-    { id: "FED-P01", tipo: "federacion", nombre: "Federaci\xF3n Paral\xEDmpica de Atletismo", nit: "901500001-1", sector: "Paral\xEDmpico", deporte: "Atletismo", parentId: "CPC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000201", nombre: "Laura", apellido: "Mendoza R\xEDos", correo: "presidencia@fedeparaatletismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06 Of. 201" }, contacto: { telefono: "6014809090", correo: "contacto@fedeparaatletismo.demo.co" }, fechaRegistro: "2026-02-18" },
-    { id: "FED-P02", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Nataci\xF3n Paral\xEDmpica", nit: "901500002-2", sector: "Paral\xEDmpico", deporte: "Nataci\xF3n", parentId: "CPC", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000202", nombre: "Diego", apellido: "Vargas Pe\xF1a", correo: "presidencia@fedeparanatacion.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Cra. 36 # 5B-62" }, contacto: { telefono: "6024889090", correo: "contacto@fedeparanatacion.demo.co" }, fechaRegistro: "2026-05-09" },
-    { id: "FED-S01", tipo: "federacion", nombre: "Federaci\xF3n Deportiva de Sordos de Baloncesto", nit: "901500003-3", sector: "Sordol\xEDmpico", deporte: "Baloncesto", parentId: "FSC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000203", nombre: "Sof\xEDa", apellido: "Guerrero Le\xF3n", correo: "presidencia@fedesordosbaloncesto.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medell\xEDn", zona: "Urbana", direccion: "Cra. 48 # 20-114 Of. 3" }, contacto: { telefono: "6045553030", correo: "contacto@fedesordosbaloncesto.demo.co" }, fechaRegistro: "2026-03-28" }
+    { id: "FED-P01", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Para Atletismo", nit: "901500001-1", sector: "Paral\xEDmpico", deporte: "Para Atletismo", parentId: "CPC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000201", nombre: "Laura", apellido: "Mendoza R\xEDos", correo: "presidencia@fedeparaatletismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06 Of. 201" }, contacto: { telefono: "6014809090", correo: "contacto@fedeparaatletismo.demo.co" }, fechaRegistro: "2026-02-18" },
+    { id: "FED-P02", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Para Nataci\xF3n", nit: "901500002-2", sector: "Paral\xEDmpico", deporte: "Para Nataci\xF3n", parentId: "CPC", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000202", nombre: "Diego", apellido: "Vargas Pe\xF1a", correo: "presidencia@fedeparanatacion.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Cra. 36 # 5B-62" }, contacto: { telefono: "6024889090", correo: "contacto@fedeparanatacion.demo.co" }, fechaRegistro: "2026-05-09" },
+    { id: "FED-S01", tipo: "federacion", nombre: "Federaci\xF3n Colombiana de Atletismo de Sordos", nit: "901500003-3", sector: "Sordol\xEDmpico", deporte: "Atletismo de Sordos", parentId: "FSC", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000203", nombre: "Sof\xEDa", apellido: "Guerrero Le\xF3n", correo: "presidencia@fedesordosbaloncesto.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medell\xEDn", zona: "Urbana", direccion: "Cra. 48 # 20-114 Of. 3" }, contacto: { telefono: "6045553030", correo: "contacto@fedesordosbaloncesto.demo.co" }, fechaRegistro: "2026-03-28" }
   ];
   var LIGAS = [
     { id: "LIG-001", tipo: "liga", nombre: "Liga de Patinaje del Valle", nit: "805010001-1", sector: "Ol\xEDmpico", deporte: "Patinaje", parentId: "FED-040", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000301", nombre: "Sandra", apellido: "Mej\xEDa", correo: "direccion@ligapatinajevalle.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 5 # 42-00 Unidad Deportiva Alberto Galindo" }, contacto: { telefono: "6024010101", correo: "contacto@ligapatinajevalle.demo.co" }, fechaRegistro: "2026-03-10" },
@@ -89,7 +89,9 @@
     { id: "CLU-007", tipo: "club", nombre: "Club Deportivo Aguas del Valle", nit: "805020007-7", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "profesional", parentId: "LIG-006", estado: "Activo", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000407", nombre: "Isabella", apellido: "Torres Pe\xF1a", correo: "admin@aguasdelvalle.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 5 # 42-42" }, contacto: { telefono: "6025070707", correo: "contacto@aguasdelvalle.demo.co" }, fechaRegistro: "2026-03-16" },
     { id: "CLU-008", tipo: "club", nombre: "Club Nataci\xF3n Pac\xEDfico", nit: "805020008-8", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "Rechazado", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000408", nombre: "Mateo", apellido: "Angulo Mena", correo: "admin@natacionpacifico.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buenaventura", zona: "Urbana", direccion: "Cra. 3 # 5-30" }, contacto: { telefono: "6025080808", correo: "contacto@natacionpacifico.demo.co" }, fechaRegistro: "2026-05-25" },
     { id: "CLU-009", tipo: "club", nombre: "Club Pat\xEDn Bogot\xE1", nit: "805020009-9", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "promotor", parentId: "LIG-003", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000409", nombre: "Daniela", apellido: "Su\xE1rez Gil", correo: "admin@patinbogota.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Cra. 60 # 63-20" }, contacto: { telefono: "6015090909", correo: "contacto@patinbogota.demo.co" }, fechaRegistro: "2026-05-12" },
-    { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" }
+    { id: "CLU-010", tipo: "club", nombre: "Club Rueda Libre Palmira", nit: "805020010-0", sector: "Ol\xEDmpico", deporte: "Patinaje", tipoClub: "escuela", parentId: "LIG-001", estado: "Suspendido", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000410", nombre: "Andr\xE9s", apellido: "Caicedo Mora", correo: "admin@ruedalibrepalmira.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 31 # 29-10" }, contacto: { telefono: "6025101010", correo: "contacto@ruedalibrepalmira.demo.co" }, fechaRegistro: "2026-01-28" },
+    /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
+    { id: "CLU-011", tipo: "club", nombre: "Club Delfines de Buga", nit: "805020011-1", sector: "Ol\xEDmpico", deporte: "Nataci\xF3n", tipoClub: "promotor", parentId: "LIG-006", estado: "En revisi\xF3n", ficticio: true, repLegal: { tipoDoc: "CC", numDoc: "10000411", nombre: "Lorena", apellido: "Gil Ocampo", correo: "admin@delfinesbuga.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Buga", zona: "Urbana", direccion: "Calle 4 # 14-30" }, contacto: { telefono: "6022360011", correo: "contacto@delfinesbuga.demo.co" }, fechaRegistro: "2026-09-28" }
   ];
   var DEPORTISTAS = [
     { id: "DEP-001", nombre: "Valentina Ortiz", tipoDoc: "CC", numDoc: "1144556778", deporte: "Patinaje", modalidad: "Carreras", correo: "valentina.ortiz@correo.demo.co", clubId: "CLU-001", estado: "vinculado" },
@@ -123,6 +125,49 @@
     ...CLUBES
   ];
   var SEED_DEPORTISTAS = DEPORTISTAS;
+  var DEPORTES_SEED = {
+    "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
+    "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"],
+    "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
+    "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
+  };
+  var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+  var PARADEPORTES = ["Para Atletismo", "Para Nataci\xF3n", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa", "Atletismo de Sordos"];
+  var ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
+  function deportesDe(org) {
+    if (!org) return [];
+    if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
+    if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
+  }
+  function conDeportes(org) {
+    const deportes = deportesDe(org);
+    return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
+  }
+  function duenoDeporte(dep) {
+    return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
+  }
+  function catalogoDeportes() {
+    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
+    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
+  }
+  var AF_DESDE = "2026-03-25";
+  var AFILIACIONES_EXTRA = [
+    /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
+    { id: "AF-S900", tipo: "deportista", sujetoId: "DEP-002", organismoId: "CLU-007", deporte: "Nataci\xF3n", estado: "Vinculada", desde: "2026-05-04", origen: "solicitud" }
+  ];
+  function seedAfiliaciones() {
+    const out = [];
+    DEPORTISTAS.forEach((d) => {
+      if (!d.clubId) return;
+      out.push({ id: `AF-S${d.id.slice(4)}`, tipo: "deportista", sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: "Vinculada", desde: AF_DESDE, origen: "solicitud" });
+    });
+    CLUBES.forEach((c) => {
+      const estado = ["Activo", "Suspendido"].includes(c.estado) ? "Vinculada" : c.estado === "Rechazado" ? "Rechazada" : "Solicitada";
+      out.push({ id: `AF-C${c.id.slice(4)}`, tipo: "club", sujetoId: c.id, organismoId: c.parentId, deporte: c.deporte, estado, desde: estado === "Vinculada" ? c.fechaRegistro : null, origen: "activacion" });
+    });
+    return [...out, ...AFILIACIONES_EXTRA];
+  }
   var STORE_PREFIX = "naowee-organismos-";
   var SEED_FLAG = STORE_PREFIX + "demo-seeded";
   function readStore(key, fallback = null) {
@@ -146,8 +191,8 @@
   function allOrganismos() {
     const nuevos = readStore("organismos-nuevos", []) || [];
     const overrides = readStore("organismos-overrides", {}) || {};
-    const base = SEED_ORGANISMOS.map((o) => applyOverride(o, overrides));
-    const extra = nuevos.map((o) => ({ ...o }));
+    const base = SEED_ORGANISMOS.map((o) => conDeportes(applyOverride(o, overrides)));
+    const extra = nuevos.map(conDeportes);
     return [...base, ...extra];
   }
   function getOrganismo(id) {
@@ -157,7 +202,30 @@
     const nuevos = readStore("deportistas-nuevos", []) || [];
     const ov = readStore("deportistas-overrides", {}) || {};
     const base = SEED_DEPORTISTAS.map((d) => ov[d.id] ? { ...d, ...ov[d.id] } : { ...d });
-    return [...base, ...nuevos.map((d) => ({ ...d }))];
+    const clubesDe = {};
+    allAfiliaciones().forEach((a) => {
+      if (a.tipo === "deportista" && a.estado === "Vinculada") (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+    });
+    return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+      const clubIds = clubesDe[d.id] || [];
+      return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? "vinculado" : "autodeclarado" };
+    });
+  }
+  function allAfiliaciones() {
+    let list = readStore("afiliaciones", null);
+    if (!list) {
+      list = seedAfiliaciones();
+      writeStore("afiliaciones", list);
+    }
+    return list.map((a) => ({ ...a }));
+  }
+  function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
+    const list = allAfiliaciones();
+    const viva = list.find((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && ["Solicitada", "Vinculada"].includes(a.estado));
+    if (viva) return viva;
+    const rec = { id: "AF-" + String(list.length + 1).padStart(4, "0"), tipo, sujetoId, organismoId, deporte, estado: "Solicitada", desde: null, hasta: null, origen, proponenteId, fecha: _todayISO() };
+    writeStore("afiliaciones", [...list, rec]);
+    return { ...rec };
   }
   var ID_PREFIX = { comite: "COM", federacion: "FED", liga: "LIG", club: "CLU" };
   function nextOrgId(tipo) {
@@ -177,6 +245,7 @@
     };
     nuevos.push(record);
     writeStore("organismos-nuevos", nuevos);
+    if (record.tipo === "club" && record.parentId) solicitarAfiliacion({ tipo: "club", sujetoId: record.id, organismoId: record.parentId, deporte: record.deporte, origen: "activacion" });
     return { ...record };
   }
   function activosDeTipo(tipo) {
@@ -192,8 +261,9 @@
     writeStore("audit", list);
     return { ...record };
   }
+  var _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 
-  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/devnotes.js?v=1.7.0
+  // devnotes.js?v=1.7.0
   function mountDevnotes(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -207,7 +277,7 @@
     });
   }
 
-  // ../../../../../../../Users/juanmaav92/Documents/Nao/front/DEMO/naowee-organismos/shared/registro-publico.js
+  // registro-publico.js
   var esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m]);
   var norm = (s) => [...String(s == null ? "" : s)].map((c) => c.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()).join("");
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -299,26 +369,13 @@
     "Valle del Cauca": ["Cali", "Buenaventura", "Palmira", "Tulu\xE1", "Cartago", "Buga", "Jamund\xED"]
   };
   var DEPTOS = Object.keys(MUNICIPIOS).sort((a, b) => a.localeCompare(b, "es"));
-  var DEPORTES_POR_FED = {
-    "FED-038": ["Nataci\xF3n", "Nataci\xF3n Art\xEDstica", "Polo Acu\xE1tico"],
-    "FED-040": ["Patinaje", "Patinaje Art\xEDstico", "Patinaje de Velocidad"]
-  };
-  var deportesDe = (org) => {
-    if (!org) return [];
-    if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes;
-    if (DEPORTES_POR_FED[org.id]) return DEPORTES_POR_FED[org.id];
-    return org.deporte && org.deporte !== "\u2014" ? [org.deporte] : [];
-  };
-  var FEDERACIONES = () => allOrganismos().filter((o) => o.tipo === "federacion");
-  var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"];
-  var CATALOGO_DEPORTES = () => [.../* @__PURE__ */ new Set([...FEDERACIONES().flatMap(deportesDe), ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
-  var duenoDeporte = (dep) => FEDERACIONES().find((f) => deportesDe(f).includes(dep) && !["Rechazado", "Cancelado"].includes(f.estado));
+  var CATALOGO_DEPORTES = catalogoDeportes;
   var CONJUNTO = ["Baloncesto", "Balonmano", "B\xE9isbol", "F\xFAtbol", "F\xFAtbol de Sal\xF3n", "Hockey", "Polo Acu\xE1tico", "Rugby", "Softbol", "Voleibol"];
   var deportesPorTipo = (t) => {
     const all = CATALOGO_DEPORTES();
     if (t === "CONJ") return all.filter((d) => CONJUNTO.includes(d));
-    if (t === "PARA") return ["Boccia", "Goalball", "Para Atletismo", "Para Nataci\xF3n", "Baloncesto en silla de ruedas"];
-    return all.filter((d) => !CONJUNTO.includes(d));
+    if (t === "PARA") return all.filter((d) => PARADEPORTES.includes(d));
+    return all.filter((d) => !CONJUNTO.includes(d) && !PARADEPORTES.includes(d));
   };
   var DOC_MENOR = "1098765432";
   var DOC_SIN_RECLAMAR = "1055512345";

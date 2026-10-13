@@ -5,8 +5,9 @@
    Patrón: wizard-recipe v1.8 del DS (.naowee-stepper --distributed + shake)
    con pasos DINÁMICOS por tipo (STEPS_POR_ORGANISMO, estilo IVC). Autoregistro
    público Federación/Liga/Club (ORG-02/03/04) + creación interna de Comité
-   por el Ministerio (ORG-01). Al enviar crea un organismo 'Preinscrito' vía
-   addOrganismo() → aparece en la jerarquía bajo su superior.
+   por el Ministerio (ORG-01). Al enviar crea un organismo 'En revisión' (el comité,
+   'Activo') vía addOrganismo() → aparece en la bandeja y la jerarquía de su superior.
+   Preinscrito es solo para lo que llega por cargue masivo.
 
    Reglas duras aplicadas: solo .naowee-*; dropdowns toggle --open en el
    WRAPPER (verificar por screenshot); validación POR PASO con shake (nunca
@@ -223,7 +224,7 @@ function paneTipo() {
   }).join('');
   const nota = roleCode === 'MINDEPORTE'
     ? 'Como Ministerio del Deporte creas Comités (cabezas de sector), el nivel raíz del SND que reconoce y avala a las federaciones.'
-    : 'El registro es público. Se precargó el tipo coherente con tu rol; puedes cambiarlo. El organismo quedará <strong>Preinscrito</strong> hasta que su nivel superior lo valide.';
+    : 'El registro es público. Se precargó el tipo coherente con tu rol; puedes cambiarlo. El organismo quedará <strong>En revisión</strong> en la bandeja de su nivel superior hasta que lo valide.';
   return `
     <h2 class="reg-pane__title">¿Qué organismo vas a registrar?</h2>
     <p class="reg-pane__sub">${nota}</p>

@@ -13,9 +13,11 @@
        ambito:'departamental'|'distrital' (liga),
        actoAdministrativo (comité), documentos:{ [docId]:{name,size} },
        aceptaPoliticas:boolean, ficticio:true (todo lo creado en la demo).
+     deportes: lista de deportes del catálogo (sección 7); `deporte` es su texto de lectura.
    Modelo del deportista:
-     { id, nombre, tipoDoc, numDoc, deporte, modalidad, correo,
-       clubId|null, estado:'autodeclarado'|'vinculado' }
+     { id, nombre, tipoDoc, numDoc, deporte, modalidad, correo }
+     + derivados de sus afiliaciones vigentes (sección 8): clubIds, clubId (el primero),
+       estado:'autodeclarado'|'vinculado'.
    Estados de organismo (§3.2 handoff):
      Preinscrito · En revisión · Activo · Rechazado · Suspendido · Inactivo · Cancelado
 
@@ -101,11 +103,13 @@ const FEDERACIONES_COC = [
   { id: "FED-057", tipo: "federacion", nombre: "Federación Colombiana de Remo", nit: "901375567-1", sector: "Olímpico", deporte: "Remo", parentId: "COC", estado: "Preinscrito", repLegal: { tipoDoc: "CC", numDoc: "10000057", nombre: "Alberto", apellido: "Rojas Bravo", correo: "presidencia@federemo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 9 # 37-06 Secretaria de Deportes de Cali" }, contacto: { telefono: "6015550058", correo: "contacto@federemo.demo.co" }, fechaRegistro: "2026-04-04" }
 ];
 
-/* ─── 3) Federaciones FICTICIAS para Paralímpico y Sordolímpico (ficticio:true) ─── */
+/* ─── 3) Federaciones FICTICIAS para Paralímpico y Sordolímpico (ficticio:true) ───
+   Los paradeportes son deportes aparte en el catálogo (NAT ≠ PARA_NAT), así que no chocan con
+   las federaciones olímpicas. La lista completa de cada sector la debe Negocio (P-23). */
 const FEDERACIONES_FICTICIAS = [
-  { id: 'FED-P01', tipo: 'federacion', nombre: 'Federación Paralímpica de Atletismo', nit: '901500001-1', sector: 'Paralímpico', deporte: 'Atletismo', parentId: 'CPC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000201', nombre: 'Laura', apellido: 'Mendoza Ríos', correo: 'presidencia@fedeparaatletismo.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Calle 63 # 47-06 Of. 201' }, contacto: { telefono: '6014809090', correo: 'contacto@fedeparaatletismo.demo.co' }, fechaRegistro: '2026-02-18' },
-  { id: 'FED-P02', tipo: 'federacion', nombre: 'Federación Colombiana de Natación Paralímpica', nit: '901500002-2', sector: 'Paralímpico', deporte: 'Natación', parentId: 'CPC', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000202', nombre: 'Diego', apellido: 'Vargas Peña', correo: 'presidencia@fedeparanatacion.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Cra. 36 # 5B-62' }, contacto: { telefono: '6024889090', correo: 'contacto@fedeparanatacion.demo.co' }, fechaRegistro: '2026-05-09' },
-  { id: 'FED-S01', tipo: 'federacion', nombre: 'Federación Deportiva de Sordos de Baloncesto', nit: '901500003-3', sector: 'Sordolímpico', deporte: 'Baloncesto', parentId: 'FSC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000203', nombre: 'Sofía', apellido: 'Guerrero León', correo: 'presidencia@fedesordosbaloncesto.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 48 # 20-114 Of. 3' }, contacto: { telefono: '6045553030', correo: 'contacto@fedesordosbaloncesto.demo.co' }, fechaRegistro: '2026-03-28' }
+  { id: 'FED-P01', tipo: 'federacion', nombre: 'Federación Colombiana de Para Atletismo', nit: '901500001-1', sector: 'Paralímpico', deporte: 'Para Atletismo', parentId: 'CPC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000201', nombre: 'Laura', apellido: 'Mendoza Ríos', correo: 'presidencia@fedeparaatletismo.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Calle 63 # 47-06 Of. 201' }, contacto: { telefono: '6014809090', correo: 'contacto@fedeparaatletismo.demo.co' }, fechaRegistro: '2026-02-18' },
+  { id: 'FED-P02', tipo: 'federacion', nombre: 'Federación Colombiana de Para Natación', nit: '901500002-2', sector: 'Paralímpico', deporte: 'Para Natación', parentId: 'CPC', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000202', nombre: 'Diego', apellido: 'Vargas Peña', correo: 'presidencia@fedeparanatacion.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Cra. 36 # 5B-62' }, contacto: { telefono: '6024889090', correo: 'contacto@fedeparanatacion.demo.co' }, fechaRegistro: '2026-05-09' },
+  { id: 'FED-S01', tipo: 'federacion', nombre: 'Federación Colombiana de Atletismo de Sordos', nit: '901500003-3', sector: 'Sordolímpico', deporte: 'Atletismo de Sordos', parentId: 'FSC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000203', nombre: 'Sofía', apellido: 'Guerrero León', correo: 'presidencia@fedesordosbaloncesto.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 48 # 20-114 Of. 3' }, contacto: { telefono: '6045553030', correo: 'contacto@fedesordosbaloncesto.demo.co' }, fechaRegistro: '2026-03-28' }
 ];
 
 /* ─── 4) Ligas FICTICIAS (~8, estados variados). LIG-001 = cadena demo ─── */
@@ -131,7 +135,9 @@ const CLUBES = [
   { id: 'CLU-007', tipo: 'club', nombre: 'Club Deportivo Aguas del Valle', nit: '805020007-7', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'profesional', parentId: 'LIG-006', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000407', nombre: 'Isabella', apellido: 'Torres Peña', correo: 'admin@aguasdelvalle.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 5 # 42-42' }, contacto: { telefono: '6025070707', correo: 'contacto@aguasdelvalle.demo.co' }, fechaRegistro: '2026-03-16' },
   { id: 'CLU-008', tipo: 'club', nombre: 'Club Natación Pacífico', nit: '805020008-8', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'Rechazado', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000408', nombre: 'Mateo', apellido: 'Angulo Mena', correo: 'admin@natacionpacifico.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buenaventura', zona: 'Urbana', direccion: 'Cra. 3 # 5-30' }, contacto: { telefono: '6025080808', correo: 'contacto@natacionpacifico.demo.co' }, fechaRegistro: '2026-05-25' },
   { id: 'CLU-009', tipo: 'club', nombre: 'Club Patín Bogotá', nit: '805020009-9', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-003', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000409', nombre: 'Daniela', apellido: 'Suárez Gil', correo: 'admin@patinbogota.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Cra. 60 # 63-20' }, contacto: { telefono: '6015090909', correo: 'contacto@patinbogota.demo.co' }, fechaRegistro: '2026-05-12' },
-  { id: 'CLU-010', tipo: 'club', nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000410', nombre: 'Andrés', apellido: 'Caicedo Mora', correo: 'admin@ruedalibrepalmira.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 31 # 29-10' }, contacto: { telefono: '6025101010', correo: 'contacto@ruedalibrepalmira.demo.co' }, fechaRegistro: '2026-01-28' }
+  { id: 'CLU-010', tipo: 'club', nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000410', nombre: 'Andrés', apellido: 'Caicedo Mora', correo: 'admin@ruedalibrepalmira.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 31 # 29-10' }, contacto: { telefono: '6025101010', correo: 'contacto@ruedalibrepalmira.demo.co' }, fechaRegistro: '2026-01-28' },
+  /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
+  { id: 'CLU-011', tipo: 'club', nombre: 'Club Delfines de Buga', nit: '805020011-1', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000411', nombre: 'Lorena', apellido: 'Gil Ocampo', correo: 'admin@delfinesbuga.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buga', zona: 'Urbana', direccion: 'Calle 4 # 14-30' }, contacto: { telefono: '6022360011', correo: 'contacto@delfinesbuga.demo.co' }, fechaRegistro: '2026-09-28' }
 ];
 
 /* ─── 6) Deportistas FICTICIOS (vinculados + autodeclarados) ───
@@ -175,6 +181,69 @@ const SEED_ORGANISMOS = [
 ];
 const SEED_DEPORTISTAS = DEPORTISTAS;
 
+/* ─── 7) Deportes del organismo ───
+   Un organismo tiene una LISTA de deportes del catálogo, elegida dentro de la de su superior.
+   Un deporte pertenece a una sola federación en todo el sistema (decisión 2026-10-09, DEP-545).
+   El seed trae `deporte` (uno); aquí van los organismos con varios. `deporte` queda como texto
+   de lectura (la lista unida) para no romper filtros y fichas. */
+const DEPORTES_SEED = {
+  'FED-038': ['Natación', 'Natación Artística', 'Polo Acuático'],
+  'FED-040': ['Patinaje', 'Patinaje Artístico', 'Patinaje de Velocidad'],
+  'LIG-006': ['Natación', 'Polo Acuático'],
+  'CLU-007': ['Natación', 'Polo Acuático']
+};
+/* Solo demo: deportes del catálogo sin federación, para poder probar el alta de una. Los
+   paradeportes que ya existen en catalog-ms sin federación en la demo van aquí también. */
+export const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa'];
+export const PARADEPORTES = ['Para Atletismo', 'Para Natación', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa', 'Atletismo de Sordos'];
+const ESTADOS_SIN_DUENO = ['Rechazado', 'Cancelado'];
+
+export function deportesDe(org) {
+  if (!org) return [];
+  if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
+  if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+  return org.deporte && org.deporte !== '—' ? String(org.deporte).split(',').map((x) => x.trim()).filter(Boolean) : [];
+}
+/* Lectura normalizada: siempre trae `deportes` (lista) y `deporte` (texto). */
+function conDeportes(org) {
+  const deportes = deportesDe(org);
+  return { ...org, deportes, deporte: deportes.length ? deportes.join(', ') : (org.deporte || '—') };
+}
+/* Federación que gobierna un deporte (la única), o null. */
+export function duenoDeporte(dep) {
+  return allOrganismos().find((o) => o.tipo === 'federacion' && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
+}
+/* Catálogo de la demo = deportes con federación + los que aún no tienen (el real es GET /sports). */
+export function catalogoDeportes() {
+  const conFed = allOrganismos().filter((o) => o.tipo === 'federacion').flatMap((o) => o.deportes);
+  return [...new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/* ─── 8) Afiliaciones: UNA sola relación para los tres casos (Modelo, nao-docs) ───
+     deportista → club · personal deportivo → cualquier organismo · club → liga
+   { id, tipo:'deportista'|'personal'|'club', sujetoId, organismoId, deporte,
+     estado:'Solicitada'|'Vinculada'|'Rechazada'|'Terminada', desde, hasta, origen, motivo }
+   Con multi-afiliación ya no hay un clubId ni un parentId únicos: el deportista hereda la
+   cadena de CADA club en el que está Vinculado. `clubId` sigue existiendo solo como lectura
+   (el primer club vigente) para las pantallas que todavía muestran un club. */
+const AF_DESDE = '2026-03-25';
+const AFILIACIONES_EXTRA = [
+  /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
+  { id: 'AF-S900', tipo: 'deportista', sujetoId: 'DEP-002', organismoId: 'CLU-007', deporte: 'Natación', estado: 'Vinculada', desde: '2026-05-04', origen: 'solicitud' }
+];
+function seedAfiliaciones() {
+  const out = [];
+  DEPORTISTAS.forEach((d) => {
+    if (!d.clubId) return;
+    out.push({ id: `AF-S${d.id.slice(4)}`, tipo: 'deportista', sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: 'Vinculada', desde: AF_DESDE, origen: 'solicitud' });
+  });
+  CLUBES.forEach((c) => {
+    const estado = ['Activo', 'Suspendido'].includes(c.estado) ? 'Vinculada' : c.estado === 'Rechazado' ? 'Rechazada' : 'Solicitada';
+    out.push({ id: `AF-C${c.id.slice(4)}`, tipo: 'club', sujetoId: c.id, organismoId: c.parentId, deporte: c.deporte, estado, desde: estado === 'Vinculada' ? c.fechaRegistro : null, origen: 'activacion' });
+  });
+  return [...out, ...AFILIACIONES_EXTRA];
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Persistencia sessionStorage — prefijo naowee-organismos-*
    Todo lo creado en la demo vive en session (drafts / overrides /
@@ -182,7 +251,7 @@ const SEED_DEPORTISTAS = DEPORTISTAS;
    ═══════════════════════════════════════════════════════════════ */
 const STORE_PREFIX = 'naowee-organismos-';
 const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
-export const SEED_VERSION = '0.1.0';
+export const SEED_VERSION = '0.2.0';   // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
 
 export function readStore(key, fallback = null) {
   try {
@@ -212,7 +281,8 @@ export function seedDemoData() {
   if (readStore('solicitudes') == null) writeStore('solicitudes', []);
   if (readStore('cargues') == null) writeStore('cargues', []);
   if (readStore('audit') == null) writeStore('audit', []);
-  if (readStore('preinscritos') == null) writeStore('preinscritos', []);
+  writeStore('afiliaciones', seedAfiliaciones());
+  clearStore('preinscritos');
   try { localStorage.setItem(SEED_FLAG, SEED_VERSION); } catch (_) {}
   return { seeded: true, version: SEED_VERSION };
 }
@@ -229,8 +299,8 @@ function applyOverride(org, overrides) {
 export function allOrganismos() {
   const nuevos = readStore('organismos-nuevos', []) || [];
   const overrides = readStore('organismos-overrides', {}) || {};
-  const base = SEED_ORGANISMOS.map((o) => applyOverride(o, overrides));
-  const extra = nuevos.map((o) => ({ ...o }));
+  const base = SEED_ORGANISMOS.map((o) => conDeportes(applyOverride(o, overrides)));
+  const extra = nuevos.map(conDeportes);
   return [...base, ...extra];
 }
 
@@ -242,11 +312,61 @@ export function childrenOf(id) {
   return allOrganismos().filter((o) => o.parentId === id);
 }
 
+/* El estado del deportista (autodeclarado / vinculado) y sus clubes se DERIVAN de las
+   afiliaciones vigentes; no se guardan en el deportista. */
 export function allDeportistas() {
   const nuevos = readStore('deportistas-nuevos', []) || [];
   const ov = readStore('deportistas-overrides', {}) || {};
   const base = SEED_DEPORTISTAS.map((d) => (ov[d.id] ? { ...d, ...ov[d.id] } : { ...d }));
-  return [...base, ...nuevos.map((d) => ({ ...d }))];
+  const clubesDe = {};
+  allAfiliaciones().forEach((a) => {
+    if (a.tipo === 'deportista' && a.estado === 'Vinculada') (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+  });
+  return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+    const clubIds = clubesDe[d.id] || [];
+    return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? 'vinculado' : 'autodeclarado' };
+  });
+}
+
+/* ─── Afiliaciones (lectura y escritura) ─── */
+export function allAfiliaciones() {
+  let list = readStore('afiliaciones', null);
+  if (!list) { list = seedAfiliaciones(); writeStore('afiliaciones', list); }
+  return list.map((a) => ({ ...a }));
+}
+/* Afiliaciones de un sujeto (deportista, persona o club). `vigentes` = solo Vinculadas. */
+export function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
+  return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === 'Vinculada'));
+}
+/* Afiliaciones que apuntan a un organismo (su plantel, sus clubes, su personal). */
+export function afiliacionesHacia(orgId, { estado } = {}) {
+  return allAfiliaciones().filter((a) => a.organismoId === orgId && (!estado || a.estado === estado));
+}
+/* Abre una afiliación Solicitada (o devuelve la viva si ya hay una del mismo par). */
+export function solicitarAfiliacion({ tipo = 'deportista', sujetoId, organismoId, deporte = '', origen = 'solicitud', proponenteId = null }) {
+  const list = allAfiliaciones();
+  const viva = list.find((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && ['Solicitada', 'Vinculada'].includes(a.estado));
+  if (viva) return viva;
+  const rec = { id: 'AF-' + String(list.length + 1).padStart(4, '0'), tipo, sujetoId, organismoId, deporte, estado: 'Solicitada', desde: null, hasta: null, origen, proponenteId, fecha: _todayISO() };
+  writeStore('afiliaciones', [...list, rec]);
+  return { ...rec };
+}
+/* Mueve la afiliación viva del par (sujeto, organismo) a Vinculada / Rechazada / Terminada. */
+export function cambiarAfiliacion(sujetoId, organismoId, estado, meta = {}) {
+  const list = allAfiliaciones();
+  const desde = estado === 'Terminada' ? ['Vinculada'] : ['Solicitada'];
+  let i = list.findIndex((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && desde.includes(a.estado));
+  if (i < 0 && estado === 'Vinculada') {
+    /* El club asocia directo a un autodeclarado: no hubo solicitud previa. */
+    list.push({ id: 'AF-' + String(list.length + 1).padStart(4, '0'), tipo: meta.tipo || 'deportista', sujetoId, organismoId, deporte: meta.deporte || '', estado: 'Solicitada', origen: meta.origen || 'club', fecha: _todayISO() });
+    i = list.length - 1;
+  }
+  if (i < 0) return null;
+  const hoy = _todayISO();
+  list[i] = { ...list[i], estado, motivo: meta.motivo || list[i].motivo || '',
+    ...(estado === 'Vinculada' ? { desde: hoy } : {}), ...(estado === 'Terminada' ? { hasta: hoy, fin: meta.fin || 'retiro' } : {}) };
+  writeStore('afiliaciones', list);
+  return { ...list[i] };
 }
 
 /* Un deportista por id (seed + overrides + nuevos). Copia inmutable. */
@@ -275,6 +395,14 @@ export function seedStats() {
 function indexByParent(orgs) {
   const idx = {};
   orgs.forEach((o) => { (idx[o.parentId] = idx[o.parentId] || []).push(o); });
+  /* Un club puede estar en varias ligas: cuelga también de cada liga con afiliación vigente. */
+  const byId = {};
+  orgs.forEach((o) => { byId[o.id] = o; });
+  allAfiliaciones().forEach((a) => {
+    const club = byId[a.sujetoId];
+    if (a.tipo !== 'club' || a.estado !== 'Vinculada' || !club || club.parentId === a.organismoId) return;
+    (idx[a.organismoId] = idx[a.organismoId] || []).push(club);
+  });
   return idx;
 }
 
@@ -286,8 +414,11 @@ export function subtreeOf(id) {
   const idx = indexByParent(orgs);
   const out = [];
   const stack = [...(idx[id] || [])];
+  const visto = new Set();
   while (stack.length) {
     const node = stack.pop();
+    if (visto.has(node.id)) continue;
+    visto.add(node.id);
     out.push({ ...node });
     const kids = idx[node.id];
     if (kids) for (const k of kids) stack.push(k);
@@ -312,58 +443,45 @@ export function ancestorsOf(id) {
   return chain;
 }
 
-/* Deportistas cuyo club pertenece al subárbol de `orgId` (o al propio
-   `orgId` si es un club). Herencia liga/federación/comité (§2 handoff:
-   el deportista queda vinculado a toda la cadena de su club). */
+/* Deportistas de la jurisdicción de `orgId`: los Vinculados a algún club del subárbol (o al
+   propio club) por CUALQUIERA de sus afiliaciones, más los autodeclarados que ese nivel
+   registró. Un deportista en dos clubes aparece una sola vez (se cuentan personas). */
 export function deportistasOf(orgId) {
-  const clubIds = new Set();
+  const sub = subtreeOf(orgId);
   const self = getOrganismo(orgId);
+  const clubIds = new Set(sub.filter((o) => o.tipo === 'club').map((o) => o.id));
   if (self && self.tipo === 'club') clubIds.add(self.id);
-  subtreeOf(orgId).forEach((o) => { if (o.tipo === 'club') clubIds.add(o.id); });
-  const orgIds = new Set([orgId, ...subtreeOf(orgId).map((o) => o.id)]);
+  const orgIds = new Set([orgId, ...sub.map((o) => o.id)]);
   return allDeportistas()
-    .filter((d) => (d.clubId && clubIds.has(d.clubId)) || (!d.clubId && [d.registradoPor, d.asocParcial?.federacionId, d.asocParcial?.ligaId].some((x) => x && orgIds.has(x))))
-    .map((d) => ({ ...d }));
+    .filter((d) => d.clubIds.some((c) => clubIds.has(c)) || (!d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor)));
 }
 
-/* ─── Registro por organismo (2 momentos: registro → asociación) ───
-   Sin club el deportista queda 'registrado' (pendiente); al asociar pasa a 'vinculado'. */
-const NIVEL_ORDEN = ['comite', 'federacion', 'liga', 'club'];
-
-/* Niveles que aún faltan por asociar, desde el actor hacia abajo. */
-export function faltaAsociar(d) {
-  if (!d || d.clubId) return [];
-  const actor = getOrganismo(d.registradoPor);
-  const par = d.asocParcial || {};
-  const hecho = par.ligaId ? 'liga' : par.federacionId ? 'federacion' : actor ? actor.tipo : 'comite';
-  return NIVEL_ORDEN.slice(Math.max(NIVEL_ORDEN.indexOf(hecho), 0) + 1);
-}
-
+/* ─── Registro por organismo ───
+   Lo registra un club: queda Vinculado a ese club. Lo registra otro nivel (P-07 abierta): queda
+   autodeclarado y, si se propone un club, se abre una afiliación Solicitada que ese club
+   confirma en su bandeja (igual que el territorial, P-12). */
 export function registrarDeportista(datos, actorOrgId) {
   const nuevos = readStore('deportistas-nuevos', []) || [];
   const actor = getOrganismo(actorOrgId);
-  const esClub = actor && actor.tipo === 'club';
   const dep = {
     modalidad: '', ...datos,
     id: `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`,
-    clubId: esClub ? actor.id : null,
-    estado: esClub ? 'vinculado' : 'registrado',
     registradoPor: actorOrgId, origen: 'organismo', fechaRegistro: _todayISO()
   };
+  delete dep.clubId; delete dep.estado;
   nuevos.push(dep);
   writeStore('deportistas-nuevos', nuevos);
+  if (actor && actor.tipo === 'club') cambiarAfiliacion(dep.id, actor.id, 'Vinculada', { deporte: dep.deporte, origen: 'club' });
   auditLog({ orgId: actorOrgId, fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, accion: 'Registro de deportista' });
-  return dep;
+  return getDeportista(dep.id);
 }
 
-/* `cadena` = { federacionId?, ligaId?, clubId? }. Con clubId queda vinculado; sin él, parcial. */
-export function asociarDeportista(id, cadena) {
-  const { clubId = null, ...parcial } = cadena || {};
-  const dep = updateDeportista(id, clubId
-    ? { clubId, estado: 'vinculado', asocParcial: null }
-    : { asocParcial: { ...(getDeportista(id)?.asocParcial || {}), ...parcial } });
-  auditLog({ orgId: clubId || dep.registradoPor, fecha: _todayISO(), deportistaId: id, deportistaNombre: dep.nombre, accion: clubId ? 'Asociación de deportista' : 'Asociación parcial' });
-  return dep;
+/* Un nivel distinto al club propone el club del deportista: queda Solicitada hasta que el club confirme. */
+export function proponerClub(depId, clubId, proponenteId) {
+  const dep = getDeportista(depId);
+  const sol = crearSolicitud(depId, clubId, { origen: 'propuesta', proponenteId });
+  auditLog({ orgId: proponenteId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : '', accion: 'Club propuesto', a: (getOrganismo(clubId) || {}).nombre || clubId });
+  return sol;
 }
 
 /* Contadores heredados del subárbol de `orgId`:
@@ -412,6 +530,8 @@ export function addOrganismo(org) {
   };
   nuevos.push(record);
   writeStore('organismos-nuevos', nuevos);
+  /* El club entra a su primera liga por la misma relación de afiliación; se vincula al activarse. */
+  if (record.tipo === 'club' && record.parentId) solicitarAfiliacion({ tipo: 'club', sujetoId: record.id, organismoId: record.parentId, deporte: record.deporte, origen: 'activacion' });
   return { ...record };
 }
 
@@ -481,6 +601,10 @@ export function updateOrganismo(id, patch) {
 export function setEstado(id, estado, meta = {}) {
   const prev = getOrganismo(id);
   const updated = updateOrganismo(id, { estado, ...(meta.patch || {}) });
+  if (updated && updated.tipo === 'club' && updated.parentId) {
+    if (estado === 'Activo') cambiarAfiliacion(id, updated.parentId, 'Vinculada', { tipo: 'club', origen: 'activacion' });
+    if (estado === 'Rechazado') cambiarAfiliacion(id, updated.parentId, 'Rechazada', { motivo: meta.motivo });
+  }
   auditLog({
     orgId: id, notif: true, fecha: meta.fecha || new Date().toISOString().slice(0, 10),
     responsable: meta.responsable || '', rol: meta.rol || '',
@@ -514,18 +638,20 @@ export function seedTrazabilidadDemo() {
   if (mode === 'blank') return;                         // modo guiado/vacío → sin historial sembrado
   if (allAudit('FED-040').length) return;               // idempotente
   const trail = [
-    // Fed. Patinaje (doble validación Ministerio + Comité)
-    { orgId: 'FED-040', fecha: '2026-02-10', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Registro recibido', de: '', a: 'Preinscrito', motivo: '' },
-    { orgId: 'FED-040', fecha: '2026-02-12', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Enviada a validación', de: 'Preinscrito', a: 'En revisión', motivo: '' },
+    // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
+    { orgId: 'FED-040', fecha: '2026-02-10', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'FED-040', fecha: '2026-02-12', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Formulario enviado', de: 'Preinscrito', a: 'En revisión', motivo: '' },
     { orgId: 'FED-040', fecha: '2026-02-16', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Aval del Comité registrado', de: 'En revisión', a: 'En revisión', motivo: 'Doble validación: mitad del Comité aprobada' },
     { orgId: 'FED-040', fecha: '2026-02-20', responsable: 'María F. Rojas', rol: 'Ministerio', accion: 'Habilitada por el Ministerio', de: 'En revisión', a: 'Activo', motivo: 'Doble validación completa (Ministerio + Comité)' },
-    // Liga del Valle (aprueba la Federación)
-    { orgId: 'LIG-001', fecha: '2026-03-02', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Registro recibido', de: '', a: 'Preinscrito', motivo: '' },
-    { orgId: 'LIG-001', fecha: '2026-03-08', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Habilitada por la Federación', de: 'Preinscrito', a: 'Activo', motivo: 'Reconocimiento deportivo (IVC) verificado' },
-    // Club Patín Cali (aprueba la Liga; incluye una corrección para mostrar el reingreso al flujo)
-    { orgId: 'CLU-001', fecha: '2026-03-15', responsable: 'Óscar Cardona', rol: 'Club', accion: 'Registro recibido', de: '', a: 'Preinscrito', motivo: '' },
-    { orgId: 'CLU-001', fecha: '2026-03-18', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Corrección solicitada', de: 'Preinscrito', a: 'Preinscrito', motivo: 'Falta el reconocimiento del ente municipal' },
-    { orgId: 'CLU-001', fecha: '2026-03-25', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Habilitado por la Liga', de: 'Preinscrito', a: 'Activo', motivo: 'Documentación completa' }
+    // Liga del Valle: la cargó la Federación, completó y envió; la aprueba la Federación
+    { orgId: 'LIG-001', fecha: '2026-03-02', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'LIG-001', fecha: '2026-03-05', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Formulario enviado', de: 'Preinscrito', a: 'En revisión', motivo: '' },
+    { orgId: 'LIG-001', fecha: '2026-03-08', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Habilitada por la Federación', de: 'En revisión', a: 'Activo', motivo: 'Reconocimiento deportivo (IVC) verificado' },
+    // Club Patín Cali: autorregistro público; la Liga devuelve a corrección, el club corrige y reenvía
+    { orgId: 'CLU-001', fecha: '2026-03-15', responsable: 'Óscar Cardona', rol: 'Club', accion: 'Registro público', de: '', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-001', fecha: '2026-03-18', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Corrección solicitada', de: 'En revisión', a: 'En corrección', motivo: 'Falta el reconocimiento del ente municipal' },
+    { orgId: 'CLU-001', fecha: '2026-03-21', responsable: 'Óscar Cardona', rol: 'Club', accion: 'Corregido y reenviado', de: 'En corrección', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-001', fecha: '2026-03-25', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Habilitado por la Liga', de: 'En revisión', a: 'Activo', motivo: 'Documentación completa' }
   ];
   trail.forEach((e) => auditLog(e));
 }
@@ -571,72 +697,77 @@ export function solicitudDeDeportista(deportistaId) {
   return allSolicitudes().find((s) => s.deportistaId === deportistaId) || null;
 }
 
-/* Crea una solicitud de afiliación (estado Enviada) y la audita.
-   Devuelve la copia creada. NO cambia aún el estado del deportista (queda
-   autodeclarado hasta que el club apruebe). */
-export function crearSolicitud(deportistaId, clubId) {
+/* Crea una solicitud de afiliación (Enviada) hacia un club y abre la afiliación Solicitada.
+   La solicitud es el ítem de la bandeja del club; la afiliación es la relación. Con
+   multi-afiliación el deportista puede tener solicitudes vivas a varios clubes, pero no
+   dos al mismo. `meta.origen`: 'solicitud' (el deportista) | 'propuesta' (otro nivel o el
+   territorial, con `proponenteId`). */
+export function crearSolicitud(deportistaId, clubId, meta = {}) {
   const list = readStore('solicitudes', []) || [];
   const dep = getDeportista(deportistaId);
-  // Anti-duplicado: si ya hay una solicitud de afiliación 'Enviada' del deportista, no crear otra.
-  const prev = list.find((s) => s.deportistaId === deportistaId && s.tipo !== 'retiro' && s.estado === 'Enviada');
+  const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== 'retiro' && s.estado === 'Enviada');
   if (prev) return { ...prev };
+  const origen = meta.origen || 'solicitud';
   const rec = {
     id: 'AF-' + String(list.length + 1).padStart(3, '0'),
-    tipo: 'afiliacion', deportistaId, clubId, estado: 'Enviada', fecha: _todayISO()
+    tipo: 'afiliacion', deportistaId, clubId, estado: 'Enviada', fecha: _todayISO(), origen,
+    ...(meta.proponenteId ? { proponenteId: meta.proponenteId } : {})
   };
   list.unshift(rec);
   writeStore('solicitudes', list);
+  solicitarAfiliacion({ sujetoId: deportistaId, organismoId: clubId, deporte: dep ? dep.deporte : '', origen, proponenteId: meta.proponenteId || null });
+  const proponente = meta.proponenteId ? getOrganismo(meta.proponenteId) : null;
   auditLog({
     orgId: clubId, deportistaId, deportistaNombre: dep ? dep.nombre : '',
-    fecha: rec.fecha, responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
-    accion: 'Solicitud de afiliación enviada', de: '', a: 'Enviada', motivo: ''
+    fecha: rec.fecha, responsable: proponente ? proponente.nombre : (dep ? dep.nombre : ''), rol: proponente ? proponente.tipo.toUpperCase() : 'DEPORTISTA',
+    accion: origen === 'propuesta' ? 'Club propuesto para el deportista' : 'Solicitud de afiliación enviada', de: '', a: 'Enviada', motivo: ''
   });
   return { ...rec };
 }
 
-/* Solicitud de BAJA/retiro (deportista vinculado → pide dejar su club). NO
-   desvincula de inmediato: crea una solicitud tipo 'retiro' que el CLUB debe
-   confirmar (Doug: el club se entera y acepta el retiro). Mientras tanto el
-   deportista sigue Vinculado con la baja "en trámite". Devuelve la copia o null. */
-export function crearSolicitudRetiro(deportistaId) {
+/* Solicitud de BAJA de UN club (el deportista sigue en los demás). No desvincula de
+   inmediato: el club confirma el retiro en su bandeja. Sin `clubId`, el primer club vigente. */
+export function crearSolicitudRetiro(deportistaId, clubId) {
   const dep = getDeportista(deportistaId);
-  if (!dep || !dep.clubId) return null;
+  const club = clubId || (dep && dep.clubId);
+  if (!dep || !club || !dep.clubIds.includes(club)) return null;
   const list = readStore('solicitudes', []) || [];
+  const viva = list.find((s) => s.tipo === 'retiro' && s.deportistaId === deportistaId && s.clubId === club && s.estado === 'Enviada');
+  if (viva) return { ...viva };
   const rec = {
     id: 'RT-' + String(list.length + 1).padStart(3, '0'),
-    tipo: 'retiro', deportistaId, clubId: dep.clubId, estado: 'Enviada', fecha: _todayISO()
+    tipo: 'retiro', deportistaId, clubId: club, estado: 'Enviada', fecha: _todayISO()
   };
   list.unshift(rec);
   writeStore('solicitudes', list);
   auditLog({
-    orgId: dep.clubId, deportistaId, deportistaNombre: dep.nombre,
+    orgId: club, deportistaId, deportistaNombre: dep.nombre,
     fecha: rec.fecha, responsable: dep.nombre, rol: 'DEPORTISTA',
     accion: 'Solicitud de baja enviada', de: 'Vinculado', a: 'Baja solicitada', motivo: ''
   });
   return { ...rec };
 }
 
-/* Solicitud de baja activa (Enviada) de un deportista, o null. */
-export function retiroPendienteDe(deportistaId) {
-  return allSolicitudes().find((s) => s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada') || null;
+/* Solicitud de baja activa (Enviada) de un deportista, o null. Con `clubId`, la de ese club. */
+export function retiroPendienteDe(deportistaId, clubId) {
+  return allSolicitudes().find((s) => s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada' && (!clubId || s.clubId === clubId)) || null;
 }
 
-/* El deportista cancela su propia solicitud de baja antes de que el club la
-   resuelva → la marca Retirada y sigue Vinculado. Audita. */
-export function cancelarRetiro(deportistaId) {
+/* El deportista cancela su solicitud de baja antes de que el club la resuelva. */
+export function cancelarRetiro(deportistaId, clubId) {
   const dep = getDeportista(deportistaId);
   const list = readStore('solicitudes', []) || [];
-  let changed = false;
+  let club = null;
   const upd = list.map((s) => {
-    if (s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada') {
-      changed = true; return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
+    if (s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada' && (!clubId || s.clubId === clubId)) {
+      club = s.clubId; return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
     }
     return s;
   });
-  if (changed) {
+  if (club) {
     writeStore('solicitudes', upd);
     auditLog({
-      orgId: dep ? dep.clubId : '', deportistaId, deportistaNombre: dep ? dep.nombre : '',
+      orgId: club, deportistaId, deportistaNombre: dep ? dep.nombre : '',
       fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
       accion: 'Solicitud de baja cancelada', de: 'Baja solicitada', a: 'Retirada', motivo: ''
     });
@@ -644,11 +775,9 @@ export function cancelarRetiro(deportistaId) {
   return getDeportista(deportistaId);
 }
 
-/* Resuelve una solicitud (por el club). `resultado` ∈ {'aprobada','rechazada'}.
-   Al APROBAR: el deportista queda 'vinculado' y se le asigna clubId → hereda
-   automáticamente liga + federación + comité (ancestorsOf(clubId)) en toda la
-   app (perfil, jerarquía). Al RECHAZAR: motivo obligatorio (lo valida la UI).
-   Audita contra el club (orgId=clubId) referenciando al deportista. */
+/* El club resuelve una solicitud. `resultado` ∈ {'aprobada','rechazada'}.
+   Afiliación aprobada → Vinculada: hereda la cadena de ESE club (ancestorsOf), sin perder
+   las demás. Baja aprobada → esa afiliación Terminada. Rechazo: motivo obligatorio (UI). */
 export function resolverAfiliacion(solicitudId, resultado, meta = {}) {
   const list = readStore('solicitudes', []) || [];
   const i = list.findIndex((s) => s.id === solicitudId);
@@ -659,14 +788,10 @@ export function resolverAfiliacion(solicitudId, resultado, meta = {}) {
   list[i] = { ...s, estado: estadoSol, motivo: meta.motivo || '', responsable: meta.responsable || '', resueltaFecha: _todayISO() };
   writeStore('solicitudes', list);
   const dep = getDeportista(s.deportistaId);
-  if (resultado === 'aprobada') {
-    if (esRetiro) {
-      // El club CONFIRMA la baja → el deportista vuelve a autodeclarado (pierde club/herencia).
-      updateDeportista(s.deportistaId, { clubId: null, estado: 'autodeclarado' });
-    } else {
-      // El club APRUEBA la afiliación → vinculado + hereda la cadena (ancestorsOf).
-      updateDeportista(s.deportistaId, { clubId: s.clubId, estado: 'vinculado' });
-    }
+  if (esRetiro) {
+    if (resultado === 'aprobada') cambiarAfiliacion(s.deportistaId, s.clubId, 'Terminada', { fin: 'retiro' });
+  } else {
+    cambiarAfiliacion(s.deportistaId, s.clubId, resultado === 'aprobada' ? 'Vinculada' : 'Rechazada', { motivo: meta.motivo });
   }
   auditLog({
     orgId: s.clubId, deportistaId: s.deportistaId, deportistaNombre: dep ? dep.nombre : '',
@@ -679,65 +804,50 @@ export function resolverAfiliacion(solicitudId, resultado, meta = {}) {
   return { ...list[i] };
 }
 
-/* Retira la afiliación del deportista: marca como Retirada su solicitud activa
-   (Enviada o Aprobada) y lo devuelve a 'autodeclarado' (sin club, sin herencia).
-   "Cambiar de club" = retiro + nueva solicitud (§11.3). Audita. */
-export function retirarAfiliacion(deportistaId, meta = {}) {
+/* El deportista retira su solicitud pendiente (o su afiliación) de un club. Sin `clubId`
+   actúa sobre todo lo vivo, como antes de la multi-afiliación ("cambiar de club" = retiro
+   + nueva solicitud). Audita. */
+export function retirarAfiliacion(deportistaId, meta = {}, clubId) {
   const dep = getDeportista(deportistaId);
-  const eraVinculado = dep && dep.estado === 'vinculado';
-  const clubPrev = dep ? dep.clubId : null;
   const list = readStore('solicitudes', []) || [];
-  let changed = false;
+  const clubes = new Set();
   const upd = list.map((s) => {
-    if (s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada')) {
-      changed = true;
+    if (s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada') && (!clubId || s.clubId === clubId)) {
+      clubes.add(s.clubId);
       return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
     }
     return s;
   });
-  if (changed) writeStore('solicitudes', upd);
-  updateDeportista(deportistaId, { clubId: null, estado: 'autodeclarado' });
-  auditLog({
-    orgId: clubPrev || '', deportistaId, deportistaNombre: dep ? dep.nombre : '',
-    fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
-    accion: 'Afiliación retirada', de: eraVinculado ? 'Vinculado' : 'Enviada', a: 'Retirada', motivo: ''
+  writeStore('solicitudes', upd);
+  if (dep) (clubId ? [clubId] : dep.clubIds).forEach((c) => clubes.add(c));
+  clubes.forEach((c) => {
+    const era = dep && dep.clubIds.includes(c);
+    cambiarAfiliacion(deportistaId, c, era ? 'Terminada' : 'Rechazada', { fin: 'retiro', motivo: era ? '' : 'Retirada por el deportista' });
+    auditLog({
+      orgId: c, deportistaId, deportistaNombre: dep ? dep.nombre : '',
+      fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
+      accion: 'Afiliación retirada', de: era ? 'Vinculado' : 'Enviada', a: 'Retirada', motivo: ''
+    });
   });
   return getDeportista(deportistaId);
 }
 
 /* ─── Desvinculación POR EL CLUB (ORG-10) ─────────────────────────────
-   El club da de baja a un deportista de su plantel. Es la contraparte de
-   `retirarAfiliacion` (que la inicia el DEPORTISTA) y responde la pregunta
-   que Nicolás Mosquera dejó abierta en la mesa del 2026-09-08.
-
-   MODELO: unilateral + motivo OBLIGATORIO + traza. No es bilateral a
-   propósito: exigir que el deportista confirme su propia baja dejaría al
-   club bloqueado si no responde. La contención es la fricción (confirmación
-   explícita + motivo) y la trazabilidad, no un segundo visto bueno.
-
-   ⚠️ DECISIÓN DE PRODUCTO (Doug, 2026-09-10) que VA MÁS ALLÁ de la matriz
-   oficial: esa matriz no tiene columna de desvinculación. Pendiente de
-   validar con negocio (P-04). Documentado, no silencioso.
-
-   Efectos: el deportista vuelve a 'autodeclarado' y PIERDE la cadena
-   heredada (liga/federación/comité se derivan del club). Las solicitudes
-   vivas se cierran. Queda un registro tipo 'desvinculacion' en el historial
-   del deportista —para que vea quién lo desvinculó y por qué— más la
-   entrada de auditoría del club. Es reversible: el deportista puede volver
-   a solicitar afiliación a este u otro club. */
+   Unilateral, motivo obligatorio y traza. Decisión de Producto (2026-09-10) más allá de la
+   matriz oficial: pendiente de ratificar con Negocio (P-04). Termina SOLO la afiliación a
+   ese club; si el deportista está en otros, sigue Vinculado allí. Reversible: puede volver
+   a solicitar. `meta.clubId`: el club que desvincula (por defecto, el primero vigente). */
 export function desvincularPorClub(deportistaId, meta = {}) {
   const dep = getDeportista(deportistaId);
-  if (!dep || dep.estado !== 'vinculado' || !dep.clubId) return null;
-  const clubPrev = dep.clubId;
+  const clubPrev = meta.clubId || (dep && dep.clubId);
+  if (!dep || !clubPrev || !dep.clubIds.includes(clubPrev)) return null;
 
   const list = readStore('solicitudes', []) || [];
-  /* Cierra lo que estuviera vivo (afiliación aprobada, baja en trámite). */
   const cerradas = list.map((s) => (
-    s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada')
+    s.deportistaId === deportistaId && s.clubId === clubPrev && (s.estado === 'Enviada' || s.estado === 'Aprobada')
       ? { ...s, estado: 'Retirada', resueltaFecha: _todayISO() }
       : s
   ));
-  /* Registro propio del acto, para el historial del deportista. */
   const registro = {
     id: 'SOL-' + String(cerradas.length + 1).padStart(3, '0') + '-DSV',
     tipo: 'desvinculacion', deportistaId, clubId: clubPrev,
@@ -745,12 +855,12 @@ export function desvincularPorClub(deportistaId, meta = {}) {
     motivo: meta.motivo || '', responsable: meta.responsable || ''
   };
   writeStore('solicitudes', [registro, ...cerradas]);
-
-  updateDeportista(deportistaId, { clubId: null, estado: 'autodeclarado' });
+  cambiarAfiliacion(deportistaId, clubPrev, 'Terminada', { fin: 'desvinculacion', motivo: meta.motivo });
+  const quedan = getDeportista(deportistaId).clubIds.length;
   auditLog({
     orgId: clubPrev, deportistaId, deportistaNombre: dep.nombre,
     fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
-    accion: 'Deportista desvinculado', de: 'Vinculado', a: 'Autodeclarado',
+    accion: 'Deportista desvinculado', de: 'Vinculado', a: quedan ? 'Vinculado en otro club' : 'Autodeclarado',
     motivo: meta.motivo || ''
   });
   return getDeportista(deportistaId);
@@ -783,123 +893,9 @@ export function seedAfiliacionesDemo(mode) {
     { deportistaId: 'DEP-007', clubId: 'CLU-001', fecha: '2026-07-13' }   // Daniela Cárdenas · Patinaje
   ];
   seeds.forEach((s, idx) => {
-    list.unshift({ id: 'AF-D' + (idx + 1), deportistaId: s.deportistaId, clubId: s.clubId, estado: 'Enviada', fecha: s.fecha, demoSeed: true });
+    list.unshift({ id: 'AF-D' + (idx + 1), tipo: 'afiliacion', deportistaId: s.deportistaId, clubId: s.clubId, estado: 'Enviada', fecha: s.fecha, origen: 'solicitud', demoSeed: true });
+    const dep = getDeportista(s.deportistaId);
+    solicitarAfiliacion({ sujetoId: s.deportistaId, organismoId: s.clubId, deporte: dep ? dep.deporte : '' });
   });
   writeStore('solicitudes', list);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Registro público → cola de validación (HURU-09).
-   Los registros del formulario público (registro-publico.html) que requieren
-   validación (personal deportivo + entidades) se persisten en
-   `naowee-organismos-preinscritos` (sessionStorage, efímero) como 'En revisión'.
-   El rol validador (Admin Mindeporte · Registro Único del SUID) los aprueba /
-   rechaza / solicita corrección desde la bandeja, reusando la máquina de estados
-   (estados.js) y el mapa de badge. Cada registro lleva su propio `historial`
-   (traza autocontenida, como las solicitudes de afiliación) con notif mock.
-   NO materializa aún el usuario/organismo en el roster/jerarquía (eso es la
-   creación automática HURU-05/06); cierra el lazo de validación + notificación.
-   ═══════════════════════════════════════════════════════════════ */
-const _preHist = (fecha, accion, de, a, responsable, rol, motivo) => ({
-  fecha, accion, de, a, responsable: responsable || '', rol: rol || '', motivo: motivo || '', notif: true
-});
-
-/* Todas las preinscripciones públicas (más reciente primero). Copias. */
-export function allPreinscritos() {
-  return (readStore('preinscritos', []) || []).map((p) => ({ ...p }));
-}
-export function getPreinscrito(id) {
-  return allPreinscritos().find((p) => p.id === id) || null;
-}
-
-/* Crea una preinscripción pública en estado 'En revisión' y siembra su traza.
-   Anti-duplicado: si ya existe una 'En revisión' con el mismo documento/NIT, la
-   reutiliza (no crea otra). Devuelve la copia creada. */
-export function crearPreinscrito(rec) {
-  const list = readStore('preinscritos', []) || [];
-  const clave = String((rec && (rec.numDoc || rec.nit)) || '').trim();
-  if (clave) {
-    const dup = list.find((p) => p.estado === 'En revisión' && String(p.numDoc || p.nit || '').trim() === clave);
-    if (dup) return { ...dup };
-  }
-  const fecha = _todayISO();
-  const record = {
-    origen: 'registro-publico',
-    estado: 'En revisión',
-    documentos: {},
-    ...rec,
-    id: (rec && rec.id) || ('PRE-' + String(list.length + 1).padStart(3, '0')),
-    fecha,
-    historial: [_preHist(fecha, 'Registro público recibido', '', 'En revisión', (rec && rec.nombre) || '', 'PÚBLICO', '')]
-  };
-  list.unshift(record);
-  writeStore('preinscritos', list);
-  return { ...record };
-}
-
-/* Resuelve una preinscripción (por el validador). `resultado` ∈
-   {'aprobado','rechazado','correccion'} → estado Activo / Rechazado / En
-   corrección. Agrega la traza (responsable, fecha, motivo, notif). Devuelve la
-   copia resultante o null si no existe. */
-export function resolverPreinscrito(id, resultado, meta = {}) {
-  const list = readStore('preinscritos', []) || [];
-  const i = list.findIndex((p) => p.id === id);
-  if (i < 0) return null;
-  const p = list[i];
-  const MAP = { aprobado: 'Activo', rechazado: 'Rechazado', correccion: 'En corrección' };
-  const ACC = { aprobado: 'Registro validado', rechazado: 'Registro rechazado', correccion: 'Corrección solicitada' };
-  const nuevo = MAP[resultado] || p.estado;
-  const fecha = _todayISO();
-  const hist = _preHist(fecha, ACC[resultado] || 'Actualización', p.estado, nuevo, meta.responsable || '', meta.rol || '', meta.motivo || '');
-  list[i] = { ...p, ...(meta.patch || {}), estado: nuevo, motivo: meta.motivo || '', responsable: meta.responsable || '', resueltaFecha: fecha, historial: [...(p.historial || []), hist] };
-  writeStore('preinscritos', list);
-  return { ...list[i] };
-}
-
-/* Actualiza campos de un preinscrito SIN cambiar el estado (p.ej. la mitad de la
-   doble validación de una federación pública) y, opcionalmente, agrega una entrada
-   al historial. Para transiciones de estado usar resolverPreinscrito. */
-export function updatePreinscrito(id, patch, hist) {
-  const list = readStore('preinscritos', []) || [];
-  const i = list.findIndex((p) => p.id === id);
-  if (i < 0) return null;
-  const p = list[i];
-  const historial = hist
-    ? [...(p.historial || []), _preHist(_todayISO(), hist.accion || 'Actualización', p.estado, p.estado, hist.responsable || '', hist.rol || '', hist.motivo || '')]
-    : (p.historial || []);
-  list[i] = { ...p, ...(patch || {}), historial };
-  writeStore('preinscritos', list);
-  return { ...list[i] };
-}
-
-/* Datos demo (solo 'demo'): siembra registros públicos para que la cola de
-   validación de Mindeporte arranque con algo que revisar (2 accionables + 1
-   validado + 1 en corrección, para poblar los filtros). Idempotente. */
-export function seedPreinscritosDemo(mode) {
-  if (mode !== 'demo') return;
-  const list = readStore('preinscritos', []) || [];
-  if (list.some((p) => p.demoSeed)) return;
-  const mk = (o) => ({ origen: 'registro-publico', demoSeed: true, documentos: {}, historial: [], ...o });
-  const seeds = [
-    mk({ id: 'PRE-D1', tipo: 'personal', subtipo: 'Entrenador', rol: 'Entrenador', nombre: 'Carlos Palacio Mesa', tipoDoc: 'CC', numDoc: '79345612', correo: 'carlos.palacio@correo.demo.co', telefono: '+57 300 555 1010', profesion: 'Entrenador de patinaje', experiencia: '8', deporte: 'Patinaje', depto: 'Valle del Cauca', ciudad: 'Cali', estado: 'En revisión', fecha: '2026-07-13',
-      documentos: { cert: { name: 'certificacion-entrenador-nivel-2.pdf' } },
-      historial: [_preHist('2026-07-13', 'Registro público recibido', '', 'En revisión', 'Carlos Palacio Mesa', 'PÚBLICO', '')] }),
-    mk({ id: 'PRE-D2', tipo: 'entidad', subtipo: 'Club promotor', entTipo: 'club-promotor', orgTipo: 'club', parentId: 'LIG-001', nombre: 'Club Deportivo Ruedas de Occidente', nit: '901720045-3', correo: 'contacto@ruedasdeoccidente.demo.co', telefono: '+57 602 555 2020', deporte: 'Patinaje', sector: 'Olímpico', depto: 'Valle del Cauca', ciudad: 'Palmira', estado: 'En revisión', fecha: '2026-07-14',
-      repLegal: { nombre: 'Ana María Torres', doc: '31567001', correo: 'ana.torres@correo.demo.co' },
-      documentos: { existencia: { name: 'certificado-existencia-representacion.pdf' }, reconocimientoMunicipal: { name: 'reconocimiento-ente-municipal.pdf' } },
-      historial: [_preHist('2026-07-14', 'Registro público recibido', '', 'En revisión', 'Ana María Torres', 'PÚBLICO', '')] }),
-    mk({ id: 'PRE-D3', tipo: 'personal', subtipo: 'Juez / Árbitro', rol: 'Juez / Árbitro', nombre: 'Lucía Ramírez Peña', tipoDoc: 'CC', numDoc: '52889314', correo: 'lucia.ramirez@correo.demo.co', telefono: '+57 301 555 3030', profesion: 'Juez de natación', experiencia: '5', deporte: 'Natación', depto: 'Antioquia', ciudad: 'Medellín', estado: 'Activo', fecha: '2026-07-08', resueltaFecha: '2026-07-10', responsable: 'María F. Rojas',
-      documentos: { cert: { name: 'licencia-juez-natacion.pdf' } },
-      historial: [_preHist('2026-07-08', 'Registro público recibido', '', 'En revisión', 'Lucía Ramírez Peña', 'PÚBLICO', ''), _preHist('2026-07-10', 'Registro validado', 'En revisión', 'Activo', 'María F. Rojas', 'MINDEPORTE', '')] }),
-    mk({ id: 'PRE-D4', tipo: 'entidad', subtipo: 'Liga departamental', entTipo: 'liga', orgTipo: 'liga', parentId: 'FED-040', nombre: 'Liga de Patinaje de Cundinamarca', nit: '901720099-1', correo: 'contacto@ligapatinajecundinamarca.demo.co', telefono: '+57 601 555 4040', deporte: 'Patinaje', sector: 'Olímpico', depto: 'Cundinamarca', ciudad: 'Bogotá', estado: 'En corrección', fecha: '2026-07-09', resueltaFecha: '2026-07-11', responsable: 'Alberto Herrera', motivo: 'Documento de la entidad incompleto — falta reconocimiento deportivo vigente',
-      repLegal: { nombre: 'Jorge Beltrán', doc: '79990012', correo: 'jorge.beltran@correo.demo.co' },
-      documentos: { personeria: { name: 'personeria-juridica-liga.pdf' }, rut: { name: 'rut-liga-patinaje.pdf' } },
-      historial: [_preHist('2026-07-09', 'Registro público recibido', '', 'En revisión', 'Jorge Beltrán', 'PÚBLICO', ''), _preHist('2026-07-11', 'Corrección solicitada', 'En revisión', 'En corrección', 'Alberto Herrera', 'FEDERACION', 'Documento de la entidad incompleto — falta reconocimiento deportivo vigente')] }),
-    mk({ id: 'PRE-D5', tipo: 'entidad', subtipo: 'Federación', entTipo: 'federacion', orgTipo: 'federacion', parentId: 'COC', nombre: 'Federación Colombiana de Escalada', nit: '901720123-4', correo: 'contacto@fedescalada.demo.co', telefono: '+57 601 555 5050', deporte: 'Escalada', sector: 'Olímpico', depto: 'Bogotá D.C.', ciudad: 'Bogotá', estado: 'En revisión', fecha: '2026-07-15', validacion: { mindeporte: 'pendiente', comite: 'pendiente' },
-      repLegal: { nombre: 'Paula Nieto', doc: '52110033', correo: 'paula.nieto@correo.demo.co' },
-      documentos: { personeria: { name: 'personeria-juridica-fed.pdf' }, estatutos: { name: 'estatutos-fed-escalada.pdf' }, reconocimiento: { name: 'reconocimiento-deportivo-ivc.pdf' }, aval: { name: 'aval-comite-olimpico.pdf' }, rut: { name: 'rut-fed-escalada.pdf' } },
-      historial: [_preHist('2026-07-15', 'Registro público recibido', '', 'En revisión', 'Paula Nieto', 'PÚBLICO', '')] })
-  ];
-  seeds.forEach((s) => list.push(s));
-  writeStore('preinscritos', list);
 }

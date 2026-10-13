@@ -512,3 +512,8 @@ body > .demo-role-switcher--inline { display: none; }
   position: static; transform: none; width: auto; max-height: 0; border: 0; box-shadow: none;
 }
 .demo-role-switcher--inline.is-open .demo-role-switcher__panel { transform: none; max-height: 340px; margin-top: 6px; border: 1px solid var(--border); }
+
+/* Selector de contexto (P-15): la persona administra más de un organismo. */
+.profile-dd__ctx { text-decoration: none; }
+.profile-dd__ctx.is-current { background: var(--bg-soft); }
+.profile-dd__ctx .profile-dd__check-ico { flex-shrink: 0; }

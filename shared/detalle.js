@@ -78,8 +78,9 @@ function inJurisdiction(orgId) {
   const scopeId = scopeFor(roleCode);
   if (roleCode === 'DEPORTISTA') {                       // solo su cadena heredada
     const dep = allDeportistas().find((d) => d.id === scopeId);
-    if (!dep || !dep.clubId) return false;
-    const chain = new Set([dep.clubId, ...ancestorsOf(dep.clubId).map((a) => a.id)]);
+    if (!dep || !dep.clubIds.length) return false;
+    /* Hereda la cadena de cada club en el que está vinculado. */
+    const chain = new Set(dep.clubIds.flatMap((c) => [c, ...ancestorsOf(c).map((a) => a.id)]));
     return chain.has(orgId);
   }
   if (orgId === scopeId) return true;                    // su propio nodo (raíz de su jurisdicción)

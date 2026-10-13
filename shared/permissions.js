@@ -15,6 +15,8 @@
    en la demo se codifica como permiso real y se marca aquí en comentario.
    ═══════════════════════════════════════════════════════════════ */
 
+import { getOrganismo } from './organismos-data.js';
+
 export const ACCIONES = Object.freeze({
   CREAR: 'C', LEER: 'R', EDITAR: 'U', APROBAR: 'A', SANCIONAR: 'S', RETIRAR: 'X'
 });
@@ -54,7 +56,7 @@ const PERMS = {
   },
   deportistas: {
     MINDEPORTE: 'R',
-    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar y asociar hacia abajo
+    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar autodeclarados y proponer club (P-07)
     CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
     DEPORTISTA: 'RU'     // el propio (nunca documento / fecha nac.)
   },
@@ -117,7 +119,24 @@ const SCOPE = {
   DEPORTISTA: 'DEP-001'
 };
 
+/* ─── Contexto: una persona administra varios organismos (P-15, A-6) ───
+   El ancla por defecto de cada rol es la de SCOPE; si la persona tiene más de un
+   organismo, el contexto elegido (?org=… o el último elegido en la sesión) la
+   reemplaza. Solo vale un organismo del nivel del rol. */
+const TIPO_DE_ROL = { COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club' };
+const CTX_KEY = 'naowee-organismos-ctx-';
+export function contextoDe(role) {
+  if (!TIPO_DE_ROL[role]) return null;
+  const valido = (id) => { const o = id && getOrganismo(id); return o && o.tipo === TIPO_DE_ROL[role] ? id : null; };
+  let porUrl = null;
+  try { porUrl = valido(new URLSearchParams(window.location.search).get('org')); } catch (_) {}
+  if (porUrl) { try { sessionStorage.setItem(CTX_KEY + role, porUrl); } catch (_) {} return porUrl; }
+  try { return valido(sessionStorage.getItem(CTX_KEY + role)); } catch (_) { return null; }
+}
+
 export function scopeFor(role) {
+  const ctx = contextoDe(role);
+  if (ctx) return ctx;
   return role in SCOPE ? SCOPE[role] : null;
 }
 
