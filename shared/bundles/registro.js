@@ -774,7 +774,8 @@
       return `<a class="profile-dd__item profile-dd__item--role profile-dd__perfil${c === actual && r.userName === def.userName ? " is-current" : ""}" href="${HOME_DEMO[c] || "jerarquia.html"}?role=${c}" data-perfil-chip="${c}">
         <span class="role-meta"><span>${def.userName}</span><small>${r.label}${def.org && def.org !== "\u2014" ? " \xB7 " + def.org : ""}</small></span>
       </a>`;
-    }).join("")}`;
+    }).join("")}
+    <a class="profile-dd__item profile-dd__perfil profile-dd__casos" href="index.html#casos">Ver los casos para mostrar</a>`;
   }
   function bindHeaderEvents(headerEl) {
     const switcher = headerEl.querySelector("#profileSwitcher");

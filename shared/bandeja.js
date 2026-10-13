@@ -69,7 +69,7 @@ const I = {
 
 /* State (UI) */
 let query = '';
-let estadoFiltro = 'Accionables';
+let estadoFiltro = new URLSearchParams(location.search).get('f') || 'Accionables';   // ?f= abre en otra pestaña (casos de la demo)
 let sectorFiltro = 'Todos';      // filtro por sector (solo se muestra si hay >1 sector visible)
 let page = 1;                    // página actual de la tabla de organismos
 const PAGE_SIZE = 10;

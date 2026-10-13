@@ -571,3 +571,4 @@ body > .demo-role-switcher--inline { display: none; }
 .profile-dd__perfil { text-decoration: none; }
 .profile-dd__perfil.is-current { background: var(--bg-soft); }
 .profile-dd--identity-only { max-height: calc(100vh - 90px); overflow-y: auto; }
+.profile-dd__casos { color: var(--accent); font-weight: 600; }

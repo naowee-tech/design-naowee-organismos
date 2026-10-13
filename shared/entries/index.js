@@ -27,3 +27,26 @@
         <span class="role-card__cta">${CTA[code] || 'Abrir'} ${ARROW}</span>
       </a>`;
   }).join('');
+
+
+  /* Casos para mostrar: cada tarjeta abre una pantalla con la persona y el organismo ya puestos. */
+  const CASOS = [
+    { color: '#7c3aed', quien: 'Sandra Mejía · Liga', titulo: 'Una persona, varios organismos', desc: 'La franja «Trabajas en» cambia entre sus dos ligas y la federación; avisa los pendientes de las otras.', href: 'bandeja.html?role=LIGA&org=LIG-001&como=sandra' },
+    { color: '#1f78d1', quien: 'Sandra Mejía · Federación', titulo: 'No decide sobre lo que también administra', desc: 'Desde la federación ve su propia liga marcada y no puede aprobarla ni devolverla (P-24).', href: 'bandeja.html?role=FEDERACION&org=FED-040&como=sandra&f=Todos' },
+    { color: '#1f8923', quien: 'Club Ruedas del Sur', titulo: 'Club preinscrito completa su registro', desc: 'Lo cargó la liga; completa datos y documentos y lo envía a revisión.', href: 'organismo-detalle.html?role=CLUB&org=CLU-002&como=org' },
+    { color: '#1f8923', quien: 'Club Halcones de Tuluá', titulo: 'Club devuelto a corrección', desc: 'Ve el motivo de la liga, corrige y reenvía; vuelve a la bandeja de la liga.', href: 'organismo-detalle.html?role=CLUB&org=CLU-012&como=org' },
+    { color: '#1f8923', quien: 'Club Rueda Libre Palmira', titulo: 'Club suspendido, visto desde adentro', desc: 'Su menú queda en «Mi organismo»: qué pasó, el motivo y qué puede hacer.', href: 'organismo-detalle.html?role=CLUB&org=CLU-010&como=org' },
+    { color: '#002B5B', quien: 'María F. Rojas · Ministerio', titulo: 'El Ministerio sanciona un club', desc: 'Suspender, reactivar (vuelve a revisión) y cancelar el registro como acción definitiva.', href: 'organismo-detalle.html?role=MINDEPORTE&id=CLU-003' },
+    { color: '#7c3aed', quien: 'Sandra Mejía · Liga', titulo: 'La liga registra un deportista y le propone club', desc: 'Queda autodeclarado; la propuesta llega a la bandeja del club, que la confirma.', href: 'deportistas.html?role=LIGA&org=LIG-001&como=sandra' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club confirma solicitudes y propuestas', desc: 'Aprobar suma el club al deportista sin quitarle los que ya tiene.', href: 'bandeja.html?role=CLUB' },
+    { color: '#7c3aed', quien: 'Sandra Mejía · Liga de Natación', titulo: 'Un deportista en dos clubes', desc: 'Mateo Restrepo patina en Cali y nada en Aguas del Valle: aparece en las dos ligas y cuenta una vez.', href: 'deportistas.html?role=LIGA&org=LIG-006&como=sandra' }
+  ];
+  document.getElementById('casosGrid').innerHTML = CASOS.map((c) => `
+    <a class="role-card" href="${c.href}" style="--role-color:${c.color}">
+      <div class="role-card__top"><div>
+        <div class="role-card__name">${c.titulo}</div>
+        <div class="role-card__org">${c.quien}</div>
+      </div></div>
+      <p class="role-card__desc">${c.desc}</p>
+      <span class="role-card__cta">Abrir ${ARROW}</span>
+    </a>`).join('');
