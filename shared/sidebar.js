@@ -115,9 +115,12 @@ export const ROLES = {
 /* Jerarquía SND con un subítem por nivel: cada uno abre las columnas con ese nivel ya abierto. */
 const NIVELES_JERARQUIA = [['comite', 'Comités'], ['federacion', 'Federaciones'], ['liga', 'Ligas'], ['club', 'Clubes'], ['deportista', 'Deportistas']];
 /* Cada rol ve los niveles que tiene debajo (Mindeporte, todos); nunca a sí mismo ni a sus ancestros. */
+const NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
 const NIVEL_PROPIO = { MINDEPORTE: null, COMITE: 'comite', FEDERACION: 'federacion', LIGA: 'liga', CLUB: 'club', DEPORTISTA: 'deportista', TERRITORIAL: 'federacion' };
 export function nivelesForRole(code) {
-  const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
+  /* El encargado municipal no tiene ligas en su territorio: sus niveles empiezan en clubes. */
+  const nivel = code === 'TERRITORIAL' && (territorioDe(code) || {}).municipio ? 'liga' : NIVEL_PROPIO[code];
+  const propio = NIVEL_JERARQUIA_IDX(nivel);
   return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
 }
 const jerarquiaItems = (code) => {
@@ -271,6 +274,7 @@ export function organismoNoActivo(code) {
 const MENU_NO_ACTIVO = [{ section: null, items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }] }];
 export function getMenuForRole(code) {
   if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
+  if (code === 'TERRITORIAL') return [{ section: null, items: jerarquiaItems(code) }, ...MENU_BY_ROLE.TERRITORIAL.slice(1)];
   return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
 }
 

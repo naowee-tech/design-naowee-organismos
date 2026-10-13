@@ -1,5 +1,5 @@
 (() => {
-  // estados.js
+  // ../front/DEMO/naowee-organismos/shared/estados.js
   var ESTADOS = [
     "Preinscrito",
     "En revisi\xF3n",
@@ -24,7 +24,7 @@
     return BADGE_VARIANT[estado] || "neutral";
   }
 
-  // organismos-data.js
+  // ../front/DEMO/naowee-organismos/shared/organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -431,7 +431,7 @@
     return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubes.has(c)) || !d.clubIds.length && d.registradoPor === tid);
   }
 
-  // permissions.js
+  // ../front/DEMO/naowee-organismos/shared/permissions.js
   var ACCIONES = Object.freeze({
     CREAR: "C",
     LEER: "R",
@@ -513,7 +513,7 @@
     return null;
   }
 
-  // sidebar.js
+  // ../front/DEMO/naowee-organismos/shared/sidebar.js
   var COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
   var ICONS = {
     sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
@@ -644,9 +644,11 @@
     }
   };
   var NIVELES_JERARQUIA = [["comite", "Comit\xE9s"], ["federacion", "Federaciones"], ["liga", "Ligas"], ["club", "Clubes"], ["deportista", "Deportistas"]];
+  var NIVEL_JERARQUIA_IDX = (n) => NIVELES_JERARQUIA.findIndex(([x]) => x === n);
   var NIVEL_PROPIO = { MINDEPORTE: null, COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club", DEPORTISTA: "deportista", TERRITORIAL: "federacion" };
   function nivelesForRole(code) {
-    const propio = NIVELES_JERARQUIA.findIndex(([n]) => n === NIVEL_PROPIO[code]);
+    const nivel2 = code === "TERRITORIAL" && (territorioDe(code) || {}).municipio ? "liga" : NIVEL_PROPIO[code];
+    const propio = NIVEL_JERARQUIA_IDX(nivel2);
     return NIVELES_JERARQUIA.slice(propio + 1).map(([n, label]) => ({ id: n, label }));
   }
   var jerarquiaItems = (code) => {
@@ -796,6 +798,7 @@
   var MENU_NO_ACTIVO = [{ section: null, items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }] }];
   function getMenuForRole(code) {
     if (organismoNoActivo(code)) return MENU_NO_ACTIVO;
+    if (code === "TERRITORIAL") return [{ section: null, items: jerarquiaItems(code) }, ...MENU_BY_ROLE.TERRITORIAL.slice(1)];
     return MENU_BY_ROLE[code] || MENU_BY_ROLE.MINDEPORTE;
   }
   function homeForRole(code) {
@@ -1260,7 +1263,7 @@
     });
   }
 
-  // devnotes.js
+  // ../front/DEMO/naowee-organismos/shared/devnotes.js
   function mountDevnotes(registry, root = document) {
     root.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -1274,7 +1277,7 @@
     });
   }
 
-  // entries/jerarquia.js
+  // ../front/DEMO/naowee-organismos/shared/entries/jerarquia.js
   seedDemoData();
   var roleCode = getRoleFromQuery();
   var role = ROLES[roleCode];
