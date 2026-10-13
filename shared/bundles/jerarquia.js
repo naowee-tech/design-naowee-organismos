@@ -1,5 +1,5 @@
 (() => {
-  // estados.js
+  // shared/estados.js
   var ESTADOS = [
     "Preinscrito",
     "En revisi\xF3n",
@@ -24,7 +24,7 @@
     return BADGE_VARIANT[estado] || "neutral";
   }
 
-  // organismos-data.js
+  // shared/organismos-data.js
   var COMITES = [
     { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
     { id: "CPC", tipo: "comite", nombre: "Comit\xE9 Paral\xEDmpico Colombiano", nit: "830500110-4", sector: "Paral\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000101", nombre: "Marcela", apellido: "R\xEDos", correo: "presidencia@cpc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Calle 63 # 47-06" }, contacto: { telefono: "6014801515", correo: "contacto@paralimpicocol.demo.co" }, fechaRegistro: "2025-11-05" },
@@ -344,7 +344,7 @@
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
 
-  // permissions.js
+  // shared/permissions.js
   var ACCIONES = Object.freeze({
     CREAR: "C",
     LEER: "R",
@@ -403,7 +403,7 @@
     return role2 in SCOPE ? SCOPE[role2] : null;
   }
 
-  // sidebar.js
+  // shared/sidebar.js
   var COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
   var ICONS = {
     sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
@@ -1086,7 +1086,7 @@
     });
   }
 
-  // devnotes.js
+  // shared/devnotes.js
   function mountDevnotes(registry, root = document) {
     root.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
@@ -1100,7 +1100,7 @@
     });
   }
 
-  // entries/jerarquia.js
+  // shared/entries/jerarquia.js
   seedDemoData();
   var roleCode = getRoleFromQuery();
   var role = ROLES[roleCode];
@@ -1538,8 +1538,8 @@
       "Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliaci\xF3n Vinculada. Lo activa la primera."
     ] },
     { title: "Una persona, varios organismos", items: [
-      "Una persona puede administrar m\xE1s de un organismo (P-15). El ancla deja de ser fija por rol: el <strong>contexto</strong> elegido en el chip de usuario la reemplaza y cambia la jurisdicci\xF3n de todo el men\xFA.",
-      "En la demo: Sandra Mej\xEDa (rol Liga) administra la Liga de Patinaje y la Liga de Nataci\xF3n del Valle. La identidad debe llevar los pares rol \u2194 organismo; c\xF3mo viajan en el token es un pendiente t\xE9cnico de Arquitectura."
+      "Una persona puede administrar m\xE1s de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>\xABTrabajas en\xBB</strong> la reemplaza y cambia la jurisdicci\xF3n de este \xE1rbol.",
+      "En la demo, Sandra Mej\xEDa administra dos ligas y la federaci\xF3n de la que cuelga una de ellas; desde la federaci\xF3n ve su propia liga en el \xE1rbol, pero no decide sobre ella (P-24). Detalle en la nota de la Bandeja."
     ] },
     { title: "Alcance por rol", items: [
       "<code>scopeFor(rol)</code> da el organismo ancla; el \xE1rbol es su sub\xE1rbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.",

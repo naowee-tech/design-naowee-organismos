@@ -1,10 +1,15 @@
 (() => {
+  var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __esm = (fn, res) => function __init() {
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
+  var __export = (target2, all) => {
+    for (var name in all)
+      __defProp(target2, name, { get: all[name], enumerable: true });
+  };
 
-  // estados.js
+  // shared/estados.js
   function estadoBadgeVariant(estado) {
     return BADGE_VARIANT[estado] || "neutral";
   }
@@ -26,7 +31,7 @@
   }
   var BADGE_VARIANT, TRANSICIONES;
   var init_estados = __esm({
-    "estados.js"() {
+    "shared/estados.js"() {
       BADGE_VARIANT = {
         "Preinscrito": "neutral",
         "En revisi\xF3n": "caution",
@@ -51,7 +56,7 @@
     }
   });
 
-  // organismos-data.js
+  // shared/organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -337,7 +342,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
   var init_organismos_data = __esm({
-    "organismos-data.js"() {
+    "shared/organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -483,7 +488,7 @@
     }
   });
 
-  // permissions.js
+  // shared/permissions.js
   function can(role3, accion, recurso) {
     const fila = PERMS[recurso];
     if (!fila) return false;
@@ -521,7 +526,7 @@
   }
   var ACCIONES, RECURSOS, PERMS, SCOPE, TIPO_DE_ROL, CTX_KEY;
   var init_permissions = __esm({
-    "permissions.js"() {
+    "shared/permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -653,7 +658,7 @@
     }
   });
 
-  // sidebar.js
+  // shared/sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -1116,7 +1121,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "sidebar.js"() {
+    "shared/sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1352,7 +1357,7 @@
     }
   });
 
-  // bandeja.js
+  // shared/bandeja.js
   var bandeja_exports = {};
   function seedBandejaDemo() {
     if (getDemoMode() !== "demo") return;
@@ -1898,7 +1903,7 @@
   }
   var roleCode, role, enNombreDe, TARGET, target, scopeId, halfOf, TIPO_EMOJI, TIPO_SING, MOTIVOS, VISIBLES, root, esc, norm, today, I, query, estadoFiltro, sectorFiltro, page, PAGE_SIZE, puedeAccionar, afilFiltro, AFIL_ESTADO, AFIL_SOL_VARIANT, MOTIVOS_AFIL, puedeAfil, VAL_VARIANT, DOC_LABELS;
   var init_bandeja = __esm({
-    "bandeja.js"() {
+    "shared/bandeja.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
@@ -1980,7 +1985,29 @@
     }
   });
 
-  // entries/bandeja.js
+  // shared/devnotes.js
+  var devnotes_exports = {};
+  __export(devnotes_exports, {
+    mountDevnotes: () => mountDevnotes
+  });
+  function mountDevnotes(registry, root2 = document) {
+    root2.querySelectorAll("[data-devnote]").forEach((el) => {
+      if (el.dataset.mounted) return;
+      const n = registry[el.dataset.devnote];
+      if (!n) return;
+      const list = (items) => `<ul>${(items || []).map((i) => `<li>${i}</li>`).join("")}</ul>`;
+      const body = n.sections ? n.sections.map((s) => `<div class="wz-devnote__sec"><div class="wz-devnote__sec-title">${s.title}</div>${list(s.items)}</div>`).join("") : list(n.items);
+      el.innerHTML = `<span class="naowee-badge">Solo demo</span>Notas para devs
+      <span class="wz-devnote__pop" role="tooltip"><span class="wz-devnote__head">${n.title} <em>\xB7 nota para devs, no es parte del producto</em></span>${body}</span>`;
+      el.dataset.mounted = "1";
+    });
+  }
+  var init_devnotes = __esm({
+    "shared/devnotes.js"() {
+    }
+  });
+
+  // shared/entries/bandeja.js
   init_sidebar();
   init_organismos_data();
   seedDemoData();
@@ -1997,4 +2024,23 @@
   mountBackdrop();
   mountDemoSwitcher({ roleCode: roleCode2 });
   Promise.resolve().then(() => init_bandeja());
+  Promise.resolve().then(() => (init_devnotes(), devnotes_exports)).then(({ mountDevnotes: mountDevnotes2 }) => mountDevnotes2({ bandeja: { title: "Bandeja \xB7 c\xF3mo funciona por dentro", sections: [
+    { title: "Qui\xE9n ve qu\xE9", items: [
+      "Cada organismo Activo ve lo que cuelga directamente de \xE9l y est\xE1 <strong>En revisi\xF3n</strong>: lo que carg\xF3 y lo que se autorregistr\xF3 eligi\xE9ndolo como superior. Aprobar, devolver a correcci\xF3n y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.",
+      "Nadie decide si su propio organismo no est\xE1 Activo. Federaciones: doble validaci\xF3n Comit\xE9 + Ministerio, sin orden (pendiente de confirmar, P-19).",
+      "El club ve aqu\xED sus solicitudes de afiliaci\xF3n. Las marcadas <strong>Propuesta</strong> no las pidi\xF3 el deportista: las abri\xF3 otro nivel que lo registr\xF3 (P-07) y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene."
+    ] },
+    { title: "Una persona, varios organismos (P-15)", items: [
+      "Los contextos son de la <strong>persona</strong>, no del rol: cada uno es un par rol \u2194 organismo. En la demo, Sandra Mej\xEDa administra la Liga de Patinaje del Valle, la Liga de Nataci\xF3n del Valle y la Federaci\xF3n Colombiana de Patinaje (<code>PERSONAS</code> en shared/sidebar.js).",
+      "Con dos o m\xE1s contextos aparece la franja <strong>\xABTrabajas en\xBB</strong> encima del t\xEDtulo; con uno solo no aparece nada. Cambiar de organismo cambia rol, men\xFA y jurisdicci\xF3n, y deja a la persona en la misma p\xE1gina si el otro rol la tiene.",
+      "La franja avisa los pendientes de los otros organismos (en esta bandeja, lo En revisi\xF3n directo; en el club, las solicitudes Enviadas) para que se note que hay trabajo en otro lado.",
+      "En cada decisi\xF3n, el di\xE1logo dice <strong>\xABVas a decidir en nombre de \u2026\xBB</strong> para que no se apruebe desde el organismo equivocado.",
+      "Gan\xF3 la variante C de la ronda de dise\xF1o (2026-10-13), sin la pantalla de elecci\xF3n al entrar: un clic de m\xE1s en cada inicio de sesi\xF3n. La identidad debe llevar los pares rol \u2194 organismo; c\xF3mo viajan en el token es un pendiente t\xE9cnico de Arquitectura."
+    ] },
+    { title: "Organismo y superior a la vez (P-24)", items: [
+      "Si la persona tambi\xE9n administra el organismo que est\xE1 revisando (Sandra, desde la federaci\xF3n, ve su propia Liga de Patinaje), la fila dice <strong>\xABTambi\xE9n la administras\xBB</strong> y el di\xE1logo no muestra Aprobar, Rechazar ni Correcci\xF3n: decide otra persona del organismo superior.",
+      "Es la opci\xF3n (b) de P-24, propuesta de Arquitectura pendiente con Negocio. Las otras: (a) permitirlo con trazabilidad, (c) prohibir administrar un organismo y su superior a la vez.",
+      "Con (b), cada organismo necesita al menos otra persona que pueda decidir: un rol interno con esa facultad o el administrador principal."
+    ] }
+  ] } }));
 })();

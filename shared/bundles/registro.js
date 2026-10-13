@@ -4,13 +4,13 @@
     return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
   };
 
-  // estados.js
+  // shared/estados.js
   var init_estados = __esm({
-    "estados.js"() {
+    "shared/estados.js"() {
     }
   });
 
-  // organismos-data.js
+  // shared/organismos-data.js
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
@@ -150,7 +150,7 @@
   }
   var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
   var init_organismos_data = __esm({
-    "organismos-data.js"() {
+    "shared/organismos-data.js"() {
       init_estados();
       COMITES = [
         { id: "COC", tipo: "comite", nombre: "Comit\xE9 Ol\xEDmpico Colombiano", nit: "860028097-1", sector: "Ol\xEDmpico", deporte: "\u2014", parentId: null, estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000100", nombre: "Camilo", apellido: "Duarte", correo: "presidencia@coc.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogot\xE1", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550001", correo: "contacto@coc.demo.co" }, fechaRegistro: "2025-11-02" },
@@ -295,7 +295,7 @@
     }
   });
 
-  // permissions.js
+  // shared/permissions.js
   function contextoDe(role3) {
     if (!TIPO_DE_ROL[role3]) return null;
     const valido = (id) => {
@@ -327,7 +327,7 @@
   }
   var ACCIONES, RECURSOS, SCOPE, TIPO_DE_ROL, CTX_KEY;
   var init_permissions = __esm({
-    "permissions.js"() {
+    "shared/permissions.js"() {
       init_organismos_data();
       ACCIONES = Object.freeze({
         CREAR: "C",
@@ -360,7 +360,7 @@
     }
   });
 
-  // sidebar.js
+  // shared/sidebar.js
   function getIcon(name) {
     return ICONS[name] || "";
   }
@@ -814,7 +814,7 @@
   }
   var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
-    "sidebar.js"() {
+    "shared/sidebar.js"() {
       init_permissions();
       init_organismos_data();
       COLLAPSED_KEY = "naowee-organismos-sidebar-collapsed";
@@ -1050,7 +1050,7 @@
     }
   });
 
-  // registro.js
+  // shared/registro.js
   var registro_exports = {};
   function freshData() {
     return {
@@ -2133,7 +2133,7 @@
   }
   var I, TIPO_META, TIPO_SINGULAR, SECTORES, TIPO_DOC, ZONAS, AMBITOS, TIPOS_CLUB, TIPOS_VIA, LETRAS_VIA, DEPARTAMENTOS, DEPORTES, PRECARGA_TIPO, STEP_LABELS, STEPS_POR_ORGANISMO, DOCS_POR_TIPO, roleCode, role, DRAFT_KEY, STATE, created, esc, norm, EMAIL_RE, saveTimer, root;
   var init_registro = __esm({
-    "registro.js"() {
+    "shared/registro.js"() {
       init_organismos_data();
       init_sidebar();
       I = {
@@ -2208,7 +2208,7 @@
     }
   });
 
-  // entries/registro.js
+  // shared/entries/registro.js
   init_sidebar();
   var roleCode2 = getRoleFromQuery();
   var role2 = ROLES[roleCode2];

@@ -470,8 +470,8 @@
       'Un club puede estar en varias ligas de sus deportes (P-20): cuelga de cada liga con afiliación Vinculada. Lo activa la primera.'
     ] },
     { title: 'Una persona, varios organismos', items: [
-      'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el <strong>contexto</strong> elegido en el chip de usuario la reemplaza y cambia la jurisdicción de todo el menú.',
-      'En la demo: Sandra Mejía (rol Liga) administra la Liga de Patinaje y la Liga de Natación del Valle. La identidad debe llevar los pares rol ↔ organismo; cómo viajan en el token es un pendiente técnico de Arquitectura.'
+      'Una persona puede administrar más de un organismo (P-15). El ancla deja de ser fija por rol: el organismo elegido en la franja <strong>«Trabajas en»</strong> la reemplaza y cambia la jurisdicción de este árbol.',
+      'En la demo, Sandra Mejía administra dos ligas y la federación de la que cuelga una de ellas; desde la federación ve su propia liga en el árbol, pero no decide sobre ella (P-24). Detalle en la nota de la Bandeja.'
     ] },
     { title: 'Alcance por rol', items: [
       '<code>scopeFor(rol)</code> da el organismo ancla; el árbol es su subárbol (<code>childrenOf</code> + deportistas de cada club). MINDEPORTE no tiene ancla y ve todo.',
