@@ -19,7 +19,7 @@
      + derivados de sus afiliaciones vigentes (sección 8): clubIds, clubId (el primero),
        estado:'autodeclarado'|'vinculado'.
    Estados de organismo (§3.2 handoff):
-     Preinscrito · En revisión · Activo · Rechazado · Suspendido · Inactivo · Cancelado
+     Preinscrito · En revisión · Activo · Rechazado · Suspendido · Cancelado (sin Inactivo, P-08)
 
    PRIVACIDAD (handoff §8.5.4): las 57 federaciones son el caso real del COC.
    Se conserva SOLO dato institucional (nombre, NIT, depto/ciudad/zona/dirección,
@@ -693,16 +693,30 @@ export function enviarRegistro(id, patch = {}, meta = {}) {
   });
 }
 
-/* Sanción del Ministerio (motivo obligatorio). Suspendido: el organismo no opera mientras dure;
-   sus hijos NO cambian de estado (propuesta P-18). Cancelado: reemplaza al borrado, no vuelve. */
+/* Sanción del Ministerio (motivo libre obligatorio, P-08). Suspendido: el organismo no opera mientras
+   dure; lo que depende de él NO cambia de estado (P-18). Cancelado: reemplaza al borrado (P-06), no
+   vuelve. Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si
+   no tienen otro club (P-18). */
 export function sancionar(id, estado, meta = {}) {
   const o = getOrganismo(id);
   if (!o || !['Suspendido', 'Cancelado'].includes(estado)) return o;
   if (!(o.estado === 'Activo' || (estado === 'Cancelado' && o.estado === 'Suspendido'))) return o;
-  return setEstado(id, estado, { ...meta, accion: estado === 'Suspendido' ? 'Suspendido por el Ministerio' : 'Cancelado por el Ministerio' });
+  const res = setEstado(id, estado, { ...meta, accion: estado === 'Suspendido' ? 'Suspendido por el Ministerio' : 'Cancelado por el Ministerio' });
+  if (estado === 'Cancelado' && o.tipo === 'club') terminarAfiliacionesDeClub(id);
+  return res;
+}
+function terminarAfiliacionesDeClub(clubId) {
+  const motivo = 'Club cancelado por el Ministerio';
+  afiliacionesHacia(clubId).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(a.sujetoId, clubId, 'Terminada', { motivo, fin: 'cancelacion' });
+    else if (a.estado === 'Solicitada') cambiarAfiliacion(a.sujetoId, clubId, 'Rechazada', { motivo });
+  });
+  afiliacionesDe(clubId, { vigentes: true }).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(clubId, a.organismoId, 'Terminada', { motivo, fin: 'cancelacion' });
+  });
 }
 
-/* Reactivación (propuesta P-08): nueva validación sobre los datos que ya existen. El organismo
+/* Reactivación (P-08): nueva validación sobre los datos que ya existen. El organismo
    suspendido vuelve a En revisión en la bandeja de su superior; no se activa directo. */
 export function reactivar(id, meta = {}) {
   const o = getOrganismo(id);
@@ -955,8 +969,8 @@ export function retirarAfiliacion(deportistaId, meta = {}, clubId) {
 }
 
 /* ─── Desvinculación POR EL CLUB (ORG-10) ─────────────────────────────
-   Unilateral, motivo obligatorio y traza. Decisión de Producto (2026-09-10) más allá de la
-   matriz oficial: pendiente de ratificar con Negocio (P-04). Termina SOLO la afiliación a
+   Unilateral, motivo obligatorio y traza, sin apelación; se avisa al deportista y a la liga del
+   club (P-04/P-10, cerradas el 2026-10-13). Termina SOLO la afiliación a
    ese club; si el deportista está en otros, sigue Vinculado allí. Reversible: puede volver
    a solicitar. `meta.clubId`: el club que desvincula (por defecto, el primero vigente). */
 export function desvincularPorClub(deportistaId, meta = {}) {
@@ -982,7 +996,7 @@ export function desvincularPorClub(deportistaId, meta = {}) {
   auditLog({
     orgId: clubPrev, deportistaId, deportistaNombre: dep.nombre,
     fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
-    accion: 'Deportista desvinculado', de: 'Vinculado', a: quedan ? 'Vinculado en otro club' : 'Autodeclarado',
+    accion: 'Deportista desvinculado (aviso al deportista y a la liga)', de: 'Vinculado', a: quedan ? 'Vinculado en otro club' : 'Autodeclarado',
     motivo: meta.motivo || ''
   });
   return getDeportista(deportistaId);

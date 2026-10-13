@@ -4,7 +4,7 @@
    pantalla: PERMS.deportistas[CLUB] = 'R' — «sus afiliados».
 
    ALCANCE: el club ve su plantel y puede DESVINCULAR con motivo (P-04,
-   decisión de Producto pendiente de ratificar); el deportista también
+   cerrada: sin apelación, se avisa al deportista y a la liga); el deportista también
    puede pedir la baja y el club la confirma en su bandeja. Con
    multi-afiliación, desvincular termina solo la afiliación a este club.
    Todos los organismos registran deportistas (P-07 respondida, 2026-10-09): los niveles de
@@ -421,7 +421,7 @@ if (root) {
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
-          ${msg('caution', I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Quedará <strong>autodeclarado</strong> y perderá la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : 'liga')} · ${esc(p && p.federacionNombre ? p.federacionNombre : 'federación')}). Podrá volver a solicitar afiliación cuando quiera.`)}
+          ${msg('caution', I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Quedará <strong>autodeclarado</strong> y perderá la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : 'liga')} · ${esc(p && p.federacionNombre ? p.federacionNombre : 'federación')}). No tiene apelación: le avisamos a la persona y a la liga del club. Podrá volver a solicitar afiliación cuando quiera.`)}
           <div class="dp-desv__field">
             <span class="bj-filter__lbl" id="dpDesvLbl">Motivo de la desvinculación <span aria-hidden="true">*</span></span>
             <div class="naowee-dropdown dp-desv__dd" id="dpDesvDd">
@@ -508,7 +508,7 @@ if (root) {
       cerrar();
       render();
       if (window.naoweeToast) {
-        window.naoweeToast(`${dep.nombre} quedó desvinculado de tu club.`, 'success');
+        window.naoweeToast(`${dep.nombre} quedó desvinculado de tu club. Le avisamos a la persona y a la liga.`, 'success');
       }
     });
   }

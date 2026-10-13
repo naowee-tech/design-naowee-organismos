@@ -592,7 +592,7 @@
       fecha: _todayISO(),
       responsable: meta.responsable || "",
       rol: "CLUB",
-      accion: "Deportista desvinculado",
+      accion: "Deportista desvinculado (aviso al deportista y a la liga)",
       de: "Vinculado",
       a: quedan ? "Vinculado en otro club" : "Autodeclarado",
       motivo: meta.motivo || ""

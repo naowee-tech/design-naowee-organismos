@@ -192,7 +192,7 @@
 
   /* ─── Estado del filtro (dropdown por estado) ─── */
   let currentEstado = 'todos';
-  const ESTADO_VARIANT = { Preinscrito: 'neutral', 'En revisión': 'caution', Activo: 'positive', Rechazado: 'negative', Suspendido: 'caution', Inactivo: 'neutral', Cancelado: 'negative' };
+  const ESTADO_VARIANT = { Preinscrito: 'neutral', 'En revisión': 'caution', Activo: 'positive', Rechazado: 'negative', Suspendido: 'caution', Cancelado: 'negative' };
   const DOT_COLOR = { positive: 'var(--green)', caution: '#d98a00', negative: 'var(--red)', neutral: 'var(--text-secondary)', informative: 'var(--blue-info)' };
 
   const estadoMenu = document.getElementById('estadoMenu');

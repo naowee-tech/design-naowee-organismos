@@ -59,7 +59,7 @@ const canHtml = (id) => {
   </div>`;
 };
 const MARCA_NOMBRE = { olimpica: 'Funcionalidades olímpicas' };
-const propuestaTxt = (r) => (r && r.propuesta ? 'Propuesta (P-24)' : '');
+const propuestaTxt = (r) => (r && r.propuesta ? 'Rol transversal propuesto (P-16)' : '');
 
 /* ─── Quién mira ─── */
 const roleCode = getRoleFromQuery();

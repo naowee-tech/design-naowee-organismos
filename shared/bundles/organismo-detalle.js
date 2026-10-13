@@ -18,7 +18,6 @@
         "Activo": "positive",
         "Rechazado": "negative",
         "Suspendido": "caution",
-        "Inactivo": "neutral",
         "Cancelado": "negative"
       };
     }
@@ -136,6 +135,9 @@
   }
   function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
     return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === "Vinculada"));
+  }
+  function afiliacionesHacia(orgId, { estado } = {}) {
+    return allAfiliaciones().filter((a) => a.organismoId === orgId && (!estado || a.estado === estado));
   }
   function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
     const list = allAfiliaciones();
@@ -274,7 +276,19 @@
     const o2 = getOrganismo(id2);
     if (!o2 || !["Suspendido", "Cancelado"].includes(estado)) return o2;
     if (!(o2.estado === "Activo" || estado === "Cancelado" && o2.estado === "Suspendido")) return o2;
-    return setEstado(id2, estado, { ...meta, accion: estado === "Suspendido" ? "Suspendido por el Ministerio" : "Cancelado por el Ministerio" });
+    const res = setEstado(id2, estado, { ...meta, accion: estado === "Suspendido" ? "Suspendido por el Ministerio" : "Cancelado por el Ministerio" });
+    if (estado === "Cancelado" && o2.tipo === "club") terminarAfiliacionesDeClub(id2);
+    return res;
+  }
+  function terminarAfiliacionesDeClub(clubId) {
+    const motivo = "Club cancelado por el Ministerio";
+    afiliacionesHacia(clubId).forEach((a) => {
+      if (a.estado === "Vinculada") cambiarAfiliacion(a.sujetoId, clubId, "Terminada", { motivo, fin: "cancelacion" });
+      else if (a.estado === "Solicitada") cambiarAfiliacion(a.sujetoId, clubId, "Rechazada", { motivo });
+    });
+    afiliacionesDe(clubId, { vigentes: true }).forEach((a) => {
+      if (a.estado === "Vinculada") cambiarAfiliacion(clubId, a.organismoId, "Terminada", { motivo, fin: "cancelacion" });
+    });
   }
   function reactivar(id2, meta = {}) {
     const o2 = getOrganismo(id2);
@@ -694,7 +708,7 @@
            DECISIÓN DE PRODUCTO de Doug (2026-09-10) que responde la pregunta de
            Nicolás Mosquera en la mesa del 2026-09-08. VA MÁS ALLÁ del handoff §11.2
            y de la matriz oficial de negocio, que NO tienen columna de
-           desvinculación — pendiente de validar (P-04).
+           desvinculación — cerrada el 2026-10-13 (P-04/P-10): sin apelación, aviso al deportista y a la liga.
            Alcance: solo sobre deportistas de SU propio club, con motivo obligatorio
            y traza. No es borrado (sigue sin existir D): el deportista vuelve a
            'autodeclarado' y puede re-afiliarse. */
@@ -2132,8 +2146,8 @@
         { title: "Sanciones del Ministerio (Fase 1)", items: [
           "Solo el Ministerio ve \xABEstado y sanciones\xBB (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acci\xF3n definitiva.",
           "Cada acci\xF3n pide motivo; el detalle es obligatorio al cancelar o con \xABOtro\xBB, y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.",
-          "Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (propuesta P-18).",
-          "Reactivar no activa directo: vuelve a En revisi\xF3n en la bandeja del superior, sobre los datos que ya tiene (propuesta P-08). Causales y qu\xE9 pasa con los deportistas al cancelar siguen abiertos con Negocio."
+          "Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si no tienen otro club.",
+          "Reactivar no activa directo: vuelve a En revisi\xF3n en la bandeja del superior, sobre los datos que ya tiene (P-08). El motivo es libre y obligatorio; no hay lista de causales ni estado Inactivo."
         ] }
       ] } };
       ROLES_ORG = ["COMITE", "FEDERACION", "LIGA", "CLUB"];

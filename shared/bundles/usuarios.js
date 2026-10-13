@@ -1834,7 +1834,7 @@
   </div>`;
       };
       MARCA_NOMBRE = { olimpica: "Funcionalidades ol\xEDmpicas" };
-      propuestaTxt = (r) => r && r.propuesta ? "Propuesta (P-24)" : "";
+      propuestaTxt = (r) => r && r.propuesta ? "Rol transversal propuesto (P-16)" : "";
       roleCode = getRoleFromQuery();
       role = ROLES[roleCode] || {};
       ORG_ROLES = ["COMITE", "FEDERACION", "LIGA", "CLUB"];
@@ -1965,7 +1965,7 @@
     ] },
     { title: "Pendientes", items: [
       "P-16: roles internos por federaci\xF3n o comit\xE9 (qu\xE9 roles m\xE1s necesita cada organismo).",
-      "El <strong>Revisor de registros</strong> es una propuesta de Arquitectura ligada a P-24 (qui\xE9n decide cuando el administrador tambi\xE9n administra el organismo en revisi\xF3n). En la demo ya se puede invitar, marcado como propuesta.",
+      "El <strong>Revisor de registros</strong> es un rol transversal propuesto, pendiente de ratificar en P-16. Es quien decide cuando el administrador tambi\xE9n administra el organismo en revisi\xF3n (P-24, opci\xF3n b, decidida). En la demo ya se puede invitar, marcado como propuesto.",
       "Qu\xE9 pasa con los usuarios que invit\xF3 alguien que luego se desactiva: hoy siguen activos y los gestiona la cuenta principal. Falta confirmarlo con Negocio."
     ] }
   ] } }));

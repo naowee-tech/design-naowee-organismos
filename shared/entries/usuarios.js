@@ -25,7 +25,7 @@
     ] },
     { title: 'Pendientes', items: [
       'P-16: roles internos por federación o comité (qué roles más necesita cada organismo).',
-      'El <strong>Revisor de registros</strong> es una propuesta de Arquitectura ligada a P-24 (quién decide cuando el administrador también administra el organismo en revisión). En la demo ya se puede invitar, marcado como propuesta.',
+      'El <strong>Revisor de registros</strong> es un rol transversal propuesto, pendiente de ratificar en P-16. Es quien decide cuando el administrador también administra el organismo en revisión (P-24, opción b, decidida). En la demo ya se puede invitar, marcado como propuesto.',
       'Qué pasa con los usuarios que invitó alguien que luego se desactiva: hoy siguen activos y los gestiona la cuenta principal. Falta confirmarlo con Negocio.'
     ] }
   ] } }));

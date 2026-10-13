@@ -7,7 +7,6 @@
     "Activo",
     "Rechazado",
     "Suspendido",
-    "Inactivo",
     "Cancelado"
   ];
   var BADGE_VARIANT = {
@@ -17,7 +16,6 @@
     "Activo": "positive",
     "Rechazado": "negative",
     "Suspendido": "caution",
-    "Inactivo": "neutral",
     "Cancelado": "negative"
   };
   function estadoBadgeVariant(estado) {
@@ -1468,7 +1466,7 @@
     return [{ val: c.deportistas, lbl: "Deportistas afiliados", accent: true }];
   }
   var currentEstado = "todos";
-  var ESTADO_VARIANT = { Preinscrito: "neutral", "En revisi\xF3n": "caution", Activo: "positive", Rechazado: "negative", Suspendido: "caution", Inactivo: "neutral", Cancelado: "negative" };
+  var ESTADO_VARIANT = { Preinscrito: "neutral", "En revisi\xF3n": "caution", Activo: "positive", Rechazado: "negative", Suspendido: "caution", Cancelado: "negative" };
   var DOT_COLOR = { positive: "var(--green)", caution: "#d98a00", negative: "var(--red)", neutral: "var(--text-secondary)", informative: "var(--blue-info)" };
   var estadoMenu = document.getElementById("estadoMenu");
   var estadoOpts = [{ v: "todos", label: "Todos los estados" }, ...ESTADOS.map((e) => ({ v: e, label: e }))];

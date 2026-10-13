@@ -776,7 +776,7 @@ const DEVNOTES = {
       '<b>Cambios de back</b>: (1) la búsqueda devuelve <code>email_hint</code> enmascarado; (2) reclamar sin enviar correo, usando el guardado, y sin actualizar datos; (3) el reclamo queda en auditoría.',
       '<b>Seguridad</b>: hoy <code>GET /user/public/individual/search</code> devuelve el perfil completo (correo, teléfono, dirección, fecha de nacimiento) a cualquiera que escriba un documento. Debe devolver solo <code>has_login</code>, <code>is_minor</code>, <code>can_create_account</code> y <code>email_hint</code>.'
     ] },
-    { title: 'Menores (pendiente P-21)', items: ['Por ahora solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Si Negocio decide que un club o un municipio también puede, se agrega en el registro asistido, no aquí.'] },
+    { title: 'Menores (P-21)', items: ['Solo el tutor registra al menor, desde su perfil (<code>POST /user/me/dependents</code>). Ningún organismo ni encargado territorial registra, carga ni asocia menores (P-21, cerrada el 2026-10-13).'] },
     { title: 'Solo demo', items: ['La búsqueda está simulada: <code>1098765432</code> devuelve menor; <code>1055512345</code> devuelve perfil sin reclamar; un documento del seed devuelve cuenta existente; <code>1020304050</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones: tocarlos llena el documento y dispara la búsqueda; el que no tiene registro además deja el formulario lleno para poder dar Siguiente.'] }
   ] },
   deportivos: { title: 'Deportivos (solo deportista)', sections: [

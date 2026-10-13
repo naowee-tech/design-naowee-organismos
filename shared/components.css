@@ -71,7 +71,7 @@
 /* ─────────────────── Badge de estado (.naowee-badge) ───────────────────
    Port 1:1 del DS §Badge. Mapa semántico ÚNICO (centralizado en estados.js):
    Activo → positive · En revisión/Suspendido → caution ·
-   Preinscrito/Inactivo → neutral · Rechazado/Cancelado → negative.
+   Preinscrito → neutral · Rechazado/Cancelado → negative.
    loud = fill sólido + texto claro; quiet = fill tenue + texto oscuro. */
 .naowee-badge {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;

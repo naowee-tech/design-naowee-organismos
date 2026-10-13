@@ -12,13 +12,12 @@
      Activo       → positive  (verde — habilitado)
      Rechazado    → negative  (rojo — reingresa al flujo)
      Suspendido   → caution   (ámbar — sanción temporal)
-     Inactivo     → neutral   (gris — sin uso / sin vínculos)
      Cancelado    → negative  (rojo — pierde reconocimiento, NO reingresa)
    Render canónico SIEMPRE: .naowee-badge --quiet --small con esa variante.
    ═══════════════════════════════════════════════════════════════ */
 
 export const ESTADOS = [
-  'Preinscrito', 'En revisión', 'En corrección', 'Activo', 'Rechazado', 'Suspendido', 'Inactivo', 'Cancelado'
+  'Preinscrito', 'En revisión', 'En corrección', 'Activo', 'Rechazado', 'Suspendido', 'Cancelado'
 ];
 
 const BADGE_VARIANT = {
@@ -28,7 +27,6 @@ const BADGE_VARIANT = {
   'Activo': 'positive',
   'Rechazado': 'negative',
   'Suspendido': 'caution',
-  'Inactivo': 'neutral',
   'Cancelado': 'negative'
 };
 
@@ -45,7 +43,6 @@ export const ESTADO_DESC = {
   'Activo': 'Habilitado en el SUID; puede operar y aprobar a su nivel inferior.',
   'Rechazado': 'Rechazado con motivo; puede corregir y reingresar al flujo.',
   'Suspendido': 'Habilitación suspendida temporalmente por el Ministerio.',
-  'Inactivo': 'Sin actividad o sin vínculos activos.',
   'Cancelado': 'Pierde reconocimiento / condición jurídica; no reingresa.'
 };
 
@@ -61,7 +58,6 @@ export const TRANSICIONES = [
   { de: 'En corrección', a: 'En revisión', quien: 'organismo', regla: 'Corrige y reenvía; reingresa al mismo flujo.' },
   { de: 'Rechazado',   a: 'En revisión',  quien: 'organismo',  regla: 'Corrige y reenvía; reingresa al mismo flujo.' },
   { de: 'Activo',      a: 'Suspendido',   quien: 'MINDEPORTE', regla: 'Sanción temporal (supuesto de demo).' },
-  { de: 'Activo',      a: 'Inactivo',     quien: 'MINDEPORTE', regla: 'Sin uso / pérdida de vínculos (condición pendiente de definir).' },
   { de: '*',           a: 'Cancelado',    quien: 'MINDEPORTE', regla: 'Pérdida de reconocimiento; NO reingresa.' }
 ];
 
