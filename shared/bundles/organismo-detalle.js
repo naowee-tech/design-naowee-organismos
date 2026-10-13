@@ -222,7 +222,8 @@
     const clubIds = new Set(sub.filter((o2) => o2.tipo === "club").map((o2) => o2.id));
     if (self && self.tipo === "club") clubIds.add(self.id);
     const orgIds = /* @__PURE__ */ new Set([orgId, ...sub.map((o2) => o2.id)]);
-    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
+    const propuestos = new Set(allSolicitudes().filter((s) => s.origen === "propuesta" && s.estado === "Enviada" && orgIds.has(s.proponenteId)).map((s) => s.deportistaId));
+    return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubIds.has(c)) || propuestos.has(d.id) || !d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor));
   }
   function countDescendants(orgId) {
     const sub = subtreeOf(orgId);
@@ -680,13 +681,13 @@
           COMITE: "CR",
           FEDERACION: "CR",
           LIGA: "CR",
-          // C = registrar autodeclarados y proponer club (P-07)
+          // C = registrar (uno a uno o carga masiva) con club propuesto que el club confirma (P-07 respondida 2026-10-09: todos los organismos)
           CLUB: "CRX",
           // sus afiliados · X = desvincular (ORG-10, ver nota)
           DEPORTISTA: "RU",
           // el propio (nunca documento / fecha nac.)
           TERRITORIAL: "CR",
-          // registra autodeclarados y propone club (P-12); no aprueba
+          // registra uno a uno con club propuesto (P-12); sin carga masiva; no aprueba
           MINISTRO: "R"
         },
         /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
@@ -720,7 +721,7 @@
           LIGA: "CR",
           // clubes
           CLUB: "",
-          // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
+          // cargue de ORGANISMOS: el club no tiene nivel abajo. Su carga masiva de deportistas va por deportistas[CLUB] 'C' («Deportistas» › Cargue masivo)
           DEPORTISTA: "",
           TERRITORIAL: "",
           MINISTRO: "R"

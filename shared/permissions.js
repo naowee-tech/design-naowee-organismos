@@ -64,10 +64,10 @@ const PERMS = {
   },
   deportistas: {
     MINDEPORTE: 'R',
-    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar autodeclarados y proponer club (P-07)
+    COMITE: 'CR', FEDERACION: 'CR', LIGA: 'CR',   // C = registrar (uno a uno o carga masiva) con club propuesto que el club confirma (P-07 respondida 2026-10-09: todos los organismos)
     CLUB: 'CRX',         // sus afiliados · X = desvincular (ORG-10, ver nota)
     DEPORTISTA: 'RU',     // el propio (nunca documento / fecha nac.)
-    TERRITORIAL: 'CR',   // registra autodeclarados y propone club (P-12); no aprueba
+    TERRITORIAL: 'CR',   // registra uno a uno con club propuesto (P-12); sin carga masiva; no aprueba
     MINISTRO: 'R'
   },
   /* NOTA sobre deportistas[CLUB] = 'X' (desvincular):
@@ -91,7 +91,7 @@ const PERMS = {
     COMITE: 'CR',        // federaciones
     FEDERACION: 'CR',    // ligas
     LIGA: 'CR',          // clubes
-    CLUB: '',            // cargue masivo de deportistas: pendiente (entrada en «Deportistas»)
+    CLUB: '',            // cargue de ORGANISMOS: el club no tiene nivel abajo. Su carga masiva de deportistas va por deportistas[CLUB] 'C' («Deportistas» › Cargue masivo)
     DEPORTISTA: '',
     TERRITORIAL: '',
     MINISTRO: 'R'

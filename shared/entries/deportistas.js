@@ -18,7 +18,9 @@
       'El rol CLUB ve el nombre de su club como título; roles superiores conservan la etiqueta del menú.',
       'Con multi-afiliación, el plantel son los deportistas con afiliación Vinculada a este club. Si también están en otro club se indica en la fila.',
       '<strong>Desvincular</strong> termina solo la afiliación a este club (P-04, decisión de Producto pendiente de ratificar). Si el deportista no tiene otro club, vuelve a autodeclarado.',
-      '<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya está en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club.'
+      '<strong>Asociar autodeclarado</strong> (Fase 2): busca por nombre o documento a quien ya está en el SUID sin club, solo de los deportes del club y sin menores (a esos los afilia su tutor). Queda Vinculado de inmediato y hereda la cadena del club.',
+      '<strong>Registrar deportista</strong> desde el club: si el documento ya está en el SUID no se crea otra persona; se asocia al club y conserva su correo. Al nuevo le llega un correo para completar su perfil.',
+      '<strong>Cargue masivo de deportistas</strong> (DEP-609): el club carga los suyos con plantilla y quedan vinculados a él.'
     ] } });
   }
   if (roleCode !== 'CLUB') {
@@ -27,8 +29,12 @@
     document.querySelector('[data-devnote="clubTitulo"]').style.display = '';
     mountDevnotes({ clubTitulo: { title: 'Deportistas de tu jurisdicción', items: [
       'Lista los deportistas Vinculados a cualquier club de tu subárbol (por cualquiera de sus afiliaciones) y los autodeclarados que registraste. Un deportista en dos clubes de tu jurisdicción aparece una vez.',
-      '<strong>Registrar</strong> deja al deportista autodeclarado. Si sabes su club, lo <strong>propones</strong>: se abre una afiliación Solicitada que el club confirma en su bandeja; la confirmación siempre es del club.',
-      'Quién puede cargar deportistas por encima del club sigue abierto (P-07). Ya no existe el estado «Sin asociar» ni la asociación parcial por niveles.'
+      'Todos los organismos registran deportistas (P-07 respondida en la reunión con Producto del 2026-10-09).',
+      '<strong>Registrar deportista</strong> en dos pasos (Datos → Club). El club es obligatorio: la liga indica el club; la federación, la liga y el club; el comité, la federación, la liga y el club. Queda como <strong>propuesta</strong> que el club confirma en su bandeja (decisión 2026-10-13); mientras tanto sigue autodeclarado.',
+      'Si el club aún no está en el SUID, se marca «sin club por ahora»: queda autodeclarado y se le propone el club cuando se cree (dos pasos).',
+      'Si el documento ya existe en el SUID no se crea otra persona: manda el primer registro, conserva su correo y solo se le propone el club.',
+      'Al deportista nuevo le llega un correo para completar su perfil (decisión 2026-10-13). El organismo solo edita sus datos básicos (dirección, teléfono, correo); el resto lo maneja el deportista.',
+      '<strong>Cargue masivo de deportistas</strong> (DEP-609) con las mismas reglas, en <code>?vista=cargue</code>. El territorial registra uno a uno, sin carga masiva.'
     ] } });
   }
   mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId: 'deportistas' });

@@ -1472,7 +1472,8 @@
     ${renderHistory(true)}`;
   }
   function renderHistory(oversight) {
-    const all = oversight ? allCargues() : allCargues().filter((c) => c.rol === roleCode);
+    const deOrganismos = allCargues().filter((c) => c.tipo !== "deportista");
+    const all = oversight ? deOrganismos : deOrganismos.filter((c) => c.rol === roleCode);
     const list = getDemoMode() === "blank" ? all.filter((c) => !c.demo) : all;
     const title = oversight ? "Historial global de cargues" : "Historial de cargues";
     const head = `<div class="cg-hist__head"><h3 class="cg-hist__title">${title}</h3>${oversight ? '<span class="oversight-badge">Solo lectura</span>' : ""}</div>`;

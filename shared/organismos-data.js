@@ -464,22 +464,28 @@ export function ancestorsOf(id) {
 }
 
 /* Deportistas de la jurisdicción de `orgId`: los Vinculados a algún club del subárbol (o al
-   propio club) por CUALQUIERA de sus afiliaciones, más los autodeclarados que ese nivel
-   registró. Un deportista en dos clubes aparece una sola vez (se cuentan personas). */
+   propio club) por CUALQUIERA de sus afiliaciones, los autodeclarados que ese nivel registró y
+   a los que ese nivel les propuso un club que aún no confirma (p. ej. un deportista que ya
+   estaba en el SUID y llegó en un cargue). Un deportista en dos clubes aparece una sola vez. */
 export function deportistasOf(orgId) {
   const sub = subtreeOf(orgId);
   const self = getOrganismo(orgId);
   const clubIds = new Set(sub.filter((o) => o.tipo === 'club').map((o) => o.id));
   if (self && self.tipo === 'club') clubIds.add(self.id);
   const orgIds = new Set([orgId, ...sub.map((o) => o.id)]);
+  const propuestos = new Set(allSolicitudes()
+    .filter((s) => s.origen === 'propuesta' && s.estado === 'Enviada' && orgIds.has(s.proponenteId)).map((s) => s.deportistaId));
   return allDeportistas().filter(esDeportista)
-    .filter((d) => d.clubIds.some((c) => clubIds.has(c)) || (!d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor)));
+    .filter((d) => d.clubIds.some((c) => clubIds.has(c)) || propuestos.has(d.id)
+      || (!d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor)));
 }
 
 /* ─── Registro por organismo ───
-   Lo registra un club: queda Vinculado a ese club. Lo registra otro nivel (P-07 abierta): queda
-   autodeclarado y, si se propone un club, se abre una afiliación Solicitada que ese club
-   confirma en su bandeja (igual que el territorial, P-12). */
+   Todos los organismos registran deportistas (P-07 respondida, reunión con Producto 2026-10-09).
+   Lo registra un club: queda Vinculado a ese club. Lo registra otro nivel: queda autodeclarado
+   y el club que indica queda como propuesta (afiliación Solicitada) que ese club confirma en su
+   bandeja (decisión 2026-10-13; igual que el territorial, P-12). Al deportista nuevo le llega un
+   correo para completar su perfil. */
 export function registrarDeportista(datos, actorOrgId) {
   const nuevos = readStore('deportistas-nuevos', []) || [];
   const actor = getOrganismo(actorOrgId);
@@ -496,12 +502,49 @@ export function registrarDeportista(datos, actorOrgId) {
   return getDeportista(dep.id);
 }
 
+/* Persona del SUID por número de documento. Si ya existe no se crea otra: manda el primer
+   registro y su correo no cambia (reunión 2026-10-09). */
+export function personaPorDocumento(numDoc) {
+  const n = String(numDoc == null ? '' : numDoc).replace(/\D/g, '');
+  if (!n) return null;
+  return allDeportistas().find((d) => String(d.numDoc || '').replace(/\D/g, '') === n) || null;
+}
+
 /* Un nivel distinto al club propone el club del deportista: queda Solicitada hasta que el club confirme. */
 export function proponerClub(depId, clubId, proponenteId) {
   const dep = getDeportista(depId);
   const sol = crearSolicitud(depId, clubId, { origen: 'propuesta', proponenteId });
   auditLog({ orgId: proponenteId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : '', accion: 'Club propuesto', a: (getOrganismo(clubId) || {}).nombre || clubId });
   return sol;
+}
+
+/* ─── Carga masiva de deportistas por un organismo (DEP-609) ───
+   Recibe las filas ya validadas: { existenteId?, datos?, clubId? }.
+   - Nuevo: se crea como el registro individual y le llega un correo para completar su perfil.
+   - Existente: no se crea otra persona; conserva sus datos y su correo.
+   - Club: si carga el propio club, queda vinculado; si carga otro nivel, el club queda
+     propuesto y lo confirma en su bandeja. Sin club (aún no existe): queda autodeclarado. */
+export function cargarDeportistas(filas, actorOrgId, meta = {}) {
+  const actor = getOrganismo(actorOrgId);
+  const esClub = actor && actor.tipo === 'club';
+  const out = { nuevos: [], existentes: [], propuestas: [], vinculados: [], sinClub: [] };
+  (filas || []).forEach((f) => {
+    let dep = f.existenteId ? getDeportista(f.existenteId) : null;
+    if (dep) out.existentes.push(dep);
+    else {
+      dep = registrarDeportista({ ...f.datos, cargue: meta.cargueId || null }, actorOrgId);
+      auditLog({ orgId: actorOrgId, fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, responsable: meta.responsable || '', accion: 'Correo para completar el perfil', a: dep.correo, notif: true });
+      out.nuevos.push(dep);
+    }
+    if (esClub) {
+      if (f.existenteId) asociarAutodeclarado(dep.id, actor.id, { responsable: meta.responsable || '' });
+      out.vinculados.push(dep);
+    } else if (f.clubId) {
+      proponerClub(dep.id, f.clubId, actorOrgId);
+      out.propuestas.push({ deportistaId: dep.id, clubId: f.clubId });
+    } else out.sinClub.push(dep);
+  });
+  return out;
 }
 
 /* Contadores heredados del subárbol de `orgId`:
@@ -1064,7 +1107,10 @@ export function deportistasDeTerritorio(t) {
    Una sola cuenta principal por organismo (A-9). Esa cuenta crea los usuarios internos según el
    catálogo: roles transversales (cualquier organismo) y roles por marca (funcionalidades olímpicas
    del COC). Cada rol declara quién lo crea (árbol de creación). Sin borrado: se desactiva.
-   El Ministerio tiene varios administradores, creados por Naowee (A-7), y crea a los territoriales (A-2). */
+   El Ministerio tiene varios administradores, creados por Naowee (A-7), y crea a los territoriales (A-2).
+   Reunión 2026-10-09: en la Suite los administradores del Ministerio son por módulo (Fomento → Eventos,
+   Infraestructura → Escenarios) bajo un administrador general. La matriz está pendiente con Producto;
+   en esta demo el Administrador del Ministerio es el del módulo de Organismos. */
 export const MARCAS = { COC: ['olimpica'] };
 export const CATALOGO_ROLES = [
   { id: 'ADMIN', nombre: 'Administrador del organismo', desc: 'Cuenta principal: una por organismo. Aprueba al nivel de abajo, hace cargues y crea los usuarios internos.', creaRol: null, principal: true },
@@ -1073,7 +1119,7 @@ export const CATALOGO_ROLES = [
   { id: 'METODOLOGO', nombre: 'Metodólogo', desc: 'Registra opiniones sobre los deportistas del Ciclo Olímpico (análisis cualitativo).', creaRol: 'GESTOR_COC', marca: 'olimpica' }
 ];
 export const ROLES_MINISTERIO = [
-  { id: 'ADMIN_MIN', nombre: 'Administrador del Ministerio', desc: 'Todos con el mismo alcance: crean comités, aprueban su parte de las federaciones, sancionan y ven todo el SND.', creaRol: 'NAOWEE' },
+  { id: 'ADMIN_MIN', nombre: 'Administrador del Ministerio', desc: 'Administra el módulo de Organismos: crea comités, aprueba su parte de las federaciones, sanciona y ve todo el SND. En la Suite habrá administradores por módulo (matriz pendiente con Producto).', creaRol: 'NAOWEE' },
   { id: 'TERRITORIAL', nombre: 'Encargado territorial', desc: 'Departamental o municipal. Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados con club propuesto. No aprueba.', creaRol: 'ADMIN_MIN' }
 ];
 /* Roles del catálogo que puede tener este organismo (transversales + los de sus marcas). */

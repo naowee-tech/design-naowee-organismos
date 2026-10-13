@@ -152,3 +152,16 @@
 .dp-as-opt span { font-size: 12.5px; color: var(--text-secondary); }
 .dp-as-opt:hover { background: var(--bg-soft); }
 .dp-as-opt.is-sel { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .18); }
+
+/* ── Registrar deportista: sin club (el club aún no está en el SUID) ── */
+.dp-sinclub { margin-top: 4px; }
+.dp-sinclub input:disabled + .naowee-checkbox__box { opacity: .45; }
+
+/* ── Carga masiva de deportistas (DEP-609) ── */
+.cg-template .naowee-btn svg { width: 16px; height: 16px; margin-right: 6px; }
+.cg-preview__counts { flex-wrap: wrap; }
+.dp-cg-det { display: block; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; max-width: 460px; }
+.dp-cg-res { list-style: none; margin: 4px auto 22px; padding: 0; max-width: 560px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.dp-cg-res li { font-size: 14px; color: var(--text-secondary); line-height: 1.5; padding-left: 18px; position: relative; }
+.dp-cg-res li::before { content: ''; position: absolute; left: 0; top: .6em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.dp-cg-res strong { color: var(--text-primary); }
