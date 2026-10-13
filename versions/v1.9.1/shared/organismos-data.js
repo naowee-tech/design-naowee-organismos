@@ -1,0 +1,1241 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE ORGANISMOS — Seed de datos + capa de lectura (módulo ES)
+   Registro de Organismos — Jerarquía SUID · v0.1.0
+
+   Modelo del organismo:
+     { id, tipo:'comite'|'federacion'|'liga'|'club', nombre, nit,
+       sector:'Olímpico'|'Paralímpico'|'Sordolímpico', deporte, parentId,
+       estado, repLegal:{tipoDoc,numDoc,nombre,apellido,correo},
+       ubicacion:{depto,ciudad,zona,direccion}, contacto:{telefono,correo},
+       fechaRegistro }
+     Campos opcionales por tipo (T3 registro):
+       tipoClub:'promotor'|'profesional'|'escuela' (club),
+       ambito:'departamental'|'distrital' (liga),
+       actoAdministrativo (comité), documentos:{ [docId]:{name,size} },
+       aceptaPoliticas:boolean, ficticio:true (todo lo creado en la demo).
+     deportes: lista de deportes del catálogo (sección 7); `deporte` es su texto de lectura.
+   Modelo del deportista:
+     { id, nombre, tipoDoc, numDoc, deporte, modalidad, correo }
+     + derivados de sus afiliaciones vigentes (sección 8): clubIds, clubId (el primero),
+       estado:'autodeclarado'|'vinculado'.
+   Estados de organismo (§3.2 handoff):
+     Preinscrito · En revisión · Activo · Rechazado · Suspendido · Cancelado (sin Inactivo, P-08)
+
+   PRIVACIDAD (handoff §8.5.4): las 57 federaciones son el caso real del COC.
+   Se conserva SOLO dato institucional (nombre, NIT, depto/ciudad/zona/dirección,
+   teléfono y correo de CONTACTO institucional). Los datos personales del rep.
+   legal (número de documento, nombre/apellido y correo) son FICTICIOS. Los xlsx
+   originales NO viven en este repo.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Vocabulario de estados + mapa semántico de badge: fuente única en
+   estados.js (T2). Se re-exportan aquí para no romper imports existentes
+   (`import { estadoBadgeVariant, ORG_ESTADOS } from './organismos-data.js'`). */
+import { ESTADOS, estadoBadgeVariant } from './estados.js';
+export { estadoBadgeVariant };
+export const ORG_ESTADOS = ESTADOS;
+
+/* ─── 1) Comités / cabezas de sector (nodos raíz, Activos, parentId null) ─── */
+const COMITES = [
+  { id: 'COC', tipo: 'comite', nombre: 'Comité Olímpico Colombiano', nit: '860028097-1', sector: 'Olímpico', deporte: '—', parentId: null, estado: 'Activo', repLegal: { tipoDoc: 'CC', numDoc: '10000100', nombre: 'Camilo', apellido: 'Duarte', correo: 'presidencia@coc.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Av. Cra. 30 (NQS) # 64-81' }, contacto: { telefono: '6015550001', correo: 'contacto@coc.demo.co' }, fechaRegistro: '2025-11-02' },
+  { id: 'CPC', tipo: 'comite', nombre: 'Comité Paralímpico Colombiano', nit: '830500110-4', sector: 'Paralímpico', deporte: '—', parentId: null, estado: 'Activo', repLegal: { tipoDoc: 'CC', numDoc: '10000101', nombre: 'Marcela', apellido: 'Ríos', correo: 'presidencia@cpc.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Calle 63 # 47-06' }, contacto: { telefono: '6014801515', correo: 'contacto@paralimpicocol.demo.co' }, fechaRegistro: '2025-11-05' },
+  { id: 'FSC', tipo: 'comite', nombre: 'Federación Sordolímpica de Colombia', nit: '900700221-2', sector: 'Sordolímpico', deporte: '—', parentId: null, estado: 'Activo', repLegal: { tipoDoc: 'CC', numDoc: '10000102', nombre: 'Hernán', apellido: 'Pérez', correo: 'presidencia@sordolimpico.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 48 # 20-114' }, contacto: { telefono: '6045551020', correo: 'contacto@sordolimpico.demo.co' }, fechaRegistro: '2025-11-08' }
+];
+
+/* ─── 2) 57 federaciones adscritas al COC (caso real, PII ficticia) ─── */
+const FEDERACIONES_COC = [
+  { id: "FED-001", tipo: "federacion", nombre: "Federación Colombiana de Actividades Subacuáticas", nit: "890315463-9", sector: "Olímpico", deporte: "Actividades Subacuáticas", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000001", nombre: "Andrés", apellido: "Vargas Guzmán", correo: "presidencia@fedeactividadessubac.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 (NQS) # 64-81" }, contacto: { telefono: "6015550002", correo: "contacto@fedeactividadessubac.demo.co" }, fechaRegistro: "2026-02-02" },
+  { id: "FED-002", tipo: "federacion", nombre: "Federación Colombiana de Ajedrez", nit: "860016595-0", sector: "Olímpico", deporte: "Ajedrez", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000002", nombre: "Carolina", apellido: "Pineda Zuluaga", correo: "presidencia@fedeajedrez.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550003", correo: "contacto@fedeajedrez.demo.co" }, fechaRegistro: "2026-03-03" },
+  { id: "FED-003", tipo: "federacion", nombre: "Federación Arqueros de Colombia", nit: "811030815-6", sector: "Olímpico", deporte: "Arqueros de Colombia", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000003", nombre: "Fernando", apellido: "Escobar Cárdenas", correo: "presidencia@fedearquerosdecolomb.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medellín", zona: "Urbana", direccion: "Carrera 66B No. 31A -15" }, contacto: { telefono: "6015550004", correo: "contacto@fedearquerosdecolomb.demo.co" }, fechaRegistro: "2026-04-04" },
+  { id: "FED-004", tipo: "federacion", nombre: "Federación Colombiana de Atletismo", nit: "860075776-9", sector: "Olímpico", deporte: "Atletismo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000004", nombre: "Diana", apellido: "Cano Reyes", correo: "presidencia@fedeatletismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550005", correo: "contacto@fedeatletismo.demo.co" }, fechaRegistro: "2026-05-05" },
+  { id: "FED-005", tipo: "federacion", nombre: "Federación Colombiana de Automovilismo Deportivo", nit: "860047439-2", sector: "Olímpico", deporte: "Automovilismo Deportivo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000005", nombre: "Ricardo", apellido: "Ramírez Castro", correo: "presidencia@fedeautomovilismodep.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Calle 102 a No. 49a-24" }, contacto: { telefono: "6015550006", correo: "contacto@fedeautomovilismodep.demo.co" }, fechaRegistro: "2026-06-06" },
+  { id: "FED-006", tipo: "federacion", nombre: "Federación Colombiana de Bádminton", nit: "900094889-8", sector: "Olímpico", deporte: "Bádminton", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000006", nombre: "Marcela", apellido: "Cárdenas Escobar", correo: "presidencia@fedebadminton.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Transv. 21 BIS No. 60-35/39 Barrio San Luis" }, contacto: { telefono: "6015550007", correo: "contacto@fedebadminton.demo.co" }, fechaRegistro: "2026-01-07" },
+  { id: "FED-007", tipo: "federacion", nombre: "Federación Colombiana de Baile Deportivo", nit: "900856525-3", sector: "Olímpico", deporte: "Baile Deportivo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000007", nombre: "Julián", apellido: "Salazar López", correo: "presidencia@fedebailedeportivo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 59A #2c-67" }, contacto: { telefono: "6015550008", correo: "contacto@fedebailedeportivo.demo.co" }, fechaRegistro: "2026-02-08" },
+  { id: "FED-008", tipo: "federacion", nombre: "Federación Colombiana de Baloncesto", nit: "860038199-1", sector: "Olímpico", deporte: "Baloncesto", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000008", nombre: "Paola", apellido: "Franco Arango", correo: "presidencia@fedebaloncesto.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Avenida Carrera 30 # 64-81" }, contacto: { telefono: "6015550009", correo: "contacto@fedebaloncesto.demo.co" }, fechaRegistro: "2026-03-09" },
+  { id: "FED-009", tipo: "federacion", nombre: "Federación Colombiana de Balonmano", nit: "900359754-1", sector: "Olímpico", deporte: "Balonmano", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000009", nombre: "Sebastián", apellido: "Hernández Gómez", correo: "presidencia@fedebalonmano.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Carrera 36 No. 5B3-62 Piso 2 Oficina 201" }, contacto: { telefono: "6015550010", correo: "contacto@fedebalonmano.demo.co" }, fechaRegistro: "2026-04-10" },
+  { id: "FED-010", tipo: "federacion", nombre: "Federación Colombiana de Béisbol", nit: "890480480-1", sector: "Olímpico", deporte: "Béisbol", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000010", nombre: "Natalia", apellido: "Mejía Suárez", correo: "presidencia@fedebeisbol.demo.co" }, ubicacion: { depto: "Bolivar", ciudad: "Cartagena", zona: "Urbana", direccion: "Centro la Matuna Edificio CONCASA Of. 404" }, contacto: { telefono: "6015550011", correo: "contacto@fedebeisbol.demo.co" }, fechaRegistro: "2026-05-11" },
+  { id: "FED-011", tipo: "federacion", nombre: "Federación Colombiana de Billar", nit: "860061869-4", sector: "Olímpico", deporte: "Billar", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000011", nombre: "Camilo", apellido: "Arango Franco", correo: "presidencia@fedebillar.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Oficina 402" }, contacto: { telefono: "6015550012", correo: "contacto@fedebillar.demo.co" }, fechaRegistro: "2026-06-12" },
+  { id: "FED-012", tipo: "federacion", nombre: "Federación Colombiana de Bowling", nit: "860533073-5", sector: "Olímpico", deporte: "Bowling", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000012", nombre: "Adriana", apellido: "Bravo Rojas", correo: "presidencia@fedebowling.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Avda. Calle 63 No. 68-99 2do. Piso Bolera El Salitre" }, contacto: { telefono: "6015550013", correo: "contacto@fedebowling.demo.co" }, fechaRegistro: "2026-01-13" },
+  { id: "FED-013", tipo: "federacion", nombre: "Federación Colombiana de Boxeo", nit: "800231411-7", sector: "Olímpico", deporte: "Boxeo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000013", nombre: "Mauricio", apellido: "Rodríguez Naranjo", correo: "presidencia@fedeboxeo.demo.co" }, ubicacion: { depto: "Atlantico", ciudad: "Barranquilla", zona: "Urbana", direccion: "Cra. 38 No. 52-52 Edificio JT Oficina 1" }, contacto: { telefono: "6015550014", correo: "contacto@fedeboxeo.demo.co" }, fechaRegistro: "2026-02-14" },
+  { id: "FED-014", tipo: "federacion", nombre: "Federación Clubes de Bridge de Colombia", nit: "900572599-8", sector: "Olímpico", deporte: "Bridge", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000014", nombre: "Lucía", apellido: "Castro Ramírez", correo: "presidencia@fedebridge.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Carrera 7 A No. 69 - 07 Barrio Quinta Camacho" }, contacto: { telefono: "6015550015", correo: "contacto@fedebridge.demo.co" }, fechaRegistro: "2026-03-15" },
+  { id: "FED-015", tipo: "federacion", nombre: "Federación Colombiana de Canotaje", nit: "830083646-4", sector: "Olímpico", deporte: "Canotaje", parentId: "COC", estado: "En revisión", repLegal: { tipoDoc: "CC", numDoc: "10000015", nombre: "Gustavo", apellido: "Quintero Betancur", correo: "presidencia@fedecanotaje.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Transversal 21 bis No. 60-35/39 Teusaquillo" }, contacto: { telefono: "6015550016", correo: "contacto@fedecanotaje.demo.co" }, fechaRegistro: "2026-04-16" },
+  { id: "FED-016", tipo: "federacion", nombre: "Federación Colombiana de Ciclismo", nit: "860020863-5", sector: "Olímpico", deporte: "Ciclismo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000016", nombre: "Ángela", apellido: "Naranjo Rodríguez", correo: "presidencia@fedeciclismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Carrera 47 No. 106 A - 37 Barrio Estoril" }, contacto: { telefono: "6015550017", correo: "contacto@fedeciclismo.demo.co" }, fechaRegistro: "2026-05-17" },
+  { id: "FED-017", tipo: "federacion", nombre: "Federación Colombiana de Coleo", nit: "822003697-9", sector: "Olímpico", deporte: "Coleo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000017", nombre: "Felipe", apellido: "Zuluaga Pineda", correo: "presidencia@fedecoleo.demo.co" }, ubicacion: { depto: "Meta", ciudad: "Villavicencio", zona: "Urbana", direccion: "Camino Ganadero Parque las Malocas Centro Ecuestre Of. 04" }, contacto: { telefono: "6015550018", correo: "contacto@fedecoleo.demo.co" }, fechaRegistro: "2026-06-18" },
+  { id: "FED-018", tipo: "federacion", nombre: "Federación Colombiana de Deportes Aéreos", nit: "830066529-9", sector: "Olímpico", deporte: "Deportes Aéreos", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000018", nombre: "Sandra", apellido: "Torres Duarte", correo: "presidencia@fededeportesaereos.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "carrera 26 # 72-73" }, contacto: { telefono: "6015550019", correo: "contacto@fededeportesaereos.demo.co" }, fechaRegistro: "2026-01-19" },
+  { id: "FED-019", tipo: "federacion", nombre: "Federación Colombiana Deportiva Militar", nit: "800230729-9", sector: "Olímpico", deporte: "Deportiva Militar", parentId: "COC", estado: "En revisión", repLegal: { tipoDoc: "CC", numDoc: "10000019", nombre: "Óscar", apellido: "Suárez Mejía", correo: "presidencia@fededeportivamilitar.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra. 59a # 44b-29 Barrio la Esmeralda" }, contacto: { telefono: "6015550020", correo: "contacto@fededeportivamilitar.demo.co" }, fechaRegistro: "2026-02-20" },
+  { id: "FED-020", tipo: "federacion", nombre: "Federación Colombiana de Disco Volador", nit: "901154209-1", sector: "Olímpico", deporte: "Disco Volador", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000020", nombre: "Valeria", apellido: "Molina Cortés", correo: "presidencia@fedediscovolador.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550021", correo: "contacto@fedediscovolador.demo.co" }, fechaRegistro: "2026-03-21" },
+  { id: "FED-021", tipo: "federacion", nombre: "Federación Ecuestre de Colombia", nit: "860025991-2", sector: "Olímpico", deporte: "Ecuestre", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000021", nombre: "Hernán", apellido: "Duarte Torres", correo: "presidencia@fedeecuestre.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Calle 98 No. 21 - 36 Oficina 602 Edificio Centro 98" }, contacto: { telefono: "6015550022", correo: "contacto@fedeecuestre.demo.co" }, fechaRegistro: "2026-04-22" },
+  { id: "FED-022", tipo: "federacion", nombre: "Federación Colombiana de Escalada Deportiva", nit: "900645499-4", sector: "Olímpico", deporte: "Escalada Deportiva", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000022", nombre: "Claudia", apellido: "López Salazar", correo: "presidencia@fedeescaladadeportiv.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra 21 # 50-34" }, contacto: { telefono: "6015550023", correo: "contacto@fedeescaladadeportiv.demo.co" }, fechaRegistro: "2026-05-23" },
+  { id: "FED-023", tipo: "federacion", nombre: "Federación Colombiana de Esgrima", nit: "830016532-8", sector: "Olímpico", deporte: "Esgrima", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000023", nombre: "Rodrigo", apellido: "Ospina Martínez", correo: "presidencia@fedeesgrima.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Avenida Ciudad de Quito #64-81 oficina 602" }, contacto: { telefono: "6015550024", correo: "contacto@fedeesgrima.demo.co" }, fechaRegistro: "2026-06-24" },
+  { id: "FED-024", tipo: "federacion", nombre: "Federación Colombiana de Esquí Náutico y Wakeboard", nit: "860503520-8", sector: "Olímpico", deporte: "Esquí Náutico y Wakeboard", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000024", nombre: "Patricia", apellido: "Betancur Quintero", correo: "presidencia@fedeesquinauticoywak.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550025", correo: "contacto@fedeesquinauticoywak.demo.co" }, fechaRegistro: "2026-01-25" },
+  { id: "FED-025", tipo: "federacion", nombre: "Federación Colombiana de Fisicoculturismo", nit: "900134600-1", sector: "Olímpico", deporte: "Fisicoculturismo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000025", nombre: "Iván", apellido: "Reyes Cano", correo: "presidencia@fedefisicoculturismo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Palmira", zona: "Urbana", direccion: "Calle 12 C No. 24 A - 119 Barrio Las Americas" }, contacto: { telefono: "6015550026", correo: "contacto@fedefisicoculturismo.demo.co" }, fechaRegistro: "2026-02-26" },
+  { id: "FED-026", tipo: "federacion", nombre: "Federación Colombiana de Fútbol", nit: "860033879-9", sector: "Olímpico", deporte: "Fútbol", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000026", nombre: "Mónica", apellido: "Martínez Ospina", correo: "presidencia@fedefutbol.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra. 45 A No. 94-06 Pisos 6 7 y 8" }, contacto: { telefono: "6015550027", correo: "contacto@fedefutbol.demo.co" }, fechaRegistro: "2026-03-27" },
+  { id: "FED-027", tipo: "federacion", nombre: "Federación Colombiana de Fútbol de Salón", nit: "860052688-1", sector: "Olímpico", deporte: "Fútbol de Salón", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000027", nombre: "Alberto", apellido: "Rojas Bravo", correo: "presidencia@fedefutboldesalon.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra 26a #61c-07 Campin" }, contacto: { telefono: "6015550028", correo: "contacto@fedefutboldesalon.demo.co" }, fechaRegistro: "2026-04-01" },
+  { id: "FED-028", tipo: "federacion", nombre: "Federación Colombiana de Gimnasia", nit: "860535259-7", sector: "Olímpico", deporte: "Gimnasia", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000028", nombre: "Liliana", apellido: "Guzmán Vargas", correo: "presidencia@fedegimnasia.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550029", correo: "contacto@fedegimnasia.demo.co" }, fechaRegistro: "2026-05-02" },
+  { id: "FED-029", tipo: "federacion", nombre: "Federación Colombiana de Golf", nit: "860006815-3", sector: "Olímpico", deporte: "Golf", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000029", nombre: "Nicolás", apellido: "Cortés Molina", correo: "presidencia@fedegolf.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Carrera 7a No. 72 - 64 Interior 30 Chapinero" }, contacto: { telefono: "6015550030", correo: "contacto@fedegolf.demo.co" }, fechaRegistro: "2026-06-03" },
+  { id: "FED-030", tipo: "federacion", nombre: "Federación Colombiana de Jiu-Jitsu", nit: "900123386-0", sector: "Olímpico", deporte: "Jiu-Jitsu", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000030", nombre: "Beatriz", apellido: "Gómez Hernández", correo: "presidencia@fedejiujitsu.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Piso 7" }, contacto: { telefono: "6015550031", correo: "contacto@fedejiujitsu.demo.co" }, fechaRegistro: "2026-01-04" },
+  { id: "FED-031", tipo: "federacion", nombre: "Federación Colombiana de Judo", nit: "860532945-8", sector: "Olímpico", deporte: "Judo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000031", nombre: "Andrés", apellido: "Vargas Guzmán", correo: "presidencia@fedejudo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Piso 4 Of. 407" }, contacto: { telefono: "6015550032", correo: "contacto@fedejudo.demo.co" }, fechaRegistro: "2026-02-05" },
+  { id: "FED-032", tipo: "federacion", nombre: "Federación Colombiana de Kárate Do", nit: "800101126-5", sector: "Olímpico", deporte: "Kárate Do", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000032", nombre: "Carolina", apellido: "Pineda Zuluaga", correo: "presidencia@fedekaratedo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Piso 4" }, contacto: { telefono: "6015550033", correo: "contacto@fedekaratedo.demo.co" }, fechaRegistro: "2026-03-06" },
+  { id: "FED-033", tipo: "federacion", nombre: "Federación Colombiana de Karts", nit: "860065896-1", sector: "Olímpico", deporte: "Karts", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000033", nombre: "Fernando", apellido: "Escobar Cárdenas", correo: "presidencia@fedekarts.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550034", correo: "contacto@fedekarts.demo.co" }, fechaRegistro: "2026-04-07" },
+  { id: "FED-034", tipo: "federacion", nombre: "Federación Colombiana de Levantamiento de Pesas", nit: "890480912-1", sector: "Olímpico", deporte: "Levantamiento de Pesas", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000034", nombre: "Diana", apellido: "Cano Reyes", correo: "presidencia@fedelevantamientodep.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Cra. 39 No. 9 - 31 Santiago de Cali" }, contacto: { telefono: "6015550035", correo: "contacto@fedelevantamientodep.demo.co" }, fechaRegistro: "2026-05-08" },
+  { id: "FED-035", tipo: "federacion", nombre: "Federación Colombiana de Lucha", nit: "890310137-1", sector: "Olímpico", deporte: "Lucha", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000035", nombre: "Ricardo", apellido: "Ramírez Castro", correo: "presidencia@fedelucha.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medellín", zona: "Urbana", direccion: "Calle 45 FF No. 75 - 37" }, contacto: { telefono: "6015550036", correo: "contacto@fedelucha.demo.co" }, fechaRegistro: "2026-06-09" },
+  { id: "FED-036", tipo: "federacion", nombre: "Federación Colombiana de Motociclismo", nit: "800176937-3", sector: "Olímpico", deporte: "Motociclismo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000036", nombre: "Marcela", apellido: "Cárdenas Escobar", correo: "presidencia@fedemotociclismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Oficina 706" }, contacto: { telefono: "6015550037", correo: "contacto@fedemotociclismo.demo.co" }, fechaRegistro: "2026-01-10" },
+  { id: "FED-037", tipo: "federacion", nombre: "Federación Colombiana de Motonáutica", nit: "811022609-1", sector: "Olímpico", deporte: "Motonáutica", parentId: "COC", estado: "Suspendido", repLegal: { tipoDoc: "CC", numDoc: "10000037", nombre: "Julián", apellido: "Salazar López", correo: "presidencia@fedemotonautica.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Calle 45 # 66B-15 Salitre Greco" }, contacto: { telefono: "6015550038", correo: "contacto@fedemotonautica.demo.co" }, fechaRegistro: "2026-02-11" },
+  { id: "FED-038", tipo: "federacion", nombre: "Federación Colombiana de Natación", nit: "890308001-0", sector: "Olímpico", deporte: "Natación", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000038", nombre: "Paola", apellido: "Franco Arango", correo: "presidencia@fedenatacion.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 9B No. 27 - 49 Barrio Champana" }, contacto: { telefono: "6015550039", correo: "contacto@fedenatacion.demo.co" }, fechaRegistro: "2026-03-12" },
+  { id: "FED-039", tipo: "federacion", nombre: "Federación Colombiana de Orientación", nit: "804013044-7", sector: "Olímpico", deporte: "Orientación", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000039", nombre: "Sebastián", apellido: "Hernández Gómez", correo: "presidencia@fedeorientacion.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550040", correo: "contacto@fedeorientacion.demo.co" }, fechaRegistro: "2026-04-13" },
+  { id: "FED-040", tipo: "federacion", nombre: "Federación Colombiana de Patinaje", nit: "860077223-7", sector: "Olímpico", deporte: "Patinaje", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000040", nombre: "Alberto", apellido: "Herrera", correo: "presidencia@fedepatinaje.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra. 74 No. 25 F - 10 Barrio Modelia" }, contacto: { telefono: "6015550041", correo: "contacto@fedepatinaje.demo.co" }, fechaRegistro: "2026-05-14" },
+  { id: "FED-041", tipo: "federacion", nombre: "Federación Colombiana de Porrismo", nit: "901057369-6", sector: "Olímpico", deporte: "Porrismo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000041", nombre: "Camilo", apellido: "Arango Franco", correo: "presidencia@fedeporrismo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Cra 11 #146-75 Ed. 147" }, contacto: { telefono: "6015550042", correo: "contacto@fedeporrismo.demo.co" }, fechaRegistro: "2026-06-15" },
+  { id: "FED-042", tipo: "federacion", nombre: "Federación Colombiana de Rugby", nit: "900429096-4", sector: "Olímpico", deporte: "Rugby", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000042", nombre: "Adriana", apellido: "Bravo Rojas", correo: "presidencia@federugby.demo.co" }, ubicacion: { depto: "Antioquia", ciudad: "Medellín", zona: "Urbana", direccion: "Calle 59 #70-124" }, contacto: { telefono: "6015550043", correo: "contacto@federugby.demo.co" }, fechaRegistro: "2026-01-16" },
+  { id: "FED-043", tipo: "federacion", nombre: "Federación Colombiana de Sambo", nit: "900262915-2", sector: "Olímpico", deporte: "Sambo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000043", nombre: "Mauricio", apellido: "Rodríguez Naranjo", correo: "presidencia@fedesambo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Carrera 38A No. 7-05 El Templete" }, contacto: { telefono: "6015550044", correo: "contacto@fedesambo.demo.co" }, fechaRegistro: "2026-02-17" },
+  { id: "FED-044", tipo: "federacion", nombre: "Federación Colombiana de Savate", nit: "901239083-7", sector: "Olímpico", deporte: "Savate", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000044", nombre: "Lucía", apellido: "Castro Ramírez", correo: "presidencia@fedesavate.demo.co" }, ubicacion: { depto: "Tolima", ciudad: "Ibagué", zona: "Urbana", direccion: "Urbanizacion La Maria Parte Baja Casa 20" }, contacto: { telefono: "6015550045", correo: "contacto@fedesavate.demo.co" }, fechaRegistro: "2026-03-18" },
+  { id: "FED-045", tipo: "federacion", nombre: "Federación Colombiana de Softbol", nit: "890401221-1", sector: "Olímpico", deporte: "Softbol", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000045", nombre: "Gustavo", apellido: "Quintero Betancur", correo: "presidencia@fedesoftbol.demo.co" }, ubicacion: { depto: "Bolivar", ciudad: "Cartagena", zona: "Urbana", direccion: "Estadio de Softbol de Chiquinquira" }, contacto: { telefono: "6015550046", correo: "contacto@fedesoftbol.demo.co" }, fechaRegistro: "2026-04-19" },
+  { id: "FED-046", tipo: "federacion", nombre: "Federación Colombiana de Squash", nit: "800045466-4", sector: "Olímpico", deporte: "Squash", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000046", nombre: "Ángela", apellido: "Naranjo Rodríguez", correo: "presidencia@fedesquash.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550047", correo: "contacto@fedesquash.demo.co" }, fechaRegistro: "2026-05-20" },
+  { id: "FED-047", tipo: "federacion", nombre: "Federación Colombiana de Surf", nit: "901091612-5", sector: "Olímpico", deporte: "Surf", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000047", nombre: "Felipe", apellido: "Zuluaga Pineda", correo: "presidencia@fedesurf.demo.co" }, ubicacion: { depto: "Bolivar", ciudad: "Cartagena", zona: "Urbana", direccion: "Isla Tierra Bomba Av. Principal Cabana Vista Hermosa" }, contacto: { telefono: "6015550048", correo: "contacto@fedesurf.demo.co" }, fechaRegistro: "2026-06-21" },
+  { id: "FED-048", tipo: "federacion", nombre: "Federación Colombiana de Taekwondo", nit: "860524134-8", sector: "Olímpico", deporte: "Taekwondo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000048", nombre: "Sandra", apellido: "Torres Duarte", correo: "presidencia@fedetaekwondo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Oficina 603" }, contacto: { telefono: "6015550049", correo: "contacto@fedetaekwondo.demo.co" }, fechaRegistro: "2026-01-22" },
+  { id: "FED-049", tipo: "federacion", nombre: "Federación Colombiana de Tejo", nit: "800078980-0", sector: "Olímpico", deporte: "Tejo", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000049", nombre: "Óscar", apellido: "Suárez Mejía", correo: "presidencia@fedetejo.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550050", correo: "contacto@fedetejo.demo.co" }, fechaRegistro: "2026-02-23" },
+  { id: "FED-050", tipo: "federacion", nombre: "Federación Colombiana de Tenis", nit: "860030468-1", sector: "Olímpico", deporte: "Tenis", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000050", nombre: "Valeria", apellido: "Molina Cortés", correo: "presidencia@fedetenis.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Carrera 30 NQS No. 64A-70 Piso 5 Of. 506" }, contacto: { telefono: "6015550051", correo: "contacto@fedetenis.demo.co" }, fechaRegistro: "2026-03-24" },
+  { id: "FED-051", tipo: "federacion", nombre: "Federación Colombiana de Tenis de Mesa", nit: "890106273-1", sector: "Olímpico", deporte: "Tenis de Mesa", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000051", nombre: "Hernán", apellido: "Duarte Torres", correo: "presidencia@fedetenisdemesa.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC costado occidental" }, contacto: { telefono: "6015550052", correo: "contacto@fedetenisdemesa.demo.co" }, fechaRegistro: "2026-04-25" },
+  { id: "FED-052", tipo: "federacion", nombre: "Federación Colombiana de Tiro y Caza Deportiva", nit: "860008926-1", sector: "Olímpico", deporte: "Tiro y Caza Deportiva", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000052", nombre: "Claudia", apellido: "López Salazar", correo: "presidencia@fedetiroycazadeporti.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC Oficina 606" }, contacto: { telefono: "6015550053", correo: "contacto@fedetiroycazadeporti.demo.co" }, fechaRegistro: "2026-05-26" },
+  { id: "FED-053", tipo: "federacion", nombre: "Federación Colombiana de Triatlón", nit: "800009065-1", sector: "Olímpico", deporte: "Triatlón", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000053", nombre: "Rodrigo", apellido: "Ospina Martínez", correo: "presidencia@fedetriatlon.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Carrera 27 #5 OESTE - 05" }, contacto: { telefono: "6015550054", correo: "contacto@fedetriatlon.demo.co" }, fechaRegistro: "2026-06-27" },
+  { id: "FED-054", tipo: "federacion", nombre: "Federación Colombiana de Vela", nit: "860045920-5", sector: "Olímpico", deporte: "Vela", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000054", nombre: "Patricia", apellido: "Betancur Quintero", correo: "presidencia@fedevela.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av. Cra. 30 # 64-81 Edificio COC" }, contacto: { telefono: "6015550055", correo: "contacto@fedevela.demo.co" }, fechaRegistro: "2026-01-01" },
+  { id: "FED-055", tipo: "federacion", nombre: "Federación Colombiana de Voleibol", nit: "860045666-9", sector: "Olímpico", deporte: "Voleibol", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000055", nombre: "Iván", apellido: "Reyes Cano", correo: "presidencia@fedevoleibol.demo.co" }, ubicacion: { depto: "Cundinamarca", ciudad: "Bogotá", zona: "Urbana", direccion: "Av Cra 30 # 64-81 Oficina 702" }, contacto: { telefono: "6015550056", correo: "contacto@fedevoleibol.demo.co" }, fechaRegistro: "2026-02-02" },
+  { id: "FED-056", tipo: "federacion", nombre: "Federación Colombiana de Wushu", nit: "809011909-1", sector: "Olímpico", deporte: "Wushu", parentId: "COC", estado: "Activo", repLegal: { tipoDoc: "CC", numDoc: "10000056", nombre: "Mónica", apellido: "Martínez Ospina", correo: "presidencia@fedewushu.demo.co" }, ubicacion: { depto: "Tolima", ciudad: "Ibagué", zona: "Urbana", direccion: "Calle 18 No 16-30 Urbanizacion la Aurora" }, contacto: { telefono: "6015550057", correo: "contacto@fedewushu.demo.co" }, fechaRegistro: "2026-03-03" },
+  { id: "FED-057", tipo: "federacion", nombre: "Federación Colombiana de Remo", nit: "901375567-1", sector: "Olímpico", deporte: "Remo", parentId: "COC", estado: "Preinscrito", repLegal: { tipoDoc: "CC", numDoc: "10000057", nombre: "Alberto", apellido: "Rojas Bravo", correo: "presidencia@federemo.demo.co" }, ubicacion: { depto: "Valle del Cauca", ciudad: "Cali", zona: "Urbana", direccion: "Calle 9 # 37-06 Secretaria de Deportes de Cali" }, contacto: { telefono: "6015550058", correo: "contacto@federemo.demo.co" }, fechaRegistro: "2026-04-04" }
+];
+
+/* ─── 3) Federaciones FICTICIAS para Paralímpico y Sordolímpico (ficticio:true) ───
+   Los paradeportes son deportes aparte en el catálogo (NAT ≠ PARA_NAT), así que no chocan con
+   las federaciones olímpicas. La lista completa de cada sector la debe Negocio (P-23). */
+const FEDERACIONES_FICTICIAS = [
+  { id: 'FED-P01', tipo: 'federacion', nombre: 'Federación Colombiana de Para Atletismo', nit: '901500001-1', sector: 'Paralímpico', deporte: 'Para Atletismo', parentId: 'CPC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000201', nombre: 'Laura', apellido: 'Mendoza Ríos', correo: 'presidencia@fedeparaatletismo.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Calle 63 # 47-06 Of. 201' }, contacto: { telefono: '6014809090', correo: 'contacto@fedeparaatletismo.demo.co' }, fechaRegistro: '2026-02-18' },
+  { id: 'FED-P02', tipo: 'federacion', nombre: 'Federación Colombiana de Para Natación', nit: '901500002-2', sector: 'Paralímpico', deporte: 'Para Natación', parentId: 'CPC', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000202', nombre: 'Diego', apellido: 'Vargas Peña', correo: 'presidencia@fedeparanatacion.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Cra. 36 # 5B-62' }, contacto: { telefono: '6024889090', correo: 'contacto@fedeparanatacion.demo.co' }, fechaRegistro: '2026-05-09' },
+  { id: 'FED-S01', tipo: 'federacion', nombre: 'Federación Colombiana de Atletismo de Sordos', nit: '901500003-3', sector: 'Sordolímpico', deporte: 'Atletismo de Sordos', parentId: 'FSC', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000203', nombre: 'Sofía', apellido: 'Guerrero León', correo: 'presidencia@fedesordosbaloncesto.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 48 # 20-114 Of. 3' }, contacto: { telefono: '6045553030', correo: 'contacto@fedesordosbaloncesto.demo.co' }, fechaRegistro: '2026-03-28' }
+];
+
+/* ─── 4) Ligas FICTICIAS (~8, estados variados). LIG-001 = cadena demo ─── */
+const LIGAS = [
+  { id: 'LIG-001', tipo: 'liga', nombre: 'Liga de Patinaje del Valle', nit: '805010001-1', sector: 'Olímpico', deporte: 'Patinaje', parentId: 'FED-040', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000301', nombre: 'Sandra', apellido: 'Mejía', correo: 'direccion@ligapatinajevalle.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 5 # 42-00 Unidad Deportiva Alberto Galindo' }, contacto: { telefono: '6024010101', correo: 'contacto@ligapatinajevalle.demo.co' }, fechaRegistro: '2026-03-10' },
+  { id: 'LIG-002', tipo: 'liga', nombre: 'Liga de Patinaje de Antioquia', nit: '805010002-2', sector: 'Olímpico', deporte: 'Patinaje', parentId: 'FED-040', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000302', nombre: 'Carlos', apellido: 'Estrada Ruiz', correo: 'direccion@ligapatinajeant.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 70 # 48-70 Estadio Atanasio Girardot' }, contacto: { telefono: '6044020202', correo: 'contacto@ligapatinajeant.demo.co' }, fechaRegistro: '2026-03-14' },
+  { id: 'LIG-003', tipo: 'liga', nombre: 'Liga de Patinaje de Bogotá', nit: '805010003-3', sector: 'Olímpico', deporte: 'Patinaje', parentId: 'FED-040', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000303', nombre: 'Paula', apellido: 'Rincón Díaz', correo: 'direccion@ligapatinajebogota.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Cra. 60 # 63-00 Unidad Deportiva El Salitre' }, contacto: { telefono: '6014030303', correo: 'contacto@ligapatinajebogota.demo.co' }, fechaRegistro: '2026-05-02' },
+  { id: 'LIG-004', tipo: 'liga', nombre: 'Liga de Fútbol del Valle', nit: '805010004-4', sector: 'Olímpico', deporte: 'Fútbol', parentId: 'FED-026', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000304', nombre: 'Andrés', apellido: 'Lozano Gil', correo: 'direccion@ligafutbolvalle.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 5 # 50-00' }, contacto: { telefono: '6024040404', correo: 'contacto@ligafutbolvalle.demo.co' }, fechaRegistro: '2026-02-22' },
+  { id: 'LIG-005', tipo: 'liga', nombre: 'Liga de Fútbol de Antioquia', nit: '805010005-5', sector: 'Olímpico', deporte: 'Fútbol', parentId: 'FED-026', estado: 'Preinscrito', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000305', nombre: 'Mariana', apellido: 'Ospina Cano', correo: 'direccion@ligafutbolant.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 74 # 48-10' }, contacto: { telefono: '6044050505', correo: 'contacto@ligafutbolant.demo.co' }, fechaRegistro: '2026-06-01' },
+  { id: 'LIG-006', tipo: 'liga', nombre: 'Liga de Natación del Valle', nit: '805010006-6', sector: 'Olímpico', deporte: 'Natación', parentId: 'FED-038', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000306', nombre: 'Diego', apellido: 'Ospina Marín', correo: 'direccion@liganatacionvalle.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 5 # 42-40 Complejo Acuático' }, contacto: { telefono: '6024060606', correo: 'contacto@liganatacionvalle.demo.co' }, fechaRegistro: '2026-02-28' },
+  { id: 'LIG-007', tipo: 'liga', nombre: 'Liga de Ciclismo de Antioquia', nit: '805010007-7', sector: 'Olímpico', deporte: 'Ciclismo', parentId: 'FED-016', estado: 'Rechazado', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000307', nombre: 'Julián', apellido: 'Cárdenas Vélez', correo: 'direccion@ligaciclismoant.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Velódromo Martín Emilio Cochise Rodríguez' }, contacto: { telefono: '6044070707', correo: 'contacto@ligaciclismoant.demo.co' }, fechaRegistro: '2026-04-11' },
+  { id: 'LIG-008', tipo: 'liga', nombre: 'Liga de Ciclismo de Bogotá', nit: '805010008-8', sector: 'Olímpico', deporte: 'Ciclismo', parentId: 'FED-016', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000308', nombre: 'Natalia', apellido: 'Peña Rojas', correo: 'direccion@ligaciclismobogota.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Cra. 60 # 57-00 Unidad Deportiva El Salitre' }, contacto: { telefono: '6014080808', correo: 'contacto@ligaciclismobogota.demo.co' }, fechaRegistro: '2026-01-30' }
+];
+
+/* ─── 5) Clubes FICTICIOS (~10, estados variados). CLU-001 = cadena demo ─── */
+const CLUBES = [
+  { id: 'CLU-001', tipo: 'club', nombre: 'Club Patín Cali', nit: '805020001-1', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'profesional', parentId: 'LIG-001', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000401', nombre: 'Óscar', apellido: 'Cardona', correo: 'admin@clubpatincali.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Cra. 39 # 5-20 Barrio San Fernando' }, contacto: { telefono: '6025010101', correo: 'contacto@clubpatincali.demo.co' }, fechaRegistro: '2026-04-02' },
+  { id: 'CLU-002', tipo: 'club', nombre: 'Club Ruedas del Sur', nit: '805020002-2', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Preinscrito', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000402', nombre: 'Carolina', apellido: 'Zapata Ríos', correo: 'admin@ruedasdelsur.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 30 # 28-15' }, contacto: { telefono: '6025020202', correo: 'contacto@ruedasdelsur.demo.co' }, fechaRegistro: '2026-06-10' },
+  { id: 'CLU-003', tipo: 'club', nombre: 'Club Patín Vallecaucano', nit: '805020003-3', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-001', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000403', nombre: 'Felipe', apellido: 'Muñoz Cano', correo: 'admin@patinvallecaucano.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Cra. 8 # 20-40' }, contacto: { telefono: '6025030303', correo: 'contacto@patinvallecaucano.demo.co' }, fechaRegistro: '2026-04-15' },
+  { id: 'CLU-004', tipo: 'club', nombre: 'Club Patinaje Antioquia Norte', nit: '805020004-4', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-002', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000404', nombre: 'Valentina', apellido: 'Ríos Duque', correo: 'admin@patinajeantnorte.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Bello', zona: 'Urbana', direccion: 'Calle 50 # 55-20' }, contacto: { telefono: '6045040404', correo: 'contacto@patinajeantnorte.demo.co' }, fechaRegistro: '2026-04-20' },
+  { id: 'CLU-005', tipo: 'club', nombre: 'Club Velocidad Medellín', nit: '805020005-5', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'profesional', parentId: 'LIG-002', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000405', nombre: 'Santiago', apellido: 'Herrera Cano', correo: 'admin@velocidadmedellin.demo.co' }, ubicacion: { depto: 'Antioquia', ciudad: 'Medellín', zona: 'Urbana', direccion: 'Cra. 65 # 44-50' }, contacto: { telefono: '6045050505', correo: 'contacto@velocidadmedellin.demo.co' }, fechaRegistro: '2026-05-18' },
+  { id: 'CLU-006', tipo: 'club', nombre: 'Club Fútbol Cali Junior', nit: '805020006-6', sector: 'Olímpico', deporte: 'Fútbol', tipoClub: 'escuela', parentId: 'LIG-004', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000406', nombre: 'Camila', apellido: 'Rojas Vélez', correo: 'admin@calijunior.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 16 # 100-00' }, contacto: { telefono: '6025060606', correo: 'contacto@calijunior.demo.co' }, fechaRegistro: '2026-03-05' },
+  { id: 'CLU-007', tipo: 'club', nombre: 'Club Deportivo Aguas del Valle', nit: '805020007-7', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'profesional', parentId: 'LIG-006', estado: 'Activo', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000407', nombre: 'Isabella', apellido: 'Torres Peña', correo: 'admin@aguasdelvalle.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Cali', zona: 'Urbana', direccion: 'Calle 5 # 42-42' }, contacto: { telefono: '6025070707', correo: 'contacto@aguasdelvalle.demo.co' }, fechaRegistro: '2026-03-16' },
+  { id: 'CLU-008', tipo: 'club', nombre: 'Club Natación Pacífico', nit: '805020008-8', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'Rechazado', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000408', nombre: 'Mateo', apellido: 'Angulo Mena', correo: 'admin@natacionpacifico.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buenaventura', zona: 'Urbana', direccion: 'Cra. 3 # 5-30' }, contacto: { telefono: '6025080808', correo: 'contacto@natacionpacifico.demo.co' }, fechaRegistro: '2026-05-25' },
+  { id: 'CLU-009', tipo: 'club', nombre: 'Club Patín Bogotá', nit: '805020009-9', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-003', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000409', nombre: 'Daniela', apellido: 'Suárez Gil', correo: 'admin@patinbogota.demo.co' }, ubicacion: { depto: 'Cundinamarca', ciudad: 'Bogotá', zona: 'Urbana', direccion: 'Cra. 60 # 63-20' }, contacto: { telefono: '6015090909', correo: 'contacto@patinbogota.demo.co' }, fechaRegistro: '2026-05-12' },
+  { id: 'CLU-010', tipo: 'club', nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'escuela', parentId: 'LIG-001', estado: 'Suspendido', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000410', nombre: 'Andrés', apellido: 'Caicedo Mora', correo: 'admin@ruedalibrepalmira.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Palmira', zona: 'Urbana', direccion: 'Calle 31 # 29-10' }, contacto: { telefono: '6025101010', correo: 'contacto@ruedalibrepalmira.demo.co' }, fechaRegistro: '2026-01-28' },
+  /* Devuelto a corrección por la Liga del Valle (ciclo del organismo, Fase 1). */
+  { id: 'CLU-012', tipo: 'club', nombre: 'Club Halcones de Tuluá', nit: '805020012-3', sector: 'Olímpico', deporte: 'Patinaje', tipoClub: 'promotor', parentId: 'LIG-001', estado: 'En corrección', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000412', nombre: 'Mauricio', apellido: 'Gil Restrepo', correo: 'admin@halconestulua.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Tuluá', zona: 'Urbana', direccion: 'Cra. 26 # 30-12' }, contacto: { telefono: '6022240012', correo: 'contacto@halconestulua.demo.co' }, fechaRegistro: '2026-09-20' },
+  /* Bandeja de la segunda liga de Sandra Mejía (selector de contexto, P-15). */
+  { id: 'CLU-011', tipo: 'club', nombre: 'Club Delfines de Buga', nit: '805020011-1', sector: 'Olímpico', deporte: 'Natación', tipoClub: 'promotor', parentId: 'LIG-006', estado: 'En revisión', ficticio: true, repLegal: { tipoDoc: 'CC', numDoc: '10000411', nombre: 'Lorena', apellido: 'Gil Ocampo', correo: 'admin@delfinesbuga.demo.co' }, ubicacion: { depto: 'Valle del Cauca', ciudad: 'Buga', zona: 'Urbana', direccion: 'Calle 4 # 14-30' }, contacto: { telefono: '6022360011', correo: 'contacto@delfinesbuga.demo.co' }, fechaRegistro: '2026-09-28' }
+];
+
+/* ─── 6) Deportistas FICTICIOS (vinculados + autodeclarados) ───
+   El plantel de CLU-001 (Club Patín Cali) es el más poblado a propósito: es el
+   club del rol CLUB de la demo y alimenta «Mis deportistas» (ORG-09). Con 12
+   afiliados la pantalla ejercita búsqueda, paginación (>PAGE_SIZE) y los filtros
+   CONDICIONALES: todos son de Patinaje → el filtro de DEPORTE se oculta (§P20),
+   pero hay 4 modalidades y varias categorías → esos filtros sí se renderizan. */
+const DEPORTISTAS = [
+  { id: 'DEP-001', nombre: 'Valentina Ortiz', tipoDoc: 'CC', numDoc: '1144556778', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'valentina.ortiz@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-002', nombre: 'Mateo Restrepo', tipoDoc: 'CC', numDoc: '1144200145', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'mateo.restrepo@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-003', nombre: 'Laura Giraldo', tipoDoc: 'CC', numDoc: '1130987654', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'laura.giraldo@correo.demo.co', clubId: 'CLU-003', estado: 'vinculado' },
+  { id: 'DEP-004', nombre: 'Samuel Ruiz', tipoDoc: 'TI', numDoc: '1028445566', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'samuel.ruiz@correo.demo.co', clubId: 'CLU-004', estado: 'vinculado' },
+  { id: 'DEP-005', nombre: 'Isabella Núñez', tipoDoc: 'CC', numDoc: '1144778899', deporte: 'Natación', modalidad: 'Estilo libre', correo: 'isabella.nunez@correo.demo.co', clubId: 'CLU-007', estado: 'vinculado' },
+  { id: 'DEP-006', nombre: 'Tomás Vélez', tipoDoc: 'CC', numDoc: '1120334455', deporte: 'Fútbol', modalidad: 'Campo', correo: 'tomas.velez@correo.demo.co', clubId: 'CLU-006', estado: 'vinculado' },
+  { id: 'DEP-007', nombre: 'Daniela Cárdenas', tipoDoc: 'CC', numDoc: '1144990011', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'daniela.cardenas@correo.demo.co', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-008', nombre: 'Andrés Lozano', tipoDoc: 'CC', numDoc: '1098223344', deporte: 'Ciclismo', modalidad: 'Ruta', correo: 'andres.lozano@correo.demo.co', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-009', nombre: 'Camila Suárez', tipoDoc: 'CC', numDoc: '1144556001', deporte: 'Natación', modalidad: 'Mariposa', correo: 'camila.suarez@correo.demo.co', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-010', nombre: 'Juan D. Marín', tipoDoc: 'CC', numDoc: '1088776655', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'juan.marin@correo.demo.co', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-011', nombre: 'Sara Betancur', tipoDoc: 'TI', numDoc: '1029887766', deporte: 'Fútbol', modalidad: 'Campo', correo: 'sara.betancur@correo.demo.co', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-012', nombre: 'Nicolás Ariza', tipoDoc: 'CC', numDoc: '1144667788', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'nicolas.ariza@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  /* Resto del plantel de CLU-001 — Club Patín Cali (ORG-09 · «Mis deportistas»). */
+  { id: 'DEP-013', nombre: 'Sofía Arango Cano', tipoDoc: 'TI', numDoc: '1029334455', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'sofia.arango@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-014', nombre: 'Emilio Vásquez Ruiz', tipoDoc: 'CC', numDoc: '1144881122', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'emilio.vasquez@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-015', nombre: 'Manuela Ospina Díaz', tipoDoc: 'TI', numDoc: '1029556677', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'manuela.ospina@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-016', nombre: 'Julián Bedoya Mesa', tipoDoc: 'CC', numDoc: '1144773311', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: 'julian.bedoya@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-017', nombre: 'Antonia Zapata León', tipoDoc: 'CC', numDoc: '1144665544', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'antonia.zapata@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-018', nombre: 'Felipe Quintero Sáenz', tipoDoc: 'TI', numDoc: '1029778899', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: 'felipe.quintero@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-019', nombre: 'Valeria Mosquera Rentería', tipoDoc: 'CC', numDoc: '1144992277', deporte: 'Patinaje', modalidad: 'Artístico', correo: 'valeria.mosquera@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-020', nombre: 'Sebastián Toro Aguirre', tipoDoc: 'CC', numDoc: '1144110099', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'sebastian.toro@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-021', nombre: 'Luciana Palacio Hoyos', tipoDoc: 'TI', numDoc: '1029223344', deporte: 'Patinaje', modalidad: 'Freestyle', correo: 'luciana.palacio@correo.demo.co', clubId: 'CLU-001', estado: 'vinculado' },
+  /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
+  { id: 'DEP-022', nombre: 'Laura Marcela Gómez Restrepo', tipoDoc: 'CC', numDoc: '1032987456', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'laura.gomez@correo.co', fechaNac: '1992-05-03', rolApoyo: 'Docente/Entrenador', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-023', nombre: 'Tomás Gómez', tipoDoc: 'TI', numDoc: '1098765001', deporte: 'Patinaje', modalidad: 'Carreras', correo: '', fechaNac: '2014-02-10', sexo: 'Hombre', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: 'CLU-001', estado: 'vinculado' },
+  { id: 'DEP-024', nombre: 'Sara Gómez', tipoDoc: 'TI', numDoc: '1098765002', deporte: 'Natación', modalidad: 'Estilo libre', correo: '', fechaNac: '2017-06-21', sexo: 'Mujer', docsEstado: 'revision', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' }
+];
+
+/* ─── Seed combinado (orden jerárquico: comités → federaciones → ligas → clubes) ─── */
+const SEED_ORGANISMOS = [
+  ...COMITES,
+  ...FEDERACIONES_COC,
+  ...FEDERACIONES_FICTICIAS,
+  ...LIGAS,
+  ...CLUBES
+];
+const SEED_DEPORTISTAS = DEPORTISTAS;
+
+/* ─── 7) Deportes del organismo ───
+   Un organismo tiene una LISTA de deportes del catálogo, elegida dentro de la de su superior.
+   Un deporte pertenece a una sola federación en todo el sistema (decisión 2026-10-09, DEP-545).
+   El seed trae `deporte` (uno); aquí van los organismos con varios. `deporte` queda como texto
+   de lectura (la lista unida) para no romper filtros y fichas. */
+const DEPORTES_SEED = {
+  'FED-038': ['Natación', 'Natación Artística', 'Polo Acuático'],
+  'FED-040': ['Patinaje', 'Patinaje Artístico', 'Patinaje de Velocidad'],
+  'LIG-006': ['Natación', 'Polo Acuático'],
+  'CLU-007': ['Natación', 'Polo Acuático']
+};
+/* Solo demo: deportes del catálogo sin federación, para poder probar el alta de una. Los
+   paradeportes que ya existen en catalog-ms sin federación en la demo van aquí también. */
+export const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa'];
+export const PARADEPORTES = ['Para Atletismo', 'Para Natación', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa', 'Atletismo de Sordos'];
+const ESTADOS_SIN_DUENO = ['Rechazado', 'Cancelado'];
+
+export function deportesDe(org) {
+  if (!org) return [];
+  if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
+  if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+  return org.deporte && org.deporte !== '—' ? String(org.deporte).split(',').map((x) => x.trim()).filter(Boolean) : [];
+}
+/* Lectura normalizada: siempre trae `deportes` (lista) y `deporte` (texto). */
+function conDeportes(org) {
+  const deportes = deportesDe(org);
+  return { ...org, deportes, deporte: deportes.length ? deportes.join(', ') : (org.deporte || '—') };
+}
+/* Federación que gobierna un deporte (la única), o null. */
+export function duenoDeporte(dep) {
+  return allOrganismos().find((o) => o.tipo === 'federacion' && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
+}
+/* Catálogo de la demo = deportes con federación + los que aún no tienen (el real es GET /sports). */
+export function catalogoDeportes() {
+  const conFed = allOrganismos().filter((o) => o.tipo === 'federacion').flatMap((o) => o.deportes);
+  return [...new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+/* ─── 8) Afiliaciones: UNA sola relación para los tres casos (Modelo, nao-docs) ───
+     deportista → club · personal deportivo → cualquier organismo · club → liga
+   { id, tipo:'deportista'|'personal'|'club', sujetoId, organismoId, deporte,
+     estado:'Solicitada'|'Vinculada'|'Rechazada'|'Terminada', desde, hasta, origen, motivo }
+   Con multi-afiliación ya no hay un clubId ni un parentId únicos: el deportista hereda la
+   cadena de CADA club en el que está Vinculado. `clubId` sigue existiendo solo como lectura
+   (el primer club vigente) para las pantallas que todavía muestran un club. */
+const AF_DESDE = '2026-03-25';
+const AFILIACIONES_EXTRA = [
+  /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
+  { id: 'AF-S900', tipo: 'deportista', sujetoId: 'DEP-002', organismoId: 'CLU-007', deporte: 'Natación', estado: 'Vinculada', desde: '2026-05-04', origen: 'solicitud' },
+  /* Laura: pidió un segundo club y trabaja como entrenadora (personal deportivo → cualquier organismo, P-05). */
+  { id: 'AF-S901', tipo: 'deportista', sujetoId: 'DEP-022', organismoId: 'CLU-003', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-02', origen: 'solicitud' },
+  { id: 'AF-P001', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Vinculada', desde: '2024-01-20', origen: 'solicitud', rol: 'Docente/Entrenador' },
+  { id: 'AF-P002', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-09-29', origen: 'solicitud', rol: 'Docente/Entrenador' },
+  /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
+  { id: 'AF-C900', tipo: 'club', sujetoId: 'CLU-004', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-06', origen: 'solicitud' }
+];
+function seedAfiliaciones() {
+  const out = [];
+  DEPORTISTAS.forEach((d) => {
+    if (!d.clubId) return;
+    out.push({ id: `AF-S${d.id.slice(4)}`, tipo: 'deportista', sujetoId: d.id, organismoId: d.clubId, deporte: d.deporte, estado: 'Vinculada', desde: d.id === 'DEP-022' ? '2022-03-12' : AF_DESDE, origen: d.tutorId ? 'tutor' : 'solicitud' });
+  });
+  CLUBES.forEach((c) => {
+    const estado = ['Activo', 'Suspendido'].includes(c.estado) ? 'Vinculada' : c.estado === 'Rechazado' ? 'Rechazada' : 'Solicitada';
+    out.push({ id: `AF-C${c.id.slice(4)}`, tipo: 'club', sujetoId: c.id, organismoId: c.parentId, deporte: c.deporte, estado, desde: estado === 'Vinculada' ? c.fechaRegistro : null, origen: 'activacion' });
+  });
+  return [...out, ...AFILIACIONES_EXTRA];
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Persistencia sessionStorage — prefijo naowee-organismos-*
+   Todo lo creado en la demo vive en session (drafts / overrides /
+   nuevos organismos / solicitudes). El seed es inmutable.
+   ═══════════════════════════════════════════════════════════════ */
+const STORE_PREFIX = 'naowee-organismos-';
+const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
+export const SEED_VERSION = '0.5.0';  // 0.5.0: club de otra liga pidiendo entrar; personas sin rol de deportista;   // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
+
+export function readStore(key, fallback = null) {
+  try {
+    const raw = sessionStorage.getItem(STORE_PREFIX + key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (_) { return fallback; }
+}
+export function writeStore(key, value) {
+  try { sessionStorage.setItem(STORE_PREFIX + key, JSON.stringify(value)); } catch (_) {}
+}
+export function clearStore(key) {
+  try { sessionStorage.removeItem(STORE_PREFIX + key); } catch (_) {}
+}
+
+/* Siembra idempotente: si el flag no coincide con la versión, reinicia las
+   colecciones de sesión (vacías) y marca la versión. El seed estático NO se
+   copia a storage (se lee siempre desde el módulo). */
+export function seedDemoData() {
+  const seeded = (function () { try { return localStorage.getItem(SEED_FLAG); } catch (_) { return null; } })();
+  seedTrazabilidadDemo();   // el motivo de cada estado lo leen la ficha y «Mi organismo»
+  if (seeded === SEED_VERSION) {
+    return { seeded: false, version: SEED_VERSION };
+  }
+  if (readStore('organismos-nuevos') == null) writeStore('organismos-nuevos', []);
+  if (readStore('organismos-overrides') == null) writeStore('organismos-overrides', {});
+  if (readStore('deportistas-nuevos') == null) writeStore('deportistas-nuevos', []);
+  if (readStore('deportistas-overrides') == null) writeStore('deportistas-overrides', {});
+  if (readStore('solicitudes') == null) writeStore('solicitudes', []);
+  if (readStore('cargues') == null) writeStore('cargues', []);
+  if (readStore('audit') == null) writeStore('audit', []);
+  writeStore('afiliaciones', seedAfiliaciones());
+  clearStore('usuarios');
+  writeStore('solicitudes', []);   // las solicitudes viejas apuntaban a afiliaciones que ya no existen
+  clearStore('preinscritos');
+  try { localStorage.setItem(SEED_FLAG, SEED_VERSION); } catch (_) {}
+  return { seeded: true, version: SEED_VERSION };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Capa de lectura — combinada e INMUTABLE (seed + nuevos + overrides).
+   Siempre devuelve copias (spread); nunca expone el seed por referencia.
+   ═══════════════════════════════════════════════════════════════ */
+function applyOverride(org, overrides) {
+  const ov = overrides[org.id];
+  return ov ? { ...org, ...ov } : { ...org };
+}
+
+export function allOrganismos() {
+  const nuevos = readStore('organismos-nuevos', []) || [];
+  const overrides = readStore('organismos-overrides', {}) || {};
+  const base = SEED_ORGANISMOS.map((o) => conDeportes(applyOverride(o, overrides)));
+  const extra = nuevos.map(conDeportes);
+  return [...base, ...extra];
+}
+
+export function getOrganismo(id) {
+  return allOrganismos().find((o) => o.id === id) || null;
+}
+
+export function childrenOf(id) {
+  /* Incluye los clubes que cuelgan de esta liga por una afiliación vigente (club en varias ligas, P-20). */
+  return (indexByParent(allOrganismos())[id] || []).map((o) => ({ ...o }));
+}
+
+/* El estado del deportista (autodeclarado / vinculado) y sus clubes se DERIVAN de las
+   afiliaciones vigentes; no se guardan en el deportista. */
+export function allDeportistas() {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const ov = readStore('deportistas-overrides', {}) || {};
+  const base = SEED_DEPORTISTAS.map((d) => (ov[d.id] ? { ...d, ...ov[d.id] } : { ...d }));
+  const clubesDe = {};
+  allAfiliaciones().forEach((a) => {
+    if (a.tipo === 'deportista' && a.estado === 'Vinculada') (clubesDe[a.sujetoId] = clubesDe[a.sujetoId] || []).push(a.organismoId);
+  });
+  return [...base, ...nuevos.map((d) => ({ ...d }))].map((d) => {
+    const clubIds = clubesDe[d.id] || [];
+    return { ...d, clubIds, clubId: clubIds[0] || null, estado: clubIds.length ? 'vinculado' : 'autodeclarado' };
+  });
+}
+
+/* El store de deportistas guarda a toda PERSONA del SUID. Tutor y personal deportivo que se
+   registran sin ser deportistas llevan esDeportista:false y no salen en listados de deportistas. */
+export const esDeportista = (d) => d && d.esDeportista !== false;
+
+/* ─── Afiliaciones (lectura y escritura) ─── */
+export function allAfiliaciones() {
+  let list = readStore('afiliaciones', null);
+  if (!list) { list = seedAfiliaciones(); writeStore('afiliaciones', list); }
+  return list.map((a) => ({ ...a }));
+}
+/* Afiliaciones de un sujeto (deportista, persona o club). `vigentes` = solo Vinculadas. */
+export function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
+  return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === 'Vinculada'));
+}
+/* Afiliaciones que apuntan a un organismo (su plantel, sus clubes, su personal). */
+export function afiliacionesHacia(orgId, { estado } = {}) {
+  return allAfiliaciones().filter((a) => a.organismoId === orgId && (!estado || a.estado === estado));
+}
+/* Abre una afiliación Solicitada (o devuelve la viva si ya hay una del mismo par). */
+export function solicitarAfiliacion({ tipo = 'deportista', sujetoId, organismoId, deporte = '', origen = 'solicitud', proponenteId = null }) {
+  const list = allAfiliaciones();
+  const viva = list.find((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && ['Solicitada', 'Vinculada'].includes(a.estado));
+  if (viva) return viva;
+  const rec = { id: 'AF-' + String(list.length + 1).padStart(4, '0'), tipo, sujetoId, organismoId, deporte, estado: 'Solicitada', desde: null, hasta: null, origen, proponenteId, fecha: _todayISO() };
+  writeStore('afiliaciones', [...list, rec]);
+  return { ...rec };
+}
+/* Mueve la afiliación viva del par (sujeto, organismo) a Vinculada / Rechazada / Terminada. */
+export function cambiarAfiliacion(sujetoId, organismoId, estado, meta = {}) {
+  const list = allAfiliaciones();
+  const desde = estado === 'Terminada' ? ['Vinculada'] : ['Solicitada'];
+  let i = list.findIndex((a) => a.sujetoId === sujetoId && a.organismoId === organismoId && desde.includes(a.estado));
+  if (i < 0 && estado === 'Vinculada') {
+    /* El club asocia directo a un autodeclarado: no hubo solicitud previa. */
+    list.push({ id: 'AF-' + String(list.length + 1).padStart(4, '0'), tipo: meta.tipo || 'deportista', sujetoId, organismoId, deporte: meta.deporte || '', estado: 'Solicitada', origen: meta.origen || 'club', fecha: _todayISO() });
+    i = list.length - 1;
+  }
+  if (i < 0) return null;
+  const hoy = _todayISO();
+  list[i] = { ...list[i], estado, motivo: meta.motivo || list[i].motivo || '',
+    ...(estado === 'Vinculada' ? { desde: hoy } : {}), ...(estado === 'Terminada' ? { hasta: hoy, fin: meta.fin || 'retiro' } : {}) };
+  writeStore('afiliaciones', list);
+  return { ...list[i] };
+}
+
+/* Un deportista por id (seed + overrides + nuevos). Copia inmutable. */
+export function getDeportista(id) {
+  return allDeportistas().find((d) => d.id === id) || null;
+}
+
+/* Conteo del seed (para diagnóstico / QA de scaffolding). */
+export function seedStats() {
+  const byTipo = {}; const byEstado = {};
+  SEED_ORGANISMOS.forEach((o) => {
+    byTipo[o.tipo] = (byTipo[o.tipo] || 0) + 1;
+    byEstado[o.estado] = (byEstado[o.estado] || 0) + 1;
+  });
+  return { organismos: SEED_ORGANISMOS.length, byTipo, byEstado, deportistas: SEED_DEPORTISTAS.length };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Helpers de jerarquía (T2) — lectura INMUTABLE (siempre copias).
+   Construidos sobre allOrganismos()/allDeportistas() para respetar
+   seed + nuevos + overrides.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Índice parentId → hijos, calculado una vez por llamada (los datos son
+   pequeños; evita O(n²) al recorrer subárboles). */
+function indexByParent(orgs) {
+  const idx = {};
+  orgs.forEach((o) => { (idx[o.parentId] = idx[o.parentId] || []).push(o); });
+  /* Un club puede estar en varias ligas: cuelga también de cada liga con afiliación vigente. */
+  const byId = {};
+  orgs.forEach((o) => { byId[o.id] = o; });
+  allAfiliaciones().forEach((a) => {
+    const club = byId[a.sujetoId];
+    if (a.tipo !== 'club' || a.estado !== 'Vinculada' || !club || club.parentId === a.organismoId) return;
+    (idx[a.organismoId] = idx[a.organismoId] || []).push(club);
+  });
+  return idx;
+}
+
+/* Todos los descendientes (organismos) de `id`, en profundidad. NO incluye
+   el propio nodo. `id === null` devuelve el árbol completo (todos los
+   organismos, útil para la raíz de Mindeporte a partir de los comités). */
+export function subtreeOf(id) {
+  const orgs = allOrganismos();
+  const idx = indexByParent(orgs);
+  const out = [];
+  const stack = [...(idx[id] || [])];
+  const visto = new Set();
+  while (stack.length) {
+    const node = stack.pop();
+    if (visto.has(node.id)) continue;
+    visto.add(node.id);
+    out.push({ ...node });
+    const kids = idx[node.id];
+    if (kids) for (const k of kids) stack.push(k);
+  }
+  return out;
+}
+
+/* Cadena ascendente de `id` hasta la raíz: [padre, abuelo, …]. Vacío si no
+   tiene padre o el id no existe. Copias inmutables. */
+export function ancestorsOf(id) {
+  const orgs = allOrganismos();
+  const byId = {};
+  orgs.forEach((o) => { byId[o.id] = o; });
+  const chain = [];
+  let cur = byId[id];
+  const guard = new Set();
+  while (cur && cur.parentId != null && byId[cur.parentId] && !guard.has(cur.parentId)) {
+    guard.add(cur.parentId);
+    cur = byId[cur.parentId];
+    chain.push({ ...cur });
+  }
+  return chain;
+}
+
+/* Deportistas de la jurisdicción de `orgId`: los Vinculados a algún club del subárbol (o al
+   propio club) por CUALQUIERA de sus afiliaciones, los autodeclarados que ese nivel registró y
+   a los que ese nivel les propuso un club que aún no confirma (p. ej. un deportista que ya
+   estaba en el SUID y llegó en un cargue). Un deportista en dos clubes aparece una sola vez. */
+export function deportistasOf(orgId) {
+  const sub = subtreeOf(orgId);
+  const self = getOrganismo(orgId);
+  const clubIds = new Set(sub.filter((o) => o.tipo === 'club').map((o) => o.id));
+  if (self && self.tipo === 'club') clubIds.add(self.id);
+  const orgIds = new Set([orgId, ...sub.map((o) => o.id)]);
+  const propuestos = new Set(allSolicitudes()
+    .filter((s) => s.origen === 'propuesta' && s.estado === 'Enviada' && orgIds.has(s.proponenteId)).map((s) => s.deportistaId));
+  return allDeportistas().filter(esDeportista)
+    .filter((d) => d.clubIds.some((c) => clubIds.has(c)) || propuestos.has(d.id)
+      || (!d.clubIds.length && d.registradoPor && orgIds.has(d.registradoPor)));
+}
+
+/* ─── Registro por organismo ───
+   Todos los organismos registran deportistas (P-07 respondida, reunión con Producto 2026-10-09).
+   Lo registra un club: queda Vinculado a ese club. Lo registra otro nivel: queda autodeclarado
+   y el club que indica queda como propuesta (afiliación Solicitada) que ese club confirma en su
+   bandeja (decisión 2026-10-13; igual que el territorial, P-12). Al deportista nuevo le llega un
+   correo para completar su perfil. */
+export function registrarDeportista(datos, actorOrgId) {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const actor = getOrganismo(actorOrgId);
+  const dep = {
+    modalidad: '', ...datos,
+    id: `DEP-N${String(nuevos.length + 1).padStart(3, '0')}`,
+    registradoPor: actorOrgId, origen: 'organismo', fechaRegistro: _todayISO()
+  };
+  delete dep.clubId; delete dep.estado;
+  nuevos.push(dep);
+  writeStore('deportistas-nuevos', nuevos);
+  if (actor && actor.tipo === 'club') cambiarAfiliacion(dep.id, actor.id, 'Vinculada', { deporte: dep.deporte, origen: 'club' });
+  auditLog({ orgId: actorOrgId, fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, accion: 'Registro de deportista' });
+  return getDeportista(dep.id);
+}
+
+/* Persona del SUID por número de documento. Si ya existe no se crea otra: manda el primer
+   registro y su correo no cambia (reunión 2026-10-09). */
+export function personaPorDocumento(numDoc) {
+  const n = String(numDoc == null ? '' : numDoc).replace(/\D/g, '');
+  if (!n) return null;
+  return allDeportistas().find((d) => String(d.numDoc || '').replace(/\D/g, '') === n) || null;
+}
+
+/* Un nivel distinto al club propone el club del deportista: queda Solicitada hasta que el club confirme. */
+export function proponerClub(depId, clubId, proponenteId) {
+  const dep = getDeportista(depId);
+  const sol = crearSolicitud(depId, clubId, { origen: 'propuesta', proponenteId });
+  auditLog({ orgId: proponenteId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : '', accion: 'Club propuesto', a: (getOrganismo(clubId) || {}).nombre || clubId });
+  return sol;
+}
+
+/* ─── Carga masiva de deportistas por un organismo (DEP-609) ───
+   Recibe las filas ya validadas: { existenteId?, datos?, clubId? }.
+   - Nuevo: se crea como el registro individual y le llega un correo para completar su perfil.
+   - Existente: no se crea otra persona; conserva sus datos y su correo.
+   - Club: si carga el propio club, queda vinculado; si carga otro nivel, el club queda
+     propuesto y lo confirma en su bandeja. Sin club (aún no existe): queda autodeclarado. */
+export function cargarDeportistas(filas, actorOrgId, meta = {}) {
+  const actor = getOrganismo(actorOrgId);
+  const esClub = actor && actor.tipo === 'club';
+  const out = { nuevos: [], existentes: [], propuestas: [], vinculados: [], sinClub: [] };
+  (filas || []).forEach((f) => {
+    let dep = f.existenteId ? getDeportista(f.existenteId) : null;
+    if (dep) out.existentes.push(dep);
+    else {
+      dep = registrarDeportista({ ...f.datos, cargue: meta.cargueId || null }, actorOrgId);
+      auditLog({ orgId: actorOrgId, fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, responsable: meta.responsable || '', accion: 'Correo para completar el perfil', a: dep.correo, notif: true });
+      out.nuevos.push(dep);
+    }
+    if (esClub) {
+      if (f.existenteId) asociarAutodeclarado(dep.id, actor.id, { responsable: meta.responsable || '' });
+      out.vinculados.push(dep);
+    } else if (f.clubId) {
+      proponerClub(dep.id, f.clubId, actorOrgId);
+      out.propuestas.push({ deportistaId: dep.id, clubId: f.clubId });
+    } else out.sinClub.push(dep);
+  });
+  return out;
+}
+
+/* Contadores heredados del subárbol de `orgId`:
+   { federaciones, ligas, clubes, deportistas }. `orgId === null` → totales
+   de todo el SND (para la raíz de Mindeporte). */
+export function countDescendants(orgId) {
+  const sub = subtreeOf(orgId);
+  const c = { federaciones: 0, ligas: 0, clubes: 0, deportistas: 0 };
+  sub.forEach((o) => {
+    if (o.tipo === 'federacion') c.federaciones++;
+    else if (o.tipo === 'liga') c.ligas++;
+    else if (o.tipo === 'club') c.clubes++;
+  });
+  c.deportistas = deportistasOf(orgId).length;
+  return c;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Escritura — alta de organismo (T3 · registro por tipo).
+   Persiste en el store de sesión `organismos-nuevos`, de modo que
+   allOrganismos() / childrenOf() / subtreeOf() ya lo incluyan y el
+   organismo aparezca en la jerarquía (jerarquia.html) bajo su superior.
+   NO muta el seed. Devuelve una COPIA del registro creado.
+   ═══════════════════════════════════════════════════════════════ */
+const ID_PREFIX = { comite: 'COM', federacion: 'FED', liga: 'LIG', club: 'CLU' };
+
+/* Siguiente id legible por tipo. El sufijo `N###` distingue lo creado en la
+   demo de los ids del seed (FED-001…), evitando colisiones. */
+export function nextOrgId(tipo) {
+  const prefix = ID_PREFIX[tipo] || 'ORG';
+  const nuevos = readStore('organismos-nuevos', []) || [];
+  const n = nuevos.filter((o) => o.tipo === tipo).length + 1;
+  return `${prefix}-N${String(n).padStart(3, '0')}`;
+}
+
+/* Crea un organismo nuevo. `org` debe traer al menos { tipo, nombre, parentId }.
+   Por defecto queda estado 'Preinscrito' (§3.2) y ficticio:true. */
+export function addOrganismo(org) {
+  const nuevos = readStore('organismos-nuevos', []) || [];
+  const record = {
+    estado: 'Preinscrito',
+    ficticio: true,
+    fechaRegistro: new Date().toISOString().slice(0, 10),
+    ...org,
+    id: org.id || nextOrgId(org.tipo)
+  };
+  nuevos.push(record);
+  writeStore('organismos-nuevos', nuevos);
+  /* El club entra a su primera liga por la misma relación de afiliación; se vincula al activarse. */
+  if (record.tipo === 'club' && record.parentId) solicitarAfiliacion({ tipo: 'club', sujetoId: record.id, organismoId: record.parentId, deporte: record.deporte, origen: 'activacion' });
+  return { ...record };
+}
+
+/* Organismos en estado Activo de un tipo, ordenados por nombre. Alimenta los
+   dropdowns dependientes de la jerarquía del registro: la Liga elige su
+   Federación (Activa) y el Club elige su Liga (Activa) — "pre-registro bajo
+   su superior" (ORG-03/04). Copias inmutables. */
+export function activosDeTipo(tipo) {
+  return allOrganismos()
+    .filter((o) => o.tipo === tipo && o.estado === 'Activo')
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    .map((o) => ({ ...o }));
+}
+
+/* Comité (cabeza de sector) al que pertenece un sector dado — para derivar el
+   parentId de una Federación a partir de su sector (Olímpico→COC, etc.). */
+export function comitePorSector(sector) {
+  return allOrganismos().find((o) => o.tipo === 'comite' && o.sector === sector) || null;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Cargue masivo (T4) — alta en lote + historial/auditoría.
+   ═══════════════════════════════════════════════════════════════ */
+/* Alta en lote: crea cada fila como Preinscrito (vía addOrganismo, que persiste
+   en organismos-nuevos → ya aparece en la jerarquía bajo su superior). Cada
+   addOrganismo lee/escribe el store en secuencia, así que los ids N### no
+   colisionan. Devuelve el array de organismos creados (copias). */
+export function addOrganismosBulk(rows) {
+  return (rows || []).map((r) => addOrganismo(r));
+}
+
+/* Historial de cargues (auditoría de la pantalla de cargue masivo). Guarda
+   { fecha, responsable, tipo, archivo{nombre,tamano}, totales{filas,cargadas,error}, version }.
+   Devuelve el registro creado (con id CG-###). Más reciente primero. */
+export function recordCargue(entry) {
+  const list = readStore('cargues', []) || [];
+  const record = { id: 'CG-' + String(list.length + 1).padStart(3, '0'), ...entry };
+  list.unshift(record);
+  writeStore('cargues', list);
+  return { ...record };
+}
+export function allCargues() {
+  return (readStore('cargues', []) || []).map((c) => ({ ...c }));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Bandeja de aprobaciones (T5) — actualización de estado + auditoría.
+   No muta el seed: los organismos del seed se editan vía `organismos-overrides`,
+   los creados en la demo directamente en `organismos-nuevos`.
+   ═══════════════════════════════════════════════════════════════ */
+export function updateOrganismo(id, patch) {
+  const nuevos = readStore('organismos-nuevos', []) || [];
+  const i = nuevos.findIndex((o) => o.id === id);
+  if (i >= 0) {
+    nuevos[i] = { ...nuevos[i], ...patch };
+    writeStore('organismos-nuevos', nuevos);
+  } else {
+    const overrides = readStore('organismos-overrides', {}) || {};
+    overrides[id] = { ...(overrides[id] || {}), ...patch };
+    writeStore('organismos-overrides', overrides);
+  }
+  return getOrganismo(id);
+}
+
+/* Cambia el estado de un organismo y registra la transición en la auditoría.
+   `meta`: { responsable, rol, accion, motivo, fecha, patch } (patch = campos extra). */
+export function setEstado(id, estado, meta = {}) {
+  const prev = getOrganismo(id);
+  const updated = updateOrganismo(id, { estado, ...(meta.patch || {}) });
+  if (updated && updated.tipo === 'club' && updated.parentId) {
+    if (estado === 'Activo') cambiarAfiliacion(id, updated.parentId, 'Vinculada', { tipo: 'club', origen: 'activacion' });
+    if (estado === 'Rechazado') cambiarAfiliacion(id, updated.parentId, 'Rechazada', { motivo: meta.motivo });
+    if (estado === 'En revisión') solicitarAfiliacion({ tipo: 'club', sujetoId: id, organismoId: updated.parentId, deporte: updated.deporte, origen: 'activacion' });
+  }
+  auditLog({
+    orgId: id, notif: true, fecha: meta.fecha || new Date().toISOString().slice(0, 10),
+    responsable: meta.responsable || '', rol: meta.rol || '',
+    accion: meta.accion || 'Cambio de estado',
+    de: prev ? prev.estado : '', a: estado, motivo: meta.motivo || ''
+  });
+  return updated;
+}
+
+/* ─── Ciclo del organismo (Fase 1) ─── */
+const DESDE_ENVIO = ['Preinscrito', 'En corrección', 'Rechazado'];
+
+/* El propio organismo envía su formulario: Preinscrito (cargue masivo) o devuelto → En revisión
+   en la bandeja de su superior. En federaciones, los dos avales vuelven a empezar. */
+export function enviarRegistro(id, patch = {}, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
+  const extra = o.tipo === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {};
+  return setEstado(id, 'En revisión', {
+    ...meta, accion: o.estado === 'Preinscrito' ? 'Formulario enviado' : 'Corregido y reenviado',
+    patch: { ...patch, ...extra, enviadoFecha: new Date().toISOString().slice(0, 10) }
+  });
+}
+
+/* Sanción del Ministerio (motivo libre obligatorio, P-08). Suspendido: el organismo no opera mientras
+   dure; lo que depende de él NO cambia de estado (P-18). Cancelado: reemplaza al borrado (P-06), no
+   vuelve. Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si
+   no tienen otro club (P-18). */
+export function sancionar(id, estado, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || !['Suspendido', 'Cancelado'].includes(estado)) return o;
+  if (!(o.estado === 'Activo' || (estado === 'Cancelado' && o.estado === 'Suspendido'))) return o;
+  const res = setEstado(id, estado, { ...meta, accion: estado === 'Suspendido' ? 'Suspendido por el Ministerio' : 'Cancelado por el Ministerio' });
+  if (estado === 'Cancelado' && o.tipo === 'club') terminarAfiliacionesDeClub(id);
+  return res;
+}
+function terminarAfiliacionesDeClub(clubId) {
+  const motivo = 'Club cancelado por el Ministerio';
+  afiliacionesHacia(clubId).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(a.sujetoId, clubId, 'Terminada', { motivo, fin: 'cancelacion' });
+    else if (a.estado === 'Solicitada') cambiarAfiliacion(a.sujetoId, clubId, 'Rechazada', { motivo });
+  });
+  afiliacionesDe(clubId, { vigentes: true }).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(clubId, a.organismoId, 'Terminada', { motivo, fin: 'cancelacion' });
+  });
+}
+
+/* Reactivación (P-08): nueva validación sobre los datos que ya existen. El organismo
+   suspendido vuelve a En revisión en la bandeja de su superior; no se activa directo. */
+export function reactivar(id, meta = {}) {
+  const o = getOrganismo(id);
+  if (!o || o.estado !== 'Suspendido') return o;
+  const extra = o.tipo === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {};
+  return setEstado(id, 'En revisión', { ...meta, accion: 'Reactivación: vuelve a revisión', patch: extra });
+}
+
+/* Último cambio que dejó al organismo en su estado actual (quién, cuándo, motivo), o null. */
+export function ultimoCambio(id) {
+  const o = getOrganismo(id);
+  return o ? (allAudit(id).find((a) => a.a === o.estado && a.de !== a.a) || null) : null;
+}
+
+/* Log de auditoría (acciones sobre organismos). Más reciente primero. */
+export function auditLog(entry) {
+  const list = readStore('audit', []) || [];
+  const record = { id: 'AU-' + String(list.length + 1).padStart(4, '0'), ...entry };
+  list.unshift(record);
+  writeStore('audit', list);
+  return { ...record };
+}
+export function allAudit(orgId) {
+  const list = (readStore('audit', []) || []).map((a) => ({ ...a }));
+  return orgId ? list.filter((a) => a.orgId === orgId) : list;
+}
+
+/* Trazabilidad demo (ORG-07): siembra el ciclo de vida real del hilo conductor
+   (Fed. Patinaje → Liga del Valle → Club Patín Cali) para que el Historial del
+   perfil muestre transiciones con responsable/fecha/motivo. Idempotente y solo
+   en modo demo (en modo guiado/vacío el historial arranca vacío, coherente con
+   un organismo aún sin gestionar). auditLog hace unshift → se siembra en orden
+   cronológico (más antiguo primero) para que quede el más reciente arriba. */
+export function seedTrazabilidadDemo() {
+  const mode = (function () { try { return localStorage.getItem('naowee-organismos-demo-mode'); } catch (_) { return null; } })();
+  if (mode === 'blank') return;                         // modo guiado/vacío → sin historial sembrado
+  seedCicloDemo();
+  if (allAudit('FED-040').length) return;               // idempotente
+  const trail = [
+    // Fed. Patinaje: la cargó el Comité (Preinscrita), completó y envió; doble validación Comité + Ministerio
+    { orgId: 'FED-040', fecha: '2026-02-10', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'FED-040', fecha: '2026-02-12', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Formulario enviado', de: 'Preinscrito', a: 'En revisión', motivo: '' },
+    { orgId: 'FED-040', fecha: '2026-02-16', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Aval del Comité registrado', de: 'En revisión', a: 'En revisión', motivo: 'Doble validación: mitad del Comité aprobada' },
+    { orgId: 'FED-040', fecha: '2026-02-20', responsable: 'María F. Rojas', rol: 'Ministerio', accion: 'Habilitada por el Ministerio', de: 'En revisión', a: 'Activo', motivo: 'Doble validación completa (Ministerio + Comité)' },
+    // Liga del Valle: la cargó la Federación, completó y envió; la aprueba la Federación
+    { orgId: 'LIG-001', fecha: '2026-03-02', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'LIG-001', fecha: '2026-03-05', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Formulario enviado', de: 'Preinscrito', a: 'En revisión', motivo: '' },
+    { orgId: 'LIG-001', fecha: '2026-03-08', responsable: 'Alberto Herrera', rol: 'Federación', accion: 'Habilitada por la Federación', de: 'En revisión', a: 'Activo', motivo: 'Reconocimiento deportivo (IVC) verificado' },
+    // Club Patín Cali: autorregistro público; la Liga devuelve a corrección, el club corrige y reenvía
+    { orgId: 'CLU-001', fecha: '2026-03-15', responsable: 'Óscar Cardona', rol: 'Club', accion: 'Registro público', de: '', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-001', fecha: '2026-03-18', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Corrección solicitada', de: 'En revisión', a: 'En corrección', motivo: 'Falta el reconocimiento del ente municipal' },
+    { orgId: 'CLU-001', fecha: '2026-03-21', responsable: 'Óscar Cardona', rol: 'Club', accion: 'Corregido y reenviado', de: 'En corrección', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-001', fecha: '2026-03-25', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Habilitado por la Liga', de: 'En revisión', a: 'Activo', motivo: 'Documentación completa' }
+  ];
+  trail.forEach((e) => auditLog(e));
+}
+/* Fase 1: quién y por qué dejó a cada organismo de la demo en su estado (motivo visible en
+   «Mi organismo» y en la ficha). Guarda propia para sesiones que ya tenían la traza del hilo. */
+function seedCicloDemo() {
+  if (allAudit('CLU-012').length) return;
+  const M = 'María F. Rojas';
+  [
+    { orgId: 'CLU-002', fecha: '2026-06-10', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'LIG-005', fecha: '2026-06-01', responsable: 'Mónica Martínez Ospina', rol: 'Federación', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'FED-057', fecha: '2026-04-04', responsable: 'Camilo Duarte', rol: 'Comité (COC)', accion: 'Cargue masivo', de: '', a: 'Preinscrito', motivo: '' },
+    { orgId: 'CLU-012', fecha: '2026-09-20', responsable: 'Mauricio Gil Restrepo', rol: 'Club', accion: 'Registro público', de: '', a: 'En revisión', motivo: '' },
+    { orgId: 'CLU-012', fecha: '2026-09-24', responsable: 'Sandra Mejía', rol: 'Liga', accion: 'Corrección solicitada', de: 'En revisión', a: 'En corrección', motivo: 'Documentación incompleta — falta el reconocimiento deportivo del ente municipal' },
+    { orgId: 'CLU-008', fecha: '2026-05-28', responsable: 'Diego Ospina Marín', rol: 'Liga', accion: 'Rechazado', de: 'En revisión', a: 'Rechazado', motivo: 'Reconocimiento deportivo no válido o vencido — venció en enero de 2026' },
+    { orgId: 'LIG-007', fecha: '2026-04-15', responsable: 'Ángela Naranjo Rodríguez', rol: 'Federación', accion: 'Rechazado', de: 'En revisión', a: 'Rechazado', motivo: 'Datos del representante legal incorrectos' },
+    { orgId: 'LIG-008', fecha: '2026-08-12', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'Investigación disciplinaria abierta por la Inspección, Vigilancia y Control' },
+    { orgId: 'CLU-010', fecha: '2026-07-30', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'Reconocimiento deportivo vencido sin renovar' },
+    { orgId: 'FED-037', fecha: '2026-06-18', responsable: M, rol: 'Ministerio', accion: 'Suspendido por el Ministerio', de: 'Activo', a: 'Suspendido', motivo: 'No presentó informe de gestión anual' }
+  ].forEach((e) => auditLog(e));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Afiliación del deportista (T7 · ORG-05) — solicitudes deportista→club.
+   Store `naowee-organismos-solicitudes` (sessionStorage, prefijo del módulo,
+   efímero). Estado del deportista (autodeclarado↔vinculado) vía overrides —
+   NUNCA muta el seed. Al aprobar, el club hereda su cadena: se asigna clubId al
+   deportista y su liga/federación/comité se derivan con ancestorsOf(clubId).
+   Estados de solicitud (§3.3, estados.js ESTADOS_SOLICITUD): Enviada → Aprobada
+   / Rechazada; Retirada la marca el propio deportista.
+   ═══════════════════════════════════════════════════════════════ */
+const _todayISO = () => new Date().toISOString().slice(0, 10);
+const _norm = (s) => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/* Persiste un cambio en un deportista (seed vía overrides; nuevos in-place).
+   No muta el seed base. Devuelve la copia resultante. */
+export function updateDeportista(id, patch) {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const i = nuevos.findIndex((d) => d.id === id);
+  if (i >= 0) {
+    nuevos[i] = { ...nuevos[i], ...patch };
+    writeStore('deportistas-nuevos', nuevos);
+  } else {
+    const ov = readStore('deportistas-overrides', {}) || {};
+    ov[id] = { ...(ov[id] || {}), ...patch };
+    writeStore('deportistas-overrides', ov);
+  }
+  return getDeportista(id);
+}
+
+/* Todas las solicitudes (más reciente primero). Copias inmutables. */
+export function allSolicitudes() {
+  return (readStore('solicitudes', []) || []).map((s) => ({ ...s }));
+}
+/* Solicitudes dirigidas a un club (todas las de la vida del club, cualquier estado). */
+export function solicitudesDeClub(clubId) {
+  return allSolicitudes().filter((s) => s.clubId === clubId);
+}
+/* La solicitud más reciente de un deportista (la lista se guarda con unshift). */
+export function solicitudDeDeportista(deportistaId) {
+  return allSolicitudes().find((s) => s.deportistaId === deportistaId) || null;
+}
+
+/* Crea una solicitud de afiliación (Enviada) hacia un club y abre la afiliación Solicitada.
+   La solicitud es el ítem de la bandeja del club; la afiliación es la relación. Con
+   multi-afiliación el deportista puede tener solicitudes vivas a varios clubes, pero no
+   dos al mismo. `meta.origen`: 'solicitud' (el deportista) | 'propuesta' (otro nivel o el
+   territorial, con `proponenteId`). */
+export function crearSolicitud(deportistaId, clubId, meta = {}) {
+  const list = readStore('solicitudes', []) || [];
+  const dep = getDeportista(deportistaId);
+  const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== 'retiro' && s.estado === 'Enviada');
+  if (prev) return { ...prev };
+  const origen = meta.origen || 'solicitud';
+  const rec = {
+    id: 'AF-' + String(list.length + 1).padStart(3, '0'),
+    tipo: 'afiliacion', deportistaId, clubId, estado: 'Enviada', fecha: _todayISO(), origen,
+    ...(meta.proponenteId ? { proponenteId: meta.proponenteId } : {})
+  };
+  list.unshift(rec);
+  writeStore('solicitudes', list);
+  solicitarAfiliacion({ sujetoId: deportistaId, organismoId: clubId, deporte: dep ? dep.deporte : '', origen, proponenteId: meta.proponenteId || null });
+  const proponente = meta.proponenteId ? getOrganismo(meta.proponenteId) : null;
+  auditLog({
+    orgId: clubId, deportistaId, deportistaNombre: dep ? dep.nombre : '',
+    fecha: rec.fecha, responsable: proponente ? proponente.nombre : (dep ? dep.nombre : ''), rol: proponente ? proponente.tipo.toUpperCase() : 'DEPORTISTA',
+    accion: origen === 'propuesta' ? 'Club propuesto para el deportista' : 'Solicitud de afiliación enviada', de: '', a: 'Enviada', motivo: ''
+  });
+  return { ...rec };
+}
+
+/* Solicitud de BAJA de UN club (el deportista sigue en los demás). No desvincula de
+   inmediato: el club confirma el retiro en su bandeja. Sin `clubId`, el primer club vigente. */
+export function crearSolicitudRetiro(deportistaId, clubId) {
+  const dep = getDeportista(deportistaId);
+  const club = clubId || (dep && dep.clubId);
+  if (!dep || !club || !dep.clubIds.includes(club)) return null;
+  const list = readStore('solicitudes', []) || [];
+  const viva = list.find((s) => s.tipo === 'retiro' && s.deportistaId === deportistaId && s.clubId === club && s.estado === 'Enviada');
+  if (viva) return { ...viva };
+  const rec = {
+    id: 'RT-' + String(list.length + 1).padStart(3, '0'),
+    tipo: 'retiro', deportistaId, clubId: club, estado: 'Enviada', fecha: _todayISO()
+  };
+  list.unshift(rec);
+  writeStore('solicitudes', list);
+  auditLog({
+    orgId: club, deportistaId, deportistaNombre: dep.nombre,
+    fecha: rec.fecha, responsable: dep.nombre, rol: 'DEPORTISTA',
+    accion: 'Solicitud de baja enviada', de: 'Vinculado', a: 'Baja solicitada', motivo: ''
+  });
+  return { ...rec };
+}
+
+/* Solicitud de baja activa (Enviada) de un deportista, o null. Con `clubId`, la de ese club. */
+export function retiroPendienteDe(deportistaId, clubId) {
+  return allSolicitudes().find((s) => s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada' && (!clubId || s.clubId === clubId)) || null;
+}
+
+/* El deportista cancela su solicitud de baja antes de que el club la resuelva. */
+export function cancelarRetiro(deportistaId, clubId) {
+  const dep = getDeportista(deportistaId);
+  const list = readStore('solicitudes', []) || [];
+  let club = null;
+  const upd = list.map((s) => {
+    if (s.tipo === 'retiro' && s.deportistaId === deportistaId && s.estado === 'Enviada' && (!clubId || s.clubId === clubId)) {
+      club = s.clubId; return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
+    }
+    return s;
+  });
+  if (club) {
+    writeStore('solicitudes', upd);
+    auditLog({
+      orgId: club, deportistaId, deportistaNombre: dep ? dep.nombre : '',
+      fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
+      accion: 'Solicitud de baja cancelada', de: 'Baja solicitada', a: 'Retirada', motivo: ''
+    });
+  }
+  return getDeportista(deportistaId);
+}
+
+/* El club resuelve una solicitud. `resultado` ∈ {'aprobada','rechazada'}.
+   Afiliación aprobada → Vinculada: hereda la cadena de ESE club (ancestorsOf), sin perder
+   las demás. Baja aprobada → esa afiliación Terminada. Rechazo: motivo obligatorio (UI). */
+export function resolverAfiliacion(solicitudId, resultado, meta = {}) {
+  const list = readStore('solicitudes', []) || [];
+  const i = list.findIndex((s) => s.id === solicitudId);
+  if (i < 0) return null;
+  const s = list[i];
+  const esRetiro = s.tipo === 'retiro';
+  const estadoSol = resultado === 'aprobada' ? 'Aprobada' : 'Rechazada';
+  list[i] = { ...s, estado: estadoSol, motivo: meta.motivo || '', responsable: meta.responsable || '', resueltaFecha: _todayISO() };
+  writeStore('solicitudes', list);
+  const dep = getDeportista(s.deportistaId);
+  if (esRetiro) {
+    if (resultado === 'aprobada') cambiarAfiliacion(s.deportistaId, s.clubId, 'Terminada', { fin: 'retiro' });
+  } else {
+    cambiarAfiliacion(s.deportistaId, s.clubId, resultado === 'aprobada' ? 'Vinculada' : 'Rechazada', { motivo: meta.motivo });
+  }
+  auditLog({
+    orgId: s.clubId, deportistaId: s.deportistaId, deportistaNombre: dep ? dep.nombre : '',
+    fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
+    accion: esRetiro
+      ? (resultado === 'aprobada' ? 'Baja confirmada' : 'Baja rechazada')
+      : (resultado === 'aprobada' ? 'Afiliación aprobada' : 'Afiliación rechazada'),
+    de: esRetiro ? 'Baja solicitada' : 'Enviada', a: estadoSol, motivo: meta.motivo || '', notif: true
+  });
+  return { ...list[i] };
+}
+
+/* El deportista retira su solicitud pendiente (o su afiliación) de un club. Sin `clubId`
+   actúa sobre todo lo vivo, como antes de la multi-afiliación ("cambiar de club" = retiro
+   + nueva solicitud). Audita. */
+export function retirarAfiliacion(deportistaId, meta = {}, clubId) {
+  const dep = getDeportista(deportistaId);
+  const list = readStore('solicitudes', []) || [];
+  const clubes = new Set();
+  const upd = list.map((s) => {
+    if (s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada') && (!clubId || s.clubId === clubId)) {
+      clubes.add(s.clubId);
+      return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
+    }
+    return s;
+  });
+  writeStore('solicitudes', upd);
+  if (dep) (clubId ? [clubId] : dep.clubIds).forEach((c) => clubes.add(c));
+  clubes.forEach((c) => {
+    const era = dep && dep.clubIds.includes(c);
+    cambiarAfiliacion(deportistaId, c, era ? 'Terminada' : 'Rechazada', { fin: 'retiro', motivo: era ? '' : 'Retirada por el deportista' });
+    auditLog({
+      orgId: c, deportistaId, deportistaNombre: dep ? dep.nombre : '',
+      fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
+      accion: 'Afiliación retirada', de: era ? 'Vinculado' : 'Enviada', a: 'Retirada', motivo: ''
+    });
+  });
+  return getDeportista(deportistaId);
+}
+
+/* ─── Desvinculación POR EL CLUB (ORG-10) ─────────────────────────────
+   Unilateral, motivo obligatorio y traza, sin apelación; se avisa al deportista y a la liga del
+   club (P-04/P-10, cerradas el 2026-10-13). Termina SOLO la afiliación a
+   ese club; si el deportista está en otros, sigue Vinculado allí. Reversible: puede volver
+   a solicitar. `meta.clubId`: el club que desvincula (por defecto, el primero vigente). */
+export function desvincularPorClub(deportistaId, meta = {}) {
+  const dep = getDeportista(deportistaId);
+  const clubPrev = meta.clubId || (dep && dep.clubId);
+  if (!dep || !clubPrev || !dep.clubIds.includes(clubPrev)) return null;
+
+  const list = readStore('solicitudes', []) || [];
+  const cerradas = list.map((s) => (
+    s.deportistaId === deportistaId && s.clubId === clubPrev && (s.estado === 'Enviada' || s.estado === 'Aprobada')
+      ? { ...s, estado: 'Retirada', resueltaFecha: _todayISO() }
+      : s
+  ));
+  const registro = {
+    id: 'SOL-' + String(cerradas.length + 1).padStart(3, '0') + '-DSV',
+    tipo: 'desvinculacion', deportistaId, clubId: clubPrev,
+    estado: 'Desvinculado', fecha: _todayISO(), resueltaFecha: _todayISO(),
+    motivo: meta.motivo || '', responsable: meta.responsable || ''
+  };
+  writeStore('solicitudes', [registro, ...cerradas]);
+  cambiarAfiliacion(deportistaId, clubPrev, 'Terminada', { fin: 'desvinculacion', motivo: meta.motivo });
+  const quedan = getDeportista(deportistaId).clubIds.length;
+  auditLog({
+    orgId: clubPrev, deportistaId, deportistaNombre: dep.nombre,
+    fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
+    accion: 'Deportista desvinculado (aviso al deportista y a la liga)', de: 'Vinculado', a: quedan ? 'Vinculado en otro club' : 'Autodeclarado',
+    motivo: meta.motivo || ''
+  });
+  return getDeportista(deportistaId);
+}
+
+/* ─── Fase 2 · personas y afiliación ─── */
+/* Edad cumplida a hoy desde 'aaaa-mm-dd', o null. */
+export function edadDe(fechaNac) {
+  if (!fechaNac) return null;
+  const [y, m, d] = fechaNac.split('-').map(Number); const h = new Date();
+  return h.getFullYear() - y - ((h.getMonth() + 1 < m || (h.getMonth() + 1 === m && h.getDate() < d)) ? 1 : 0);
+}
+/* Menores a cargo de un tutor. */
+export function menoresDe(tutorId) { return allDeportistas().filter((d) => d.tutorId === tutorId); }
+
+/* El tutor registra a un menor: queda deportista autodeclarado a su cargo (solo el tutor lo crea, P-21).
+   No pasa por bandeja: el menor no pertenece a ningún organismo hasta que pida afiliación. */
+export function registrarMenor(tutorId, datos) {
+  const nuevos = readStore('deportistas-nuevos', []) || [];
+  const dep = { modalidad: '', correo: '', ...datos, id: `DEP-M${String(nuevos.length + 1).padStart(3, '0')}`, tutorId, origen: 'tutor', fechaRegistro: _todayISO() };
+  delete dep.clubId; delete dep.estado;
+  nuevos.push(dep);
+  writeStore('deportistas-nuevos', nuevos);
+  const tutor = getDeportista(tutorId);
+  auditLog({ orgId: '', fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, responsable: tutor ? tutor.nombre : '', rol: 'Tutor', accion: 'Menor registrado por su tutor' });
+  return getDeportista(dep.id);
+}
+
+/* Personal deportivo ↔ organismo (P-05): la persona pide el vínculo y ese organismo lo confirma. */
+export function solicitarVinculo(personaId, orgId, rol) {
+  const p = getDeportista(personaId);
+  const rec = solicitarAfiliacion({ tipo: 'personal', sujetoId: personaId, organismoId: orgId, deporte: p ? p.deporte : '', origen: 'solicitud' });
+  if (rol) { const list = allAfiliaciones(); const i = list.findIndex((a) => a.id === rec.id); if (i >= 0) { list[i] = { ...list[i], rol }; writeStore('afiliaciones', list); } }
+  auditLog({ orgId, fecha: _todayISO(), deportistaId: personaId, deportistaNombre: p ? p.nombre : '', responsable: p ? p.nombre : '', rol: 'Personal deportivo', accion: 'Vínculo de personal solicitado', a: 'Solicitado' });
+  return rec;
+}
+/* El organismo (o la persona, al retirarse) resuelve un vínculo de personal. */
+export function resolverVinculo(personaId, orgId, estado, meta = {}) {
+  const p = getDeportista(personaId);
+  const r = cambiarAfiliacion(personaId, orgId, estado, { tipo: 'personal', ...meta });
+  const ACC = { Vinculada: 'Vínculo de personal aprobado', Rechazada: 'Vínculo de personal rechazado', Terminada: 'Vínculo de personal terminado' };
+  auditLog({ orgId, fecha: _todayISO(), deportistaId: personaId, deportistaNombre: p ? p.nombre : '', responsable: meta.responsable || '', rol: meta.rol || '', accion: ACC[estado] || 'Vínculo actualizado', a: estado, motivo: meta.motivo || '', notif: true });
+  return r;
+}
+/* Personal vinculado o pendiente de un organismo. */
+export function personalDe(orgId) {
+  return allAfiliaciones().filter((a) => a.tipo === 'personal' && a.organismoId === orgId && ['Solicitada', 'Vinculada'].includes(a.estado))
+    .map((a) => ({ ...a, persona: getDeportista(a.sujetoId) })).filter((a) => a.persona);
+}
+
+/* El club asocia a un deportista autodeclarado que encontró (nao-docs, Afiliación · El flujo, paso 2). */
+export function asociarAutodeclarado(depId, clubId, meta = {}) {
+  const dep = getDeportista(depId);
+  const r = cambiarAfiliacion(depId, clubId, 'Vinculada', { deporte: dep ? dep.deporte : '', origen: 'club' });
+  auditLog({ orgId: clubId, fecha: _todayISO(), deportistaId: depId, deportistaNombre: dep ? dep.nombre : '', responsable: meta.responsable || '', rol: 'CLUB', accion: 'Deportista asociado por el club', de: 'Autodeclarado', a: 'Vinculado', notif: true });
+  return r;
+}
+/* Autodeclarados que un club puede buscar y asociar (no menores: a un menor lo afilia su tutor). */
+export function buscarAutodeclarados(query, deportes) {
+  const q = _norm(String(query || '').trim());
+  if (q.length < 3) return [];
+  /* Solo de los deportes del club: un ciclista no entra a un club de patinaje. */
+  return allDeportistas().filter((d) => esDeportista(d) && d.estado === 'autodeclarado' && !d.tutorId && (!deportes || deportes.includes(d.deporte))
+    && (_norm(d.nombre).includes(q) || _norm(d.numDoc).includes(q)));
+}
+
+/* Club → otra liga de sus deportes (P-20): el club pide y esa liga aprueba solo el vínculo. */
+export function ligasDisponiblesPara(clubId) {
+  const c = getOrganismo(clubId);
+  if (!c) return [];
+  const ya = new Set(afiliacionesDe(clubId).filter((a) => ['Solicitada', 'Vinculada'].includes(a.estado)).map((a) => a.organismoId));
+  return allOrganismos().filter((l) => l.tipo === 'liga' && l.estado === 'Activo' && !ya.has(l.id) && l.deportes.some((d) => c.deportes.includes(d)));
+}
+export function solicitarLiga(clubId, ligaId, meta = {}) {
+  const c = getOrganismo(clubId);
+  const rec = solicitarAfiliacion({ tipo: 'club', sujetoId: clubId, organismoId: ligaId, deporte: c ? c.deporte : '', origen: 'solicitud' });
+  auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || '', rol: 'Club', accion: `Afiliación solicitada a ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: 'Solicitada', notif: true });
+  return rec;
+}
+/* Solicitudes de clubes ya activos que piden entrar a esta liga (no su activación). */
+export function clubesQuePidenLiga(ligaId) {
+  return allAfiliaciones().filter((a) => a.tipo === 'club' && a.organismoId === ligaId && a.estado === 'Solicitada')
+    .map((a) => ({ ...a, club: getOrganismo(a.sujetoId) })).filter((a) => a.club && a.club.estado === 'Activo');
+}
+export function resolverLiga(clubId, ligaId, estado, meta = {}) {
+  const r = cambiarAfiliacion(clubId, ligaId, estado, { tipo: 'club', ...meta });
+  auditLog({ orgId: clubId, fecha: _todayISO(), responsable: meta.responsable || '', rol: 'Liga', accion: estado === 'Vinculada' ? `Afiliación aprobada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}` : `Afiliación rechazada por ${(getOrganismo(ligaId) || {}).nombre || ligaId}`, a: estado, motivo: meta.motivo || '', notif: true });
+  return r;
+}
+
+/* ─── Fase 3 · jerarquía territorial (paralela a la deportiva, P-11/P-12) ───
+   Un territorio es { depto } o { depto, municipio }. Ubica organismos; no aprueba nada. */
+export const TER_PREFIX = 'TER:';
+export const territorioId = (t) => TER_PREFIX + (t.municipio ? `${t.depto}/${t.municipio}` : t.depto);
+export function territorioDesdeId(id) {
+  if (!id || !String(id).startsWith(TER_PREFIX)) return null;
+  const [depto, municipio] = String(id).slice(TER_PREFIX.length).split('/');
+  return municipio ? { depto, municipio } : { depto };
+}
+export const nombreTerritorio = (t) => (t.municipio ? `${t.municipio} (${t.depto})` : t.depto);
+/* Quién propuso o registró: un organismo o un usuario territorial. */
+export function nombreActor(id) {
+  const t = territorioDesdeId(id);
+  if (t) return `${t.municipio ? 'Encargado municipal' : 'Encargado departamental'} · ${nombreTerritorio(t)}`;
+  return (getOrganismo(id) || {}).nombre || id || '';
+}
+const enTerritorio = (o, t) => o.ubicacion && o.ubicacion.depto === t.depto && (!t.municipio || o.ubicacion.ciudad === t.municipio);
+/* Organismos ubicados en el territorio: el departamento ve sus ligas y los clubes de sus municipios;
+   el municipio, sus clubes. Comités y federaciones son nacionales: no los ve un territorial. */
+export function organismosDeTerritorio(t) {
+  return allOrganismos().filter((o) => (t.municipio ? o.tipo === 'club' : ['liga', 'club'].includes(o.tipo)) && enTerritorio(o, t));
+}
+/* Deportistas del territorio: los vinculados a un club ubicado allí y los autodeclarados que ese
+   usuario territorial registró. El deportista sin club no tiene territorio propio en el modelo. */
+export function deportistasDeTerritorio(t) {
+  const clubes = new Set(organismosDeTerritorio(t).filter((o) => o.tipo === 'club').map((o) => o.id));
+  const tid = territorioId(t);
+  return allDeportistas().filter(esDeportista).filter((d) => d.clubIds.some((c) => clubes.has(c)) || (!d.clubIds.length && d.registradoPor === tid));
+}
+
+/* ─── Fase 3 · usuarios del organismo y roles internos ───
+   Una sola cuenta principal por organismo (A-9). Esa cuenta crea los usuarios internos según el
+   catálogo: roles transversales (cualquier organismo) y roles por marca (funcionalidades olímpicas
+   del COC). Cada rol declara quién lo crea (árbol de creación). Sin borrado: se desactiva.
+   El Ministerio tiene varios administradores, creados por Naowee (A-7), y crea a los territoriales (A-2).
+   Reunión 2026-10-09: en la Suite los administradores del Ministerio son por módulo (Fomento → Eventos,
+   Infraestructura → Escenarios) bajo un administrador general. La matriz está pendiente con Producto;
+   en esta demo el Administrador del Ministerio es el del módulo de Organismos. */
+export const MARCAS = { COC: ['olimpica'] };
+export const CATALOGO_ROLES = [
+  { id: 'ADMIN', nombre: 'Administrador del organismo', desc: 'Cuenta principal: una por organismo. Aprueba al nivel de abajo, hace cargues y crea los usuarios internos.', creaRol: null, principal: true },
+  { id: 'REVISOR', nombre: 'Revisor de registros', desc: 'Aprueba, devuelve o rechaza registros del nivel de abajo en nombre del organismo. Es quien decide cuando el administrador también administra el organismo en revisión.', creaRol: 'ADMIN', transversal: true, propuesta: 'Propuesta de Arquitectura (P-16 y P-24)' },
+  { id: 'GESTOR_COC', nombre: 'Gestor de comité olímpico', desc: 'Invita y asigna metodólogos; ve el Ciclo Olímpico y sus deportistas.', creaRol: 'ADMIN', marca: 'olimpica' },
+  { id: 'METODOLOGO', nombre: 'Metodólogo', desc: 'Registra opiniones sobre los deportistas del Ciclo Olímpico (análisis cualitativo).', creaRol: 'GESTOR_COC', marca: 'olimpica' }
+];
+export const ROLES_MINISTERIO = [
+  { id: 'ADMIN_MIN', nombre: 'Administrador del Ministerio', desc: 'Administra el módulo de Organismos: crea comités, aprueba su parte de las federaciones, sanciona y ve todo el SND. En la Suite habrá administradores por módulo (matriz pendiente con Producto).', creaRol: 'NAOWEE' },
+  { id: 'TERRITORIAL', nombre: 'Encargado territorial', desc: 'Departamental o municipal. Consulta los organismos y deportistas de su territorio y registra deportistas autodeclarados con club propuesto. No aprueba.', creaRol: 'ADMIN_MIN' }
+];
+/* Roles del catálogo que puede tener este organismo (transversales + los de sus marcas). */
+export function rolesDelOrganismo(orgId) {
+  if (orgId === 'MIN') return ROLES_MINISTERIO;
+  const marcas = MARCAS[orgId] || [];
+  return CATALOGO_ROLES.filter((r) => r.principal || r.transversal || marcas.includes(r.marca));
+}
+const USUARIOS_SEED = [
+  { id: 'US-001', orgId: 'COC', rol: 'ADMIN', nombre: 'Camilo Duarte', doc: 'CC 79.456.123', correo: 'cduarte@coc.demo.co', estado: 'Activo', creadoPor: 'Ministerio del Deporte', fecha: '2025-11-02' },
+  { id: 'US-002', orgId: 'COC', rol: 'GESTOR_COC', nombre: 'Paula Andrea Ruiz', doc: 'CC 52.334.981', correo: 'pruiz@coc.demo.co', estado: 'Activo', creadoPor: 'Camilo Duarte', fecha: '2026-01-15' },
+  { id: 'US-003', orgId: 'COC', rol: 'METODOLOGO', nombre: 'Andrés Pineda', doc: 'CC 80.112.457', correo: 'apineda@coc.demo.co', estado: 'Activo', creadoPor: 'Paula Andrea Ruiz', fecha: '2026-02-03' },
+  { id: 'US-004', orgId: 'COC', rol: 'METODOLOGO', nombre: 'Lina Mora Castaño', doc: 'CC 1.020.443.118', correo: 'lmora@coc.demo.co', estado: 'Invitado', creadoPor: 'Paula Andrea Ruiz', fecha: '2026-10-08' },
+  { id: 'US-005', orgId: 'FED-040', rol: 'ADMIN', nombre: 'Alberto Herrera', doc: 'CC 16.789.234', correo: 'presidencia@fedepatinaje.demo.co', estado: 'Activo', creadoPor: 'Comité Olímpico Colombiano', fecha: '2026-02-20' },
+  { id: 'US-006', orgId: 'FED-040', rol: 'REVISOR', nombre: 'Jaime Ortiz Salcedo', doc: 'CC 79.880.214', correo: 'registros@fedepatinaje.demo.co', estado: 'Activo', creadoPor: 'Alberto Herrera', fecha: '2026-03-01' },
+  { id: 'US-007', orgId: 'LIG-001', rol: 'ADMIN', nombre: 'Sandra Mejía', doc: 'CC 31.567.890', correo: 'sandra.mejia@correo.demo.co', estado: 'Activo', creadoPor: 'Federación Colombiana de Patinaje', fecha: '2026-03-08' },
+  { id: 'US-008', orgId: 'CLU-001', rol: 'ADMIN', nombre: 'Óscar Cardona', doc: 'CC 94.321.678', correo: 'admin@clubpatincali.demo.co', estado: 'Activo', creadoPor: 'Liga de Patinaje del Valle', fecha: '2026-03-25' },
+  { id: 'US-009', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'María F. Rojas', doc: 'CC 41.234.567', correo: 'maria.rojas@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
+  { id: 'US-010', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'Jorge Iván Peña', doc: 'CC 79.553.120', correo: 'jorge.pena@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
+  { id: 'US-011', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Ana Lucía Valencia', doc: 'CC 66.912.345', correo: 'avalencia@valledelcauca.demo.gov.co', estado: 'Activo', creadoPor: 'María F. Rojas', fecha: '2026-08-01', ancla: { depto: 'Valle del Cauca' } },
+  { id: 'US-012', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Carlos Mario Ríos', doc: 'CC 16.743.002', correo: 'cmrios@cali.demo.gov.co', estado: 'Activo', creadoPor: 'María F. Rojas', fecha: '2026-08-04', ancla: { depto: 'Valle del Cauca', municipio: 'Cali' } },
+  { id: 'US-013', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Diana Castaño Gil', doc: 'CC 43.210.889', correo: 'dcastano@antioquia.demo.gov.co', estado: 'Invitado', creadoPor: 'Jorge Iván Peña', fecha: '2026-10-10', ancla: { depto: 'Antioquia' } }
+];
+export function usuariosDe(orgId) {
+  let list = readStore('usuarios', null);
+  if (!list) { list = USUARIOS_SEED.map((u) => ({ ...u })); writeStore('usuarios', list); }
+  const out = list.filter((u) => u.orgId === orgId);
+  /* Organismos sin cuenta sembrada: su administrador es el representante legal (demo). */
+  if (orgId !== 'MIN' && !out.some((u) => u.rol === 'ADMIN')) {
+    const o = getOrganismo(orgId);
+    if (o && o.repLegal) out.unshift({ id: `US-${orgId}`, orgId, rol: 'ADMIN', nombre: `${o.repLegal.nombre} ${o.repLegal.apellido || ''}`.trim(), doc: `${o.repLegal.tipoDoc} ${o.repLegal.numDoc}`, correo: o.repLegal.correo, estado: o.estado === 'Activo' ? 'Activo' : 'Invitado', creadoPor: nombreActor(o.parentId) || 'Ministerio del Deporte', fecha: o.fechaRegistro, derivado: true });
+  }
+  return out.map((u) => ({ ...u }));
+}
+export function invitarUsuario(orgId, datos, meta = {}) {
+  usuariosDe(orgId);
+  const list = readStore('usuarios', []) || [];
+  const rec = { ...datos, id: 'US-N' + String(list.length + 1).padStart(3, '0'), orgId, estado: 'Invitado', creadoPor: meta.creadoPor || '', fecha: _todayISO() };
+  list.push(rec); writeStore('usuarios', list);
+  auditLog({ orgId: orgId === 'MIN' ? '' : orgId, fecha: _todayISO(), responsable: meta.creadoPor || '', rol: meta.rol || '', accion: `Usuario invitado: ${rec.nombre}`, a: 'Invitado', notif: true });
+  return { ...rec };
+}
+export function cambiarEstadoUsuario(id, estado, meta = {}) {
+  const list = readStore('usuarios', []) || [];
+  const i = list.findIndex((u) => u.id === id);
+  if (i < 0) return null;
+  list[i] = { ...list[i], estado }; writeStore('usuarios', list);
+  auditLog({ orgId: list[i].orgId === 'MIN' ? '' : list[i].orgId, fecha: _todayISO(), responsable: meta.responsable || '', accion: `Usuario ${estado === 'Desactivado' ? 'desactivado' : 'reactivado'}: ${list[i].nombre}`, a: estado });
+  return { ...list[i] };
+}
+
+/* ─── Eventos asociados al organismo (roles-y-permisos · Jurisdicción) ───
+   El subárbol de un organismo incluye los eventos asociados a él y a lo que cuelga de él: el COC
+   ve los del Ciclo Olímpico aunque los cree Naowee. Hoy events-lite asocia el evento a una
+   organización global «Comité Olímpico Colombiano»; debe apuntar al nodo del SND (pendiente técnico). */
+const EVENTOS = [
+  { id: 'EV-01', nombre: 'Juegos Panamericanos Lima 2027', tipo: 'Ciclo Olímpico', organismoId: 'COC', creadoPor: 'Naowee', desde: '2027-07-23', hasta: '2027-08-08', sede: 'Lima, Perú', deportes: ['Patinaje de Velocidad', 'Natación', 'Atletismo', 'Ciclismo'], inscritos: 412, estado: 'Inscripciones abiertas' },
+  { id: 'EV-02', nombre: 'Juegos Olímpicos Los Ángeles 2028', tipo: 'Ciclo Olímpico', organismoId: 'COC', creadoPor: 'Naowee', desde: '2028-07-14', hasta: '2028-07-30', sede: 'Los Ángeles, EE. UU.', deportes: ['Natación', 'Atletismo', 'Ciclismo', 'Levantamiento de Pesas'], inscritos: 0, estado: 'En preparación' },
+  { id: 'EV-03', nombre: 'Campeonato Nacional de Patinaje de Velocidad 2026', tipo: 'Campeonato nacional', organismoId: 'FED-040', creadoPor: 'Federación Colombiana de Patinaje', desde: '2026-11-12', hasta: '2026-11-16', sede: 'Cali, Valle del Cauca', deportes: ['Patinaje de Velocidad'], inscritos: 186, estado: 'Inscripciones abiertas' },
+  { id: 'EV-04', nombre: 'Válida Departamental de Patinaje · Cali', tipo: 'Válida departamental', organismoId: 'LIG-001', creadoPor: 'Liga de Patinaje del Valle', desde: '2026-10-25', hasta: '2026-10-26', sede: 'Patinódromo Mundialista, Cali', deportes: ['Patinaje'], inscritos: 74, estado: 'Inscripciones abiertas' },
+  { id: 'EV-05', nombre: 'Festival Interclubes Patín Cali', tipo: 'Festival de club', organismoId: 'CLU-001', creadoPor: 'Club Patín Cali', desde: '2026-12-06', hasta: '2026-12-06', sede: 'Cali, Valle del Cauca', deportes: ['Patinaje'], inscritos: 38, estado: 'Programado' },
+  { id: 'EV-06', nombre: 'Campeonato Nacional de Natación Interligas 2026', tipo: 'Campeonato nacional', organismoId: 'FED-038', creadoPor: 'Federación Colombiana de Natación', desde: '2026-12-01', hasta: '2026-12-05', sede: 'Medellín, Antioquia', deportes: ['Natación'], inscritos: 233, estado: 'Programado' },
+  { id: 'EV-07', nombre: 'Campeonato Nacional de Para Natación 2026', tipo: 'Campeonato nacional', organismoId: 'FED-P02', creadoPor: 'Federación Colombiana de Para Natación', desde: '2026-11-20', hasta: '2026-11-22', sede: 'Bogotá D.C.', deportes: ['Para Natación'], inscritos: 61, estado: 'Programado' }
+];
+/* Eventos de la jurisdicción de un organismo: los suyos y los de su subárbol. null = todo el SND. */
+export function eventosDe(orgId) {
+  if (orgId === null || orgId === undefined) return EVENTOS.map((e) => ({ ...e }));
+  const ids = new Set([orgId, ...subtreeOf(orgId).map((o) => o.id)]);
+  return EVENTOS.filter((e) => ids.has(e.organismoId)).map((e) => ({ ...e }));
+}
+
+/* Buscador de clubes para la afiliación (§5.2): SOLO clubes en estado Activo,
+   por nombre o NIT, acento-insensible, MÍNIMO 3 caracteres, sin texto libre.
+   <3 chars → array vacío (la UI muestra la pista). Copias inmutables. */
+export function buscarClubesActivos(query) {
+  const q = String(query || '').trim();
+  if (q.length < 3) return [];
+  const nq = _norm(q);
+  return allOrganismos()
+    .filter((o) => o.tipo === 'club' && o.estado === 'Activo')
+    .filter((o) => _norm(o.nombre).includes(nq) || _norm(o.nit).includes(nq))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    .map((o) => ({ ...o }));
+}
+
+/* Datos demo (solo modo 'demo', no 'blank'): siembra 1-2 solicitudes Enviada
+   dirigidas al Club Patín Cali (CLU-001) desde deportistas autodeclarados, para
+   que la bandeja del club arranque con algo que aprobar. Idempotente (flag
+   demoSeed en la solicitud). Se llama desde afiliacion.js y bandeja.js (CLUB). */
+export function seedAfiliacionesDemo(mode) {
+  if (mode !== 'demo') return;
+  const list = readStore('solicitudes', []) || [];
+  if (list.some((s) => s.demoSeed)) return;
+  const seeds = [
+    { deportistaId: 'DEP-010', clubId: 'CLU-001', fecha: '2026-07-12' },  // Juan D. Marín · Patinaje
+    { deportistaId: 'DEP-007', clubId: 'CLU-001', fecha: '2026-07-13' },  // Daniela Cárdenas · Patinaje
+    { deportistaId: 'DEP-022', clubId: 'CLU-003', fecha: '2026-10-02' }   // Laura · su segundo club
+  ];
+  seeds.forEach((s, idx) => {
+    list.unshift({ id: 'AF-D' + (idx + 1), tipo: 'afiliacion', deportistaId: s.deportistaId, clubId: s.clubId, estado: 'Enviada', fecha: s.fecha, origen: 'solicitud', demoSeed: true });
+    const dep = getDeportista(s.deportistaId);
+    solicitarAfiliacion({ sujetoId: s.deportistaId, organismoId: s.clubId, deporte: dep ? dep.deporte : '' });
+  });
+  writeStore('solicitudes', list);
+}
