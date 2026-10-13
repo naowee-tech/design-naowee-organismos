@@ -593,8 +593,27 @@ const MODULE_NAME = 'Organismos';
              · El sidebar del shell arranca en riel en esta página.
              · «Mis deportistas» del club enlaza el perfil de Laura.
              · Notas para devs por sección (inventario de suite-mf-profile).
-             Cache-busters ?v=1.6.0. */
-const MODULE_VERSION = 'v1.6.0';
+             Cache-busters ?v=1.7.0. */
+/* v1.7.0 —  INTERFAZ DE PRODUCTO sobre el registro (v1.5.0) y el perfil
+             multi-rol (v1.6.0). Misma lógica, nueva interfaz (rama
+             feat/refinamiento-organismos de Producto, DC-001…DC-065):
+             · Jerarquía SND en columnas en lugar del árbol: tocas un
+               organismo y su contenido abre a la derecha (máx. 3 columnas,
+               2 en tablet, 1 en móvil). Sidebar con subítems por nivel según
+               el rol; búsqueda y filtro por estado en listado plano.
+             · Registro público: barra de acciones fija con progreso, navbar
+               fijo y resultado más ordenado.
+             · Ficha de organismo con breadcrumb arriba y «Volver» debajo;
+               «Mis deportistas» muestra el nombre del club.
+             · Notas para devs con interruptor en el recorrido; «Cambiar
+               perfil» dentro del recorrido; sin pastilla de derechos.
+             · Las páginas cargan un bundle IIFE (shared/bundles/, generado con
+               scripts/build.cjs) para abrir sin servidor.
+             · La persona multi-rol solo aparece en el selector en local; el
+               enlace directo perfil.html?role=PERSONA sigue funcionando.
+             Main revierte el revert ba7b08e para recuperar el trabajo.
+             Cache-busters ?v=1.7.0. */
+const MODULE_VERSION = 'v1.7.0';
 
 (function () {
   function mount() {
