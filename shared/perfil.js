@@ -19,7 +19,7 @@
    Datos estáticos (los del brief). Todo se pinta desde `state` con un único
    render(); las notas para devs se montan después de cada render.
    ═══════════════════════════════════════════════════════════════ */
-import { mountDevnotes } from './devnotes.js?v=1.6.0';
+import { mountDevnotes } from './devnotes.js?v=1.7.0';
 import { scopeFor } from './permissions.js';
 import { getOrganismo, subtreeOf } from './organismos-data.js';
 
