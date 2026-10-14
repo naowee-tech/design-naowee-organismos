@@ -217,7 +217,8 @@
       id: `DEP-N${String(nuevos.length + 1).padStart(3, "0")}`,
       registradoPor: actorOrgId,
       origen: "organismo",
-      fechaRegistro: _todayISO()
+      fechaRegistro: _todayISO(),
+      cuentaActivada: false
     };
     delete dep.clubId;
     delete dep.estado;
@@ -2135,7 +2136,7 @@
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
-          ${msg("caution", I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : "tu club")}</strong>. Quedar\xE1 <strong>autodeclarado</strong> y perder\xE1 la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : "liga")} \xB7 ${esc(p && p.federacionNombre ? p.federacionNombre : "federaci\xF3n")}). No tiene apelaci\xF3n: le avisamos a la persona y a la liga del club. Podr\xE1 volver a solicitar afiliaci\xF3n cuando quiera.`)}
+          ${msg("caution", I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : "tu club")}</strong>. Quedar\xE1 <strong>autodeclarado</strong> y perder\xE1 la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : "liga")} \xB7 ${esc(p && p.federacionNombre ? p.federacionNombre : "federaci\xF3n")}). No tiene apelaci\xF3n: le avisamos a la persona y a todas las ligas con las que el club tiene v\xEDnculo vigente. Podr\xE1 volver a solicitar afiliaci\xF3n cuando quiera.`)}
           <div class="dp-desv__field">
             <span class="bj-filter__lbl" id="dpDesvLbl">Motivo de la desvinculaci\xF3n <span aria-hidden="true">*</span></span>
             <div class="naowee-dropdown dp-desv__dd" id="dpDesvDd">

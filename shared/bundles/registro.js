@@ -218,12 +218,24 @@
   function enviarRegistro(id, patch = {}, meta = {}) {
     const o = getOrganismo(id);
     if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
+    if (deportesOcupados(id, patch.deportes || o.deportes).length) return o;
+    if (patch.nit && String(patch.nit).trim() !== String(o.nit).trim()) {
+      if (allOrganismos().some((x) => x.id !== id && String(x.nit).trim() === String(patch.nit).trim())) return o;
+      auditLog({ orgId: id, fecha: _todayISO(), responsable: meta.responsable || "", rol: meta.rol || "", accion: "NIT corregido", de: o.nit, a: patch.nit, motivo: "" });
+    }
+    const { tipo: _t, parentId: _p, ...permitido } = patch;
+    patch = permitido;
     const extra = o.tipo === "federacion" ? { validacion: { mindeporte: "pendiente", comite: "pendiente" } } : {};
     return setEstado(id, "En revisi\xF3n", {
       ...meta,
       accion: o.estado === "Preinscrito" ? "Formulario enviado" : "Corregido y reenviado",
       patch: { ...patch, ...extra, enviadoFecha: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) }
     });
+  }
+  function deportesOcupados(id, deportes) {
+    const o = getOrganismo(id);
+    if (!o || o.tipo !== "federacion") return [];
+    return (deportes || []).map((dep) => ({ deporte: dep, dueno: duenoDeporte(dep) })).filter((x) => x.dueno && x.dueno.id !== id);
   }
   function auditLog(entry) {
     const list = readStore("audit", []) || [];
@@ -1648,7 +1660,7 @@
   </div>`;
   }
   function deportesOpciones() {
-    if (STATE.tipo === "federacion") return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || COMPLETAR && deportesDe(COMPLETAR).includes(dp));
+    if (STATE.tipo === "federacion") return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || duenoDeporte(dp).id === (COMPLETAR && COMPLETAR.id) || COMPLETAR && deportesDe(COMPLETAR).includes(dp));
     const sup = getOrganismo(STATE.data.superiorId);
     return sup ? deportesDe(sup) : [];
   }
@@ -2300,6 +2312,12 @@
       };
       if (STATE.tipo === "club") patch.tipoClub = d.tipoClub;
       if (STATE.tipo === "liga") patch.ambito = d.ambito;
+      const ocupados = deportesOcupados(COMPLETAR.id, patch.deportes);
+      if (ocupados.length) {
+        const txt = ocupados.map((x) => `\xAB${x.deporte}\xBB ya lo tiene ${x.dueno.nombre}`).join("; ");
+        window.naoweeToast && window.naoweeToast(`No se puede enviar: ${txt}. Qu\xEDtalo de tus deportes para continuar.`, "error");
+        return;
+      }
       const _actor2 = ROLES[roleCode] || {};
       created = enviarRegistro(COMPLETAR.id, patch, { responsable: _actor2.userName || roleCode, rol: _actor2.label || roleCode });
       STATE.step = 6;

@@ -168,6 +168,10 @@ const canEdit = viewer.kind === 'own' || viewer.kind === 'admin';
    de contacto de la persona; los datos personales adicionales quedan bajo su control. */
 const ORG_EDITA = ['Dirección', 'Teléfono', 'Correo electrónico'];
 const orgEdita = viewer.kind === 'org' && ORG_ROLES.includes(viewer.shellRole);
+/* Decisión 2026-10-14: el organismo cambia el correo solo mientras la persona no haya activado su
+   cuenta. Después lo cambia solo ella: el reclamo de perfil manda el acceso al correo guardado. */
+const correoBloqueado = orgEdita && DEP && DEP.cuentaActivada !== false;
+const orgEditaCampo = (dt) => ORG_EDITA.includes(dt) && !(dt === 'Correo electrónico' && correoBloqueado);
 /* Roles que la persona tiene según los datos: deportista siempre; tutor si tiene menores a cargo;
    personal de apoyo si tiene rol de apoyo o vínculos. ?roles= solo recorta (ejemplos de la demo). */
 const ROLES_DATOS = () => [...(DEP.esDeportista === false ? [] : ['deportista']),
@@ -500,10 +504,11 @@ function secPerfil() {
   const t = tabs.find((x) => x.id === state.tab.perfil);
   const editing = state.editing === t.id;
   const fields = t.fields.filter((f) => !f[3] || has(f[3]));
-  const orgPuede = orgEdita && fields.some((f) => ORG_EDITA.includes(f[0]));
-  const bloqueado = (dt, lock) => lock || (orgEdita && !ORG_EDITA.includes(dt));
+  const orgPuede = orgEdita && fields.some((f) => orgEditaCampo(f[0]));
+  const bloqueado = (dt, lock) => lock || (orgEdita && !orgEditaCampo(dt));
+  const notaCorreo = correoBloqueado && fields.some((f) => f[0] === 'Correo electrónico') ? ' El correo lo cambia solo la persona porque ya activó su cuenta.' : '';
   const notaOrg = !orgEdita ? '' : orgPuede
-    ? `<p>Tu organismo puede actualizar ${fields.filter((f) => ORG_EDITA.includes(f[0])).map((f) => f[0].toLowerCase()).join(' y ')}.${fields.some((f) => !ORG_EDITA.includes(f[0])) ? ' El resto lo maneja la persona.' : ' Los demás datos personales los maneja la persona.'}</p>`
+    ? `<p>Tu organismo puede actualizar ${fields.filter((f) => orgEditaCampo(f[0])).map((f) => f[0].toLowerCase()).join(' y ')}.${fields.some((f) => !orgEditaCampo(f[0])) ? ' El resto lo maneja la persona.' : ' Los demás datos personales los maneja la persona.'}${notaCorreo}</p>`
     : '<p>Estos datos los maneja la persona; tu organismo solo los consulta.</p>';
   return `
     <section aria-labelledby="mpH-perfil">
@@ -744,7 +749,9 @@ function bind() {
     const it = AFS().find((x) => x.id === b.dataset.retiro);
     confirmDlg({
       title: `Retirarme de ${it.nombre}`,
-      text: `El club confirma tu retiro. Mientras tanto sigues afiliada. Al confirmarlo dejas de heredar su liga y su federación; tus otros clubes no cambian.`,
+      text: getOrganismo(it.org)?.estado === 'Suspendido'
+        ? `${it.nombre} está suspendido: tu retiro queda en espera hasta que el club se reactive y lo confirme. Mientras tanto sigues afiliada y puedes afiliarte a otros clubes. Si el club es cancelado, tu afiliación termina sola.`
+        : `El club confirma tu retiro. Mientras tanto sigues afiliada. Al confirmarlo dejas de heredar su liga y su federación; tus otros clubes no cambian.`,
       ok: 'Pedir el retiro', back: 'Volver',
       onOk: () => { crearSolicitudRetiro(PERSONA_ID, it.org); render(); toast(`Retiro enviado: ${it.nombre} debe confirmarlo.`); }
     });
@@ -1011,7 +1018,7 @@ const DEVNOTES = {
   perfil: { title: 'Perfil · datos personales', sections: [
     { title: 'Hoy en el perfil migrado', items: ['Datos de <code>GET /v1/user/{code}</code>; guardado con <code>PATCH /v1/user/{code}</code> enviando <code>individual_data</code> (permiso <code>user:update_athlete</code>).', 'Ya muestra secciones por <code>roles.includes(...)</code> (multi-rol listo para gating), pero la etiqueta del encabezado usa <code>roles[0]</code>. Las vistas viejas (perfil propio y "Consulta de usuario") usan <code>roles[0]</code> en todo.', 'La biometría sale a cualquiera, vacía si no es deportista.'] },
     { title: 'Qué cambia', items: ['Encabezado con todos los roles como chips (sin selector de rol). Datos comunes una sola vez: «Son los mismos para todos tus roles».', 'Biometría como grupo compacto en la franja del encabezado, solo con rol deportista y solo en Perfil y en las secciones de deportista.', '«Editar» es un botón secundario neutro; el naranja queda para lo activo y «Agregar rol».'] },
-    { title: 'Edición desde un organismo', items: ['Reunión con Producto del 2026-10-09: club, liga y federación editan solo los <b>datos básicos</b> de contacto de la persona (dirección, teléfono y correo), en las pestañas Ubicación y Contacto. Los datos personales adicionales (identidad de género, orientación sexual, salud, etc.) quedan bajo control de la persona: el organismo solo los consulta.', 'El cambio queda registrado a nombre del organismo.'] },
+    { title: 'Edición desde un organismo', items: ['Reunión con Producto del 2026-10-09: club, liga y federación editan solo los <b>datos básicos</b> de contacto de la persona (dirección, teléfono y correo), en las pestañas Ubicación y Contacto. Los datos personales adicionales (identidad de género, orientación sexual, salud, etc.) quedan bajo control de la persona: el organismo solo los consulta.', 'El cambio queda registrado a nombre del organismo.', 'Correo (decisión 2026-10-14): el organismo lo cambia solo mientras la persona no haya activado su cuenta (<code>cuentaActivada: false</code> en los creados por un organismo). Después lo cambia solo ella, porque el reclamo de perfil manda el acceso al correo guardado.', 'Al crear son obligatorios documento, nombres, fecha de nacimiento, sexo, deporte y correo.'] },
     { title: 'Qué falta en el back', items: ['Nada para los datos; el encabezado debe leer <code>roles[]</code> completo en vez de <code>roles[0]</code>.', 'Un permiso de edición acotado para el organismo (solo dirección, teléfono y correo de personas de su jurisdicción).'] }
   ] },
   trayectoria: { title: 'Trayectoria', sections: [
@@ -1022,7 +1029,7 @@ const DEVNOTES = {
   afiliaciones: { title: 'Afiliaciones (deportista)', sections: [
     { title: 'Hoy en el perfil migrado', items: ['No existen en el perfil. Viven aparte (Mi afiliación) y el modelo está en nao-docs (entidad de afiliación).'] },
     { title: 'Qué cambia', items: ['Lista de clubes con estado Vinculado / Solicitada / Rechazada / Desvinculado. En lo Solicitado, «Cancelar solicitud» en la misma fila y la nota «Lo aprueba el club».', 'El badge de la navegación cuenta solo lo pendiente.'] },
-    { title: 'Fase 2 · en la demo ya funciona', items: ['Sale de la relación de afiliación (shared/organismos-data.js), no de datos fijos. «Solicitar afiliación» busca clubes Activos y crea la solicitud que el club ve en su bandeja.', 'Varios clubes a la vez: cada fila Vinculada muestra la cadena que hereda (liga · federación). «Retirarme» pide la baja de ESE club; el club la confirma y los otros clubes no cambian.', 'El organismo visor aprueba, rechaza (motivo) o desvincula sobre los datos reales; queda en la trazabilidad.'] },
+    { title: 'Fase 2 · en la demo ya funciona', items: ['Sale de la relación de afiliación (shared/organismos-data.js), no de datos fijos. «Solicitar afiliación» busca clubes Activos y crea la solicitud que el club ve en su bandeja.', 'Varios clubes a la vez: cada fila Vinculada muestra la cadena que hereda (liga · federación). «Retirarme» pide la baja de ESE club; el club la confirma y los otros clubes no cambian.', 'El organismo visor aprueba, rechaza (motivo) o desvincula sobre los datos reales; queda en la trazabilidad.', 'Vigencia (decisión 2026-10-14): «desde» y «hasta» son fechas de calendario sin hora. «Desde» es el día en que se aprueba; «hasta», el día en que termina (retiro, desvinculación o cancelación). Sin fechas futuras ni retroactivas. Vigente = Vinculada y sin «hasta».'] },
     { title: 'Qué falta en el back', items: ['Exponer las afiliaciones de la persona (varias, en clubes distintos) en el perfil, y cancelar una solicitud.'] }
   ] },
   analisis: { title: 'Análisis cualitativo', sections: [

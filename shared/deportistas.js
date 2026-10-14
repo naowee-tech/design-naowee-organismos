@@ -421,7 +421,7 @@ if (root) {
           <button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.close}</button>
         </div>
         <div class="reg-modal__body">
-          ${msg('caution', I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Quedará <strong>autodeclarado</strong> y perderá la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : 'liga')} · ${esc(p && p.federacionNombre ? p.federacionNombre : 'federación')}). No tiene apelación: le avisamos a la persona y a la liga del club. Podrá volver a solicitar afiliación cuando quiera.`)}
+          ${msg('caution', I.info, `Vas a desvincular a <strong>${esc(dep.nombre)}</strong> de <strong>${esc(club ? club.nombre : 'tu club')}</strong>. Quedará <strong>autodeclarado</strong> y perderá la cadena heredada (${esc(p && p.ligaNombre ? p.ligaNombre : 'liga')} · ${esc(p && p.federacionNombre ? p.federacionNombre : 'federación')}). No tiene apelación: le avisamos a la persona y a todas las ligas con las que el club tiene vínculo vigente. Podrá volver a solicitar afiliación cuando quiera.`)}
           <div class="dp-desv__field">
             <span class="bj-filter__lbl" id="dpDesvLbl">Motivo de la desvinculación <span aria-hidden="true">*</span></span>
             <div class="naowee-dropdown dp-desv__dd" id="dpDesvDd">

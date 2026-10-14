@@ -623,6 +623,23 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.2 —  DECISIONES DEL 14-10 (preguntas del back sobre DEP-590 y DEP-591):
+             · Cancelar cualquier organismo termina sus vínculos (hacia arriba y hacia
+               abajo) y rechaza las solicitudes pendientes hacia él con el motivo; sus
+               deportes quedan libres. Liga cancelada: sus clubes siguen activos y
+               piden otra liga. Federación cancelada: sus ligas siguen activas hasta que
+               el Ministerio las asigne a la nueva federación del deporte.
+             · Reenviar el registro con un deporte que ya tomó otra federación no pasa
+               y dice qué deporte y quién lo tiene.
+             · La cuenta del administrador se crea con el alta y entra limitada a «Mi
+               organismo» hasta que el organismo esté Activo (texto y notas).
+             · Vigencia de afiliaciones: fechas sin hora, sin futuras ni retroactivas.
+             · Segunda ronda: retiro con el club suspendido queda en espera; la
+               cancelación también rechaza las solicitudes que el organismo envió y
+               cierra los retiros pendientes; al corregir cambia todo menos tipo y
+               superior (NIT único y auditado); aviso de desvinculación a todas las
+               ligas vigentes del club; el organismo cambia el correo de una persona
+               solo si aún no activó su cuenta. */
 /* v1.9.1 —  DECISIONES CERRADAS EL 13-10:
              · P-18: cancelar un club termina sus afiliaciones (deportistas, personal
                y sus ligas); sus deportistas quedan autodeclarados si no tienen otro
@@ -667,7 +684,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.1';
+const MODULE_VERSION = 'v1.9.2';
 
 (function () {
   function mount() {
