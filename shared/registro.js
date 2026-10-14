@@ -17,7 +17,7 @@
 import {
   seedDemoData, allOrganismos, getOrganismo, activosDeTipo,
   comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore, enviarRegistro,
-  deportesDe, duenoDeporte, catalogoDeportes
+  deportesDe, duenoDeporte, catalogoDeportes, deportesOcupados
 } from './organismos-data.js';
 import { getRoleFromQuery, ROLES } from './sidebar.js';
 
@@ -430,7 +430,7 @@ function tf(o) {
 /* Deportes del organismo (uno o varios). Federación: deportes del catálogo que aún no tienen
    federación (un deporte = una federación, DEP-545). Liga y club: dentro de los de su superior. */
 function deportesOpciones() {
-  if (STATE.tipo === 'federacion') return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || (COMPLETAR && deportesDe(COMPLETAR).includes(dp)));
+  if (STATE.tipo === 'federacion') return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || duenoDeporte(dp).id === (COMPLETAR && COMPLETAR.id) || (COMPLETAR && deportesDe(COMPLETAR).includes(dp)));
   const sup = getOrganismo(STATE.data.superiorId);
   return sup ? deportesDe(sup) : [];
 }
@@ -1012,6 +1012,12 @@ function submit() {
     };
     if (STATE.tipo === 'club') patch.tipoClub = d.tipoClub;
     if (STATE.tipo === 'liga') patch.ambito = d.ambito;
+    const ocupados = deportesOcupados(COMPLETAR.id, patch.deportes);
+    if (ocupados.length) {
+      const txt = ocupados.map((x) => `«${x.deporte}» ya lo tiene ${x.dueno.nombre}`).join('; ');
+      window.naoweeToast && window.naoweeToast(`No se puede enviar: ${txt}. Quítalo de tus deportes para continuar.`, 'error');
+      return;
+    }
     const _actor = ROLES[roleCode] || {};
     created = enviarRegistro(COMPLETAR.id, patch, { responsable: _actor.userName || roleCode, rol: _actor.label || roleCode });
     STATE.step = 6;

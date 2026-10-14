@@ -277,17 +277,18 @@
     if (!o2 || !["Suspendido", "Cancelado"].includes(estado)) return o2;
     if (!(o2.estado === "Activo" || estado === "Cancelado" && o2.estado === "Suspendido")) return o2;
     const res = setEstado(id2, estado, { ...meta, accion: estado === "Suspendido" ? "Suspendido por el Ministerio" : "Cancelado por el Ministerio" });
-    if (estado === "Cancelado" && o2.tipo === "club") terminarAfiliacionesDeClub(id2);
+    if (estado === "Cancelado") terminarAfiliacionesDe(o2);
     return res;
   }
-  function terminarAfiliacionesDeClub(clubId) {
-    const motivo = "Club cancelado por el Ministerio";
-    afiliacionesHacia(clubId).forEach((a) => {
-      if (a.estado === "Vinculada") cambiarAfiliacion(a.sujetoId, clubId, "Terminada", { motivo, fin: "cancelacion" });
-      else if (a.estado === "Solicitada") cambiarAfiliacion(a.sujetoId, clubId, "Rechazada", { motivo });
+  function terminarAfiliacionesDe(o2) {
+    const motivo = `${MOTIVO_CANCELADO[o2.tipo] || "Organismo cancelado"} por el Ministerio`;
+    afiliacionesHacia(o2.id).forEach((a) => {
+      if (a.estado === "Vinculada") cambiarAfiliacion(a.sujetoId, o2.id, "Terminada", { motivo, fin: "cancelacion" });
+      else if (a.estado === "Solicitada") cambiarAfiliacion(a.sujetoId, o2.id, "Rechazada", { motivo });
     });
-    afiliacionesDe(clubId, { vigentes: true }).forEach((a) => {
-      if (a.estado === "Vinculada") cambiarAfiliacion(clubId, a.organismoId, "Terminada", { motivo, fin: "cancelacion" });
+    afiliacionesDe(o2.id).forEach((a) => {
+      if (a.estado === "Vinculada") cambiarAfiliacion(o2.id, a.organismoId, "Terminada", { motivo, fin: "cancelacion" });
+      else if (a.estado === "Solicitada") cambiarAfiliacion(o2.id, a.organismoId, "Rechazada", { motivo });
     });
   }
   function reactivar(id2, meta = {}) {
@@ -382,7 +383,7 @@
     const ids = /* @__PURE__ */ new Set([orgId, ...subtreeOf(orgId).map((o2) => o2.id)]);
     return EVENTOS.filter((e) => ids.has(e.organismoId)).map((e) => ({ ...e }));
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, _todayISO, enTerritorio, EVENTOS;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, esDeportista, MOTIVO_CANCELADO, _todayISO, enTerritorio, EVENTOS;
   var init_organismos_data = __esm({
     "shared/organismos-data.js"() {
       init_estados();
@@ -538,6 +539,7 @@
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
       SEED_VERSION = "0.5.0";
       esDeportista = (d) => d && d.esDeportista !== false;
+      MOTIVO_CANCELADO = { comite: "Comit\xE9 cancelado", federacion: "Federaci\xF3n cancelada", liga: "Liga cancelada", club: "Club cancelado" };
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       enTerritorio = (o2, t) => o2.ubicacion && o2.ubicacion.depto === t.depto && (!t.municipio || o2.ubicacion.ciudad === t.municipio);
       EVENTOS = [
@@ -1684,7 +1686,7 @@
       cancelar: { titulo: `Cancelar el registro ${EL[o2.tipo] === "el" ? "del" : "de la"} ${t}`, ok: "S\xED, cancelar definitivamente", danger: true, consq: [
         `Pierde el reconocimiento en el SUID y no vuelve a operar. No hay forma de deshacerlo.`,
         `No se borra: su ficha y su historial quedan para consulta.`,
-        `Qu\xE9 pasa con sus deportistas y lo que depende de ${EL[o2.tipo] === "la" ? "ella" : "\xE9l"} est\xE1 pendiente de definir con Negocio.`
+        CONSQ_CANCELAR[o2.tipo] || `Sus v\xEDnculos terminan y las solicitudes pendientes dirigidas a ${EL[o2.tipo] === "la" ? "ella" : "\xE9l"} se rechazan con este motivo.`
       ] }
     }[tipoAccion];
     const ov = document.createElement("div");
@@ -1739,7 +1741,7 @@
       onDone && onDone(tipoAccion);
     });
   }
-  var esc, MESES, fecha, badge, TIPO, EL, SI, NO, EDIT, paso, cap, MOTIVOS, ES_SANCION;
+  var esc, MESES, fecha, badge, TIPO, EL, SI, NO, EDIT, paso, cap, CONSQ_CANCELAR, MOTIVOS, ES_SANCION;
   var init_ciclo = __esm({
     "shared/ciclo.js"() {
       init_organismos_data();
@@ -1761,6 +1763,11 @@
   <div class="od-tl-head"><strong>${esc(titulo)}</strong>${aqui ? '<span class="oc-here">Est\xE1s aqu\xED</span>' : ""}</div>
   ${sub ? `<div class="od-tl-sub">${esc(sub)}</div>` : ""}</div></div>`;
       cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+      CONSQ_CANCELAR = {
+        club: "Sus afiliaciones terminan: sus deportistas quedan autodeclarados si no tienen otro club. Las solicitudes pendientes hacia el club se rechazan con este motivo y su v\xEDnculo con la liga termina.",
+        liga: "Sus clubes siguen activos pero pierden su v\xEDnculo con esta liga y pueden pedir entrar a otra. Las solicitudes pendientes hacia ella se rechazan con este motivo y sus deportes quedan libres.",
+        federacion: "Sus ligas siguen activas hasta que el Ministerio las asigne a la nueva federaci\xF3n del deporte. Sus deportes quedan libres y las solicitudes pendientes hacia ella se rechazan con este motivo."
+      };
       MOTIVOS = {
         suspender: ["Investigaci\xF3n disciplinaria en curso", "Reconocimiento deportivo vencido", "Incumplimiento de obligaciones de reporte", "Orden de autoridad competente", "Otro"],
         cancelar: ["P\xE9rdida del reconocimiento deportivo", "Disoluci\xF3n o liquidaci\xF3n de la entidad", "Sanci\xF3n en firme de autoridad competente", "Registro duplicado o fraudulento", "Otro"],
@@ -2133,6 +2140,8 @@
         { title: "\xABMi organismo\xBB (Fase 1)", items: [
           "Sin <code>?id</code>, el administrador abre su propio organismo. Si no est\xE1 <strong>Activo</strong> su men\xFA se reduce a \xABMi organismo\xBB (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.",
           "Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qu\xE9 pas\xF3, el motivo con qui\xE9n y cu\xE1ndo (\xFAltimo cambio en la trazabilidad), qu\xE9 le toca, lo que puede y no puede hacer y el recorrido.",
+          "Acceso antes de estar Activo (decisi\xF3n 2026-10-14): la cuenta del administrador se crea con el alta (cargue masivo o registro p\xFAblico) y entra limitada a \xABMi organismo\xBB: ver su estado y el motivo, completar, corregir y reenviar. Al activarse, la misma cuenta pasa a ser la cuenta principal con todos los permisos (lo construye DEP-591).",
+          "Reserva de deportes: el organismo conserva sus deportes en Preinscrito, En revisi\xF3n, En correcci\xF3n, Activo y Suspendido; los pierde en Rechazado y Cancelado. Si al reenviar uno ya lo tom\xF3 otra federaci\xF3n, el env\xEDo no pasa y dice qu\xE9 deporte y qui\xE9n lo tiene (<code>deportesOcupados</code>; en el back, 409).",
           "Preinscrito, En correcci\xF3n y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisi\xF3n</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.",
           "Solo demo: \xABEntrar como \u2026\xBB (en esta ficha si el organismo no est\xE1 Activo, en la bandeja del superior y despu\xE9s de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene \xABCambiar de perfil\xBB."
         ] },
@@ -2146,7 +2155,8 @@
         { title: "Sanciones del Ministerio (Fase 1)", items: [
           "Solo el Ministerio ve \xABEstado y sanciones\xBB (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acci\xF3n definitiva.",
           "Cada acci\xF3n pide motivo; el detalle es obligatorio al cancelar o con \xABOtro\xBB, y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.",
-          "Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si no tienen otro club.",
+          "Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Cancelar (cualquier tipo, decisi\xF3n 2026-10-14): sus v\xEDnculos vigentes, hacia arriba y hacia abajo, quedan Terminados y las solicitudes pendientes dirigidas a \xE9l quedan Rechazadas, con el motivo de la cancelaci\xF3n (<code>terminarAfiliacionesDe</code>). Sus deportes quedan libres.",
+          "Club cancelado: sus deportistas quedan autodeclarados si no tienen otro club. Liga cancelada: sus clubes siguen Activos, sin esa liga, y piden entrar a otra. Federaci\xF3n cancelada: sus ligas siguen Activas hasta que el Ministerio las asigne a la nueva federaci\xF3n del deporte (como P-22).",
           "Reactivar no activa directo: vuelve a En revisi\xF3n en la bandeja del superior, sobre los datos que ya tiene (P-08). El motivo es libre y obligatorio; no hay lista de causales ni estado Inactivo."
         ] }
       ] } };

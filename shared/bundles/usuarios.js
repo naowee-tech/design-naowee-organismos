@@ -1358,7 +1358,7 @@
       <p class="us-main__role">Administrador del organismo</p>
       <p class="us-main__meta">${esc(a.doc)} \xB7 ${esc(a.correo)}</p>
     </div>
-    <p class="us-main__side">La habilit\xF3 <strong>${esc(a.creadoPor)}</strong>${a.fecha ? ` el ${fmt(a.fecha)}` : ""}, al activar ${esc(orgCorto())}. Es la \xFAnica cuenta principal; si cambia la persona, la reasigna el nivel superior.</p>
+    <p class="us-main__side">Se cre\xF3 con el alta de ${esc(orgCorto())}: mientras no estuvo Activo solo ve\xEDa \xABMi organismo\xBB para completar o corregir su registro. Tiene todos los permisos desde que lo activ\xF3 <strong>${esc(a.creadoPor)}</strong>${a.fecha ? ` el ${fmt(a.fecha)}` : ""}. Es la \xFAnica cuenta principal; si cambia la persona, la reasigna el nivel superior.</p>
   </section>`;
   }
   function panelHtml() {

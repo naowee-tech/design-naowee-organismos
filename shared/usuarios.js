@@ -160,7 +160,7 @@ function mainHtml() {
       <p class="us-main__role">Administrador del organismo</p>
       <p class="us-main__meta">${esc(a.doc)} · ${esc(a.correo)}</p>
     </div>
-    <p class="us-main__side">La habilitó <strong>${esc(a.creadoPor)}</strong>${a.fecha ? ` el ${fmt(a.fecha)}` : ''}, al activar ${esc(orgCorto())}. Es la única cuenta principal; si cambia la persona, la reasigna el nivel superior.</p>
+    <p class="us-main__side">Se creó con el alta de ${esc(orgCorto())}: mientras no estuvo Activo solo veía «Mi organismo» para completar o corregir su registro. Tiene todos los permisos desde que lo activó <strong>${esc(a.creadoPor)}</strong>${a.fecha ? ` el ${fmt(a.fecha)}` : ''}. Es la única cuenta principal; si cambia la persona, la reasigna el nivel superior.</p>
   </section>`;
 }
 

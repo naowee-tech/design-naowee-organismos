@@ -119,6 +119,12 @@ export function estadoPropioHtml(o, roleCode) {
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 /* ─── «Estado y sanciones» (Ministerio) ─── */
+/* Qué pasa con lo que depende del organismo al cancelarlo (P-18 y decisión 2026-10-14). */
+const CONSQ_CANCELAR = {
+  club: 'Sus afiliaciones terminan: sus deportistas quedan autodeclarados si no tienen otro club. Las solicitudes pendientes hacia el club se rechazan con este motivo y su vínculo con la liga termina.',
+  liga: 'Sus clubes siguen activos pero pierden su vínculo con esta liga y pueden pedir entrar a otra. Las solicitudes pendientes hacia ella se rechazan con este motivo y sus deportes quedan libres.',
+  federacion: 'Sus ligas siguen activas hasta que el Ministerio las asigne a la nueva federación del deporte. Sus deportes quedan libres y las solicitudes pendientes hacia ella se rechazan con este motivo.'
+};
 const MOTIVOS = {
   suspender: ['Investigación disciplinaria en curso', 'Reconocimiento deportivo vencido', 'Incumplimiento de obligaciones de reporte', 'Orden de autoridad competente', 'Otro'],
   cancelar: ['Pérdida del reconocimiento deportivo', 'Disolución o liquidación de la entidad', 'Sanción en firme de autoridad competente', 'Registro duplicado o fraudulento', 'Otro'],
@@ -174,7 +180,7 @@ export function abrirSancion(tipoAccion, o, meta, onDone) {
     cancelar: { titulo: `Cancelar el registro ${EL[o.tipo] === 'el' ? 'del' : 'de la'} ${t}`, ok: 'Sí, cancelar definitivamente', danger: true, consq: [
       `Pierde el reconocimiento en el SUID y no vuelve a operar. No hay forma de deshacerlo.`,
       `No se borra: su ficha y su historial quedan para consulta.`,
-      `Qué pasa con sus deportistas y lo que depende de ${EL[o.tipo] === 'la' ? 'ella' : 'él'} está pendiente de definir con Negocio.`] }
+      CONSQ_CANCELAR[o.tipo] || `Sus vínculos terminan y las solicitudes pendientes dirigidas a ${EL[o.tipo] === 'la' ? 'ella' : 'él'} se rechazan con este motivo.`] }
   }[tipoAccion];
   const ov = document.createElement('div');
   ov.className = 'reg-modal-overlay bj-modal-ov';

@@ -686,6 +686,7 @@ const DESDE_ENVIO = ['Preinscrito', 'En corrección', 'Rechazado'];
 export function enviarRegistro(id, patch = {}, meta = {}) {
   const o = getOrganismo(id);
   if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
+  if (deportesOcupados(id, patch.deportes || o.deportes).length) return o;
   const extra = o.tipo === 'federacion' ? { validacion: { mindeporte: 'pendiente', comite: 'pendiente' } } : {};
   return setEstado(id, 'En revisión', {
     ...meta, accion: o.estado === 'Preinscrito' ? 'Formulario enviado' : 'Corregido y reenviado',
@@ -695,25 +696,41 @@ export function enviarRegistro(id, patch = {}, meta = {}) {
 
 /* Sanción del Ministerio (motivo libre obligatorio, P-08). Suspendido: el organismo no opera mientras
    dure; lo que depende de él NO cambia de estado (P-18). Cancelado: reemplaza al borrado (P-06), no
-   vuelve. Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si
-   no tienen otro club (P-18). */
+   vuelve, y libera sus deportes. Decisión 2026-10-14, para cualquier tipo de organismo cancelado:
+   sus vínculos vigentes (hacia arriba y hacia abajo) terminan y las solicitudes pendientes dirigidas a él
+   se rechazan, con el motivo de la cancelación. Los dependientes siguen en su estado (P-18): un club de
+   una liga cancelada queda sin esa liga y pide entrar a otra; un deportista sin otro club queda
+   autodeclarado. Las ligas de una federación cancelada siguen Activas hasta que el Ministerio las asigne
+   a la nueva federación del deporte (como en P-22). */
 export function sancionar(id, estado, meta = {}) {
   const o = getOrganismo(id);
   if (!o || !['Suspendido', 'Cancelado'].includes(estado)) return o;
   if (!(o.estado === 'Activo' || (estado === 'Cancelado' && o.estado === 'Suspendido'))) return o;
   const res = setEstado(id, estado, { ...meta, accion: estado === 'Suspendido' ? 'Suspendido por el Ministerio' : 'Cancelado por el Ministerio' });
-  if (estado === 'Cancelado' && o.tipo === 'club') terminarAfiliacionesDeClub(id);
+  if (estado === 'Cancelado') terminarAfiliacionesDe(o);
   return res;
 }
-function terminarAfiliacionesDeClub(clubId) {
-  const motivo = 'Club cancelado por el Ministerio';
-  afiliacionesHacia(clubId).forEach((a) => {
-    if (a.estado === 'Vinculada') cambiarAfiliacion(a.sujetoId, clubId, 'Terminada', { motivo, fin: 'cancelacion' });
-    else if (a.estado === 'Solicitada') cambiarAfiliacion(a.sujetoId, clubId, 'Rechazada', { motivo });
+const MOTIVO_CANCELADO = { comite: 'Comité cancelado', federacion: 'Federación cancelada', liga: 'Liga cancelada', club: 'Club cancelado' };
+function terminarAfiliacionesDe(o) {
+  const motivo = `${MOTIVO_CANCELADO[o.tipo] || 'Organismo cancelado'} por el Ministerio`;
+  afiliacionesHacia(o.id).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(a.sujetoId, o.id, 'Terminada', { motivo, fin: 'cancelacion' });
+    else if (a.estado === 'Solicitada') cambiarAfiliacion(a.sujetoId, o.id, 'Rechazada', { motivo });
   });
-  afiliacionesDe(clubId, { vigentes: true }).forEach((a) => {
-    if (a.estado === 'Vinculada') cambiarAfiliacion(clubId, a.organismoId, 'Terminada', { motivo, fin: 'cancelacion' });
+  afiliacionesDe(o.id).forEach((a) => {
+    if (a.estado === 'Vinculada') cambiarAfiliacion(o.id, a.organismoId, 'Terminada', { motivo, fin: 'cancelacion' });
+    else if (a.estado === 'Solicitada') cambiarAfiliacion(o.id, a.organismoId, 'Rechazada', { motivo });
   });
+}
+
+/* Deportes que el organismo pide y que ya tiene otra federación (decisión 2026-10-14). Un organismo
+   conserva sus deportes en Preinscrito, En revisión, En corrección, Activo y Suspendido; los pierde en
+   Rechazado y Cancelado. Si al reenviar uno ya está tomado, el envío no pasa (en el back, 409). */
+export function deportesOcupados(id, deportes) {
+  const o = getOrganismo(id);
+  if (!o || o.tipo !== 'federacion') return [];
+  return (deportes || []).map((dep) => ({ deporte: dep, dueno: duenoDeporte(dep) }))
+    .filter((x) => x.dueno && x.dueno.id !== id);
 }
 
 /* Reactivación (P-08): nueva validación sobre los datos que ya existen. El organismo

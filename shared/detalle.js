@@ -121,6 +121,8 @@ const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por d
   { title: '«Mi organismo» (Fase 1)', items: [
     'Sin <code>?id</code>, el administrador abre su propio organismo. Si no está <strong>Activo</strong> su menú se reduce a «Mi organismo» (<code>organismoNoActivo</code> en shared/sidebar.js): no aprueba, no carga, no confirma afiliaciones.',
     'Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qué pasó, el motivo con quién y cuándo (último cambio en la trazabilidad), qué le toca, lo que puede y no puede hacer y el recorrido.',
+    'Acceso antes de estar Activo (decisión 2026-10-14): la cuenta del administrador se crea con el alta (cargue masivo o registro público) y entra limitada a «Mi organismo»: ver su estado y el motivo, completar, corregir y reenviar. Al activarse, la misma cuenta pasa a ser la cuenta principal con todos los permisos (lo construye DEP-591).',
+    'Reserva de deportes: el organismo conserva sus deportes en Preinscrito, En revisión, En corrección, Activo y Suspendido; los pierde en Rechazado y Cancelado. Si al reenviar uno ya lo tomó otra federación, el envío no pasa y dice qué deporte y quién lo tiene (<code>deportesOcupados</code>; en el back, 409).',
     'Preinscrito, En corrección y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisión</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.',
     'Solo demo: «Entrar como …» (en esta ficha si el organismo no está Activo, en la bandeja del superior y después de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene «Cambiar de perfil».'
   ] },
@@ -134,7 +136,8 @@ const DEVNOTES = { detalle: { title: 'Ficha de organismo · cómo funciona por d
   { title: 'Sanciones del Ministerio (Fase 1)', items: [
     'Solo el Ministerio ve «Estado y sanciones» (<code>sancionesHtml</code>). Activo: Suspender. Suspendido: Reactivar. Activo o Suspendido: Cancelar registro, aparte como acción definitiva.',
     'Cada acción pide motivo; el detalle es obligatorio al cancelar o con «Otro», y cancelar exige confirmar que no tiene vuelta. Todo queda en la trazabilidad con responsable, fecha y motivo.',
-    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Si se cancela un club, sus afiliaciones terminan y sus deportistas quedan autodeclarados si no tienen otro club.',
+    'Suspender no cambia el estado de lo que depende del organismo ni sus afiliaciones: solo bloquea sus acciones mientras dure (P-18). Cancelar (cualquier tipo, decisión 2026-10-14): sus vínculos vigentes, hacia arriba y hacia abajo, quedan Terminados y las solicitudes pendientes dirigidas a él quedan Rechazadas, con el motivo de la cancelación (<code>terminarAfiliacionesDe</code>). Sus deportes quedan libres.',
+    'Club cancelado: sus deportistas quedan autodeclarados si no tienen otro club. Liga cancelada: sus clubes siguen Activos, sin esa liga, y piden entrar a otra. Federación cancelada: sus ligas siguen Activas hasta que el Ministerio las asigne a la nueva federación del deporte (como P-22).',
     'Reactivar no activa directo: vuelve a En revisión en la bandeja del superior, sobre los datos que ya tiene (P-08). El motivo es libre y obligatorio; no hay lista de causales ni estado Inactivo.'
   ] }
 ] } };
