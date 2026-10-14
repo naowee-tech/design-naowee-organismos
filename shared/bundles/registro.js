@@ -219,6 +219,12 @@
     const o = getOrganismo(id);
     if (!o || !DESDE_ENVIO.includes(o.estado)) return o;
     if (deportesOcupados(id, patch.deportes || o.deportes).length) return o;
+    if (patch.nit && String(patch.nit).trim() !== String(o.nit).trim()) {
+      if (allOrganismos().some((x) => x.id !== id && String(x.nit).trim() === String(patch.nit).trim())) return o;
+      auditLog({ orgId: id, fecha: _todayISO(), responsable: meta.responsable || "", rol: meta.rol || "", accion: "NIT corregido", de: o.nit, a: patch.nit, motivo: "" });
+    }
+    const { tipo: _t, parentId: _p, ...permitido } = patch;
+    patch = permitido;
     const extra = o.tipo === "federacion" ? { validacion: { mindeporte: "pendiente", comite: "pendiente" } } : {};
     return setEstado(id, "En revisi\xF3n", {
       ...meta,

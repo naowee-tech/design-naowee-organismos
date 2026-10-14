@@ -1975,6 +1975,8 @@
   var canEdit = viewer.kind === "own" || viewer.kind === "admin";
   var ORG_EDITA = ["Direcci\xF3n", "Tel\xE9fono", "Correo electr\xF3nico"];
   var orgEdita = viewer.kind === "org" && ORG_ROLES.includes(viewer.shellRole);
+  var correoBloqueado = orgEdita && DEP && DEP.cuentaActivada !== false;
+  var orgEditaCampo = (dt) => ORG_EDITA.includes(dt) && !(dt === "Correo electr\xF3nico" && correoBloqueado);
   var ROLES_DATOS = () => [
     ...DEP.esDeportista === false ? [] : ["deportista"],
     ...menoresDe(PERSONA_ID).length || DEP.rolTutor ? ["tutor"] : [],
@@ -2302,9 +2304,10 @@
     const t = tabs.find((x) => x.id === state.tab.perfil);
     const editing = state.editing === t.id;
     const fields = t.fields.filter((f) => !f[3] || has(f[3]));
-    const orgPuede = orgEdita && fields.some((f) => ORG_EDITA.includes(f[0]));
-    const bloqueado = (dt, lock) => lock || orgEdita && !ORG_EDITA.includes(dt);
-    const notaOrg = !orgEdita ? "" : orgPuede ? `<p>Tu organismo puede actualizar ${fields.filter((f) => ORG_EDITA.includes(f[0])).map((f) => f[0].toLowerCase()).join(" y ")}.${fields.some((f) => !ORG_EDITA.includes(f[0])) ? " El resto lo maneja la persona." : " Los dem\xE1s datos personales los maneja la persona."}</p>` : "<p>Estos datos los maneja la persona; tu organismo solo los consulta.</p>";
+    const orgPuede = orgEdita && fields.some((f) => orgEditaCampo(f[0]));
+    const bloqueado = (dt, lock) => lock || orgEdita && !orgEditaCampo(dt);
+    const notaCorreo = correoBloqueado && fields.some((f) => f[0] === "Correo electr\xF3nico") ? " El correo lo cambia solo la persona porque ya activ\xF3 su cuenta." : "";
+    const notaOrg = !orgEdita ? "" : orgPuede ? `<p>Tu organismo puede actualizar ${fields.filter((f) => orgEditaCampo(f[0])).map((f) => f[0].toLowerCase()).join(" y ")}.${fields.some((f) => !orgEditaCampo(f[0])) ? " El resto lo maneja la persona." : " Los dem\xE1s datos personales los maneja la persona."}${notaCorreo}</p>` : "<p>Estos datos los maneja la persona; tu organismo solo los consulta.</p>";
     return `
     <section aria-labelledby="mpH-perfil">
       <h2 class="mp-sr" id="mpH-perfil">Perfil</h2>
@@ -2553,10 +2556,11 @@
       });
     }));
     root.querySelectorAll("[data-retiro]").forEach((b) => b.addEventListener("click", () => {
+      var _a5;
       const it = AFS().find((x) => x.id === b.dataset.retiro);
       confirmDlg({
         title: `Retirarme de ${it.nombre}`,
-        text: `El club confirma tu retiro. Mientras tanto sigues afiliada. Al confirmarlo dejas de heredar su liga y su federaci\xF3n; tus otros clubes no cambian.`,
+        text: ((_a5 = getOrganismo(it.org)) == null ? void 0 : _a5.estado) === "Suspendido" ? `${it.nombre} est\xE1 suspendido: tu retiro queda en espera hasta que el club se reactive y lo confirme. Mientras tanto sigues afiliada y puedes afiliarte a otros clubes. Si el club es cancelado, tu afiliaci\xF3n termina sola.` : `El club confirma tu retiro. Mientras tanto sigues afiliada. Al confirmarlo dejas de heredar su liga y su federaci\xF3n; tus otros clubes no cambian.`,
         ok: "Pedir el retiro",
         back: "Volver",
         onOk: () => {
@@ -2927,7 +2931,7 @@
     perfil: { title: "Perfil \xB7 datos personales", sections: [
       { title: "Hoy en el perfil migrado", items: ["Datos de <code>GET /v1/user/{code}</code>; guardado con <code>PATCH /v1/user/{code}</code> enviando <code>individual_data</code> (permiso <code>user:update_athlete</code>).", 'Ya muestra secciones por <code>roles.includes(...)</code> (multi-rol listo para gating), pero la etiqueta del encabezado usa <code>roles[0]</code>. Las vistas viejas (perfil propio y "Consulta de usuario") usan <code>roles[0]</code> en todo.', "La biometr\xEDa sale a cualquiera, vac\xEDa si no es deportista."] },
       { title: "Qu\xE9 cambia", items: ["Encabezado con todos los roles como chips (sin selector de rol). Datos comunes una sola vez: \xABSon los mismos para todos tus roles\xBB.", "Biometr\xEDa como grupo compacto en la franja del encabezado, solo con rol deportista y solo en Perfil y en las secciones de deportista.", "\xABEditar\xBB es un bot\xF3n secundario neutro; el naranja queda para lo activo y \xABAgregar rol\xBB."] },
-      { title: "Edici\xF3n desde un organismo", items: ["Reuni\xF3n con Producto del 2026-10-09: club, liga y federaci\xF3n editan solo los <b>datos b\xE1sicos</b> de contacto de la persona (direcci\xF3n, tel\xE9fono y correo), en las pesta\xF1as Ubicaci\xF3n y Contacto. Los datos personales adicionales (identidad de g\xE9nero, orientaci\xF3n sexual, salud, etc.) quedan bajo control de la persona: el organismo solo los consulta.", "El cambio queda registrado a nombre del organismo."] },
+      { title: "Edici\xF3n desde un organismo", items: ["Reuni\xF3n con Producto del 2026-10-09: club, liga y federaci\xF3n editan solo los <b>datos b\xE1sicos</b> de contacto de la persona (direcci\xF3n, tel\xE9fono y correo), en las pesta\xF1as Ubicaci\xF3n y Contacto. Los datos personales adicionales (identidad de g\xE9nero, orientaci\xF3n sexual, salud, etc.) quedan bajo control de la persona: el organismo solo los consulta.", "El cambio queda registrado a nombre del organismo.", "Correo (decisi\xF3n 2026-10-14): el organismo lo cambia solo mientras la persona no haya activado su cuenta (<code>cuentaActivada: false</code> en los creados por un organismo). Despu\xE9s lo cambia solo ella, porque el reclamo de perfil manda el acceso al correo guardado.", "Al crear son obligatorios documento, nombres, fecha de nacimiento, sexo, deporte y correo."] },
       { title: "Qu\xE9 falta en el back", items: ["Nada para los datos; el encabezado debe leer <code>roles[]</code> completo en vez de <code>roles[0]</code>.", "Un permiso de edici\xF3n acotado para el organismo (solo direcci\xF3n, tel\xE9fono y correo de personas de su jurisdicci\xF3n)."] }
     ] },
     trayectoria: { title: "Trayectoria", sections: [

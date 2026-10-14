@@ -290,6 +290,10 @@
       if (a.estado === "Vinculada") cambiarAfiliacion(o2.id, a.organismoId, "Terminada", { motivo, fin: "cancelacion" });
       else if (a.estado === "Solicitada") cambiarAfiliacion(o2.id, a.organismoId, "Rechazada", { motivo });
     });
+    const sols = readStore("solicitudes", []) || [];
+    if (sols.some((s) => s.clubId === o2.id && s.estado === "Enviada")) {
+      writeStore("solicitudes", sols.map((s) => s.clubId === o2.id && s.estado === "Enviada" ? { ...s, estado: s.tipo === "retiro" ? "Cerrada" : "Rechazada", motivo, resueltaFecha: _todayISO() } : s));
+    }
   }
   function reactivar(id2, meta = {}) {
     const o2 = getOrganismo(id2);
@@ -2142,6 +2146,8 @@
           "Arriba va el bloque de estado (<code>estadoPropioHtml</code>, shared/ciclo.js): qu\xE9 pas\xF3, el motivo con qui\xE9n y cu\xE1ndo (\xFAltimo cambio en la trazabilidad), qu\xE9 le toca, lo que puede y no puede hacer y el recorrido.",
           "Acceso antes de estar Activo (decisi\xF3n 2026-10-14): la cuenta del administrador se crea con el alta (cargue masivo o registro p\xFAblico) y entra limitada a \xABMi organismo\xBB: ver su estado y el motivo, completar, corregir y reenviar. Al activarse, la misma cuenta pasa a ser la cuenta principal con todos los permisos (lo construye DEP-591).",
           "Reserva de deportes: el organismo conserva sus deportes en Preinscrito, En revisi\xF3n, En correcci\xF3n, Activo y Suspendido; los pierde en Rechazado y Cancelado. Si al reenviar uno ya lo tom\xF3 otra federaci\xF3n, el env\xEDo no pasa y dice qu\xE9 deporte y qui\xE9n lo tiene (<code>deportesOcupados</code>; en el back, 409).",
+          "Qu\xE9 se corrige (decisi\xF3n 2026-10-14): todo menos el tipo y el superior. El NIT sigue siendo \xFAnico y su cambio queda en la auditor\xEDa; los deportes se validan como al crearlo, con la reserva.",
+          "Federaciones: un rechazo de cualquiera de los dos avales deja la federaci\xF3n Rechazada al instante; el otro aval ya no se espera y los dos quedan como historial. Una devoluci\xF3n anula el otro aval. Al reenviar, los dos vuelven a empezar.",
           "Preinscrito, En correcci\xF3n y Rechazado llevan a <code>registro.html?completar=&lt;id&gt;</code>: el mismo asistente sin el paso Tipo y con el superior fijo. Al enviar queda <strong>En revisi\xF3n</strong> en la bandeja del superior (<code>enviarRegistro</code>); en federaciones los dos avales vuelven a empezar.",
           "Solo demo: \xABEntrar como \u2026\xBB (en esta ficha si el organismo no est\xE1 Activo, en la bandeja del superior y despu\xE9s de un cargue masivo) simula el acceso que le llega por correo al organismo. Su administrador es el representante legal. Para volver a un perfil de la demo, el chip de usuario tiene \xABCambiar de perfil\xBB."
         ] },

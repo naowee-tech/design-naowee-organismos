@@ -633,7 +633,13 @@ const MODULE_NAME = 'Organismos';
                y dice qué deporte y quién lo tiene.
              · La cuenta del administrador se crea con el alta y entra limitada a «Mi
                organismo» hasta que el organismo esté Activo (texto y notas).
-             · Vigencia de afiliaciones: fechas sin hora, sin futuras ni retroactivas. */
+             · Vigencia de afiliaciones: fechas sin hora, sin futuras ni retroactivas.
+             · Segunda ronda: retiro con el club suspendido queda en espera; la
+               cancelación también rechaza las solicitudes que el organismo envió y
+               cierra los retiros pendientes; al corregir cambia todo menos tipo y
+               superior (NIT único y auditado); aviso de desvinculación a todas las
+               ligas vigentes del club; el organismo cambia el correo de una persona
+               solo si aún no activó su cuenta. */
 /* v1.9.1 —  DECISIONES CERRADAS EL 13-10:
              · P-18: cancelar un club termina sus afiliaciones (deportistas, personal
                y sus ligas); sus deportistas quedan autodeclarados si no tienen otro
