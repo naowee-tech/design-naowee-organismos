@@ -54,13 +54,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -283,13 +283,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -2391,7 +2391,7 @@
                   asociarAutodeclarado(st.existente.id, actor.id, { responsable: (ROLES[roleCode2] || {}).userName || "" });
                   render();
                   cerrar();
-                  toast(`${st.existente.nombre} qued\xF3 vinculado a tu club. Conserva sus datos y su correo.`);
+                  toast(`${st.existente.nombre} qued\xF3 vinculado a tu club. Conserva sus datos y su correo; le avisamos a la persona y a la liga.`);
                   return;
                 }
                 st.step = 2;
@@ -2494,7 +2494,7 @@
           if (actor.tipo !== "comite") return deportesDe(actor);
           return [...new Set(childrenOf(actor.id).filter((o) => o.tipo === "federacion").flatMap((o) => deportesDe(o)))];
         }, cgHeaders = function(actor) {
-          return [...CG_BASE, ...(CG_CADENA[actor.tipo] || []).map((t) => TIPO_LBL[t])];
+          return actor.tipo === "club" ? [...CG_BASE] : [...CG_BASE, CG_COL_CLUB];
         }, cgEjemplos = function(actor) {
           const propiosDep = deportesDeActor(actor);
           const dep = propiosDep.includes("Patinaje") ? "Patinaje" : propiosDep[0] || "Patinaje";
@@ -2507,11 +2507,7 @@
           const clubB = propios[1] || propios[0];
           const ya = allSolicitudes().filter((s) => s.estado === "Enviada").map((s) => s.deportistaId);
           const existente = allDeportistasDe(dep).find((d) => d.estado === "autodeclarado" && !ya.includes(d.id)) || allDeportistasDe(dep).find((d) => clubA && !d.clubIds.includes(clubA.id) && !ya.includes(d.id));
-          const cadena = (club2) => {
-            if (!club2) return (CG_CADENA[actor.tipo] || []).map(() => "");
-            const anc = [club2, ...ancestorsOf(club2.id)];
-            return (CG_CADENA[actor.tipo] || []).map((t) => (anc.find((o) => o.tipo === t) || {}).nombre || "");
-          };
+          const cadena = (club2) => actor.tipo === "club" ? [] : [club2 ? club2.nit : ""];
           const sufijo = actor.id.replace(/\D/g, "").padStart(3, "0");
           const doc = (n) => `11${sufijo}${String(n).padStart(5, "0")}`;
           const fila = (td, nd, nom, ape, fn, sx, correo, tel, deporte, club2) => [td, nd, nom, ape, fn, sx, correo, tel, deporte, ...cadena(club2)];
@@ -2544,9 +2540,13 @@
           window.XLSX.utils.book_append_sheet(wb, ws, "Deportistas");
           window.XLSX.writeFile(wb, "plantilla-cargue-deportistas.xlsx");
         }, cgValidar = function(body, actor) {
-          const cadenaTipos = CG_CADENA[actor.tipo] || [];
           const deportesActor = deportesDeActor(actor);
-          const docs = /* @__PURE__ */ new Set();
+          const jurisdiccion = new Set(subtreeOf(actor.id).map((o) => o.id));
+          const filasDe = {};
+          body.forEach((raw, i) => {
+            const n = soloDigitos(raw[1]);
+            if (n) (filasDe[n] = filasDe[n] || []).push(i + 2);
+          });
           return body.map((raw, i) => {
             const c = (k) => String(raw[k] == null ? "" : raw[k]).trim();
             const d = {
@@ -2560,15 +2560,12 @@
               telefono: c(7),
               deporte: c(8)
             };
-            const cad = {};
-            cadenaTipos.forEach((t, j) => {
-              cad[t] = c(9 + j);
-            });
+            const nitClub = actor.tipo === "club" ? "" : c(9);
             const errores = [];
             const ya = d.numDoc ? personaPorDocumento(d.numDoc) : null;
             if (!d.numDoc) errores.push("N\xFAmero de documento vac\xEDo");
-            else if (docs.has(d.numDoc)) errores.push("Documento repetido en el archivo");
-            if (d.numDoc) docs.add(d.numDoc);
+            else if (filasDe[d.numDoc].length > 1) errores.push(`Documento repetido en el archivo (filas ${filasDe[d.numDoc].join(", ")})`);
+            if (d.telefono && !telValido(d.telefono)) errores.push("Tel\xE9fono inv\xE1lido (7 o 10 d\xEDgitos)");
             if (!ya) {
               if (!TIPOS_DOC.includes(d.tipoDoc)) errores.push("Tipo de documento inv\xE1lido");
               if (!d.nombres || !d.apellidos) errores.push("Nombres o apellidos vac\xEDos");
@@ -2582,28 +2579,14 @@
             let club2 = null;
             let sinClub = false;
             if (actor.tipo === "club") club2 = actor;
-            else if (!cad.club) sinClub = true;
+            else if (!nitClub) sinClub = true;
             else {
-              let padre = actor;
-              for (const t of cadenaTipos) {
-                const nombre2 = cad[t];
-                const hijos = childrenOf(padre.id).filter((o) => o.tipo === t);
-                if (!nombre2) {
-                  errores.push(`${TIPO_LBL[t]} vac\xEDa para el club indicado`);
-                  padre = null;
-                  break;
-                }
-                const hallado = buscaNombre(hijos, nombre2);
-                if (!hallado) {
-                  const existe = buscaNombre(allOrganismos().filter((o) => o.tipo === t), nombre2);
-                  errores.push(existe ? `${existe.nombre} no es de ${padre.nombre}` : `${TIPO_LBL[t]} \xAB${nombre2}\xBB no existe en el SUID`);
-                  padre = null;
-                  break;
-                }
-                padre = hallado;
-              }
-              if (padre) {
-                club2 = padre;
+              const hallado = clubPorNit(nitClub);
+              if (!hallado) errores.push(`No hay un organismo con NIT ${nitClub} en el SUID`);
+              else if (hallado.tipo !== "club") errores.push(`El NIT ${nitClub} es de ${hallado.nombre}, no de un club`);
+              else if (!jurisdiccion.has(hallado.id)) errores.push(`${hallado.nombre} no est\xE1 en la jurisdicci\xF3n de ${actor.nombre}`);
+              else {
+                club2 = hallado;
                 if (club2.estado !== "Activo") errores.push(`${club2.nombre} no est\xE1 Activo`);
                 if (d.deporte && !deportesDe(club2).includes(d.deporte)) errores.push(`${club2.nombre} no practica ${d.deporte}`);
               }
@@ -2626,6 +2609,10 @@
             };
           });
         }, cgLeer = function(file) {
+          if (file.size > CG_MAX_BYTES) {
+            toastErr("El archivo pesa m\xE1s de 10 MB.");
+            return;
+          }
           const reader = new FileReader();
           reader.onload = (e) => {
             try {
@@ -2633,6 +2620,10 @@
               const ws = wb.Sheets[wb.SheetNames[0]];
               const aoa = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
               const body = aoa.slice(1).filter((r) => r.some((x) => String(x).trim() !== ""));
+              if (body.length > CG_MAX_FILAS) {
+                toastErr(`El archivo tiene ${body.length} filas: el m\xE1ximo es ${CG_MAX_FILAS.toLocaleString("es-CO")}. Div\xEDdelo en varios archivos.`);
+                return;
+              }
               cg.parsed = { archivo: file.name, tamano: file.size, filas: cgValidar(body, cgActor()) };
               renderCargue();
             } catch (_) {
@@ -2672,7 +2663,7 @@
         }, cgDetalle = function(r, actor) {
           if (r.tipo === "error") return `<span class="cg-errs">${esc(r.errores.join(" \xB7 "))}</span>`;
           const clubTxt = actor.tipo === "club" ? "Se vincula a tu club" : r.club ? `Se propone a ${esc(r.club.nombre)}; el club confirma` : "Queda autodeclarado: el club a\xFAn no est\xE1 en el SUID";
-          const extra = r.tipo === "existente" ? "No se crea de nuevo: conserva sus datos y su correo." : "Le llega un correo para completar su perfil.";
+          const extra = r.tipo === "existente" ? `No se crea de nuevo: conserva sus datos y su correo.${actor.tipo === "club" ? " Le avisamos a la persona y a la liga." : ""}` : "Le llega la invitaci\xF3n de Naowee para activar su cuenta.";
           return `<span class="dp-cg-det">${clubTxt}. ${extra}</span>`;
         }, renderCargue = function() {
           var _a, _b, _c, _d;
@@ -2697,8 +2688,7 @@
             return;
           }
           const activo = actor.estado === "Activo";
-          const cadena = (CG_CADENA[actor.tipo] || []).map((t) => TIPO_LBL[t].toLowerCase());
-          const intro = actor.tipo === "club" ? `Como <strong>${esc(actor.nombre)}</strong> cargas tus deportistas: quedan <strong>vinculados a tu club</strong>.` : `Como <strong>${esc(actor.nombre)}</strong> cargas deportistas con su ${cadena.join(", ").replace(/, ([^,]*)$/, " y $1")}. El club queda como <strong>propuesta</strong> y lo confirma desde su bandeja; mientras tanto el deportista sigue autodeclarado. Si el club a\xFAn no est\xE1 en el SUID, deja la columna vac\xEDa: queda autodeclarado.`;
+          const intro = actor.tipo === "club" ? `Como <strong>${esc(actor.nombre)}</strong> cargas tus deportistas: quedan <strong>vinculados a tu club</strong>.` : `Como <strong>${esc(actor.nombre)}</strong> cargas deportistas con el <strong>NIT de su club</strong>; la liga y la federaci\xF3n salen del club. El club queda como <strong>propuesta</strong> y lo confirma desde su bandeja; mientras tanto el deportista sigue autodeclarado. Si el club a\xFAn no est\xE1 en el SUID, deja el NIT vac\xEDo: queda autodeclarado.`;
           if (cg.hecho) {
             const h = cg.hecho;
             const clubes = [...new Set(h.propuestas.map((p) => p.clubId))];
@@ -2738,7 +2728,7 @@
           <span class="cg-template__ico">${I.users}</span>
           <div>
             <p class="cg-template__title">Plantilla de deportistas (${cgHeaders(actor).length} columnas)</p>
-            <p class="cg-template__sub">Datos b\xE1sicos${(CG_CADENA[actor.tipo] || []).length ? ` y ${cadena.join(", ").replace(/, ([^,]*)$/, " y $1")}` : ""}. Trae filas de ejemplo: nuevas, una persona que ya est\xE1 en el SUID y errores t\xEDpicos.</p>
+            <p class="cg-template__sub">Datos b\xE1sicos${actor.tipo === "club" ? "" : " y el NIT del club"}. Trae filas de ejemplo: nuevas, una persona que ya est\xE1 en el SUID y errores t\xEDpicos.</p>
           </div>
         </div>
         <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="cgTpl"${activo ? "" : " disabled"}><span class="naowee-btn__ico">${I.download}</span>Descargar plantilla</button>
@@ -2747,7 +2737,7 @@
         <input type="file" accept=".xlsx,.xls" id="cgInput"${activo ? "" : " disabled"}>
         <span class="cg-drop__ico">${I.upload}</span>
         <span class="cg-drop__title">Arrastra tu archivo o haz clic para elegirlo</span>
-        <span class="cg-drop__sub">Formato .xlsx o .xls \xB7 m\xE1x 5 MB</span>
+        <span class="cg-drop__sub">Formato .xlsx o .xls \xB7 m\xE1x 10 MB y 5.000 filas</span>
       </label>
       ${filas ? `
         <div class="naowee-card cg-preview">
@@ -2952,7 +2942,9 @@
           if (window.naoweeToast) window.naoweeToast(t, "error");
         };
         const vistaCargue = qsp("vista") === "cargue" && puedeCrear && !terr;
-        const CG_CADENA = { comite: ["federacion", "liga", "club"], federacion: ["liga", "club"], liga: ["club"], club: [] };
+        const CG_COL_CLUB = "NIT del club";
+        const CG_MAX_FILAS = 5e3;
+        const CG_MAX_BYTES = 10 * 1024 * 1024;
         const CG_BASE = ["Tipo de documento", "N\xFAmero de documento", "Nombres", "Apellidos", "Fecha de nacimiento (AAAA-MM-DD)", "Sexo", "Correo electr\xF3nico", "Tel\xE9fono", "Deporte"];
         const TIPOS_DOC = ["CC", "TI", "CE", "PPT", "PA"];
         const SEXOS = ["Mujer", "Hombre", "Intersexual"];
@@ -2967,7 +2959,13 @@
           if (v instanceof Date) return v.toISOString().slice(0, 10);
           return String(v == null ? "" : v).trim();
         };
-        const buscaNombre = (lista, nombre) => lista.find((o) => norm(o.nombre) === norm(nombre));
+        const soloDigitos = (v) => String(v == null ? "" : v).replace(/\D/g, "");
+        const clubPorNit = (nit) => allOrganismos().find((o) => soloDigitos(o.nit) === soloDigitos(nit)) || null;
+        const telValido = (t) => {
+          let n = soloDigitos(t);
+          if (n.length === 12 && n.startsWith("57")) n = n.slice(2);
+          return n.length === 7 || n.length === 10;
+        };
         const CG_TIPO = {
           nueva: ["positive", "Nueva"],
           existente: ["informative", "Ya est\xE1 en el SUID"],
@@ -2978,19 +2976,23 @@
         const CG_DEVNOTE = { title: "Carga masiva de deportistas (DEP-609)", sections: [
           { title: "Reglas", items: [
             "La usan club, liga, federaci\xF3n y comit\xE9 (P-07 respondida en la reuni\xF3n con Producto del 2026-10-09). El territorial registra uno a uno.",
-            "Columnas: datos b\xE1sicos + la cadena seg\xFAn qui\xE9n carga. La liga indica el club; la federaci\xF3n, la liga y el club; el comit\xE9, la federaci\xF3n, la liga y el club. El club no indica club: quedan vinculados a \xE9l.",
+            "Columnas: datos b\xE1sicos + el <strong>NIT del club</strong> (decisi\xF3n 2026-10-19: el nombre tiene hom\xF3nimos; el NIT es \xFAnico). La liga y la federaci\xF3n salen del club; no van en la plantilla. El club no indica club: quedan vinculados a \xE9l.",
             "El club indicado queda como <strong>propuesta</strong> que el club confirma en su bandeja (decisi\xF3n 2026-10-13); mientras tanto el deportista sigue autodeclarado.",
             "Club vac\xEDo = el club a\xFAn no est\xE1 en el SUID: la fila es v\xE1lida y el deportista queda autodeclarado, para proponerle el club despu\xE9s.",
-            "Documento que ya existe en el SUID: no se crea otra persona; manda el primer registro y su correo no cambia. Solo se le propone el club. Sin club, esa fila es error.",
-            "Solo datos b\xE1sicos. Al deportista nuevo le llega un correo para completar su perfil (decisi\xF3n 2026-10-13); los datos personales adicionales los maneja \xE9l."
+            "Documento que ya existe en el SUID: no se crea otra persona; manda el primer registro y su correo no cambia. Solo se le propone el club. Sin club, esa fila es error aunque no tenga afiliaci\xF3n activa: no crea ni cambia nada (decisi\xF3n 2026-10-19).",
+            "Club que carga a alguien que ya existe: queda vinculado directo, igual que en el registro uno a uno; el club es quien aprueba sus afiliaciones. Le avisamos a la persona y a la liga; si no est\xE1 de acuerdo, se retira (decisi\xF3n 2026-10-19).",
+            "Solo datos b\xE1sicos. Al deportista nuevo le llega la invitaci\xF3n actual de Naowee (enlace de activaci\xF3n + contrase\xF1a temporal); no hay plantilla nueva (decisi\xF3n 2026-10-19). Los datos personales adicionales los maneja \xE9l."
           ] },
           { title: "Validaci\xF3n por fila", items: [
-            "Documento vac\xEDo o repetido en el archivo \xB7 tipo de documento \xB7 nombres y apellidos \xB7 fecha (AAAA-MM-DD) \xB7 menor de 18 (lo registra su tutor) \xB7 sexo \xB7 correo.",
-            "Deporte que no es del organismo \xB7 liga o club que no existen, no cuelgan de quien carga, no est\xE1n Activos o no practican el deporte.",
+            "Documento vac\xEDo \xB7 documento repetido en el archivo: se rechazan <strong>todas</strong> sus filas \xB7 tipo de documento \xB7 nombres y apellidos \xB7 fecha (AAAA-MM-DD) \xB7 menor de 18 (lo registra su tutor) \xB7 sexo \xB7 correo.",
+            "Tel\xE9fono opcional: si viene, 7 o 10 d\xEDgitos (con o sin +57).",
+            "Deporte que no es del organismo \xB7 NIT que no existe, que no es de un club, club fuera de la jurisdicci\xF3n de quien carga, no Activo o que no practica el deporte.",
+            "Archivo: m\xE1ximo 10 MB y 5.000 filas (los del motor de lotes de user-auth-ms).",
             "Persona que ya est\xE1 vinculada a ese club o que ya tiene una propuesta pendiente con \xE9l."
           ] },
           { title: "Back (referencia)", items: [
-            "INT-125 ya tiene en user-auth-ms (staging) el motor de lotes para administradores internos: plantilla ATHLETE, validaci\xF3n, archivo de errores, confirmaci\xF3n y reporte. DEP-611 lo extiende a organismos con la cadena y la propuesta al club."
+            "INT-125 ya tiene en user-auth-ms (staging) el motor de lotes para administradores internos: plantilla ATHLETE, validaci\xF3n, archivo de errores, confirmaci\xF3n y reporte. DEP-611 lo extiende a organismos con el NIT del club y la propuesta al club.",
+            "Radicado = el c\xF3digo del lote; no hay otro identificador. No se guarda el archivo original: quedan el nombre, el SHA-256 y cada fila con su resultado."
           ] }
         ] };
         if (vistaCargue) cgSembrar();

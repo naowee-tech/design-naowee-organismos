@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi organismo — Naowee Organismos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/tokens.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/shell.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/components.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/forms.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/detalle.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/naowee-footer.css?v=1.7.1">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Variante B · Ciclo del organismo
+   1) «Mi organismo»: página propia del administrador cuando su organismo no
+      está Activo. Arriba la tarea (qué te toca), luego el recorrido del ciclo
+      como guía y la trazabilidad debajo. La ficha completa queda a un clic.
+   2) Ficha del organismo (Ministerio): panel «Estado y sanciones» junto a la
+      ficha, con Suspender / Cancelar / Reactivar y el historial de sanciones.
+   Solo tokens del módulo y clases existentes (.od-*, .bj-*, .reg-modal,
+   .naowee-*). Lo nuevo es layout page-scoped: .mo-* y .ss-*.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Foco de teclado visible en el shell ── */
+.user-chip:focus-visible, .header-burger:focus-visible, .burger-btn:focus-visible, .nav-row:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22);
+}
+.naowee-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.naowee-breadcrumb__item:focus-visible, .mo-link:focus-visible { outline: none; border-radius: 4px; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.reg-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ═══ 1 · Mi organismo ═══ */
+.mo-org { display: flex; align-items: center; gap: 12px; margin: 0 0 20px; }
+.mo-org__emoji {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--radius-lg); background: var(--bg-soft);
+  display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1;
+}
+.mo-org__name { font-size: clamp(22px, 2.4vw, 26px); font-weight: 800; letter-spacing: -.6px; color: var(--azul); margin: 0; line-height: 1.15; }
+.mo-org__meta { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; }
+
+.mo-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.mo-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* Tarjeta de la tarea */
+.mo-task { padding: 24px; animation: stubIn .4s var(--easing-smoothout) both; }
+.mo-task__top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.mo-task__since { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mo-task__title { font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--text-primary); margin: 0 0 6px; line-height: 1.25; }
+.mo-task__text { font-size: 14px; color: var(--text-secondary); line-height: 1.55; margin: 0; max-width: 620px; }
+.mo-task__text strong { color: var(--text-primary); font-weight: 600; }
+.mo-task__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.mo-task__actions .naowee-btn svg { width: 16px; height: 16px; }
+.mo-task .naowee-message { margin-top: 18px; }
+
+/* Motivo de la decisión (devolución / rechazo / sanción) */
+.mo-reason { margin-top: 18px; padding: 14px 16px; background: var(--bg-soft); border-radius: var(--radius-lg); }
+.mo-reason__label { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 0 0 4px; }
+.mo-reason__text { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0; line-height: 1.45; }
+.mo-reason__note { font-size: 13.5px; color: var(--text-primary); margin: 6px 0 0; line-height: 1.5; }
+.mo-reason__by { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+.mo-reason__by > span:last-child { min-width: 0; padding-top: 3px; }
+.mo-reason__by strong { color: var(--text-primary); font-weight: 600; }
+.mo-reason__ava {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; font-size: 10.5px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; background: var(--purple-bg); color: var(--purple);
+}
+.mo-reason__ava--min { background: var(--blue-bg); color: var(--azul); }
+
+/* Recorrido del ciclo */
+.mo-cycle { padding: 22px 24px; }
+.mo-h { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px; }
+.mo-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.mo-step { position: relative; padding: 0 12px 0 0; min-width: 0; }
+.mo-step__mark {
+  position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  background: #fff; border: 2px solid var(--border-dark); color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.mo-step__mark svg { width: 14px; height: 14px; }
+/* Conector entre pasos */
+.mo-step:not(:last-child)::after {
+  content: ''; position: absolute; top: 13px; left: 36px; right: 8px; height: 2px; border-radius: 2px; background: var(--border);
+}
+.mo-step.is-done:not(:last-child)::after { background: var(--green-border); }
+.mo-step__name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin: 10px 0 2px; }
+.mo-step__sub { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+.mo-step__flag { margin-top: 6px; }
+.mo-step.is-todo .mo-step__name { color: var(--text-secondary); font-weight: 600; }
+.mo-step.is-done .mo-step__mark { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+.mo-step.is-current .mo-step__mark { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 4px var(--accent-bg); }
+.mo-step.is-current .mo-step__name { color: var(--accent); }
+.mo-step.is-returned .mo-step__mark { background: var(--naowee-color-feedback-fill-caution-quiet); border-color: var(--orange-border); color: var(--naowee-color-feedback-text-caution-quiet-on-fill); }
+.mo-step.is-halt .mo-step__mark { background: var(--naowee-color-feedback-fill-caution-quiet); border-color: var(--orange-border); color: var(--naowee-color-feedback-text-caution-quiet-on-fill); box-shadow: 0 0 0 4px var(--naowee-color-feedback-fill-caution-quiet); }
+.mo-step.is-halt .mo-step__name { color: var(--naowee-color-feedback-text-caution-quiet-on-fill); }
+.mo-step.is-end .mo-step__mark { background: var(--naowee-color-feedback-fill-negative-quiet); border-color: var(--red-border); color: var(--naowee-color-feedback-text-negative-quiet-on-fill); box-shadow: 0 0 0 4px var(--naowee-color-feedback-fill-negative-quiet); }
+.mo-step.is-end .mo-step__name { color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.mo-next {
+  display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 13.5px; color: var(--text-primary); line-height: 1.5;
+}
+.mo-next__lbl { font-weight: 700; flex-shrink: 0; }
+
+/* Columna lateral: lo que puedes hacer y trazabilidad */
+.mo-side { padding: 20px; }
+.mo-side + .mo-side { margin-top: 0; }
+.mo-can { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.mo-can li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); }
+.mo-can__ico { width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 0; }
+.mo-can__ico svg { width: 12px; height: 12px; }
+.mo-can__ico--no { background: var(--bg-soft); color: var(--text-secondary); }
+.mo-can__ico--yes { background: var(--green-bg); color: var(--green); }
+.mo-can li.is-no { color: var(--text-secondary); }
+.mo-side__foot { font-size: 12.5px; color: var(--text-secondary); margin: 14px 0 0; line-height: 1.5; }
+.mo-link { font-weight: 600; }
+.mo-trace .od-tl-head { font-size: 13px; }
+.mo-trace .od-tl-reason { font-size: 12.5px; color: var(--text-primary); margin-top: 3px; line-height: 1.45; }
+
+/* ═══ 2 · Ficha + Estado y sanciones (Ministerio) ═══ */
+.ss-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "ficha estado"; gap: 20px; align-items: start; }
+.ss-estado { grid-area: estado; position: sticky; top: 16px; padding: 0; overflow: hidden; }
+.ss-ficha { grid-area: ficha; min-width: 0; }
+.ss-sec { padding: 18px 20px; }
+.ss-sec + .ss-sec { border-top: 1px solid var(--border); }
+.ss-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0 0 12px; }
+.ss-now { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ss-now .naowee-badge { height: 24px; padding: 2px 10px; font-size: 12px; }
+.ss-now__since { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ss-now__desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 10px 0 0; }
+.ss-estado .mo-reason { margin-top: 14px; }
+.ss-actions { display: flex; flex-direction: column; gap: 14px; }
+.ss-action { display: flex; flex-direction: column; gap: 6px; }
+.ss-action .naowee-btn { width: 100%; }
+.ss-action__hint { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+/* Cancelar: acción definitiva, en rojo pero sin peso de primaria */
+.ss-btn-danger-quiet { background: var(--naowee-color-feedback-fill-negative-quiet); color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.ss-btn-danger-quiet:hover { background: #ffd6dd; }
+.ss-btn-danger-quiet:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(218, 22, 48, .22); }
+.ss-empty { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.ss-hist .od-tl-row:first-child .od-tl-dot { background: var(--accent); }
+
+/* Diálogo de sanción */
+.ss-dlg .reg-modal__body { gap: 18px; }
+.ss-dlg__lead { font-size: 14px; color: var(--text-primary); line-height: 1.55; margin: 0; }
+.ss-conseq { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; }
+.ss-conseq li { font-size: 13.5px; line-height: 1.45; }
+.ss-conseq .ss-tag { color: var(--text-secondary); font-size: 12px; }
+.bj-select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .15); }
+.ss-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.45; cursor: pointer; }
+.ss-check input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); flex-shrink: 0; }
+.ss-check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ss-dlg .naowee-textfield__input-wrap:focus-within { border-color: var(--accent); }
+.ss-dlg .bj-ta-wrap.is-err { border-color: var(--field-border-error); }
+
+/* ── Conmutador de revisión (solo para la revisión del diseño) ── */
+.review-switch {
+  position: fixed; left: 16px; bottom: 16px; z-index: 65;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px;
+  background: #fff; border: 1px dashed var(--border-dark); border-radius: var(--radius-lg);
+  box-shadow: 0 4px 14px rgba(40, 40, 52, .12);
+}
+.review-switch__lbl { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.review-switch .bj-select { width: auto; min-width: 280px; padding: 7px 10px; font-size: 13px; }
+.page { padding-bottom: 96px; }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 1180px) {
+  .mo-grid { grid-template-columns: 1fr; }
+  .ss-grid { grid-template-columns: 1fr; grid-template-areas: "estado" "ficha"; }
+  .ss-estado { position: static; }
+}
+@media (max-width: 760px) {
+  .mo-org__emoji { width: 38px; height: 38px; font-size: 19px; }
+  .mo-task { padding: 18px 16px; }
+  .mo-task__title { font-size: 18px; }
+  .mo-task__actions .naowee-btn { flex: 1 1 100%; }
+  .mo-cycle { padding: 18px 16px; }
+  .mo-side { padding: 18px 16px; }
+  /* El recorrido pasa a vertical */
+  .mo-steps { grid-template-columns: 1fr; gap: 0; }
+  .mo-step { display: grid; grid-template-columns: 28px 1fr; column-gap: 12px; padding: 0 0 16px; }
+  .mo-step:last-child { padding-bottom: 0; }
+  .mo-step__mark { grid-row: 1 / span 3; }
+  .mo-step__name { margin: 4px 0 2px; }
+  .mo-step:not(:last-child)::after { top: 32px; bottom: 2px; left: 13px; right: auto; width: 2px; height: auto; }
+  .mo-next { flex-direction: column; gap: 2px; }
+  .ss-sec { padding: 16px; }
+  .review-switch { left: 8px; right: 8px; bottom: 8px; padding: 6px 6px 6px 10px; }
+  .review-switch .bj-select { flex: 1; min-width: 0; }
+  #evToast { bottom: 64px; width: calc(100vw - 32px); }
+  .user-chip .user-chip__chevron { display: none; }
+  .reg-modal__foot .naowee-btn { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mo-task { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot">
+    <aside class="sidebar" id="naoweeSidebar">
+      <div class="sidebar-logo">
+        <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+        <div class="logo-sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav" role="navigation" aria-label="Menú principal"></nav>
+    </aside>
+  </div>
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" id="chipAva"></div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name" id="chipName"></span>
+            <span class="user-role" id="chipRole"></span>
+          </div>
+          <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+        <div class="profile-dd profile-dd--identity-only" role="menu">
+          <div class="profile-dd__header">
+            <span class="ava-ring" id="ddAva" style="width:42px;height:42px;font-size:14px"></span>
+            <div class="profile-dd__user">
+              <strong id="ddName"></strong>
+              <span class="profile-dd__doc" id="ddDoc"></span>
+              <small id="ddMail"></small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="page-inner">
+        <div id="viewRoot" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell-backdrop" id="drawerBackdrop"></div>
+<div id="evToast" role="status" aria-live="polite"></div>
+
+<!-- Solo para la revisión del diseño -->
+<div class="review-switch" role="group" aria-label="Revisión del diseño">
+  <label class="review-switch__lbl" for="reviewSel">Ver como</label>
+  <select class="bj-select" id="reviewSel">
+    <optgroup label="Administrador del club">
+      <option value="adm:Preinscrito">Administrador · Preinscrito</option>
+      <option value="adm:En revisión">Administrador · En revisión</option>
+      <option value="adm:En corrección" selected>Administrador · En corrección</option>
+      <option value="adm:Rechazado">Administrador · Rechazado</option>
+      <option value="adm:Suspendido">Administrador · Suspendido</option>
+      <option value="adm:Cancelado">Administrador · Cancelado</option>
+    </optgroup>
+    <optgroup label="Ministerio del Deporte">
+      <option value="min:Activo">Ministerio · organismo Activo</option>
+      <option value="min:Suspendido">Ministerio · organismo Suspendido</option>
+    </optgroup>
+  </select>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── Iconos (mismos trazos del shell) ─── */
+  const IC = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/></svg>',
+    sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
+    level: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    filePlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="9" y1="6" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="18"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    sep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>',
+    xBig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    doc2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>'
+  };
+
+  const BADGE = { 'Preinscrito': 'neutral', 'En revisión': 'caution', 'En corrección': 'caution', 'Activo': 'positive', 'Rechazado': 'negative', 'Suspendido': 'caution', 'Cancelado': 'negative' };
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const badge = (e, big) => `<span class="naowee-badge naowee-badge--${BADGE[e] || 'neutral'} naowee-badge--quiet ${big ? '' : 'naowee-badge--small'}">${esc(e)}</span>`;
+  const msg = (v, ic, html) => `<div class="naowee-message naowee-message--${v}"><span class="naowee-message__icon">${ic}</span><div class="naowee-message__body"><p class="naowee-message__text">${html}</p></div></div>`;
+
+  /* ─── Datos de ejemplo ─── */
+  const ORG = {
+    id: 'CLU-002', nombre: 'Club Ruedas del Sur', nit: '805020002-2', deporte: 'Patinaje', tipoClub: 'Escuela',
+    ciudad: 'Palmira', depto: 'Valle del Cauca', direccion: 'Calle 30 # 28-15', liga: 'Liga de Patinaje del Valle',
+    contacto: '6025020202 · contacto@ruedasdelsur.demo.co'
+  };
+  const PERSONAS = {
+    adm: { nombre: 'Carolina Zapata Ríos', ini: 'CZ', doc: 'CC 10.000.402', mail: 'admin@ruedasdelsur.demo.co', color: '#7c3aed', rol: 'Administradora · Club Ruedas del Sur' },
+    min: { nombre: 'María F. Rojas', ini: 'MR', doc: 'CC 52.318.004', mail: 'maria.rojas@mindeporte.demo.co', color: '#002B5B', rol: 'Ministerio del Deporte' }
+  };
+  const LIGA_P = { quien: 'Sandra Mejía', ini: 'SM', org: 'Liga de Patinaje del Valle' };
+  const MIN_P = { quien: 'María F. Rojas', ini: 'MR', org: 'Ministerio del Deporte', min: true };
+
+  /* Trazabilidad base (orden cronológico) */
+  const T = {
+    pre:  { fecha: '12 feb 2026', head: '<strong>Preinscrito</strong> por cargue masivo de la Liga de Patinaje del Valle', sub: 'Sandra Mejía · Liga de Patinaje del Valle' },
+    env1: { fecha: '10 mar 2026', head: '<strong>Enviado a revisión</strong> por el club', sub: 'Carolina Zapata Ríos · Club Ruedas del Sur' },
+    cor:  { fecha: '18 mar 2026', head: '<strong>Devuelto a corrección</strong> por la liga', sub: 'Sandra Mejía · Liga de Patinaje del Valle', reason: 'Falta el reconocimiento del ente municipal' },
+    rec:  { fecha: '18 mar 2026', head: '<strong>Rechazado</strong> por la liga', sub: 'Sandra Mejía · Liga de Patinaje del Valle', reason: 'NIT / RUT inconsistente' },
+    env2: { fecha: '24 mar 2026', head: '<strong>Corregido y reenviado</strong> por el club', sub: 'Carolina Zapata Ríos · Club Ruedas del Sur' },
+    apr:  { fecha: '2 abr 2026', head: '<strong>Aprobado</strong>: el club quedó activo', sub: 'Sandra Mejía · Liga de Patinaje del Valle' },
+    sus:  { fecha: '6 oct 2026', head: '<strong>Suspendido</strong> por el Ministerio', sub: 'María F. Rojas · Ministerio del Deporte', reason: 'Reconocimiento deportivo vencido' },
+    can:  { fecha: '9 oct 2026', head: '<strong>Cancelado</strong> por el Ministerio', sub: 'María F. Rojas · Ministerio del Deporte', reason: 'Pérdida del reconocimiento deportivo' }
+  };
+
+  /* ─── Escenarios del administrador ─── */
+  const ADM = {
+    'Preinscrito': {
+      since: 'Preinscrito desde el 12 feb 2026',
+      title: 'Completa el registro de tu club',
+      text: 'La <strong>Liga de Patinaje del Valle</strong> cargó tu club en el SUID. Para que lo revise, completa los datos que faltan, adjunta los documentos de soporte y envíalo.',
+      cta: { lbl: 'Completar registro', ic: IC.edit },
+      extra: msg('informative', IC.info, 'Te faltan <strong>3 de 9 datos</strong> y <strong>2 documentos</strong>: el reconocimiento del ente municipal y el certificado de personería jurídica.'),
+      step: 0, steps: ['current', 'todo', 'todo'],
+      next: 'Cuando lo envíes, la Liga de Patinaje del Valle lo revisa. Si lo aprueba, tu club queda activo.',
+      trace: ['pre']
+    },
+    'En revisión': {
+      since: 'En revisión desde el 10 mar 2026',
+      title: 'Tu registro está en revisión',
+      text: 'Enviaste el registro el 10 mar 2026. La <strong>Liga de Patinaje del Valle</strong> lo está revisando. No tienes nada pendiente: te avisaremos por correo y en la app cuando decida.',
+      cta: null,
+      step: 1, steps: ['done', 'current', 'todo'],
+      next: 'Si la liga lo aprueba, tu club queda activo. Si encuentra algo por corregir, te lo devuelve con el motivo.',
+      trace: ['pre', 'env1']
+    },
+    'En corrección': {
+      since: 'Devuelto el 18 mar 2026',
+      title: 'Corrige tu registro y reenvíalo',
+      text: 'La <strong>Liga de Patinaje del Valle</strong> revisó tu registro y te pide un ajuste antes de aprobarlo.',
+      reason: { label: 'Motivo de la devolución', text: 'Falta el reconocimiento del ente municipal', note: 'Adjunta el acto de reconocimiento deportivo expedido por la Secretaría de Deporte de Palmira. El RUT y la personería están bien.', by: LIGA_P, fecha: '18 mar 2026' },
+      cta: { lbl: 'Corregir y reenviar', ic: IC.edit },
+      step: 0, steps: ['current', 'returned', 'todo'], returnedLbl: 'Devuelto el 18 mar',
+      next: 'Al reenviarlo vuelve a la bandeja de la Liga de Patinaje del Valle. Solo cambia lo que te pidieron; el resto de tu registro se conserva.',
+      trace: ['pre', 'env1', 'cor']
+    },
+    'Rechazado': {
+      since: 'Rechazado el 18 mar 2026',
+      title: 'Tu registro fue rechazado',
+      text: 'La <strong>Liga de Patinaje del Valle</strong> no aprobó tu registro. Revisa el motivo, corrige los datos y envíalo de nuevo para una nueva revisión.',
+      reason: { label: 'Motivo del rechazo', text: 'NIT / RUT inconsistente', note: 'El NIT del formulario (805020002-2) no coincide con el del RUT adjunto. Actualiza el RUT o corrige el NIT.', by: LIGA_P, fecha: '18 mar 2026' },
+      cta: { lbl: 'Corregir y reenviar', ic: IC.edit },
+      step: 0, steps: ['current', 'returned', 'todo'], returnedLbl: 'Rechazado el 18 mar',
+      next: 'Al reenviarlo, la Liga de Patinaje del Valle lo revisa de nuevo como un envío nuevo.',
+      trace: ['pre', 'env1', 'rec']
+    },
+    'Suspendido': {
+      since: 'Suspendido desde el 6 oct 2026',
+      title: 'Tu club está suspendido',
+      text: 'El <strong>Ministerio del Deporte</strong> suspendió tu club. Mientras dure la suspensión no puedes aprobar, hacer cargues ni confirmar afiliaciones. Tus datos y tu historial se conservan.',
+      reason: { label: 'Motivo de la suspensión', text: 'Reconocimiento deportivo vencido', note: 'El reconocimiento del ente municipal venció el 30 sep 2026 y no se ha renovado en el SUID.', by: MIN_P, fecha: '6 oct 2026' },
+      cta: null,
+      extra: msg('informative', IC.info, 'Solo el Ministerio puede levantar la suspensión. Si la levanta, tu club vuelve a revisión de la Liga de Patinaje del Valle con los datos que ya tienes <span style="color:var(--text-secondary)">(propuesta P-08, pendiente con Negocio)</span>.'),
+      step: 2, steps: ['done', 'done', 'halt'], lastLbl: 'Suspendido', lastSub: 'Sanción temporal del Ministerio',
+      next: 'No tienes nada que hacer en el SUID por ahora. Si tienes dudas sobre la suspensión, comunícate con el Ministerio del Deporte.',
+      trace: ['pre', 'env1', 'cor', 'env2', 'apr', 'sus']
+    },
+    'Cancelado': {
+      since: 'Cancelado el 9 oct 2026',
+      title: 'Tu club fue cancelado',
+      text: 'El <strong>Ministerio del Deporte</strong> canceló tu club. Esta decisión es definitiva: el club ya no puede operar en el SUID. Puedes consultar su ficha y su historial.',
+      reason: { label: 'Motivo de la cancelación', text: 'Pérdida del reconocimiento deportivo', note: 'El ente municipal de Palmira revocó el reconocimiento deportivo del club.', by: MIN_P, fecha: '9 oct 2026' },
+      cta: null,
+      step: 2, steps: ['done', 'done', 'end'], lastLbl: 'Cancelado', lastSub: 'Decisión definitiva del Ministerio',
+      next: 'El ciclo terminó. Un club cancelado no vuelve a estar activo.',
+      trace: ['pre', 'env1', 'cor', 'env2', 'apr', 'sus', 'can']
+    }
+  };
+
+  /* ─── Estado de la revisión ─── */
+  let quien = 'adm';
+  let estado = 'En corrección';
+  /* Ficha del Ministerio: estado vivo + historial de sanciones (se actualiza al confirmar) */
+  let minEstado = 'Activo';
+  let minDesde = '2 abr 2026';
+  let minHist = [];
+  let minTab = 0;
+
+  function resetMin(e) {
+    minEstado = e; minTab = 0;
+    if (e === 'Activo') { minDesde = '2 abr 2026'; minHist = []; }
+    else { minDesde = '6 oct 2026'; minHist = [{ tipo: 'Suspendido', fecha: '6 oct 2026', motivo: 'Reconocimiento deportivo vencido', nota: 'El reconocimiento del ente municipal venció el 30 sep 2026 y no se ha renovado en el SUID.' }]; }
+  }
+
+  /* ═══ Shell: sidebar y chip según quién ve ═══ */
+  const nav = document.getElementById('sidebarNav');
+  function renderShell() {
+    const row = (it) => `<a class="nav-row ${it.child ? 'nav-row--child' : ''} ${it.active ? 'active' : ''}" href="#" data-ph="${esc(it.label)}"${it.active ? ' aria-current="page"' : ''}>
+        ${it.active && !it.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+        <span class="icon">${it.icon}</span><span class="lbl">${esc(it.label)}</span></a>`;
+    let html = '';
+    if (quien === 'adm') {
+      /* Organismo no activo: el menú se reduce a «Mi organismo» */
+      html = row({ label: 'Mi organismo', icon: IC.home, active: true });
+    } else {
+      html += row({ label: 'Jerarquía SND', icon: IC.sitemap, active: true });
+      html += ['Comités', 'Federaciones', 'Ligas', 'Clubes', 'Deportistas'].map((n) => row({ label: n, icon: IC.level, child: true, active: n === 'Clubes' })).join('');
+      html += '<div class="nav-section">GESTIÓN</div>';
+      html += row({ label: 'Bandeja de aprobaciones', icon: IC.inbox });
+      html += row({ label: 'Registro de organismo', icon: IC.filePlus });
+    }
+    nav.innerHTML = html;
+    nav.querySelectorAll('.nav-row').forEach((a) => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (a.classList.contains('active')) { closeDrawer(); return; }
+      toast(`${esc(a.dataset.ph)}: pantalla fuera del alcance de esta variante.`, 'info');
+    }));
+
+    const p = PERSONAS[quien];
+    ['chipAva', 'ddAva'].forEach((id) => { const el = document.getElementById(id); el.textContent = p.ini; el.style.background = p.color + '22'; el.style.color = p.color; });
+    document.getElementById('chipName').textContent = p.nombre;
+    document.getElementById('chipRole').textContent = p.rol;
+    document.getElementById('ddName').textContent = p.nombre;
+    document.getElementById('ddDoc').innerHTML = IC.doc2 + esc(p.doc);
+    document.getElementById('ddMail').textContent = p.mail;
+  }
+
+  /* ═══ 1 · Mi organismo ═══ */
+  const root = document.getElementById('viewRoot');
+
+  function reasonHtml(r) {
+    return `<div class="mo-reason">
+      <p class="mo-reason__label">${esc(r.label)}</p>
+      <p class="mo-reason__text">${esc(r.text)}</p>
+      ${r.note ? `<p class="mo-reason__note">${esc(r.note)}</p>` : ''}
+      <div class="mo-reason__by"><span class="mo-reason__ava${r.by.min ? ' mo-reason__ava--min' : ''}" aria-hidden="true">${r.by.ini}</span><span><strong>${esc(r.by.quien)}</strong> · ${esc(r.by.org)} · ${esc(r.fecha)}</span></div>
+    </div>`;
+  }
+
+  function stepsHtml(s) {
+    const base = [
+      { name: 'Registro', sub: 'Completas los datos y los documentos y lo envías.' },
+      { name: 'Revisión de la liga', sub: 'La Liga de Patinaje del Valle lo aprueba o te lo devuelve con un motivo.' },
+      { name: 'Activo', sub: 'Tu club opera en el SUID: aprueba, carga y confirma afiliaciones.' }
+    ];
+    if (estado === 'En corrección' || estado === 'Rechazado') base[0] = { name: 'Corrección', sub: 'Ajustas lo que te pidieron y lo reenvías.' };
+    if (s.lastLbl) base[2] = { name: s.lastLbl, sub: s.lastSub };
+    const markFor = (st, i) => st === 'done' ? IC.check : st === 'halt' ? IC.pause : st === 'end' ? IC.x : st === 'returned' ? IC.back : String(i + 1);
+    const srFor = { done: 'Completado', current: 'Paso actual', todo: 'Pendiente', returned: 'Devuelto', halt: 'Estado actual', end: 'Estado final' };
+    return `<ol class="mo-steps">${base.map((b, i) => {
+      const st = s.steps[i];
+      const cls = { done: 'is-done', current: 'is-current', todo: 'is-todo', returned: 'is-returned', halt: 'is-halt', end: 'is-end' }[st];
+      const flag = st === 'returned' && s.returnedLbl ? `<div class="mo-step__flag">${badge(estado)}</div>`
+        : st === 'current' ? `<div class="mo-step__flag"><span class="naowee-badge naowee-badge--brand naowee-badge--quiet naowee-badge--small">Estás aquí</span></div>` : '';
+      return `<li class="mo-step ${cls}"${st === 'current' || st === 'halt' || st === 'end' ? ' aria-current="step"' : ''}>
+        <span class="mo-step__mark" aria-hidden="true">${markFor(st, i)}</span>
+        <p class="mo-step__name">${esc(b.name)}<span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"> (${srFor[st]})</span></p>
+        <p class="mo-step__sub">${esc(st === 'returned' && s.returnedLbl ? s.returnedLbl + ' por Sandra Mejía.' : b.sub)}</p>
+        ${flag}
+      </li>`;
+    }).join('')}</ol>`;
+  }
+
+  function traceHtml(keys) {
+    return [...keys].reverse().map((k) => {
+      const t = T[k];
+      return `<div class="od-tl-row"><span class="od-tl-dot"></span><div>
+        <div class="od-tl-head">${t.head}</div>
+        ${t.reason ? `<div class="od-tl-reason">Motivo: ${esc(t.reason)}</div>` : ''}
+        <div class="od-tl-sub">${esc(t.fecha)} · ${esc(t.sub)}</div></div></div>`;
+    }).join('');
+  }
+
+  function canHtml() {
+    const items = [
+      ['yes', 'Consultar la ficha y el historial de tu club'],
+      ['yes', estado === 'Preinscrito' || estado === 'En corrección' || estado === 'Rechazado' ? 'Editar tu registro y enviarlo' : 'Recibir avisos por correo y en la app'],
+      ['no', 'Aprobar o devolver solicitudes'],
+      ['no', 'Hacer cargues masivos'],
+      ['no', 'Confirmar afiliaciones de deportistas']
+    ];
+    return `<ul class="mo-can">${items.map(([k, t]) => `<li class="${k === 'no' ? 'is-no' : ''}"><span class="mo-can__ico mo-can__ico--${k}" aria-hidden="true">${k === 'yes' ? IC.check : IC.x}</span><span>${k === 'no' ? '<span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">No disponible: </span>' : ''}${esc(t)}</span></li>`).join('')}</ul>`;
+  }
+
+  function renderAdmin() {
+    const s = ADM[estado];
+    document.title = `Mi organismo · ${ORG.nombre} — Naowee Organismos`;
+    const ctaLbl = s.cta ? s.cta.lbl : '';
+    const habilita = estado === 'Cancelado' ? 'Un club cancelado no recupera estas funciones.'
+      : estado === 'Suspendido' ? 'Se habilitan si el Ministerio levanta la suspensión y la liga vuelve a aprobar tu club.'
+      : 'Se habilitan cuando la Liga de Patinaje del Valle apruebe tu club.';
+    root.innerHTML = `
+      <div class="mo-org">
+        <span class="mo-org__emoji" aria-hidden="true">🛡️</span>
+        <div style="min-width:0">
+          <h1 class="mo-org__name">${esc(ORG.nombre)}</h1>
+          <p class="mo-org__meta">Club ${esc(ORG.tipoClub.toLowerCase())} de ${esc(ORG.deporte.toLowerCase())} · ${esc(ORG.ciudad)}, ${esc(ORG.depto)} · Liga: ${esc(ORG.liga)}</p>
+        </div>
+      </div>
+
+      <div class="mo-grid">
+        <div class="mo-col">
+          <section class="naowee-card mo-task" aria-labelledby="moTitle">
+            <div class="mo-task__top">${badge(estado, true)}<span class="mo-task__since">${esc(s.since)}</span></div>
+            <h2 class="mo-task__title" id="moTitle">${esc(s.title)}</h2>
+            <p class="mo-task__text">${s.text}</p>
+            ${s.reason ? reasonHtml(s.reason) : ''}
+            ${s.extra || ''}
+            <div class="mo-task__actions">
+              ${s.cta ? `<button type="button" class="naowee-btn naowee-btn--loud" id="moCta">${s.cta.ic}${esc(ctaLbl)}</button>` : ''}
+              <a class="naowee-btn ${s.cta ? 'naowee-btn--mute' : 'naowee-btn--quiet'}" href="../../organismo-detalle.html?id=${ORG.id}&role=CLUB">${IC.doc}Ver ficha completa</a>
+            </div>
+          </section>
+
+          <section class="naowee-card mo-cycle" aria-labelledby="moCycleT">
+            <h2 class="mo-h" id="moCycleT">Recorrido de tu registro</h2>
+            ${stepsHtml(s)}
+            <p class="mo-next"><span class="mo-next__lbl">Qué sigue</span><span>${esc(s.next)}</span></p>
+          </section>
+        </div>
+
+        <div class="mo-col">
+          <section class="naowee-card mo-side" aria-labelledby="moCanT">
+            <h2 class="mo-h" id="moCanT">Mientras tu club no esté activo</h2>
+            ${canHtml()}
+            <p class="mo-side__foot">${esc(habilita)}</p>
+          </section>
+          <section class="naowee-card mo-side mo-trace" aria-labelledby="moTraceT">
+            <h2 class="mo-h" id="moTraceT">Trazabilidad</h2>
+            ${traceHtml(s.trace)}
+          </section>
+        </div>
+      </div>`;
+    const cta = root.querySelector('#moCta');
+    if (cta) cta.addEventListener('click', () => toast(`«${esc(ctaLbl)}» abre el formulario de registro con tus datos ya cargados.`, 'info'));
+  }
+
+  /* ═══ 2 · Ficha del organismo + Estado y sanciones (Ministerio) ═══ */
+  const kv = (k, v) => `<div class="od-kv__row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`;
+  const TABS = ['Información', 'Representante legal', 'Documentos', 'Historial'];
+  function tabPanel() {
+    if (minTab === 0) return `<dl class="od-kv">${kv('Tipo de organismo', 'Club')}${kv('Tipo de club', ORG.tipoClub)}${kv('NIT / RUT', ORG.nit)}${kv('Naturaleza jurídica', 'Privada, sin ánimo de lucro')}${kv('Cobertura geográfica', 'Municipal')}${kv('Sector SND', 'Olímpico')}${kv('Deporte', ORG.deporte)}${kv('Sede / dirección', `${ORG.direccion}, ${ORG.ciudad}, ${ORG.depto} (Urbana)`)}${kv('Contacto institucional', ORG.contacto)}${kv('Fecha de registro', '12 feb 2026')}</dl>`;
+    if (minTab === 1) return `<dl class="od-kv">${kv('Nombre', 'Carolina Zapata Ríos')}${kv('Documento', 'CC 10000402')}${kv('Correo electrónico', 'admin@ruedasdelsur.demo.co')}</dl>`;
+    if (minTab === 2) return ['Reconocimiento del ente municipal', 'RUT', 'Certificado de personería jurídica'].map((d, i) => `<div class="od-doc"><span class="od-doc__ico">${IC.doc}</span><div style="min-width:0"><div class="od-doc__name">${d}</div><div class="od-doc__file">${['reconocimiento-palmira-2025.pdf', 'rut-ruedas-del-sur.pdf', 'personeria-2026.pdf'][i]}</div></div><span class="od-doc__tag">${i === 0 && minEstado !== 'Activo' ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">Vencido</span>' : '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Adjunto</span>'}</span></div>`).join('');
+    const keys = ['pre', 'env1', 'cor', 'env2', 'apr'];
+    return `<div class="mo-trace">${[...minHist].reverse().map((h) => `<div class="od-tl-row"><span class="od-tl-dot"></span><div><div class="od-tl-head"><strong>${esc(h.tipo === 'En revisión' ? 'Reactivado' : h.tipo)}</strong> por el Ministerio</div><div class="od-tl-reason">Motivo: ${esc(h.motivo)}</div><div class="od-tl-sub">${esc(h.fecha)} · María F. Rojas · Ministerio del Deporte</div></div></div>`).join('')}${traceHtml(keys)}</div>`;
+  }
+
+  const DESC = {
+    'Activo': 'Opera con normalidad en el SUID desde que la Liga de Patinaje del Valle lo aprobó.',
+    'Suspendido': 'No puede aprobar, hacer cargues ni confirmar afiliaciones mientras dure la suspensión.',
+    'Cancelado': 'Perdió su reconocimiento en el SUID. Esta decisión no tiene vuelta atrás.',
+    'En revisión': 'Volvió a la bandeja de la Liga de Patinaje del Valle para una nueva validación sobre los datos que ya tenía (propuesta P-08).'
+  };
+
+  function estadoPanel() {
+    const ultima = minHist[minHist.length - 1];
+    let acciones = '';
+    if (minEstado === 'Activo') {
+      acciones = `
+        <div class="ss-action"><button type="button" class="naowee-btn naowee-btn--quiet" data-act="suspender">${IC.pause}Suspender</button><p class="ss-action__hint">Temporal. Lo puedes reactivar después.</p></div>
+        <div class="ss-action"><button type="button" class="naowee-btn ss-btn-danger-quiet" data-act="cancelar">${IC.xBig}Cancelar</button><p class="ss-action__hint">Definitivo. El club no vuelve a operar.</p></div>`;
+    } else if (minEstado === 'Suspendido') {
+      acciones = `
+        <div class="ss-action"><button type="button" class="naowee-btn naowee-btn--loud" data-act="reactivar">Reactivar</button><p class="ss-action__hint">El club vuelve a revisión de la Liga de Patinaje del Valle (propuesta P-08).</p></div>
+        <div class="ss-action"><button type="button" class="naowee-btn ss-btn-danger-quiet" data-act="cancelar">${IC.xBig}Cancelar</button><p class="ss-action__hint">Definitivo. El club no vuelve a operar.</p></div>`;
+    }
+    const reason = minEstado === 'Suspendido' && ultima ? reasonHtml({ label: 'Motivo de la suspensión', text: ultima.motivo, note: ultima.nota, by: MIN_P, fecha: ultima.fecha })
+      : minEstado === 'Cancelado' && ultima ? reasonHtml({ label: 'Motivo de la cancelación', text: ultima.motivo, note: ultima.nota, by: MIN_P, fecha: ultima.fecha }) : '';
+    const hist = minHist;
+    return `
+      <div class="ss-sec">
+        <h2 class="ss-title" id="ssTitle">Estado y sanciones</h2>
+        <div class="ss-now">${badge(minEstado, true)}<span class="ss-now__since">desde el ${esc(minDesde)}</span></div>
+        <p class="ss-now__desc">${esc(DESC[minEstado])}</p>
+        ${reason}
+      </div>
+      ${acciones ? `<div class="ss-sec"><div class="ss-actions">${acciones}</div></div>` : ''}
+      <div class="ss-sec ss-hist">
+        <h3 class="ss-title" style="font-size:14px">Historial de sanciones</h3>
+        ${hist.length ? [...hist].reverse().map((h) => `<div class="od-tl-row"><span class="od-tl-dot"></span><div>
+            <div class="od-tl-head"><strong>${esc(h.tipo === 'En revisión' ? 'Reactivado' : h.tipo)}</strong></div>
+            <div class="od-tl-reason" style="font-size:12.5px;margin-top:2px">${esc(h.motivo)}</div>
+            <div class="od-tl-sub">${esc(h.fecha)} · María F. Rojas</div></div></div>`).join('')
+          : '<p class="ss-empty">Este club no tiene sanciones registradas.</p>'}
+      </div>`;
+  }
+
+  function renderMin() {
+    document.title = `${ORG.nombre} — Naowee Organismos`;
+    root.innerHTML = `
+      <nav class="naowee-breadcrumb od-crumbs" aria-label="Ruta jerárquica ascendente">
+        <a class="naowee-breadcrumb__item" href="#">Comité Olímpico Colombiano</a><span class="naowee-breadcrumb__sep">${IC.sep}</span>
+        <a class="naowee-breadcrumb__item" href="#">Federación Colombiana de Patinaje</a><span class="naowee-breadcrumb__sep">${IC.sep}</span>
+        <a class="naowee-breadcrumb__item" href="#">Liga de Patinaje del Valle</a><span class="naowee-breadcrumb__sep">${IC.sep}</span>
+        <span class="naowee-breadcrumb__current" aria-current="page">${esc(ORG.nombre)}</span>
+      </nav>
+      <div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="odBack">${IC.back}Volver</button></div>
+      <div class="od-hero">
+        <div class="od-hero__emoji">🛡️</div>
+        <div class="od-hero__main">
+          <div class="od-hero__title-row"><h1 class="od-hero__name">${esc(ORG.nombre)}</h1>${badge(minEstado)}</div>
+          <p class="od-hero__meta">NIT <b>${esc(ORG.nit)}</b><span class="od-dot">·</span>${esc(ORG.deporte)}<span class="od-dot">·</span>Club escuela<span class="od-dot">·</span>${esc(ORG.ciudad)}, ${esc(ORG.depto)}</p>
+        </div>
+      </div>
+      <div class="ss-grid">
+        <aside class="naowee-card ss-estado" aria-labelledby="ssTitle" id="ssPanel">${estadoPanel()}</aside>
+        <div class="ss-ficha">
+          <div class="naowee-card od-tabs-card">
+            <div class="naowee-tabs" role="tablist" aria-label="Secciones de la ficha">
+              ${TABS.map((t, i) => `<button type="button" role="tab" id="odt${i}" aria-controls="odPanel" aria-selected="${i === minTab}" tabindex="${i === minTab ? 0 : -1}" class="naowee-tab ${i === minTab ? 'naowee-tab--selected' : ''}" data-tab="${i}">${t}</button>`).join('')}
+            </div>
+            <div id="odPanel" role="tabpanel" aria-labelledby="odt${minTab}"><div class="od-panel">${tabPanel()}</div></div>
+          </div>
+        </div>
+      </div>`;
+    root.querySelector('#odBack').addEventListener('click', () => toast('Volver lleva a la jerarquía.', 'info'));
+    root.querySelectorAll('.naowee-breadcrumb__item').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); toast('La ficha de los ancestros queda fuera de esta variante.', 'info'); }));
+    const tabs = [...root.querySelectorAll('[data-tab]')];
+    tabs.forEach((b) => {
+      b.addEventListener('click', () => { minTab = +b.dataset.tab; renderMin(); root.querySelector(`[data-tab="${minTab}"]`).focus(); });
+      b.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        minTab = (minTab + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+        renderMin(); root.querySelector(`[data-tab="${minTab}"]`).focus();
+      });
+    });
+    root.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => openSancion(b.dataset.act, b)));
+  }
+
+  /* ═══ Diálogo de sanción (patrón openMotivo de la bandeja, con select nativo) ═══ */
+  const ACC = {
+    suspender: {
+      titulo: 'Suspender Club Ruedas del Sur',
+      lead: 'La suspensión es temporal. El club conserva sus datos y su historial, y la puedes levantar cuando se resuelva el motivo.',
+      msgV: 'caution', msgIc: IC.alert,
+      conseq: [
+        'Su administradora no podrá aprobar, hacer cargues ni confirmar afiliaciones mientras dure.',
+        'Su menú se reduce a «Mi organismo», donde verá el motivo que escribas.',
+        'Los organismos que dependen de él no cambian de estado. <span class="ss-tag">Propuesta P-18</span>'
+      ],
+      motivos: ['Reconocimiento deportivo vencido', 'Incumplimiento de obligaciones de reporte', 'Investigación administrativa en curso', 'Solicitud del ente territorial', 'Otro (explícalo en el detalle)'],
+      ok: 'Suspender el club', okCls: 'bj-btn-danger', nuevo: 'Suspendido'
+    },
+    cancelar: {
+      titulo: 'Cancelar Club Ruedas del Sur',
+      lead: 'La cancelación es definitiva: el club pierde su reconocimiento en el SUID y no puede volver a estar activo.',
+      msgV: 'negative', msgIc: IC.alert,
+      conseq: [
+        'El club deja de operar de forma permanente. No hay forma de reactivarlo.',
+        'Su ficha y su historial quedan disponibles solo para consulta.',
+        'Los organismos que dependen de él no cambian de estado. <span class="ss-tag">Propuesta P-18</span>'
+      ],
+      motivos: ['Pérdida del reconocimiento deportivo', 'Disolución o liquidación de la entidad', 'Decisión judicial o administrativa en firme', 'Otro (explícalo en el detalle)'],
+      confirm: 'Entiendo que esta decisión no tiene vuelta atrás.',
+      ok: 'Cancelar el club', okCls: 'bj-btn-danger', nuevo: 'Cancelado'
+    },
+    reactivar: {
+      titulo: 'Reactivar Club Ruedas del Sur',
+      lead: 'Al reactivarlo, el club no queda activo de inmediato: vuelve a <strong>En revisión</strong> en la bandeja de la <strong>Liga de Patinaje del Valle</strong>, que valida de nuevo los datos que ya tiene.',
+      msgV: 'informative', msgIc: IC.info,
+      conseq: [
+        'La suspensión deja de aplicar y queda en el historial.',
+        'La liga decide si lo aprueba o se lo devuelve con un motivo. <span class="ss-tag">Propuesta P-08, pendiente con Negocio</span>',
+        'Hasta que la liga lo apruebe, el club sigue sin poder aprobar, cargar ni confirmar afiliaciones.'
+      ],
+      motivos: ['Se resolvió el motivo de la suspensión', 'Reconocimiento deportivo renovado', 'Cierre de la investigación administrativa', 'Otro (explícalo en el detalle)'],
+      ok: 'Reactivar el club', okCls: 'naowee-btn--loud', nuevo: 'En revisión'
+    }
+  };
+
+  let openDlg = null;
+  function openSancion(act, trigger) {
+    const a = ACC[act];
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay bj-modal-ov';
+    ov.innerHTML = `
+      <div class="reg-modal bj-modal ss-dlg" role="dialog" aria-modal="true" aria-labelledby="ssDlgT" aria-describedby="ssDlgLead">
+        <div class="reg-modal__head"><h3 class="reg-modal__title" id="ssDlgT">${esc(a.titulo)}</h3><button type="button" class="reg-modal__close" id="ssX" aria-label="Cerrar">${IC.xBig}</button></div>
+        <div class="reg-modal__body">
+          <p class="ss-dlg__lead" id="ssDlgLead">${a.lead}</p>
+          <div class="naowee-message naowee-message--${a.msgV}"><span class="naowee-message__icon">${a.msgIc}</span><div class="naowee-message__body"><p class="naowee-message__title" style="font-size:14px">Qué pasa al confirmar</p><ul class="ss-conseq">${a.conseq.map((c) => `<li>${c}</li>`).join('')}</ul></div></div>
+          <div class="bj-field">
+            <label class="bj-label" for="ssMot">Motivo <span class="bj-req">*</span></label>
+            <select class="bj-select" id="ssMot" aria-required="true" aria-describedby="ssMotErr"><option value="">Selecciona un motivo</option>${a.motivos.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
+            <p class="bj-err" id="ssMotErr" style="display:none">Selecciona un motivo para continuar.</p>
+          </div>
+          <div class="bj-field">
+            <label class="bj-label" for="ssTxt">Detalle para el organismo <span id="ssTxtReq" class="bj-req" style="display:none">*</span></label>
+            <div class="naowee-textfield__input-wrap bj-ta-wrap" id="ssTxtWrap"><textarea id="ssTxt" rows="3" aria-describedby="ssTxtHelp ssTxtErr" placeholder="Lo verá la administradora del club en «Mi organismo»."></textarea></div>
+            <p class="naowee-field-help" id="ssTxtHelp">Queda en el historial con tu nombre y la fecha.</p>
+            <p class="bj-err" id="ssTxtErr" style="display:none">Explica el motivo cuando eliges «Otro».</p>
+          </div>
+          ${a.confirm ? `<div class="bj-field"><label class="ss-check"><input type="checkbox" id="ssChk"><span>${esc(a.confirm)}</span></label><p class="bj-err" id="ssChkErr" style="display:none">Confirma que entiendes la consecuencia.</p></div>` : ''}
+        </div>
+        <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" id="ssBack">Volver</button><button type="button" class="naowee-btn ${a.okCls}" id="ssOk">${esc(a.ok)}</button></div>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    const dlg = ov.querySelector('.reg-modal');
+    const sel = ov.querySelector('#ssMot');
+    const txt = ov.querySelector('#ssTxt');
+    const esOtro = () => sel.value.startsWith('Otro');
+    setTimeout(() => sel.focus(), 60);
+
+    const close = () => {
+      if (ov.__closing) return; ov.__closing = true;
+      ov.classList.remove('is-open'); openDlg = null;
+      setTimeout(() => ov.remove(), 340);
+      if (trigger && document.body.contains(trigger)) trigger.focus();
+    };
+    openDlg = close;
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    ov.querySelector('#ssX').addEventListener('click', close);
+    ov.querySelector('#ssBack').addEventListener('click', close);
+    sel.addEventListener('change', () => {
+      sel.classList.remove('bj-select--err'); ov.querySelector('#ssMotErr').style.display = 'none';
+      ov.querySelector('#ssTxtReq').style.display = esOtro() ? 'inline' : 'none';
+    });
+    /* Foco atrapado dentro del diálogo */
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const f = [...dlg.querySelectorAll('button, select, textarea, input')].filter((x) => !x.disabled && x.offsetParent !== null);
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    ov.querySelector('#ssOk').addEventListener('click', () => {
+      let ok = true, firstBad = null;
+      if (!sel.value) { ok = false; sel.classList.add('bj-select--err'); ov.querySelector('#ssMotErr').style.display = 'block'; firstBad = firstBad || sel; }
+      const wrap = ov.querySelector('#ssTxtWrap');
+      if (esOtro() && !txt.value.trim()) { ok = false; wrap.classList.add('is-err'); ov.querySelector('#ssTxtErr').style.display = 'block'; firstBad = firstBad || txt; }
+      else { wrap.classList.remove('is-err'); ov.querySelector('#ssTxtErr').style.display = 'none'; }
+      const chk = ov.querySelector('#ssChk');
+      if (chk && !chk.checked) { ok = false; ov.querySelector('#ssChkErr').style.display = 'block'; firstBad = firstBad || chk; }
+      else if (chk) ov.querySelector('#ssChkErr').style.display = 'none';
+      if (!ok) { firstBad.focus(); return; }
+
+      const fecha = '13 oct 2026';
+      minHist.push({ tipo: a.nuevo, fecha, motivo: sel.value, nota: txt.value.trim() });
+      minEstado = a.nuevo; minDesde = fecha;
+      ov.__closing = true; ov.classList.remove('is-open'); openDlg = null;
+      setTimeout(() => ov.remove(), 340);
+      renderMin();
+      const panel = document.getElementById('ssTitle');
+      if (panel) { panel.setAttribute('tabindex', '-1'); panel.focus(); }
+      const avisos = {
+        Suspendido: 'Club Ruedas del Sur quedó <strong>suspendido</strong>. Se notificó a su administradora y a la Liga de Patinaje del Valle.',
+        Cancelado: 'Club Ruedas del Sur quedó <strong>cancelado</strong>. Se notificó a su administradora y a la Liga de Patinaje del Valle.',
+        'En revisión': 'Club Ruedas del Sur volvió a <strong>En revisión</strong> en la bandeja de la Liga de Patinaje del Valle.'
+      };
+      toast(avisos[a.nuevo], 'success');
+    });
+  }
+
+  /* ═══ Render ═══ */
+  function render() {
+    renderShell();
+    if (quien === 'adm') renderAdmin(); else renderMin();
+  }
+
+  /* ═══ Snackbar (#evToast canónico) ═══ */
+  let tt = null;
+  function toast(html, kind) {
+    const t = document.getElementById('evToast');
+    t.className = `evtoast--${kind || 'info'}`;
+    t.innerHTML = `<span class="evtoast__badge" aria-hidden="true">${kind === 'success' ? IC.check : IC.info}</span><span class="evtoast__text">${html}</span>`;
+    t.classList.add('is-visible');
+    clearTimeout(tt);
+    tt = setTimeout(() => t.classList.remove('is-visible'), 3600);
+  }
+
+  /* ═══ Chip de identidad ═══ */
+  const ps = document.getElementById('profileSwitcher');
+  const chip = document.getElementById('userChipTrigger');
+  const tgl = (e) => { e.stopPropagation(); const open = ps.classList.toggle('open'); chip.setAttribute('aria-expanded', open); };
+  chip.addEventListener('click', tgl);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tgl(e); } });
+  document.addEventListener('click', (e) => { if (!ps.contains(e.target)) { ps.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); } });
+
+  /* ═══ Sidebar: colapsar + drawer móvil ═══ */
+  const sidebar = document.getElementById('naoweeSidebar');
+  document.getElementById('sidebarToggle').addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  function closeDrawer() { document.body.classList.remove('has-mobile-drawer-open'); }
+  document.getElementById('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (openDlg) { openDlg(); return; }
+    closeDrawer();
+    ps.classList.remove('open');
+  });
+
+  /* ═══ Conmutador de revisión ═══ */
+  const reviewSel = document.getElementById('reviewSel');
+  reviewSel.addEventListener('change', () => {
+    const [q, e] = reviewSel.value.split(':');
+    if (openDlg) openDlg();
+    quien = q;
+    if (q === 'adm') estado = e; else resetMin(e);
+    render();
+    window.scrollTo(0, 0);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

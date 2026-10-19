@@ -61,13 +61,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -180,13 +180,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;

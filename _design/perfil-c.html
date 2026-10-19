@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil multi-rol · C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/naowee-tech/naowee-design-system@v1.8.0/dist/design-system.css">
+<link rel="stylesheet" href="../shared/naowee-ds-tokens.css">
+<style>
+/* Variante C — "Una persona, un panel por rol". Todo sobre tokens del DS v1.8.0. */
+:root {
+  --pf-line: var(--naowee-color-border-default);
+  --pf-line-strong: var(--naowee-color-interactive-border-idle);
+  --pf-radius: var(--naowee-border-radius-large);
+  --pf-field-h: 46px;
+  --pf-focus: 2px solid var(--naowee-color-interactive-border-active);
+  --pf-gold: var(--naowee-color-yellow-900);
+  --pf-silver: var(--naowee-color-gray-400);
+  --pf-bronze: var(--naowee-color-orange-400);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--naowee-font-family); font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); color: var(--naowee-color-text-primary); background: var(--naowee-color-background-secondary); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3, h4, p { margin: 0; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: var(--pf-focus); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.i { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+svg.i--sm { width: 16px; height: 16px; }
+
+/* ── Barra superior (88px, borde) ── */
+.top { height: 88px; padding: 0 var(--naowee-spacing-padding-medium); display: flex; align-items: center; justify-content: space-between; gap: var(--naowee-spacing-gap-xtiny); background: var(--naowee-color-background-primary); border-bottom: var(--naowee-border-width-small) solid var(--pf-line); }
+.top img { height: 56px; width: auto; display: block; }
+.top__user { display: flex; align-items: center; gap: var(--naowee-spacing-gap-micro); min-width: 0; }
+.top__user span { text-align: right; font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); }
+.top__user b { display: block; font-weight: var(--naowee-font-weight-semibold); }
+.top__user small { color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); }
+.ava { flex-shrink: 0; display: grid; place-items: center; border-radius: var(--naowee-border-radius-full); background: var(--naowee-color-brand-fill-quiet); color: var(--naowee-color-brand-text-loud); font-weight: var(--naowee-font-weight-bold); }
+.ava--40 { width: 40px; height: 40px; font-size: var(--naowee-font-size-14); }
+.ava--36 { width: 36px; height: 36px; font-size: var(--naowee-font-size-12); background: var(--naowee-color-gray-200); color: var(--naowee-color-text-primary); }
+.ava--88 { width: 80px; height: 80px; font-size: var(--naowee-font-size-24); }
+
+/* ── Banner modo consulta ── */
+.consulta { display: none; background: var(--naowee-color-feedback-fill-informative-quiet); color: var(--naowee-color-feedback-text-informative-quiet-on-fill); border-bottom: var(--naowee-border-width-small) solid var(--naowee-color-feedback-border-informative-loud); }
+.is-consulta .consulta { display: block; }
+.consulta__in { max-width: 1280px; margin: 0 auto; padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-medium); display: flex; gap: var(--naowee-spacing-gap-micro); align-items: flex-start; }
+.consulta__in svg { color: var(--naowee-color-feedback-icon-informative-loud); margin-top: 1px; }
+
+/* ── Página ── */
+.page { max-width: 1280px; margin: 0 auto; padding: var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-medium) var(--naowee-spacing-padding-xhuge); }
+.back { display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-xmicro); min-height: 40px; padding: 0 var(--naowee-spacing-padding-xmicro); margin-left: calc(-1 * var(--naowee-spacing-padding-xmicro)); border: 0; background: none; border-radius: var(--naowee-border-radius-small); color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); cursor: pointer; text-decoration: none; }
+.back:hover { background: var(--naowee-color-interactive-fill-mute-hover); }
+.back .is-c { display: none; }
+.is-consulta .back .is-c { display: inline; }
+.is-consulta .back .not-c { display: none; }
+
+.card { background: var(--naowee-color-fill-primary); border: var(--naowee-border-width-small) solid var(--pf-line); border-radius: var(--pf-radius); }
+
+/* ── Encabezado de la persona ── */
+.hero { margin-top: var(--naowee-spacing-gap-xmicro); padding: var(--naowee-spacing-padding-xsmall) var(--naowee-spacing-padding-small); display: grid; grid-template-columns: auto 1fr auto; gap: var(--naowee-spacing-gap-tiny) var(--naowee-spacing-gap-xsmall); align-items: start; }
+.hero__id h1 { font-size: var(--naowee-font-size-28); line-height: var(--naowee-font-line-height-34); font-weight: var(--naowee-font-weight-bold); letter-spacing: -.3px; }
+.hero__doc { margin-top: var(--naowee-spacing-gap-xnano); color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-14); }
+.chips { margin-top: var(--naowee-spacing-gap-xtiny); display: flex; flex-wrap: wrap; gap: var(--naowee-spacing-gap-xmicro); align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-nano); min-height: 36px; padding: 0 var(--naowee-spacing-padding-micro) 0 var(--naowee-spacing-padding-xmicro); border-radius: var(--naowee-border-radius-full); border: var(--naowee-border-width-small) solid var(--pf-line-strong); background: var(--naowee-color-fill-primary); font-size: var(--naowee-font-size-14); font-weight: var(--naowee-font-weight-medium); cursor: pointer; text-decoration: none; transition: border-color var(--naowee-transition-default), background var(--naowee-transition-default); }
+.chip svg { color: var(--naowee-color-icon-accent); }
+.chip:hover { border-color: var(--naowee-color-interactive-border-hover); }
+.chip small { color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-regular); }
+.chip--add { border-style: dashed; color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); padding: 0 var(--naowee-spacing-padding-micro); }
+.chip--add:hover { background: var(--naowee-color-interactive-fill-mute-hover); border-color: var(--naowee-color-interactive-border-active); }
+.hero__side { display: none; flex-direction: column; align-items: flex-end; gap: var(--naowee-spacing-gap-xmicro); }
+.status { display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-nano); padding: 2px var(--naowee-spacing-padding-xmicro); border-radius: var(--naowee-border-radius-full); font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-18); font-weight: var(--naowee-font-weight-semibold); white-space: nowrap; }
+.status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status--ok { background: var(--naowee-color-feedback-fill-positive-quiet); color: var(--naowee-color-feedback-text-positive-quiet-on-fill); }
+.status--wait { background: var(--naowee-color-feedback-fill-caution-quiet); color: var(--naowee-color-feedback-text-caution-quiet-on-fill); }
+.status--info { background: var(--naowee-color-feedback-fill-informative-quiet); color: var(--naowee-color-feedback-text-informative-quiet-on-fill); }
+.status--no { background: var(--naowee-color-feedback-fill-negative-quiet); color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.status--off { background: var(--naowee-color-feedback-fill-neutral-quiet); color: var(--naowee-color-text-secondary); }
+.hero__acct { display: none; align-items: center; gap: var(--naowee-spacing-gap-xmicro); font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+.is-consulta .hero__acct { display: inline-flex; }
+.is-consulta .hero__side { display: flex; }
+.strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--naowee-spacing-gap-xtiny); padding-top: var(--naowee-spacing-padding-xtiny); border-top: var(--naowee-border-width-small) solid var(--pf-line); }
+.strip dt { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+.strip dd { margin: 2px 0 0; font-weight: var(--naowee-font-weight-semibold); overflow-wrap: anywhere; }
+
+/* ── Botones ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--naowee-spacing-gap-xmicro); min-height: 40px; padding: 0 var(--naowee-spacing-padding-xtiny); border-radius: var(--naowee-border-radius-medium); border: var(--naowee-border-width-small) solid transparent; font-size: var(--naowee-font-size-14); font-weight: var(--naowee-font-weight-semibold); cursor: pointer; text-decoration: none; white-space: nowrap; transition: background var(--naowee-transition-default), border-color var(--naowee-transition-default); }
+.btn--loud { background: var(--naowee-color-interactive-fill-loud-idle); color: var(--naowee-color-text-inverse); }
+.btn--loud:hover { background: var(--naowee-color-interactive-fill-loud-hover); }
+.btn--quiet { background: var(--naowee-color-interactive-fill-quiet-idle); color: var(--naowee-color-text-link-active); }
+.btn--quiet:hover { background: var(--naowee-color-interactive-fill-quiet-hover); }
+.btn--line { background: var(--naowee-color-fill-primary); border-color: var(--pf-line-strong); color: var(--naowee-color-text-primary); }
+.btn--line:hover { border-color: var(--naowee-color-interactive-border-hover); }
+.btn--mute { background: none; color: var(--naowee-color-text-link-idle); padding: 0 var(--naowee-spacing-padding-xmicro); }
+.btn--mute:hover { background: var(--naowee-color-interactive-fill-mute-hover); }
+.btn--sm { min-height: 32px; padding: 0 var(--naowee-spacing-padding-micro); font-size: var(--naowee-font-size-14); }
+
+/* ── Disposición: nav · contenido · paneles de rol ── */
+.layout { margin-top: var(--naowee-spacing-gap-xsmall); display: grid; grid-template-columns: 168px minmax(0, 1fr) 368px; grid-template-areas: "nav content roles"; gap: var(--naowee-spacing-gap-xsmall); align-items: start; }
+.sidenav { grid-area: nav; position: sticky; top: var(--naowee-spacing-padding-xsmall); display: flex; flex-direction: column; gap: var(--naowee-spacing-gap-xnano); }
+.sidenav a { display: flex; align-items: center; gap: var(--naowee-spacing-gap-micro); min-height: 44px; padding: 0 var(--naowee-spacing-padding-micro); border-radius: var(--naowee-border-radius-medium); text-decoration: none; color: var(--naowee-color-text-secondary); font-weight: var(--naowee-font-weight-medium); }
+.sidenav a:hover { background: var(--naowee-color-fill-primary); color: var(--naowee-color-text-primary); }
+.sidenav a[aria-current="page"] { background: var(--naowee-color-fill-primary); color: var(--naowee-color-text-primary); font-weight: var(--naowee-font-weight-semibold); box-shadow: inset 3px 0 0 var(--naowee-color-border-accent); }
+.sidenav a[aria-current="page"] svg { color: var(--naowee-color-icon-accent); }
+.content { grid-area: content; min-width: 0; }
+/* Vista de detalle: la página se abre a lo ancho; el rol activo queda marcado en el encabezado */
+.layout.is-detail { grid-template-columns: 168px minmax(0, 1fr); grid-template-areas: "nav content"; }
+.layout.is-detail .roles { display: none; }
+.chip.is-active { border-color: var(--naowee-color-interactive-border-active); background: var(--naowee-color-brand-fill-quiet); }
+.roles { grid-area: roles; display: flex; flex-direction: column; gap: var(--naowee-spacing-gap-xtiny); min-width: 0; }
+.roles__title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--naowee-spacing-gap-xmicro); padding: 0 var(--naowee-spacing-padding-pico); }
+.roles__title h2 { font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); text-transform: uppercase; letter-spacing: var(--naowee-font-letter-spacing-caps); color: var(--naowee-color-text-secondary); }
+.roles__title span { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+
+/* ── Panel de rol (base común: solo el marco) ── */
+.rp { padding: var(--naowee-spacing-padding-tiny); scroll-margin-top: var(--naowee-spacing-padding-xsmall); transition: border-color var(--naowee-transition-default), box-shadow var(--naowee-transition-default); }
+.rp.is-active { border-color: var(--naowee-color-border-accent); box-shadow: var(--naowee-shadow-focus-accent); }
+.rp.is-flash { box-shadow: var(--naowee-shadow-focus-accent); border-color: var(--naowee-color-border-accent); }
+.rp__head { display: flex; align-items: center; gap: var(--naowee-spacing-gap-micro); }
+.tile { width: 40px; height: 40px; border-radius: var(--naowee-border-radius-medium); display: grid; place-items: center; background: var(--naowee-color-brand-fill-quiet); color: var(--naowee-color-brand-icon-loud); flex-shrink: 0; }
+.tile--sm { width: 32px; height: 32px; border-radius: var(--naowee-border-radius-small); }
+.tile--sm svg { width: 18px; height: 18px; }
+.rp__head h3 { font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-22); font-weight: var(--naowee-font-weight-semibold); }
+.rp__head p { font-size: var(--naowee-font-size-14); color: var(--naowee-color-text-secondary); }
+.rp__t { min-width: 0; flex: 1; }
+.rp__label { font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); color: var(--naowee-color-text-secondary); margin: var(--naowee-spacing-gap-tiny) 0 var(--naowee-spacing-gap-xmicro); }
+
+/* Deportista: dirigido por un resultado */
+.rp--dep { padding: 0; overflow: hidden; }
+.rp--dep .rp__head { padding: var(--naowee-spacing-padding-tiny) var(--naowee-spacing-padding-tiny) 0; }
+.result { margin: var(--naowee-spacing-gap-xtiny) var(--naowee-spacing-padding-tiny) 0; padding: var(--naowee-spacing-padding-xtiny); border-radius: var(--naowee-border-radius-medium); background: var(--naowee-color-background-secondary); display: grid; grid-template-columns: auto 1fr; gap: var(--naowee-spacing-gap-xtiny); align-items: center; }
+.medal { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--naowee-color-fill-primary); border: 3px solid var(--pf-silver); font-size: var(--naowee-font-size-20); font-weight: var(--naowee-font-weight-bold); color: var(--naowee-color-text-primary); }
+.result__k { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+.result__v { font-size: var(--naowee-font-size-18); line-height: var(--naowee-font-line-height-24); font-weight: var(--naowee-font-weight-bold); }
+.result__m { font-size: var(--naowee-font-size-14); color: var(--naowee-color-text-secondary); }
+.tally { margin-top: var(--naowee-spacing-gap-xmicro); display: flex; gap: var(--naowee-spacing-gap-micro); font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); flex-wrap: wrap; }
+.tally span { display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-nano); }
+.tally i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.tally b { color: var(--naowee-color-text-primary); }
+.bio { margin: var(--naowee-spacing-gap-xtiny) var(--naowee-spacing-padding-tiny) 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: var(--naowee-border-width-small) solid var(--pf-line); border-radius: var(--naowee-border-radius-medium); }
+.bio div { padding: var(--naowee-spacing-padding-xmicro) var(--naowee-spacing-padding-micro); text-align: center; }
+.bio div + div { border-left: var(--naowee-border-width-small) solid var(--pf-line); }
+.bio b { display: block; font-size: var(--naowee-font-size-16); font-weight: var(--naowee-font-weight-semibold); }
+.bio span { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+.aff-label { margin-left: var(--naowee-spacing-padding-tiny); margin-right: var(--naowee-spacing-padding-tiny); }
+.affs { margin: 0 var(--naowee-spacing-padding-tiny); padding: 0; list-style: none; }
+.affs li { display: flex; align-items: center; justify-content: space-between; gap: var(--naowee-spacing-gap-xmicro); padding: var(--naowee-spacing-padding-xmicro) 0; flex-wrap: wrap; }
+.affs li + li { border-top: var(--naowee-border-width-small) solid var(--pf-line); }
+.affs b { font-weight: var(--naowee-font-weight-medium); }
+.rp__foot { margin-top: var(--naowee-spacing-gap-xmicro); padding: 0 var(--naowee-spacing-padding-tiny) var(--naowee-spacing-padding-tiny); display: flex; gap: var(--naowee-spacing-gap-xmicro); flex-wrap: wrap; background: var(--naowee-color-fill-primary); }
+.rp__foot .btn { flex: 1 1 auto; }
+.only-c { display: none !important; }
+.is-consulta .only-c { display: inline-flex !important; }
+.lock { font-size: var(--naowee-font-size-10); text-transform: uppercase; letter-spacing: var(--naowee-font-letter-spacing-caps); color: var(--naowee-color-text-secondary); font-weight: var(--naowee-font-weight-semibold); }
+
+/* Tutor: dirigido por personas */
+.rp--tut .rp__head { margin-bottom: var(--naowee-spacing-gap-micro); }
+.count { font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); color: var(--naowee-color-text-secondary); background: var(--naowee-color-background-secondary); border-radius: var(--naowee-border-radius-full); padding: 2px var(--naowee-spacing-padding-xmicro); }
+.kids { list-style: none; margin: 0 calc(-1 * var(--naowee-spacing-padding-xmicro)); padding: 0; }
+.kid { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--naowee-spacing-gap-micro); align-items: center; padding: var(--naowee-spacing-padding-xmicro); border-radius: var(--naowee-border-radius-medium); text-decoration: none; cursor: pointer; }
+.kid:hover { background: var(--naowee-color-background-secondary); }
+.kid b { display: block; font-weight: var(--naowee-font-weight-semibold); }
+.kid small { color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); }
+.kid__r { display: flex; align-items: center; gap: var(--naowee-spacing-gap-xnano); color: var(--naowee-color-icon-secondary); }
+.add-row { margin-top: var(--naowee-spacing-gap-xnano); width: 100%; display: flex; align-items: center; gap: var(--naowee-spacing-gap-micro); min-height: 52px; padding: 0 var(--naowee-spacing-padding-xmicro); border: var(--naowee-border-width-small) dashed var(--pf-line-strong); border-radius: var(--naowee-border-radius-medium); background: none; color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); cursor: pointer; text-align: left; }
+.add-row:hover { border-color: var(--naowee-color-interactive-border-active); background: var(--naowee-color-interactive-fill-mute-hover); }
+.add-row span.plus { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--naowee-color-brand-fill-quiet); }
+.rp__link { display: inline-flex; margin-top: var(--naowee-spacing-gap-micro); color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); font-size: var(--naowee-font-size-14); text-underline-offset: 2px; }
+
+/* Personal de apoyo: definición + relaciones */
+.def { margin-top: var(--naowee-spacing-gap-xtiny); display: flex; align-items: baseline; justify-content: space-between; gap: var(--naowee-spacing-gap-xmicro); flex-wrap: wrap; }
+.def dt { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); width: 100%; }
+.def dd { margin: 0; font-size: var(--naowee-font-size-18); line-height: var(--naowee-font-line-height-24); font-weight: var(--naowee-font-weight-semibold); }
+.tag { font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); color: var(--naowee-color-brand-text-loud); border: var(--naowee-border-width-small) solid var(--naowee-color-feedback-warning-border); border-radius: var(--naowee-border-radius-tiny); padding: 0 var(--naowee-spacing-padding-xnano); }
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--naowee-spacing-gap-xmicro); }
+.links li { padding: var(--naowee-spacing-padding-xmicro) var(--naowee-spacing-padding-micro); border-left: 3px solid var(--naowee-color-feedback-border-positive-loud); background: var(--naowee-color-background-secondary); border-radius: 0 var(--naowee-border-radius-small) var(--naowee-border-radius-small) 0; display: flex; justify-content: space-between; gap: var(--naowee-spacing-gap-xmicro); align-items: center; flex-wrap: wrap; }
+.links li.is-wait { border-left-color: var(--naowee-color-feedback-border-caution-loud); }
+.links b { display: block; font-weight: var(--naowee-font-weight-medium); }
+.links small { font-size: var(--naowee-font-size-12); color: var(--naowee-color-text-secondary); }
+
+/* ── Vistas del contenido ── */
+.view[hidden] { display: none !important; }
+.panel { padding: var(--naowee-spacing-padding-xsmall); }
+.vhead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--naowee-spacing-gap-xtiny); flex-wrap: wrap; margin-bottom: var(--naowee-spacing-gap-tiny); }
+.vhead h2 { font-size: var(--naowee-font-size-20); line-height: var(--naowee-font-line-height-28); font-weight: var(--naowee-font-weight-bold); }
+.vhead p { color: var(--naowee-color-text-secondary); margin-top: 2px; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--naowee-spacing-gap-xnano); font-size: var(--naowee-font-size-14); color: var(--naowee-color-text-secondary); margin-bottom: var(--naowee-spacing-gap-micro); }
+.crumbs a { color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); text-underline-offset: 2px; }
+.crumbs svg { width: 14px; height: 14px; }
+
+.tabs { display: flex; gap: var(--naowee-spacing-gap-xnano); border-bottom: var(--naowee-border-width-small) solid var(--pf-line); overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--naowee-spacing-padding-xsmall)); padding: 0 var(--naowee-spacing-padding-xsmall); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { position: relative; flex-shrink: 0; min-height: 44px; padding: 0 10px; border: 0; background: none; cursor: pointer; color: var(--naowee-color-text-secondary); font-weight: var(--naowee-font-weight-medium); white-space: nowrap; border-radius: var(--naowee-border-radius-small) var(--naowee-border-radius-small) 0 0; }
+.tab:hover { color: var(--naowee-color-text-primary); }
+.tab[aria-selected="true"] { color: var(--naowee-color-text-primary); font-weight: var(--naowee-font-weight-semibold); }
+.tab[aria-selected="true"]::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--naowee-color-border-accent); }
+.tabpanel { padding-top: var(--naowee-spacing-padding-xsmall); }
+.tp-head { display: flex; justify-content: space-between; align-items: center; gap: var(--naowee-spacing-gap-xmicro); margin-bottom: var(--naowee-spacing-gap-tiny); flex-wrap: wrap; }
+.tp-head h3 { font-size: var(--naowee-font-size-16); font-weight: var(--naowee-font-weight-semibold); }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--naowee-spacing-gap-tiny) var(--naowee-spacing-gap-xsmall); margin: 0; }
+.fields > div { min-width: 0; }
+.fields dt { font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-16); color: var(--naowee-color-text-secondary); }
+.fields dd { margin: var(--naowee-spacing-gap-xnano) 0 0; font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-22); overflow-wrap: anywhere; }
+.fields dd.is-empty { color: var(--naowee-color-text-disabled); }
+.fields input { display: none; width: 100%; height: var(--pf-field-h); margin-top: var(--naowee-spacing-gap-nano); padding: 0 var(--naowee-spacing-padding-xtiny); border: var(--naowee-border-width-small) solid var(--naowee-color-interactive-border-idle); border-radius: var(--naowee-border-radius-medium); font: inherit; font-size: var(--naowee-font-size-16); color: var(--naowee-color-text-primary); background: var(--naowee-color-fill-primary); }
+.fields input:hover { border-color: var(--naowee-color-interactive-border-hover); }
+.fields input:focus { outline: none; border-color: var(--naowee-color-interactive-border-active); box-shadow: var(--naowee-shadow-focus-accent); }
+.fields input:disabled { background: var(--naowee-color-background-secondary); color: var(--naowee-color-text-secondary); }
+.is-editing .fields dd { display: none; }
+.is-editing .fields input { display: block; }
+.is-editing .fields dt { font-size: var(--naowee-font-size-14); color: var(--naowee-color-text-primary); }
+.editbar { display: none; margin-top: var(--naowee-spacing-gap-xsmall); gap: var(--naowee-spacing-gap-xmicro); justify-content: flex-end; flex-wrap: wrap; }
+.is-editing .editbar { display: flex; }
+.is-editing .tp-edit { display: none; }
+
+/* tablas (trayectoria, menores) */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); color: var(--naowee-color-text-secondary); padding: var(--naowee-spacing-padding-xmicro) var(--naowee-spacing-padding-xmicro); border-bottom: var(--naowee-border-width-small) solid var(--pf-line); white-space: nowrap; }
+.tbl td { padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-xmicro); border-bottom: var(--naowee-border-width-small) solid var(--pf-line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td b { font-weight: var(--naowee-font-weight-semibold); }
+.tbl small { display: block; color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); }
+.md { display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-nano); font-weight: var(--naowee-font-weight-semibold); }
+.md i { width: 12px; height: 12px; border-radius: 50%; }
+.notice { display: flex; gap: var(--naowee-spacing-gap-micro); padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-xtiny); border-radius: var(--naowee-border-radius-medium); background: var(--naowee-color-feedback-fill-informative-quiet); color: var(--naowee-color-feedback-text-informative-quiet-on-fill); margin-bottom: var(--naowee-spacing-gap-tiny); }
+.notice svg { color: var(--naowee-color-feedback-icon-informative-loud); margin-top: 1px; }
+.minihero { display: flex; gap: var(--naowee-spacing-gap-xtiny); align-items: center; padding-bottom: var(--naowee-spacing-padding-tiny); margin-bottom: var(--naowee-spacing-gap-tiny); border-bottom: var(--naowee-border-width-small) solid var(--pf-line); flex-wrap: wrap; }
+.minihero h2 { font-size: var(--naowee-font-size-20); font-weight: var(--naowee-font-weight-bold); }
+.minihero p { color: var(--naowee-color-text-secondary); }
+.minihero .ava { width: 64px; height: 64px; font-size: var(--naowee-font-size-20); }
+.eval { border: var(--naowee-border-width-small) solid var(--pf-line); border-radius: var(--naowee-border-radius-medium); padding: var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-tiny); }
+.eval__meta { display: flex; flex-wrap: wrap; gap: var(--naowee-spacing-gap-xtiny); color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); margin-bottom: var(--naowee-spacing-gap-micro); }
+.eval__meta b { color: var(--naowee-color-text-primary); }
+.eval .tabs { margin: 0; padding: 0; }
+.eval p.txt { padding-top: var(--naowee-spacing-padding-xtiny); font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-24); max-width: 62ch; }
+.empty { text-align: center; padding: var(--naowee-spacing-padding-huge) var(--naowee-spacing-padding-xsmall); color: var(--naowee-color-text-secondary); }
+.empty .tile { margin: 0 auto var(--naowee-spacing-gap-xtiny); width: 56px; height: 56px; }
+.empty h2 { color: var(--naowee-color-text-primary); font-size: var(--naowee-font-size-18); margin-bottom: var(--naowee-spacing-gap-xnano); }
+
+/* ── Diálogo agregar rol ── */
+dialog { border: 0; padding: 0; border-radius: var(--naowee-border-radius-xlarge); box-shadow: var(--naowee-shadow-modal); width: min(520px, calc(100vw - 32px)); color: var(--naowee-color-text-primary); }
+dialog::backdrop { background: var(--naowee-color-black-alpha-40); }
+.dlg { padding: var(--naowee-spacing-padding-xsmall); }
+.dlg h2 { font-size: var(--naowee-font-size-20); font-weight: var(--naowee-font-weight-bold); }
+.dlg > p { color: var(--naowee-color-text-secondary); margin-top: var(--naowee-spacing-gap-xnano); }
+.opts { display: flex; flex-direction: column; gap: var(--naowee-spacing-gap-xmicro); margin: var(--naowee-spacing-gap-tiny) 0; }
+.opt { display: flex; gap: var(--naowee-spacing-gap-micro); align-items: center; padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-xtiny); border: var(--naowee-border-width-small) solid var(--pf-line-strong); border-radius: var(--naowee-border-radius-large); cursor: pointer; }
+.opt:hover { border-color: var(--naowee-color-interactive-border-hover); }
+.opt:has(input:checked) { border-color: var(--naowee-color-interactive-border-active); box-shadow: inset 0 0 0 1px var(--naowee-color-interactive-border-active); }
+.opt:has(input:focus-visible) { outline: var(--pf-focus); outline-offset: 2px; }
+.opt input { accent-color: var(--naowee-color-interactive-fill-loud-idle); width: 18px; height: 18px; margin: 0 0 0 auto; flex-shrink: 0; }
+.opt b { display: block; font-weight: var(--naowee-font-weight-semibold); }
+.opt small { color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-14); }
+.dlg__foot { display: flex; justify-content: flex-end; gap: var(--naowee-spacing-gap-xmicro); flex-wrap: wrap; }
+
+/* ── Responsive ── */
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: 168px minmax(0, 1fr) 340px; gap: var(--naowee-spacing-gap-tiny); }
+}
+@media (max-width: 1023px) {
+  .page { padding-left: var(--naowee-spacing-padding-xsmall); padding-right: var(--naowee-spacing-padding-xsmall); }
+  .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "nav nav" "roles roles" "content content"; }
+  .layout.is-detail { grid-template-columns: minmax(0, 1fr); grid-template-areas: "nav" "content"; }
+  .sidenav { position: static; flex-direction: row; gap: var(--naowee-spacing-gap-xnano); background: var(--naowee-color-fill-primary); border: var(--naowee-border-width-small) solid var(--pf-line); border-radius: var(--naowee-border-radius-medium); padding: var(--naowee-spacing-padding-xnano); overflow-x: auto; }
+  .sidenav a { flex: 1 0 auto; justify-content: center; min-height: 40px; }
+  .sidenav a[aria-current="page"] { background: var(--naowee-color-brand-fill-quiet); box-shadow: none; }
+    .roles { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--naowee-spacing-gap-xtiny); align-items: start; }
+  .roles__title, .rp--dep { grid-column: 1 / -1; }
+  .rp--dep { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rp--dep > .rp__head, .rp--dep > .rp__foot { grid-column: 1 / -1; }
+  .rp--dep .dep-a { padding-bottom: 0; }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero { grid-template-columns: auto 1fr; }
+  .hero__side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
+}
+@media (max-width: 720px) {
+  .top { height: 64px; padding: 0 var(--naowee-spacing-padding-xtiny); }
+  .top img { height: 40px; }
+  .top__user span { display: none; }
+  .page { padding: var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-large); }
+  .consulta__in { padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-xtiny); }
+  .hero { padding: var(--naowee-spacing-padding-tiny); gap: var(--naowee-spacing-gap-xtiny); }
+  .ava--88 { width: 64px; height: 64px; font-size: var(--naowee-font-size-20); }
+  .hero__id h1 { font-size: var(--naowee-font-size-24); line-height: var(--naowee-font-line-height-28); }
+  /* franja de datos: en móvil, una línea de contexto sin etiquetas */
+  .strip { display: flex !important; flex-wrap: wrap; gap: var(--naowee-spacing-gap-xnano) var(--naowee-spacing-gap-xmicro); padding-top: var(--naowee-spacing-padding-micro); }
+  .strip dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .strip dd { margin: 0; font-weight: var(--naowee-font-weight-regular); color: var(--naowee-color-text-secondary); }
+  .strip div:not(:last-child) dd::after { content: '·'; margin-left: var(--naowee-spacing-gap-xmicro); color: var(--naowee-color-text-disabled); }
+  .roles, .rp--dep { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: var(--naowee-spacing-padding-tiny); }
+  .tabs { margin: 0 calc(-1 * var(--naowee-spacing-padding-tiny)); padding: 0 var(--naowee-spacing-padding-tiny); }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  /* tablas → filas apiladas */
+  .tbl thead { display: none; }
+  .tbl, .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
+  .tbl tr { padding: var(--naowee-spacing-padding-micro) 0; border-bottom: var(--naowee-border-width-small) solid var(--pf-line); }
+  .tbl tr:last-child { border-bottom: 0; }
+  .tbl td { border: 0; padding: var(--naowee-spacing-padding-pico) 0; display: flex; justify-content: space-between; gap: var(--naowee-spacing-gap-micro); text-align: right; }
+  .tbl td::before { content: attr(data-l); color: var(--naowee-color-text-secondary); font-size: var(--naowee-font-size-12); text-align: left; flex-shrink: 0; }
+  .tbl td.td-main { display: block; text-align: left; padding-bottom: var(--naowee-spacing-padding-xnano); }
+  .tbl td.td-main::before { content: none; }
+  .tbl td.td-act { justify-content: flex-start; margin-left: calc(-1 * var(--naowee-spacing-padding-micro)); }
+  .tbl td.td-act::before { content: none; }
+}
+@media (max-width: 420px) {
+  .hero { grid-template-columns: 56px minmax(0, 1fr); column-gap: var(--naowee-spacing-gap-micro); }
+  .ava--88 { width: 56px; height: 56px; font-size: var(--naowee-font-size-18); }
+  .hero__id h1 { font-size: var(--naowee-font-size-20); line-height: var(--naowee-font-line-height-28); }
+  .chips { margin-left: calc(-56px - var(--naowee-spacing-gap-micro)); }
+  .bio { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bio div:nth-child(3) { border-left: 0; }
+  .bio div:nth-child(n+3) { border-top: var(--naowee-border-width-small) solid var(--pf-line); }
+  .sidenav a svg { display: none; }
+}
+@media (max-width: 320px) {
+  .top { height: 60px; padding: 0 var(--naowee-spacing-padding-micro); }
+  .top img { height: 36px; }
+  .page { padding-left: var(--naowee-spacing-padding-xmicro); padding-right: var(--naowee-spacing-padding-xmicro); }
+  .hero, .panel { padding: var(--naowee-spacing-padding-xtiny); }
+  .rp { padding: var(--naowee-spacing-padding-xtiny); }
+  .rp--dep { padding: 0; }
+  .rp--dep .rp__head, .rp__foot { padding-left: var(--naowee-spacing-padding-xtiny); padding-right: var(--naowee-spacing-padding-xtiny); }
+  .result, .bio, .affs, .aff-label { margin-left: var(--naowee-spacing-padding-xtiny); margin-right: var(--naowee-spacing-padding-xtiny); }
+  .result { grid-template-columns: minmax(0, 1fr); }
+  .tabs { margin: 0 calc(-1 * var(--naowee-spacing-padding-xtiny)); padding: 0 var(--naowee-spacing-padding-xtiny); }
+  .tile { width: 32px; height: 32px; }
+  .chip { max-width: 100%; }
+  .chip small { display: none; }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .chips { margin-left: 0; }
+  .sidenav { flex-wrap: wrap; }
+  .rp__head { flex-wrap: wrap; }
+  .sidenav a { padding: 0 var(--naowee-spacing-padding-xmicro); font-size: var(--naowee-font-size-12); }
+  .kid { grid-template-columns: minmax(0, 1fr) auto; }
+  .kid .ava { display: none; }
+  .btn { white-space: normal; text-align: center; }
+  .rp__foot .btn, .vhead .btn, .rp--tut .btn { width: 100%; }
+  .links li { flex-direction: column; align-items: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><circle cx="15" cy="4.5" r="2"/><path d="M7 21l3-6 3 2 1 4M10 15l1.5-5 4 2 3 1M11.5 10L8 11l-2 3"/></symbol>
+  <symbol id="i-family" viewBox="0 0 24 24"><circle cx="8" cy="6" r="2.5"/><circle cx="16.5" cy="9" r="2"/><path d="M3.5 20v-4.5A4.5 4.5 0 018 11a4.5 4.5 0 014.5 4.5V20M13 20v-3.5a3.5 3.5 0 017 0V20"/></symbol>
+  <symbol id="i-whistle" viewBox="0 0 24 24"><path d="M9 7h12v4l-6 1.5A6 6 0 113 12a6 6 0 016-5z"/><circle cx="9" cy="13" r="2"/><path d="M14 7V4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></symbol>
+</svg>
+
+<header class="top">
+  <a href="#" aria-label="SUID, inicio"><img src="../shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
+  <div class="top__user">
+    <span id="topWho"><b>Laura Gómez</b><small>Mi cuenta</small></span>
+    <div class="ava ava--40" id="topAva" aria-hidden="true">LG</div>
+  </div>
+</header>
+
+<div class="consulta" role="status">
+  <div class="consulta__in">
+    <svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
+    <p><b>Consulta de usuario</b> — Esta vista es de consulta y edición de datos del usuario. Los cambios que guardes quedan registrados a tu nombre.</p>
+  </div>
+</div>
+
+<main class="page" id="app">
+  <a class="back" href="#" id="backBtn"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg><span class="not-c">Volver</span><span class="is-c">Volver al listado</span></a>
+
+  <!-- Encabezado: quién es + qué roles tiene -->
+  <section class="card hero" aria-labelledby="pName">
+    <div class="ava ava--88" aria-hidden="true">LG</div>
+    <div class="hero__id">
+      <h1 id="pName">Laura Marcela Gómez Restrepo</h1>
+      <p class="hero__doc">C.C. 1.032.987.456 · 34 años</p>
+      <div class="chips" aria-label="Roles de la persona">
+        <a class="chip" href="#rp-dep" data-role="dep" data-jump="rp-dep"><svg class="i i--sm" aria-hidden="true"><use href="#i-run"/></svg>Deportista</a>
+        <a class="chip" href="#rp-tut" data-role="tut" data-jump="rp-tut"><svg class="i i--sm" aria-hidden="true"><use href="#i-family"/></svg>Tutor legal <small>2 menores</small></a>
+        <a class="chip" href="#rp-apo" data-role="apo" data-jump="rp-apo"><svg class="i i--sm" aria-hidden="true"><use href="#i-whistle"/></svg>Personal de apoyo <small>Docente/Entrenador</small></a>
+        <button class="chip chip--add" type="button" id="addRole"><svg class="i i--sm" aria-hidden="true"><use href="#i-plus"/></svg>Agregar rol</button>
+      </div>
+    </div>
+    <div class="hero__side">
+      <span class="hero__acct">Estado de la cuenta <span class="status status--ok" id="acctState">Activo</span></span>
+      <button class="btn btn--line btn--sm only-c" type="button" id="acctToggle">Inactivar cuenta</button>
+    </div>
+    <dl class="strip">
+      <div><dt>Deporte principal</dt><dd>Patinaje</dd></div>
+      <div><dt>Departamento</dt><dd>Valle del Cauca</dd></div>
+      <div><dt>Municipio</dt><dd>Cali</dd></div>
+      <div><dt>Correo</dt><dd>laura.gomez@correo.co</dd></div>
+    </dl>
+  </section>
+
+  <div class="layout" id="layout">
+    <nav class="sidenav" aria-label="Secciones del perfil">
+      <a href="?seccion=perfil" data-nav="perfil"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg>Perfil</a>
+      <a href="?seccion=documentos" data-nav="documentos"><svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>Documentos</a>
+      <a href="?seccion=configuracion" data-nav="configuracion"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg>Configuración</a>
+    </nav>
+
+    <div class="content">
+      <!-- Perfil: datos personales (compartidos por todos los roles) -->
+      <section class="view card panel" data-view="perfil" aria-labelledby="dpTitle">
+        <div class="vhead"><div><h2 id="dpTitle">Datos personales</h2><p>Son los mismos para todos tus roles.</p></div></div>
+        <div class="tabs" role="tablist" aria-label="Datos personales" id="dataTabs"></div>
+        <div id="dataPanels"></div>
+      </section>
+
+      <!-- Trayectoria completa -->
+      <section class="view card panel" data-view="trayectoria" hidden aria-labelledby="trTitle">
+        <nav class="crumbs" aria-label="Ruta"><a href="?seccion=perfil" data-go="perfil">Perfil</a><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span>Deportista</span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span aria-current="page">Trayectoria</span></nav>
+        <div class="vhead"><div><h2 id="trTitle">Trayectoria deportiva</h2><p>Patinaje · carreras</p></div></div>
+        <div class="tabs" role="tablist" aria-label="Trayectoria">
+          <button class="tab" role="tab" aria-selected="true" aria-controls="tr-a" id="trt-a">Trayectoria</button>
+          <button class="tab" role="tab" aria-selected="false" aria-controls="tr-b" id="trt-b" tabindex="-1">Medallería (2)</button>
+        </div>
+        <div class="tabpanel" role="tabpanel" id="tr-a" aria-labelledby="trt-a">
+          <table class="tbl">
+            <thead><tr><th>Año</th><th>Evento</th><th>Prueba</th><th>Fase</th><th>Posición</th><th>Marca</th><th>Medalla</th></tr></thead>
+            <tbody>
+              <tr><td data-l="Año">2025</td><td class="td-main" data-l="Evento"><b>Juegos Nacionales</b><small>Patinaje</small></td><td data-l="Prueba">500 m</td><td data-l="Fase">Final</td><td data-l="Posición">2.º</td><td data-l="Marca">44.312 s</td><td data-l="Medalla"><span class="md"><i style="background:var(--pf-silver)"></i>Plata</span></td></tr>
+              <tr><td data-l="Año">2024</td><td class="td-main" data-l="Evento"><b>Campeonato Nacional</b><small>Patinaje</small></td><td data-l="Prueba">1000 m</td><td data-l="Fase">Final</td><td data-l="Posición">1.º</td><td data-l="Marca">1:28.407</td><td data-l="Medalla"><span class="md"><i style="background:var(--pf-gold)"></i>Oro</span></td></tr>
+              <tr><td data-l="Año">2023</td><td class="td-main" data-l="Evento"><b>Juegos Departamentales</b><small>Patinaje</small></td><td data-l="Prueba">500 m</td><td data-l="Fase">Semifinal</td><td data-l="Posición">4.º</td><td data-l="Marca">45.106 s</td><td data-l="Medalla"><span style="color:var(--naowee-color-text-disabled)">Sin medalla</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tabpanel" role="tabpanel" id="tr-b" aria-labelledby="trt-b" hidden>
+          <table class="tbl">
+            <thead><tr><th>Medalla</th><th>Evento</th><th>Prueba</th><th>Año</th></tr></thead>
+            <tbody>
+              <tr><td data-l="Medalla"><span class="md"><i style="background:var(--pf-gold)"></i>Oro</span></td><td class="td-main" data-l="Evento"><b>Campeonato Nacional</b></td><td data-l="Prueba">1000 m</td><td data-l="Año">2024</td></tr>
+              <tr><td data-l="Medalla"><span class="md"><i style="background:var(--pf-silver)"></i>Plata</span></td><td class="td-main" data-l="Evento"><b>Juegos Nacionales</b></td><td data-l="Prueba">500 m</td><td data-l="Año">2025</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Análisis cualitativo (solo Comité Olímpico / ROOT) -->
+      <section class="view card panel" data-view="analisis" hidden aria-labelledby="anTitle">
+        <nav class="crumbs" aria-label="Ruta"><a href="?seccion=perfil" data-go="perfil">Perfil</a><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span>Deportista</span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span aria-current="page">Análisis cualitativo</span></nav>
+        <div class="vhead"><div><h2 id="anTitle">Análisis cualitativo</h2><p>Evaluaciones del metodólogo. Visible para Comité Olímpico y administradores.</p></div></div>
+        <article class="eval">
+          <div class="eval__meta"><span>Prueba <b>500 m</b></span><span>Evento <b>Juegos Nacionales 2025</b></span><span>Fecha <b>18/11/2025</b></span><span>Autor <b>Andrés Ríos, metodólogo</b></span></div>
+          <div class="tabs" role="tablist" aria-label="Dimensiones" id="evalTabs"></div>
+          <p class="txt" id="evalTxt" role="tabpanel"></p>
+        </article>
+      </section>
+
+      <!-- Menores a cargo (vista completa del rol tutor) -->
+      <section class="view card panel" data-view="menores" hidden aria-labelledby="mnTitle">
+        <nav class="crumbs" aria-label="Ruta"><a href="?seccion=perfil" data-go="perfil">Perfil</a><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span>Tutor legal</span><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span aria-current="page">Menores a cargo</span></nav>
+        <div class="vhead">
+          <div><h2 id="mnTitle">Menores a cargo</h2><p>Administras el perfil deportivo de cada menor.</p></div>
+          <button class="btn btn--loud" type="button" data-act="registrar"><svg class="i i--sm" aria-hidden="true"><use href="#i-plus"/></svg>Registrar menor</button>
+        </div>
+        <div class="notice"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><p>El registro de Sara está en revisión. Te avisaremos por correo cuando el organismo lo apruebe.</p></div>
+        <table class="tbl">
+          <thead><tr><th>Menor</th><th>Deporte</th><th>Fecha de nacimiento</th><th>Vínculo</th><th>Estado</th><th><span class="sr">Acciones</span></th></tr></thead>
+          <tbody>
+            <tr><td class="td-main" data-l="Menor"><b>Tomás Gómez</b><small>T.I. 1.110.456.789 · 12 años</small></td><td data-l="Deporte">Patinaje</td><td data-l="Fecha de nacimiento">14/03/2014</td><td data-l="Vínculo">Padre/Madre</td><td data-l="Estado"><span class="status status--ok">Registrado</span></td><td class="td-act" data-l="Acciones"><a class="btn btn--mute btn--sm" href="?seccion=menor-tomas" data-go="menor-tomas">Ver perfil</a></td></tr>
+            <tr><td class="td-main" data-l="Menor"><b>Sara Gómez</b><small>T.I. 1.110.789.012 · 9 años</small></td><td data-l="Deporte">Natación</td><td data-l="Fecha de nacimiento">22/07/2017</td><td data-l="Vínculo">Padre/Madre</td><td data-l="Estado"><span class="status status--info">En revisión</span></td><td class="td-act" data-l="Acciones"><a class="btn btn--mute btn--sm" href="?seccion=menor-sara" data-go="menor-sara">Ver perfil</a></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Perfil del menor -->
+      <section class="view card panel" data-view="menor" hidden aria-labelledby="mrName">
+        <nav class="crumbs" aria-label="Ruta"><a href="?seccion=perfil" data-go="perfil">Perfil</a><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><a href="?seccion=menores" data-go="menores">Menores a cargo</a><svg class="i" aria-hidden="true"><use href="#i-chev"/></svg><span aria-current="page" id="mrCrumb"></span></nav>
+        <div class="minihero">
+          <div class="ava" aria-hidden="true" id="mrAva"></div>
+          <div style="flex:1;min-width:0"><h2 id="mrName"></h2><p id="mrDoc"></p></div>
+          <span id="mrStatus"></span>
+        </div>
+        <div class="notice" style="background:var(--naowee-color-background-secondary);color:var(--naowee-color-text-primary)"><svg class="i" aria-hidden="true" style="color:var(--naowee-color-icon-secondary)"><use href="#i-user"/></svg><p>Administras este perfil como <b>Padre/Madre</b>. Un menor solo puede tener el rol de deportista.</p></div>
+        <div class="tp-head"><h3>Datos del menor</h3><button class="btn btn--line btn--sm" type="button"><svg class="i i--sm" aria-hidden="true"><use href="#i-edit"/></svg>Editar</button></div>
+        <dl class="fields" id="mrFields"></dl>
+      </section>
+
+      <section class="view card panel" data-view="documentos" hidden>
+        <div class="empty"><div class="tile"><svg class="i" aria-hidden="true"><use href="#i-doc"/></svg></div><h2>Documentos</h2><p>Pronto podrás cargar y consultar aquí tus documentos.</p></div>
+      </section>
+      <section class="view card panel" data-view="configuracion" hidden>
+        <div class="empty"><div class="tile"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg></div><h2>Configuración</h2><p>Pronto podrás cambiar aquí tu contraseña y tus notificaciones.</p></div>
+      </section>
+    </div>
+
+    <!-- Paneles por rol: cada uno con la forma de su contenido -->
+    <aside class="roles" aria-label="Roles">
+      <div class="roles__title"><h2>Mis roles</h2><span id="rolesCount">3 roles</span></div>
+
+      <!-- Deportista: un resultado manda -->
+      <section class="card rp rp--dep" id="rp-dep" data-role="dep" aria-labelledby="h-dep">
+        <div class="rp__head">
+          <div class="tile" aria-hidden="true"><svg class="i"><use href="#i-run"/></svg></div>
+          <div class="rp__t"><h3 id="h-dep">Deportista</h3><p>Patinaje · carreras</p></div>
+        </div>
+        <div class="dep-a">
+          <div class="result">
+            <div class="medal" aria-hidden="true">2.º</div>
+            <div>
+              <p class="result__k">Último resultado</p>
+              <p class="result__v">Plata · 500 m</p>
+              <p class="result__m">Juegos Nacionales 2025 · Final</p>
+            <div class="tally" aria-label="Medallería"><span><i style="background:var(--pf-gold)"></i><b>1</b> oro</span><span><i style="background:var(--pf-silver)"></i><b>1</b> plata</span><span><i style="background:var(--pf-bronze)"></i><b>0</b> bronce</span></div>
+            </div>
+          </div>
+          <dl class="bio" aria-label="Biometría">
+            <div><b>166</b><span>Altura cm</span></div>
+            <div><b>58</b><span>Peso kg</span></div>
+            <div><b>O+</b><span>Sangre</span></div>
+            <div><b>21.0</b><span>IMC</span></div>
+          </dl>
+        </div>
+        <div class="dep-b">
+          <p class="rp__label aff-label">Afiliaciones</p>
+          <ul class="affs">
+            <li><b>Club Patín Cali</b><span class="status status--ok">Vinculado</span></li>
+            <li><b>Club Patín Vallecaucano</b><span class="status status--wait">Solicitada</span></li>
+          </ul>
+        </div>
+        <div class="rp__foot">
+          <a class="btn btn--quiet" href="?seccion=trayectoria" data-go="trayectoria"><svg class="i i--sm" aria-hidden="true"><use href="#i-trophy"/></svg>Ver trayectoria</a>
+          <a class="btn btn--line only-c" href="?seccion=analisis" data-go="analisis"><svg class="i i--sm" aria-hidden="true"><use href="#i-chart"/></svg>Análisis cualitativo</a>
+        </div>
+      </section>
+
+      <!-- Tutor legal: las personas mandan -->
+      <section class="card rp rp--tut" id="rp-tut" data-role="tut" aria-labelledby="h-tut">
+        <div class="rp__head">
+          <div class="tile tile--sm" aria-hidden="true"><svg class="i"><use href="#i-family"/></svg></div>
+          <div class="rp__t"><h3 id="h-tut">Tutor legal</h3><p>2 menores a cargo</p></div>
+          <a class="btn btn--mute btn--sm" href="?seccion=menores" data-go="menores">Ver todos</a>
+        </div>
+        <ul class="kids">
+          <li><a class="kid" href="?seccion=menor-tomas" data-go="menor-tomas"><span class="ava ava--36" aria-hidden="true">TG</span><span><b>Tomás Gómez</b><small>12 años · Patinaje</small></span><span class="kid__r"><span class="status status--ok">Registrado</span><svg class="i i--sm" aria-hidden="true"><use href="#i-chev"/></svg></span></a></li>
+          <li><a class="kid" href="?seccion=menor-sara" data-go="menor-sara"><span class="ava ava--36" aria-hidden="true">SG</span><span><b>Sara Gómez</b><small>9 años · Natación</small></span><span class="kid__r"><span class="status status--info">En revisión</span><svg class="i i--sm" aria-hidden="true"><use href="#i-chev"/></svg></span></a></li>
+        </ul>
+        <button class="add-row" type="button" data-act="registrar"><span class="plus" aria-hidden="true"><svg class="i i--sm"><use href="#i-plus"/></svg></span>Registrar menor</button>
+      </section>
+
+      <!-- Personal de apoyo: una definición y sus vínculos -->
+      <section class="card rp rp--apo" id="rp-apo" data-role="apo" aria-labelledby="h-apo">
+        <div class="rp__head">
+          <div class="tile tile--sm" aria-hidden="true"><svg class="i"><use href="#i-whistle"/></svg></div>
+          <div class="rp__t"><h3 id="h-apo">Personal de apoyo</h3></div>
+        </div>
+        <dl class="def"><dt>Rol específico</dt><dd>Docente/Entrenador</dd><span class="tag">Principal</span></dl>
+        <p class="rp__label">Vínculos con organismos</p>
+        <ul class="links">
+          <li><span><b>Liga de Patinaje del Valle</b><small>Liga · desde 03/2024</small></span><span class="status status--ok">Vinculado</span></li>
+          <li class="is-wait"><span><b>Club Patín Cali</b><small>Club · enviada el 29/09/2026</small></span><span class="status status--wait">Solicitada</span></li>
+        </ul>
+        <button class="btn btn--mute btn--sm" type="button" style="margin-top:var(--naowee-spacing-gap-micro);margin-left:calc(-1 * var(--naowee-spacing-padding-xmicro))"><svg class="i i--sm" aria-hidden="true"><use href="#i-link"/></svg>Solicitar vínculo</button>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<dialog id="roleDlg" aria-labelledby="dlgT">
+  <form class="dlg" method="dialog">
+    <h2 id="dlgT">Agregar rol</h2>
+    <p>Sumar un rol no pasa por aprobación. Lo que sí revisa el organismo es tu vínculo con él.</p>
+    <div class="opts">
+      <label class="opt"><span class="tile tile--sm" aria-hidden="true"><svg class="i"><use href="#i-run"/></svg></span><span><b>Deportista</b><small>Ya lo tienes. Agrega otro deporte.</small></span><input type="radio" name="r" value="dep"></label>
+      <label class="opt"><span class="tile tile--sm" aria-hidden="true"><svg class="i"><use href="#i-family"/></svg></span><span><b>Tutor legal</b><small>Registra un menor a tu cargo.</small></span><input type="radio" name="r" value="tut" checked></label>
+      <label class="opt"><span class="tile tile--sm" aria-hidden="true"><svg class="i"><use href="#i-whistle"/></svg></span><span><b>Personal de apoyo</b><small>Elige tu rol específico: entrenador, médico, juez…</small></span><input type="radio" name="r" value="apo"></label>
+    </div>
+    <div class="dlg__foot"><button class="btn btn--line" value="cancel">Cancelar</button><button class="btn btn--loud" value="ok">Continuar</button></div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var consulta = q.get('modo') === 'consulta';
+  var app = document.body;
+  if (consulta) {
+    app.classList.add('is-consulta');
+    document.getElementById('topWho').innerHTML = '<b>Andrea Ruiz</b><small>Administradora · Gestión de usuarios</small>';
+    document.getElementById('topAva').textContent = 'AR';
+    document.querySelector('.roles__title h2').textContent = 'Roles';
+  }
+
+  /* ?roles=dep,tut — demo con menos roles */
+  var only = q.get('roles');
+  if (only) {
+    var keep = only.split(',');
+    document.querySelectorAll('[data-role]').forEach(function (el) { if (keep.indexOf(el.dataset.role) < 0) el.remove(); });
+    document.getElementById('rolesCount').textContent = keep.length === 1 ? '1 rol' : keep.length + ' roles';
+    if (keep.indexOf('dep') < 0) document.querySelector('.strip div').remove();
+  }
+
+  /* Datos personales */
+  var DATA = [
+    ['Datos', [['Nombre','Laura'],['Segundo nombre','Marcela'],['Apellido','Gómez'],['Segundo apellido','Restrepo'],['Tipo de documento','Cédula de ciudadanía',1],['Número de documento','1.032.987.456',1],['Fecha expedición documento','12/05/2010'],['Sexo','Femenino'],['Fecha de nacimiento','21/02/1992'],['Edad','34 años',1],['Departamento de nacimiento','Valle del Cauca'],['Municipio de nacimiento','Cali'],['Nacionalidad','Colombiana'],['Deporte principal','Patinaje']]],
+    ['Ubicación', [['Dirección','Cra. 56 # 9-60, apto 402'],['Departamento','Valle del Cauca'],['Municipio','Cali'],['Zona','Urbana']]],
+    ['Contacto', [['Teléfono','+57 315 482 7716'],['Correo electrónico','laura.gomez@correo.co']]],
+    ['Salud', [['EPS','Sanitas'],['Nombre del contacto de emergencia','Jorge Gómez'],['Teléfono de emergencia','+57 310 220 4581'],['Relación con contacto de emergencia','Hermano'],['Protección menores','No aplica']]],
+    ['Sociodemográfico', [['Identidad de género','Mujer'],['Orientación sexual','Prefiero no decirlo'],['Discapacidad','Ninguna'],['Pertenencia étnica','Ninguna'],['Víctima del conflicto armado','No'],['Priorización','No aplica']]],
+    ['Datos adicionales', [['Talla de uniforme','S'],['Grado escolar','Profesional']]]
+  ];
+  function fieldsHtml(rows) {
+    return rows.map(function (r, i) {
+      var id = 'f' + Math.random().toString(36).slice(2, 8);
+      return '<div><dt><label for="' + id + '">' + r[0] + '</label></dt><dd' + (r[1] ? '' : ' class="is-empty"') + '>' + (r[1] || 'Sin dato') + '</dd><input id="' + id + '" value="' + (r[1] || '') + '"' + (r[2] ? ' disabled' : '') + '></div>';
+    }).join('');
+  }
+  var tabsEl = document.getElementById('dataTabs'), panelsEl = document.getElementById('dataPanels');
+  DATA.forEach(function (d, i) {
+    tabsEl.insertAdjacentHTML('beforeend', '<button class="tab" role="tab" id="dt' + i + '" aria-controls="dp' + i + '" aria-selected="' + (i === 0) + '"' + (i ? ' tabindex="-1"' : '') + '>' + d[0] + '</button>');
+    panelsEl.insertAdjacentHTML('beforeend', '<div class="tabpanel" role="tabpanel" id="dp' + i + '" aria-labelledby="dt' + i + '"' + (i ? ' hidden' : '') + '><div class="tp-head"><h3>' + d[0] + '</h3><button class="btn btn--line btn--sm tp-edit" type="button"><svg class="i i--sm" aria-hidden="true"><use href="#i-edit"/></svg>Editar</button></div><dl class="fields">' + fieldsHtml(d[1]) + '</dl><div class="editbar"><button class="btn btn--line" type="button" data-cancel>Cancelar</button><button class="btn btn--loud" type="button" data-save>Guardar cambios</button></div></div>');
+  });
+  panelsEl.addEventListener('click', function (e) {
+    var p = e.target.closest('.tabpanel'); if (!p) return;
+    if (e.target.closest('.tp-edit')) { p.classList.add('is-editing'); var f = p.querySelector('input:not([disabled])'); if (f) f.focus(); }
+    if (e.target.closest('[data-cancel],[data-save]')) { p.classList.remove('is-editing'); p.querySelector('.tp-edit').focus(); }
+  });
+
+  /* Pestañas accesibles (cualquier tablist) */
+  function wireTabs(list, onSelect) {
+    var tabs = [].slice.call(list.querySelectorAll('[role=tab]'));
+    function sel(t, focus) {
+      tabs.forEach(function (x) { var on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; var pid = x.getAttribute('aria-controls'); var pn = pid && document.getElementById(pid); if (pn) pn.hidden = !on; });
+      if (focus) t.focus(); if (onSelect) onSelect(tabs.indexOf(t));
+    }
+    list.addEventListener('click', function (e) { var t = e.target.closest('[role=tab]'); if (t) sel(t); });
+    list.addEventListener('keydown', function (e) {
+      var i = tabs.indexOf(document.activeElement); if (i < 0) return;
+      if (e.key === 'ArrowRight') { sel(tabs[(i + 1) % tabs.length], true); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { sel(tabs[(i - 1 + tabs.length) % tabs.length], true); e.preventDefault(); }
+    });
+  }
+  wireTabs(tabsEl);
+  wireTabs(document.querySelector('[data-view=trayectoria] .tabs'));
+
+  var EVAL = [['Técnica','Buena posición de base en la salida; pierde altura de cadera en la segunda curva y eso le cuesta impulso en la recta final.'],['Táctica','Elige bien el carril exterior al inicio. Debe adelantar el ataque unos 50 m: llega con reserva al cierre.'],['Física','Potencia de salida en su mejor registro del ciclo. La resistencia a la velocidad es el punto a trabajar.'],['Conclusiones','Rendimiento consistente con su progresión de 2024. Candidata a seguir en 500 m y 1000 m.'],['Recomendaciones','Bloque de 6 semanas de resistencia a la velocidad y trabajo técnico de curva con video.']];
+  var evalTabs = document.getElementById('evalTabs'), evalTxt = document.getElementById('evalTxt');
+  EVAL.forEach(function (e, i) { evalTabs.insertAdjacentHTML('beforeend', '<button class="tab" role="tab" id="ev' + i + '" aria-selected="' + (i === 0) + '"' + (i ? ' tabindex="-1"' : '') + '>' + e[0] + '</button>'); });
+  evalTxt.setAttribute('aria-labelledby', 'ev0');
+  function setEval(i) { evalTxt.textContent = EVAL[i][1]; evalTxt.setAttribute('aria-labelledby', 'ev' + i); }
+  setEval(0); wireTabs(evalTabs, setEval);
+
+  /* Menores */
+  var KIDS = {
+    tomas: { n: 'Tomás Gómez', i: 'TG', doc: 'T.I. 1.110.456.789 · 12 años · Deportista · Patinaje', st: '<span class="status status--ok">Registrado</span>', f: [['Nombre','Tomás'],['Apellidos','Gómez Restrepo'],['Tipo de documento','Tarjeta de identidad'],['Número de documento','1.110.456.789'],['Fecha de nacimiento','14/03/2014'],['Edad','12 años'],['Deporte principal','Patinaje'],['Afiliación','Club Patín Cali · Vinculado'],['Grado escolar','7.º'],['EPS','Sanitas']] },
+    sara: { n: 'Sara Gómez', i: 'SG', doc: 'T.I. 1.110.789.012 · 9 años · Deportista · Natación', st: '<span class="status status--info">En revisión</span>', f: [['Nombre','Sara'],['Apellidos','Gómez Restrepo'],['Tipo de documento','Tarjeta de identidad'],['Número de documento','1.110.789.012'],['Fecha de nacimiento','22/07/2017'],['Edad','9 años'],['Deporte principal','Natación'],['Afiliación',''],['Grado escolar','4.º'],['EPS','Sanitas']] }
+  };
+  function showKid(k) {
+    var d = KIDS[k]; if (!d) return;
+    ['mrName','mrCrumb'].forEach(function (id) { document.getElementById(id).textContent = d.n; });
+    document.getElementById('mrAva').textContent = d.i;
+    document.getElementById('mrDoc').textContent = d.doc;
+    document.getElementById('mrStatus').innerHTML = d.st;
+    document.getElementById('mrFields').innerHTML = fieldsHtml(d.f);
+  }
+
+  /* Navegación entre vistas */
+  var VIEW_ROLE = { trayectoria: 'dep', analisis: 'dep', menores: 'tut', menor: 'tut' };
+  var layout = document.getElementById('layout');
+  var dlg = document.getElementById('roleDlg');
+  function go(sec, push) {
+    sec = sec || 'perfil';
+    if (sec === 'analisis' && !consulta) sec = 'perfil';
+    var view = sec.indexOf('menor-') === 0 ? 'menor' : sec;
+    if (view === 'menor') showKid(sec.slice(6));
+    if (!document.querySelector('[data-view="' + view + '"]')) { view = 'perfil'; sec = 'perfil'; }
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== view; });
+    var navKey = ['documentos', 'configuracion'].indexOf(view) >= 0 ? view : 'perfil';
+    document.querySelectorAll('[data-nav]').forEach(function (a) { if (a.dataset.nav === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    document.querySelectorAll('.chip[data-role]').forEach(function (c) { var on = c.dataset.role === VIEW_ROLE[view]; c.classList.toggle('is-active', on); if (on) c.setAttribute('aria-current', 'true'); else c.removeAttribute('aria-current'); });
+    layout.classList.toggle('is-detail', view !== 'perfil');
+    if (push) {
+      var u = new URLSearchParams(location.search); u.set('seccion', sec); history.pushState({ s: sec }, '', '?' + u.toString());
+      var h = document.querySelector('[data-view="' + view + '"] h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+      if (window.innerWidth < 1024) document.querySelector('[data-view="' + view + '"]').scrollIntoView({ block: 'start' });
+    }
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-go],[data-nav]');
+    if (a) { e.preventDefault(); go(a.dataset.go || a.dataset.nav, true); return; }
+    var j = e.target.closest('[data-jump]');
+    if (j) {
+      e.preventDefault(); if (layout.classList.contains('is-detail')) go('perfil', true); var p = document.getElementById(j.dataset.jump);
+      p.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      p.classList.add('is-flash'); setTimeout(function () { p.classList.remove('is-flash'); }, 1200);
+      p.querySelector('h3').tabIndex = -1; p.querySelector('h3').focus({ preventScroll: true });
+    }
+    if (e.target.closest('[data-act=registrar]')) { dlg.querySelector('input[value=tut]').checked = true; if (dlg.showModal) dlg.showModal(); }
+  });
+  window.addEventListener('popstate', function () { go(new URLSearchParams(location.search).get('seccion')); });
+  go(q.get('seccion') === 'menores' || q.get('seccion') ? q.get('seccion') : 'perfil');
+
+  document.getElementById('backBtn').addEventListener('click', function (e) { e.preventDefault(); history.back(); });
+
+  /* Agregar rol */
+  document.getElementById('addRole').addEventListener('click', function () { if (dlg.showModal) dlg.showModal(); });
+
+  /* Estado de la cuenta (modo consulta) */
+  var on = true;
+  document.getElementById('acctToggle').addEventListener('click', function () {
+    on = !on; var s = document.getElementById('acctState');
+    s.textContent = on ? 'Activo' : 'Inactivo'; s.className = 'status ' + (on ? 'status--ok' : 'status--off');
+    this.textContent = on ? 'Inactivar cuenta' : 'Activar cuenta';
+  });
+})();
+</script>
+</body>
+</html>

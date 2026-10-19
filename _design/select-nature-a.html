@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUID · Crear cuenta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/naowee-tech/naowee-design-system@v1.8.0/dist/design-system.css">
+
+<style>
+  /* Variante A · "DS puro" — select-nature con Naowee DS v1.8.0.
+     Todo va contra las clases ur-* existentes; las clases naowee-* se suman en el markup. */
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--naowee-color-background-primary);
+    color: var(--naowee-color-text-primary);
+    font-family: var(--naowee-font-family);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ── */
+  .ur-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--naowee-spacing-gap-xtiny);
+    min-height: var(--naowee-size-xmega);
+    padding: var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-medium);
+    border-bottom: var(--naowee-border-width-small) solid var(--naowee-color-border-default);
+  }
+  .ur-top > a { display: inline-flex; border-radius: var(--naowee-border-radius-small); }
+  .ur-top > a:focus-visible { outline: none; box-shadow: var(--naowee-shadow-focus-accent); }
+  .ur-top img { height: var(--naowee-size-xlarge); width: auto; display: block; }
+  .ur-top p {
+    margin: 0;
+    font-size: var(--naowee-font-size-14);
+    line-height: var(--naowee-font-line-height-20);
+    color: var(--naowee-color-text-secondary);
+    text-align: right;
+  }
+  .ur-top p .naowee-textlink { font-weight: var(--naowee-font-weight-semibold); }
+
+  /* ── Main ── */
+  .ur-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--naowee-spacing-padding-large) var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-xlarge);
+  }
+  .ur { width: 100%; max-width: 416px; }
+
+  .ur-head { margin-bottom: var(--naowee-spacing-gap-xtiny); }
+  .ur-head--center { text-align: center; }
+  .ur-title {
+    margin: 0 0 var(--naowee-spacing-gap-xmicro);
+    font-size: var(--naowee-font-size-32);
+    line-height: var(--naowee-font-line-height-40);
+    font-weight: var(--naowee-font-weight-bold);
+    letter-spacing: -0.4px;
+    color: var(--naowee-color-text-primary);
+  }
+  .ur-sub {
+    margin: 0;
+    font-size: var(--naowee-font-size-16);
+    line-height: var(--naowee-font-line-height-24);
+    color: var(--naowee-color-text-secondary);
+    text-wrap: balance;
+  }
+
+  /* ── Pill "Solo demo" (secundaria a propósito) ── */
+  .ur-devnote-wrap { display: flex; justify-content: center; margin-bottom: var(--naowee-spacing-gap-small); }
+  .wz-devnote {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--naowee-spacing-gap-nano);
+    padding: var(--naowee-spacing-padding-xnano) var(--naowee-spacing-padding-micro) var(--naowee-spacing-padding-xnano) var(--naowee-spacing-padding-xnano);
+    border: var(--naowee-border-width-small) dashed var(--naowee-color-orange-300);
+    border-radius: var(--naowee-border-radius-full);
+    background: transparent;
+    font-size: var(--naowee-font-size-12);
+    line-height: var(--naowee-font-line-height-16);
+    font-weight: var(--naowee-font-weight-medium);
+    color: var(--naowee-color-text-secondary);
+    cursor: help;
+  }
+  .wz-devnote:focus-visible { outline: none; box-shadow: var(--naowee-shadow-focus-accent); }
+
+  /* ── Selector Persona / Entidad (radio cards) ── */
+  .ur-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--naowee-spacing-gap-xtiny);
+  }
+  .ur-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--naowee-spacing-gap-xnano);
+    width: 100%;
+    margin: 0;
+    padding: var(--naowee-spacing-padding-tiny);
+    border-radius: var(--naowee-border-radius-containers-compact);
+    border: var(--naowee-border-width-small) solid var(--naowee-color-interactive-border-idle);
+    background: var(--naowee-color-fill-primary);
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color var(--naowee-transition-default), box-shadow var(--naowee-transition-default), background var(--naowee-transition-default);
+  }
+  /* El DS levanta las clickable con translateY; en un selector lo dejamos quieto */
+  .ur-card.naowee-card--clickable:hover,
+  .ur-card.naowee-card--clickable:active { transform: none; }
+
+  /* icono en tile quiet */
+  .ur-card svg {
+    box-sizing: content-box;
+    width: var(--naowee-size-icon-xsmall);
+    height: var(--naowee-size-icon-xsmall);
+    padding: var(--naowee-spacing-padding-micro);
+    margin-bottom: var(--naowee-spacing-gap-xmicro);
+    border-radius: var(--naowee-border-radius-medium);
+    background: var(--naowee-color-background-secondary);
+    color: var(--naowee-color-icon-secondary);
+    transition: background var(--naowee-transition-default), color var(--naowee-transition-default);
+  }
+  .ur-card__t {
+    font-size: var(--naowee-font-size-16);
+    line-height: var(--naowee-font-line-height-22);
+    font-weight: var(--naowee-font-weight-semibold);
+    color: var(--naowee-color-text-primary);
+  }
+  .ur-card__d {
+    font-size: var(--naowee-font-size-14);
+    line-height: var(--naowee-font-line-height-20);
+    color: var(--naowee-color-text-secondary);
+  }
+
+  /* indicador de radio (naowee-radio__circle) dibujado con pseudo-elementos: sin tocar el markup del JS */
+  .ur-card::before,
+  .ur-card::after {
+    content: '';
+    position: absolute;
+    border-radius: var(--naowee-border-radius-full);
+  }
+  .ur-card::before {
+    top: var(--naowee-spacing-padding-xtiny);
+    right: var(--naowee-spacing-padding-xtiny);
+    width: var(--naowee-size-selection-controls-tiny);
+    height: var(--naowee-size-selection-controls-tiny);
+    border: var(--naowee-border-width-medium) solid var(--naowee-color-interactive-border-idle);
+    background: var(--naowee-color-fill-primary);
+    transition: border-color var(--naowee-transition-default);
+  }
+  .ur-card::after {
+    top: calc(var(--naowee-spacing-padding-xtiny) + 5px);
+    right: calc(var(--naowee-spacing-padding-xtiny) + 5px);
+    width: 10px;
+    height: 10px;
+    background: var(--naowee-color-interactive-fill-loud-idle);
+    transform: scale(0);
+    transition: transform var(--naowee-transition-spring);
+  }
+
+  /* hover */
+  .ur-card:hover { border-color: var(--naowee-color-interactive-border-hover); }
+  .ur-card:hover::before { border-color: var(--naowee-color-interactive-border-hover); }
+
+  /* seleccionada */
+  .ur-card.is-selected,
+  .ur-card[aria-checked="true"] {
+    border-color: var(--naowee-color-selected-border-idle);
+    box-shadow: inset 0 0 0 1px var(--naowee-color-selected-border-idle);
+  }
+  .ur-card.is-selected::before,
+  .ur-card[aria-checked="true"]::before { border-color: var(--naowee-color-selected-fill-idle); }
+  .ur-card.is-selected::after,
+  .ur-card[aria-checked="true"]::after { transform: scale(1); }
+  .ur-card.is-selected svg,
+  .ur-card[aria-checked="true"] svg {
+    background: var(--naowee-color-fill-accent-quiet);
+    color: var(--naowee-color-icon-accent);
+  }
+
+  /* foco por teclado */
+  .ur-card:focus-visible {
+    outline: none;
+    border-color: var(--naowee-color-interactive-border-active);
+    box-shadow: var(--naowee-shadow-focus-accent);
+  }
+  .ur-card.is-selected:focus-visible,
+  .ur-card[aria-checked="true"]:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--naowee-color-selected-border-idle), var(--naowee-shadow-focus-accent);
+  }
+
+  /* ── Acción ── */
+  .ur-actions { margin-top: var(--naowee-spacing-gap-small); }
+  .ur-btn { font-weight: var(--naowee-font-weight-semibold); }
+  .ur-btn--block { width: 100%; }
+
+  /* ── Legal ── */
+  .ur-legal {
+    margin: var(--naowee-spacing-gap-xsmall) 0 0;
+    text-align: center;
+    font-size: var(--naowee-font-size-12);
+    line-height: var(--naowee-font-line-height-18);
+    color: var(--naowee-color-text-secondary);
+  }
+  .ur-legal .naowee-textlink { color: var(--naowee-color-text-link-idle-neutral); }
+  .ur-legal .naowee-textlink:hover { color: var(--naowee-color-text-link-hover); }
+
+  /* ── Footer ── */
+  .ur-foot {
+    padding: var(--naowee-spacing-padding-xsmall) var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-small);
+    text-align: center;
+    font-size: var(--naowee-font-size-12);
+    line-height: var(--naowee-font-line-height-16);
+    color: var(--naowee-color-text-disabled);
+  }
+  .ur-foot strong { color: var(--naowee-color-text-secondary); font-weight: var(--naowee-font-weight-semibold); }
+
+  @media (max-width: 600px) {
+    .ur-top { min-height: var(--naowee-size-xhuge); padding: var(--naowee-spacing-padding-xmicro) var(--naowee-spacing-padding-xtiny); }
+    .ur-top img { height: var(--naowee-size-large); }
+    .ur-top p { font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-16); max-width: 150px; }
+    .ur-main { align-items: flex-start; padding-top: var(--naowee-spacing-padding-small); }
+    .ur-title { font-size: var(--naowee-font-size-28); line-height: var(--naowee-font-line-height-34); }
+    .ur-sub { font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); }
+    .ur-devnote-wrap { margin-bottom: var(--naowee-spacing-gap-xsmall); }
+    .ur-cards { gap: var(--naowee-spacing-gap-micro); }
+    .ur-card { padding: var(--naowee-spacing-padding-xtiny); }
+    .ur-card::before { top: var(--naowee-spacing-padding-micro); right: var(--naowee-spacing-padding-micro); }
+    .ur-card::after { top: calc(var(--naowee-spacing-padding-micro) + 5px); right: calc(var(--naowee-spacing-padding-micro) + 5px); }
+    .ur-actions { margin-top: var(--naowee-spacing-gap-xsmall); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ur-card, .ur-card::before, .ur-card::after, .ur-card svg { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="ur-top">
+  <a href="../index.html" aria-label="SUID, ir al inicio"><img src="../shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
+  <p>¿Ya tienes una cuenta? <a class="naowee-textlink" href="../index.html">Inicia sesión</a></p>
+</header>
+
+<main class="ur-main"><div class="ur">
+  <div class="ur-head ur-head--center">
+    <h1 class="ur-title" id="urTitle">Crear cuenta</h1>
+    <p class="ur-sub" id="urSub">Comienza indicando si eres persona natural o entidad jurídica</p>
+  </div>
+
+  <div class="ur-devnote-wrap"><span class="wz-devnote" tabindex="0" role="button" data-devnote="nature"><span class="naowee-badge naowee-badge--caution naowee-badge--quiet">Solo demo</span>Notas para devs</span></div>
+
+  <div class="ur-cards" role="radiogroup" aria-labelledby="urTitle" aria-describedby="urSub">
+    <button type="button" class="ur-card naowee-card naowee-card--outline naowee-card--clickable" role="radio" aria-checked="false" data-card="nature" data-value="persona">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+      <span class="ur-card__t">Persona</span><span class="ur-card__d">Natural</span>
+    </button>
+    <button type="button" class="ur-card naowee-card naowee-card--outline naowee-card--clickable" role="radio" aria-checked="false" data-card="nature" data-value="entidad">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+      <span class="ur-card__t">Entidad</span><span class="ur-card__d">Jurídica</span>
+    </button>
+  </div>
+
+  <div class="ur-actions"><button type="button" class="ur-btn ur-btn--block naowee-btn naowee-btn--loud naowee-btn--large naowee-btn--full" id="rpNext" disabled>Siguiente</button></div>
+
+  <p class="ur-legal"><a class="naowee-textlink naowee-textlink--small" href="#">Política de privacidad</a> y <a class="naowee-textlink naowee-textlink--small" href="#">Términos y condiciones</a></p>
+</div></main>
+
+<footer class="ur-foot">Hecho by <strong>Naowee</strong></footer>
+
+<script>
+  (function () {
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.ur-card'));
+    var next = document.getElementById('rpNext');
+
+    function select(card, focus) {
+      cards.forEach(function (c) {
+        var on = c === card;
+        c.classList.toggle('is-selected', on);
+        c.setAttribute('aria-checked', on ? 'true' : 'false');
+        c.tabIndex = on ? 0 : -1;
+      });
+      next.disabled = !card;
+      if (focus && card) card.focus();
+    }
+
+    cards.forEach(function (card, i) {
+      card.addEventListener('click', function () { select(card); });
+      card.addEventListener('keydown', function (e) {
+        var d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        select(cards[(i + d + cards.length) % cards.length], true);
+      });
+    });
+
+    var pre = new URLSearchParams(location.search).get('sel');
+    var match = cards.filter(function (c) { return c.dataset.value === pre; })[0];
+    if (match) select(match); else cards.forEach(function (c, i) { c.tabIndex = i === 0 ? 0 : -1; });
+  })();
+</script>
+</body>
+</html>
