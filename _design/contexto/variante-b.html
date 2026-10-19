@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis clubes — Naowee Organismos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/tokens.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/shell.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/components.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/forms.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/naowee-footer.css?v=1.7.1">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Variante B · Contexto protagonista de la barra superior (P-15)
+   El organismo activo vive en un selector propio a la izquierda de la
+   barra; el chip de la derecha queda solo para identidad.
+   Solo tokens del módulo (tokens.css) y patrones existentes
+   (dropdown, profile-dd, snackbar #evToast, mode-switch del pill demo).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Selector de contexto ── */
+.ctx { position: relative; min-width: 0; }
+.ctx[hidden] { display: none; }
+.ctx-trigger {
+  display: flex; align-items: center; gap: 12px;
+  max-width: 440px; min-width: 300px; height: 60px; padding: 0 10px;
+  background: var(--surface); border: 1px solid var(--field-border-idle); border-radius: var(--radius-lg);
+  font-family: inherit; color: var(--text-primary); text-align: left; cursor: pointer;
+  transition: border-color var(--duration-normal) var(--easing-smoothout),
+              box-shadow var(--duration-normal) var(--easing-smoothout),
+              background var(--duration-fast);
+}
+.ctx-trigger:hover { border-color: var(--field-border-hover); }
+.ctx-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.ctx.is-open .ctx-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .12); }
+.ctx-tile {
+  position: relative; width: 40px; height: 40px; flex-shrink: 0; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1;
+  background: var(--bg-soft);
+}
+.ctx-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ctx-meta {
+  font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ctx-name {
+  font-size: 14px; font-weight: 700; color: var(--text-primary); line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ctx-chev {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--radius-sm); flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.ctx-chev svg { width: 16px; height: 16px; transition: transform var(--duration-normal) var(--easing-smoothout); }
+.ctx-trigger:hover .ctx-chev { background: #FFEDC7; color: var(--accent); }
+.ctx.is-open .ctx-chev { color: var(--accent); }
+.ctx.is-open .ctx-chev svg { transform: rotate(180deg); }
+/* Punto de pendientes en otros organismos */
+.ctx-dot {
+  position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff;
+}
+.ctx-dot[hidden] { display: none; }
+/* Pulso breve al cambiar de organismo */
+.ctx-trigger.is-switched { animation: ctxPulse .9s var(--easing-smoothout); }
+@keyframes ctxPulse {
+  0% { box-shadow: 0 0 0 0 rgba(215, 64, 9, .35); border-color: var(--accent); }
+  100% { box-shadow: 0 0 0 10px rgba(215, 64, 9, 0); }
+}
+
+/* ── Panel ── */
+.ctx-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 100;
+  width: 400px; max-height: min(70vh, 560px);
+  display: flex; flex-direction: column;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(40, 40, 52, .12);
+  opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden;
+  transition: opacity var(--duration-normal), transform var(--duration-normal) var(--easing-smoothout), visibility 0s linear var(--duration-normal);
+}
+.ctx.is-open .ctx-panel {
+  opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible;
+  transition: opacity var(--duration-normal), transform var(--duration-normal) var(--easing-smoothout), visibility 0s;
+}
+.ctx-panel__head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 10px; flex-shrink: 0; }
+.ctx-panel__titles { flex: 1; min-width: 0; }
+.ctx-panel__title { margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary); letter-spacing: -.2px; }
+.ctx-panel__sub { margin: 3px 0 0; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+.ctx-panel__close {
+  display: none; width: 40px; height: 40px; flex-shrink: 0; margin: -6px -6px 0 0;
+  align-items: center; justify-content: center; border: none; background: transparent;
+  border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer;
+}
+.ctx-panel__close:hover { background: var(--bg-soft); color: var(--text-primary); }
+.ctx-panel__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.ctx-panel__close svg { width: 20px; height: 20px; }
+.ctx-list { overflow-y: auto; padding: 0 6px 6px; scrollbar-width: thin; scrollbar-color: var(--border-dark) transparent; }
+.ctx-group {
+  font-size: 11.5px; font-weight: 700; color: var(--section-label-color);
+  padding: 10px 10px 4px;
+}
+.ctx-opt {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px; border: none; background: transparent; border-radius: var(--radius-md);
+  font-family: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+  transition: background var(--duration-fast);
+}
+.ctx-opt:hover { background: var(--bg-soft); }
+.ctx-opt:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.ctx-opt.is-current { background: var(--accent-bg); }
+.ctx-opt.is-current:hover { background: var(--accent-bg-warm); }
+.ctx-opt .ctx-tile { width: 36px; height: 36px; font-size: 17px; background: #fff; border: 1px solid var(--border); }
+.ctx-opt__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ctx-opt__name { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+.ctx-opt.is-current .ctx-opt__name { color: var(--accent); }
+.ctx-opt__meta { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+.ctx-opt__pend { margin-top: 4px; }
+.ctx-opt__pend .naowee-badge { height: 20px; font-size: 11px; font-feature-settings: normal; }
+.ctx-opt__check { width: 20px; height: 20px; flex-shrink: 0; color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.ctx-opt__check svg { width: 16px; height: 16px; }
+.ctx-panel__foot {
+  flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 16px 12px;
+  font-size: 12px; color: var(--text-secondary); line-height: 1.45;
+}
+
+/* ── Aviso de descubrimiento (una vez por sesión) ── */
+.ctx-tip {
+  position: absolute; top: calc(100% + 12px); left: 0; z-index: 90; width: 320px;
+  background: #002B5B; color: #fff; border-radius: var(--radius-lg);
+  padding: 14px 16px; box-shadow: 0 8px 12px rgba(40, 40, 52, .16), 0 12px 30px rgba(40, 40, 52, .24);
+  font-size: 13px; line-height: 1.45;
+  animation: tipIn .36s var(--easing-bounce-soft) both;
+}
+.ctx-tip[hidden] { display: none; }
+.ctx-tip::before {
+  content: ''; position: absolute; bottom: 100%; left: 28px;
+  border: 7px solid transparent; border-bottom-color: #002B5B;
+}
+.ctx-tip strong { display: block; font-size: 13.5px; margin-bottom: 3px; }
+.ctx-tip__actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.ctx-tip__btn {
+  height: 32px; padding: 0 14px; border: none; border-radius: var(--radius-md);
+  background: #fff; color: #002B5B; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.ctx-tip__btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .45); }
+@keyframes tipIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Chip de identidad: solo quién soy ── */
+.user-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.header-burger:focus-visible, .burger-btn:focus-visible, .nav-row:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22);
+}
+.naowee-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* Fondo para el panel en hoja inferior (móvil) */
+.ctx-backdrop {
+  position: fixed; inset: 0; background: rgba(40, 40, 52, .42); z-index: 69;
+  opacity: 0; pointer-events: none; transition: opacity var(--duration-normal) ease;
+}
+body.has-ctx-sheet .ctx-backdrop { opacity: 1; pointer-events: auto; }
+body.has-ctx-sheet .review-switch { display: none; }
+
+/* ── Contenido ── */
+.bj-panel { animation: stubIn .4s var(--easing-smoothout) both; }
+.bj-panel.is-refresh { animation: none; }
+.vb-empty-hint { font-size: 13px; color: var(--text-secondary); }
+
+/* ── Conmutador de revisión (solo para la revisión del diseño) ── */
+.review-switch {
+  position: fixed; left: 16px; bottom: 16px; z-index: 65;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px;
+  background: #fff; border: 1px dashed var(--border-dark); border-radius: var(--radius-lg);
+  box-shadow: 0 4px 14px rgba(40, 40, 52, .12);
+}
+.review-switch__lbl { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.review-switch .demo-role-switcher__mode-switch { min-width: 0; }
+.review-switch .demo-role-switcher__mode-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 1023px) {
+  .ctx { flex: 1; }
+  .ctx-trigger { max-width: 100%; width: 100%; min-width: 0; }
+}
+@media (max-width: 600px) {
+  .ctx-trigger { height: 56px; gap: 10px; padding: 0 6px 0 8px; }
+  .ctx-tile { width: 34px; height: 34px; font-size: 16px; }
+  .ctx-meta { font-size: 11px; }
+  .ctx-name { font-size: 13px; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .ctx-text.has-two-lines .ctx-meta { display: none; }
+  .ctx-chev { width: 24px; }
+
+  /* El panel pasa a hoja inferior */
+  .ctx-panel {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; z-index: 70;
+    width: auto; max-height: 82vh; border-radius: 20px 20px 0 0; border-bottom: none;
+    box-shadow: var(--shadow-sheet); transform: translateY(100%); opacity: 1;
+    transition: transform var(--duration-slow) var(--easing-smoothout), visibility 0s linear var(--duration-slow);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ctx.is-open .ctx-panel { transform: translateY(0); transition: transform var(--duration-slow) var(--easing-smoothout), visibility 0s; }
+  .ctx-panel::before {
+    content: ''; display: block; width: 40px; height: 4px; border-radius: 4px;
+    background: var(--border-dark); margin: 8px auto 0; flex-shrink: 0;
+  }
+  .ctx-panel__head { padding: 12px 16px 8px; }
+  .ctx-panel__close { display: flex; }
+  .ctx-opt { padding: 12px 10px; }
+
+  .ctx-tip { position: fixed; top: calc(var(--header-h) - 6px); left: 16px; right: 16px; width: auto; }
+  .ctx-tip::before { left: 64px; }
+
+  .review-switch { left: 8px; right: 8px; bottom: 8px; padding: 6px 6px 6px 10px; }
+  .review-switch .demo-role-switcher__mode-switch { flex: 1; }
+  .review-switch .demo-role-switcher__mode-btn { padding: 7px 4px; font-size: 11px; }
+  #evToast { bottom: 64px; width: calc(100vw - 32px); }
+  .user-chip .user-chip__chevron { display: none; }
+  .page { padding-bottom: 96px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctx-trigger.is-switched { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot">
+    <aside class="sidebar" id="naoweeSidebar">
+      <div class="sidebar-logo">
+        <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+        <div class="logo-sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav" role="navigation" aria-label="Menú principal"></nav>
+    </aside>
+  </div>
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+
+      <!-- Selector de contexto: solo existe si la persona administra 2 o más organismos -->
+      <div class="ctx" id="ctx" hidden>
+        <button class="ctx-trigger" id="ctxTrigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="ctxPanel">
+          <span class="ctx-tile" id="ctxTile" aria-hidden="true"></span>
+          <span class="ctx-text" id="ctxText">
+            <span class="ctx-meta" id="ctxMeta"></span>
+            <span class="ctx-name" id="ctxName"></span>
+          </span>
+          <span class="ctx-chev" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="ctx-dot" id="ctxDot" hidden></span>
+          </span>
+        </button>
+
+        <div class="ctx-panel" id="ctxPanel" role="menu" aria-labelledby="ctxPanelTitle">
+          <div class="ctx-panel__head">
+            <div class="ctx-panel__titles">
+              <p class="ctx-panel__title" id="ctxPanelTitle">Cambiar de organismo</p>
+              <p class="ctx-panel__sub" id="ctxPanelSub"></p>
+            </div>
+            <button type="button" class="ctx-panel__close" id="ctxClose" aria-label="Cerrar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ctx-list" id="ctxList"></div>
+          <div class="ctx-panel__foot">La bandeja, la jerarquía y los deportistas muestran el organismo que elijas.</div>
+        </div>
+
+        <div class="ctx-backdrop" id="ctxBackdrop"></div>
+        <div class="ctx-tip" id="ctxTip" role="dialog" aria-labelledby="ctxTipTitle" hidden>
+          <strong id="ctxTipTitle">Cambia de organismo desde aquí</strong>
+          <span id="ctxTipText"></span>
+          <div class="ctx-tip__actions"><button type="button" class="ctx-tip__btn" id="ctxTipOk">Entendido</button></div>
+        </div>
+      </div>
+
+      <!-- Chip de identidad: solo «quién soy» -->
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" style="background:#7c3aed22;color:#7c3aed">SM</div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name">Sandra Mejía</span>
+            <span class="user-role" id="userRole">CC 31.567.890</span>
+          </div>
+          <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+        <div class="profile-dd profile-dd--identity-only" role="menu">
+          <div class="profile-dd__header">
+            <span class="ava-ring" style="width:42px;height:42px;font-size:14px;background:#7c3aed22;color:#7c3aed">SM</span>
+            <div class="profile-dd__user">
+              <strong>Sandra Mejía</strong>
+              <span class="profile-dd__doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>CC 31.567.890</span>
+              <small>direccion@ligapatinajevalle.demo.co</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="page-inner">
+        <div class="page-head">
+          <h1 class="page-head__title" id="pageTitle">Mis clubes</h1>
+          <p class="page-head__sub" id="pageSub"></p>
+        </div>
+        <div id="bandejaRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell-backdrop" id="drawerBackdrop"></div>
+<div id="evToast" role="status" aria-live="polite"></div>
+
+<!-- Solo para la revisión del diseño -->
+<div class="review-switch" role="group" aria-label="Revisión: cantidad de organismos">
+  <span class="review-switch__lbl">Ver con</span>
+  <div class="demo-role-switcher__mode-switch">
+    <button type="button" class="demo-role-switcher__mode-btn" data-n="1" aria-pressed="false">1 organismo</button>
+    <button type="button" class="demo-role-switcher__mode-btn" data-n="2" aria-pressed="true">2 organismos</button>
+    <button type="button" class="demo-role-switcher__mode-btn" data-n="4" aria-pressed="false">4 organismos</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── Iconos (mismos trazos del shell) ─── */
+  const IC = {
+    sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
+    level: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    inboxEmpty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>'
+  };
+  const TIPO_EMOJI = { federacion: '🏅', liga: '🚩', club: '🛡️' };
+  const TIPO_SING = { federacion: 'Federación', liga: 'Liga', club: 'Club' };
+  const TIPO_GRUPO = { federacion: 'Federaciones', liga: 'Ligas', club: 'Clubes' };
+  const ORDEN_TIPO = ['federacion', 'liga', 'club'];
+  const BADGE = { 'Activo': 'positive', 'En revisión': 'caution', 'Suspendido': 'caution', 'Preinscrito': 'neutral', 'Inactivo': 'neutral', 'Rechazado': 'negative', 'En corrección': 'informative', 'Enviada': 'caution', 'Aprobada': 'positive', 'Rechazada': 'negative' };
+
+  /* ─── Datos de ejemplo (nombres de la demo; clubes y solicitudes ilustrativos) ─── */
+  const ORGS = {
+    'FED-040': {
+      tipo: 'federacion', nombre: 'Federación Colombiana de Patinaje', deporte: 'Patinaje', territorio: 'Nacional',
+      hijos: 'ligas', hijo: 'liga',
+      rows: [
+        { nombre: 'Liga de Patinaje de Bogotá', nit: '805010003-3', sub: 'Patinaje', estado: 'En revisión' },
+        { nombre: 'Liga de Patinaje del Atlántico', nit: '805010008-8', sub: 'Patinaje', estado: 'En revisión' },
+        { nombre: 'Liga de Patinaje de Antioquia', nit: '805010002-2', sub: 'Patinaje', estado: 'Activo' },
+        { nombre: 'Liga de Patinaje del Valle', nit: '805010001-1', sub: 'Patinaje', estado: 'Activo' },
+        { nombre: 'Liga de Patinaje de Santander', nit: '805010009-9', sub: 'Patinaje', estado: 'Preinscrito' }
+      ]
+    },
+    'LIG-001': {
+      tipo: 'liga', nombre: 'Liga de Patinaje del Valle', deporte: 'Patinaje', territorio: 'Valle del Cauca',
+      hijos: 'clubes', hijo: 'club',
+      rows: [
+        { nombre: 'Club Patinaje Tuluá', nit: '805020012-2', sub: 'Patinaje · Promotor', estado: 'En revisión' },
+        { nombre: 'Club Patín Cali', nit: '805020001-1', sub: 'Patinaje · Profesional', estado: 'Activo' },
+        { nombre: 'Club Patín Vallecaucano', nit: '805020003-3', sub: 'Patinaje · Promotor', estado: 'Activo' },
+        { nombre: 'Club Ruedas del Sur', nit: '805020002-2', sub: 'Patinaje · Escuela', estado: 'Preinscrito' },
+        { nombre: 'Club Rueda Libre Palmira', nit: '805020010-0', sub: 'Patinaje · Escuela', estado: 'Suspendido' }
+      ]
+    },
+    'LIG-006': {
+      tipo: 'liga', nombre: 'Liga de Natación del Valle', deporte: 'Natación, Polo Acuático', territorio: 'Valle del Cauca',
+      hijos: 'clubes', hijo: 'club',
+      rows: [
+        { nombre: 'Club Delfines de Buga', nit: '805020011-1', sub: 'Natación · Promotor', estado: 'En revisión' },
+        { nombre: 'Club Polo Acuático Cartago', nit: '805020013-3', sub: 'Polo Acuático · Promotor', estado: 'En revisión' },
+        { nombre: 'Club Deportivo Aguas del Valle', nit: '805020007-7', sub: 'Natación · Profesional', estado: 'Activo' },
+        { nombre: 'Club Natación Pacífico', nit: '805020008-8', sub: 'Natación · Promotor', estado: 'Rechazado' }
+      ]
+    },
+    'CLU-001': {
+      tipo: 'club', nombre: 'Club Patín Cali', deporte: 'Patinaje', territorio: 'Cali, Valle del Cauca',
+      hijos: 'solicitudes', hijo: 'solicitud',
+      rows: [
+        { nombre: 'Valentina Ortiz', nit: 'CC 1.144.556.778', sub: 'Patinaje · Velocidad', estado: 'Enviada' },
+        { nombre: 'Samuel Cortés', nit: 'TI 1.107.223.904', sub: 'Patinaje · Artístico', estado: 'Enviada' },
+        { nombre: 'Mariana Lozano', nit: 'TI 1.110.884.316', sub: 'Patinaje · Velocidad', estado: 'Enviada' },
+        { nombre: 'Juan José Rivas', nit: 'CC 1.006.443.120', sub: 'Patinaje · Velocidad', estado: 'Aprobada' }
+      ]
+    }
+  };
+  const ESCENARIOS = { 1: ['LIG-001'], 2: ['LIG-001', 'LIG-006'], 4: ['FED-040', 'LIG-001', 'LIG-006', 'CLU-001'] };
+
+  /* ─── Textos por tipo de organismo (menú y bandeja) ─── */
+  const VISTA = {
+    federacion: {
+      titulo: 'Mis ligas', seccion: 'MIS LIGAS', columna: 'Liga', accion: 'Revisar',
+      sub: (o) => `Ligas de la ${o.nombre}: aprueba, rechaza o solicita corrección con motivo obligatorio.`,
+      tabs: [['Accionables', IC.bolt, (r) => r.estado === 'En revisión'], ['Activo', IC.check, (r) => r.estado === 'Activo'], ['Todos', IC.list, () => true]],
+      niveles: ['Ligas', 'Clubes', 'Deportistas']
+    },
+    liga: {
+      titulo: 'Mis clubes', seccion: 'MIS CLUBES', columna: 'Club', accion: 'Revisar',
+      sub: (o) => `Clubes de la ${o.nombre}: aprueba, rechaza o solicita corrección con motivo obligatorio.`,
+      tabs: [['Accionables', IC.bolt, (r) => r.estado === 'En revisión'], ['Activo', IC.check, (r) => r.estado === 'Activo'], ['Rechazado', IC.x, (r) => r.estado === 'Rechazado'], ['Todos', IC.list, () => true]],
+      niveles: ['Clubes', 'Deportistas']
+    },
+    club: {
+      titulo: 'Solicitudes de deportistas', seccion: 'DEPORTISTAS', columna: 'Deportista', accion: 'Revisar',
+      sub: (o) => `Deportistas que piden afiliarse al ${o.nombre}. Al aprobar, quedan vinculados al club y a su liga.`,
+      tabs: [['Pendientes', IC.clock, (r) => r.estado === 'Enviada'], ['Aprobadas', IC.check, (r) => r.estado === 'Aprobada'], ['Todas', IC.list, () => true]],
+      niveles: []
+    }
+  };
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (_) { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch (_) {} }
+  };
+
+  /* ─── Estado ─── */
+  let escenario = 2;
+  let actual = 'LIG-001';
+  let tab = 0;
+  let query = '';
+
+  const pendientes = (id) => {
+    const o = ORGS[id];
+    return o.rows.filter((r) => r.estado === (o.tipo === 'club' ? 'Enviada' : 'En revisión')).length;
+  };
+  const pendTexto = (id) => {
+    const n = pendientes(id), o = ORGS[id];
+    if (!n) return '';
+    const unidad = o.tipo === 'federacion' ? (n === 1 ? 'liga' : 'ligas') : o.tipo === 'liga' ? (n === 1 ? 'club' : 'clubes') : (n === 1 ? 'solicitud' : 'solicitudes');
+    return `${n} ${unidad} por revisar`;
+  };
+  const metaDe = (o) => `${TIPO_SING[o.tipo]} · ${o.deporte} · ${o.territorio}`;
+
+  /* ═══ Sidebar ═══ */
+  const nav = document.getElementById('sidebarNav');
+  function renderSidebar() {
+    const o = ORGS[actual], v = VISTA[o.tipo];
+    const row = (it) => `<a class="nav-row ${it.child ? 'nav-row--child' : ''} ${it.active ? 'active' : ''}" href="#" data-ph="${esc(it.label)}"${it.active ? ' aria-current="page"' : ''}>
+        ${it.active && !it.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+        <span class="icon">${it.icon}</span><span class="lbl">${esc(it.label)}</span>
+        ${it.badge ? `<span class="nav-badge">${it.badge}</span>` : ''}
+      </a>`;
+    let html = '';
+    if (v.niveles.length > 1) {
+      html += row({ label: 'Jerarquía SND', icon: IC.sitemap });
+      html += v.niveles.map((n) => row({ label: n, icon: IC.level, child: true })).join('');
+    }
+    const n = pendientes(actual) || '';
+    if (o.tipo === 'club') {
+      html += `<div class="nav-section">DEPORTISTAS</div>`;
+      html += row({ label: 'Mis deportistas', icon: IC.users });
+      html += row({ label: 'Solicitudes de deportistas', icon: IC.inbox, active: true, badge: n });
+    } else {
+      html += `<div class="nav-section">${v.seccion}</div>`;
+      html += row({ label: v.titulo, icon: IC.inbox, active: true, badge: n });
+      html += row({ label: 'Cargue masivo', icon: IC.upload });
+      html += `<div class="nav-section">DEPORTISTAS</div>`;
+      html += row({ label: 'Mis deportistas', icon: IC.users });
+    }
+    nav.innerHTML = html;
+    nav.querySelectorAll('.nav-row').forEach((a) => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (a.classList.contains('active')) { closeDrawer(); return; }
+      toast(`${a.dataset.ph}: pantalla fuera del alcance de esta variante.`, 'info');
+    }));
+  }
+
+  /* ═══ Selector de contexto ═══ */
+  const ctx = document.getElementById('ctx');
+  const trigger = document.getElementById('ctxTrigger');
+  const panel = document.getElementById('ctxPanel');
+  const list = document.getElementById('ctxList');
+  const tip = document.getElementById('ctxTip');
+  const mqSheet = window.matchMedia('(max-width: 600px)');
+
+  function renderCtx() {
+    const ids = ESCENARIOS[escenario];
+    ctx.hidden = ids.length < 2;
+    const o = ORGS[actual];
+    document.getElementById('ctxTile').textContent = TIPO_EMOJI[o.tipo];
+    document.getElementById('ctxMeta').textContent = metaDe(o);
+    document.getElementById('ctxName').textContent = o.nombre;
+    trigger.setAttribute('aria-label', `Organismo activo: ${o.nombre}, ${metaDe(o)}. Cambiar de organismo`);
+    const otrosPend = ids.filter((id) => id !== actual && pendientes(id) > 0).length;
+    document.getElementById('ctxDot').hidden = !otrosPend;
+    trigger.title = otrosPend ? 'Hay pendientes en otro de tus organismos' : '';
+    document.getElementById('ctxText').classList.toggle('has-two-lines', o.nombre.length > 22);
+    document.getElementById('ctxPanelSub').textContent = `Administras ${ids.length} organismos. Elige en cuál vas a trabajar.`;
+    document.getElementById('ctxTipText').textContent = `Administras ${ids.length} organismos. Desde este selector pasas de uno a otro y todo el menú cambia al que elijas.`;
+
+    const grupos = ORDEN_TIPO.map((t) => ({ t, ids: ids.filter((id) => ORGS[id].tipo === t) })).filter((g) => g.ids.length);
+    const agrupar = grupos.length > 1;
+    list.innerHTML = grupos.map((g) => `
+      ${agrupar ? `<div class="ctx-group" role="presentation">${g.ids.length > 1 ? TIPO_GRUPO[g.t] : TIPO_SING[g.t]}</div>` : ''}
+      ${g.ids.map((id) => {
+        const x = ORGS[id], cur = id === actual, p = pendTexto(id);
+        return `<button type="button" class="ctx-opt${cur ? ' is-current' : ''}" role="menuitemradio" aria-checked="${cur}" data-id="${id}" tabindex="-1">
+          <span class="ctx-tile" aria-hidden="true">${TIPO_EMOJI[x.tipo]}</span>
+          <span class="ctx-opt__body">
+            <span class="ctx-opt__name">${esc(x.nombre)}</span>
+            <span class="ctx-opt__meta">${esc(metaDe(x))}</span>
+            <span class="ctx-opt__pend">${p
+              ? `<span class="naowee-badge naowee-badge--caution naowee-badge--quiet">${esc(p)}</span>`
+              : `<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet">Sin pendientes</span>`}</span>
+          </span>
+          <span class="ctx-opt__check" aria-hidden="true">${cur ? IC.check : ''}</span>
+        </button>`;
+      }).join('')}`).join('');
+    list.querySelectorAll('.ctx-opt').forEach((b) => b.addEventListener('click', () => elegir(b.dataset.id)));
+  }
+
+  const opts = () => [...list.querySelectorAll('.ctx-opt')];
+  function abrir() {
+    hideTip(true);
+    ctx.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+    if (mqSheet.matches) document.body.classList.add('has-ctx-sheet');
+    const cur = list.querySelector('.ctx-opt.is-current') || opts()[0];
+    setTimeout(() => cur && cur.focus(), 30);
+  }
+  function cerrar(volverFoco) {
+    if (!ctx.classList.contains('is-open')) return;
+    ctx.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('has-ctx-sheet');
+    if (volverFoco) trigger.focus();
+  }
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); ctx.classList.contains('is-open') ? cerrar(false) : abrir(); });
+  trigger.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); abrir(); } });
+  document.getElementById('ctxClose').addEventListener('click', () => cerrar(true));
+  document.getElementById('ctxBackdrop').addEventListener('click', () => cerrar(true));
+  panel.addEventListener('keydown', (e) => {
+    const all = opts(), i = all.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); all[(i + 1) % all.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); all[(i - 1 + all.length) % all.length].focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); all[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); all[all.length - 1].focus(); }
+    else if (e.key === 'Tab') { cerrar(false); }
+  });
+  document.addEventListener('click', (e) => { if (!ctx.contains(e.target)) cerrar(false); });
+
+  function elegir(id) {
+    if (id === actual) { cerrar(true); return; }
+    actual = id; tab = 0; query = '';
+    cerrar(true);
+    renderTodo(true);
+    trigger.classList.remove('is-switched'); void trigger.offsetWidth; trigger.classList.add('is-switched');
+    const o = ORGS[id];
+    toast(`Ahora trabajas en <strong>${esc(o.nombre)}</strong>.`, 'success');
+  }
+
+  /* Aviso de descubrimiento: una vez por sesión, solo si hay 2 o más organismos */
+  function showTip() {
+    if (ESCENARIOS[escenario].length < 2 || store.get('vb-ctx-tip') === '1') return;
+    tip.hidden = false;
+  }
+  function hideTip(persist) {
+    if (tip.hidden) return;
+    tip.hidden = true;
+    if (persist) store.set('vb-ctx-tip', '1');
+  }
+  document.getElementById('ctxTipOk').addEventListener('click', (e) => { e.stopPropagation(); hideTip(true); trigger.focus(); });
+
+  /* ═══ Bandeja ═══ */
+  const root = document.getElementById('bandejaRoot');
+  function renderBandeja(refresh) {
+    const o = ORGS[actual], v = VISTA[o.tipo];
+    document.getElementById('pageTitle').textContent = v.titulo;
+    document.getElementById('pageSub').textContent = v.sub(o);
+    document.title = `${v.titulo} · ${o.nombre} — Naowee Organismos`;
+
+    const filtro = v.tabs[tab][2];
+    let rows = o.rows.filter(filtro);
+    if (query) { const q = norm(query); rows = rows.filter((r) => norm(r.nombre).includes(q) || norm(r.nit).includes(q)); }
+    const accionable = (r) => r.estado === 'En revisión' || r.estado === 'Enviada';
+    const n = pendientes(actual);
+    const aviso = o.tipo === 'club'
+      ? `Solicitudes de afiliación al <strong>${esc(o.nombre)}</strong>. ${n ? `Tienes <strong>${n}</strong> por revisar.` : 'Estás al día.'}`
+      : `Bandeja de <strong>${o.hijos}</strong> de <strong>${esc(o.nombre)}</strong>. Aprueba, rechaza o solicita corrección (motivo obligatorio).`;
+
+    root.innerHTML = `
+      <div class="naowee-message naowee-message--informative" style="margin-bottom:16px"><span class="naowee-message__icon">${IC.info}</span><div class="naowee-message__body"><p class="naowee-message__text">${aviso}</p></div></div>
+      <div class="naowee-card bj-panel${refresh ? '' : ' is-refresh'}">
+        <div class="bj-panel__bar">
+          <div class="naowee-searchbox bj-search">
+            <div class="naowee-searchbox__input-wrap">
+              <span class="naowee-searchbox__icon">${IC.search}</span>
+              <input class="naowee-searchbox__input" id="bjSearch" type="search" aria-label="Buscar" placeholder="${o.tipo === 'club' ? 'Buscar por nombre o documento…' : 'Buscar por nombre o NIT…'}" value="${esc(query)}">
+            </div>
+          </div>
+        </div>
+        <div class="naowee-tabs bj-tabs" role="tablist">
+          ${v.tabs.map(([lbl, ic], i) => `<button type="button" role="tab" aria-selected="${i === tab}" class="naowee-tab ${i === tab ? 'naowee-tab--selected' : ''}" data-tab="${i}">${ic}${lbl}</button>`).join('')}
+        </div>
+        ${rows.length ? `
+        <div class="cg-table-wrap">
+          <table class="cg-table bj-table">
+            <thead><tr><th>${v.columna}</th><th>${o.tipo === 'club' ? 'Documento' : 'NIT'}</th><th>Estado</th><th><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Acción</span></th></tr></thead>
+            <tbody>
+              ${rows.map((r) => `<tr>
+                <td data-label="${v.columna}"><div class="bj-org"><span class="bj-org__emoji">${o.tipo === 'club' ? '🧑' : TIPO_EMOJI[o.hijo]}</span><div><div class="bj-org__name">${esc(r.nombre)}</div><div class="bj-org__sub">${esc(r.sub)}</div></div></div></td>
+                <td class="cg-table__nit" data-label="${o.tipo === 'club' ? 'Documento' : 'NIT'}">${esc(r.nit)}</td>
+                <td data-label="Estado"><span class="naowee-badge naowee-badge--${BADGE[r.estado] || 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(r.estado)}</span></td>
+                <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-row="${esc(r.nombre)}">${accionable(r) ? v.accion : 'Ver'}</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${IC.inboxEmpty}</span><p class="naowee-empty-state__title">Sin resultados</p><p class="naowee-empty-state__description">No hay ${o.hijos} ${tab === 0 ? 'pendientes de tu revisión' : 'que coincidan con el filtro'} en ${esc(o.nombre)}.</p></div>`}
+      </div>`;
+
+    const s = root.querySelector('#bjSearch');
+    s.addEventListener('input', () => {
+      query = s.value; const pos = s.selectionStart;
+      renderBandeja(false);
+      const s2 = root.querySelector('#bjSearch'); s2.focus(); s2.setSelectionRange(pos, pos);
+    });
+    root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+      tab = +b.dataset.tab; renderBandeja(false); root.querySelector(`[data-tab="${tab}"]`).focus();
+    }));
+    root.querySelectorAll('[data-row]').forEach((b) => b.addEventListener('click', () =>
+      toast(`El detalle de ${esc(b.dataset.row)} vive en la bandeja real.`, 'info')));
+  }
+
+  function renderTodo(refresh) {
+    renderCtx();
+    renderSidebar();
+    renderBandeja(refresh);
+  }
+
+  /* ═══ Snackbar (#evToast canónico) ═══ */
+  let tt = null;
+  function toast(html, kind) {
+    const t = document.getElementById('evToast');
+    t.className = `evtoast--${kind || 'info'}`;
+    t.innerHTML = `<span class="evtoast__badge" aria-hidden="true">${kind === 'success' ? IC.check : IC.info}</span><span class="evtoast__text">${html}</span>`;
+    t.classList.add('is-visible');
+    clearTimeout(tt);
+    tt = setTimeout(() => t.classList.remove('is-visible'), 3200);
+  }
+
+  /* ═══ Chip de identidad ═══ */
+  const ps = document.getElementById('profileSwitcher');
+  const chip = document.getElementById('userChipTrigger');
+  const tgl = (e) => { e.stopPropagation(); const open = ps.classList.toggle('open'); chip.setAttribute('aria-expanded', open); };
+  chip.addEventListener('click', tgl);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tgl(e); } });
+  document.addEventListener('click', (e) => { if (!ps.contains(e.target)) { ps.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); } });
+
+  /* ═══ Sidebar: colapsar + drawer móvil ═══ */
+  const sidebar = document.getElementById('naoweeSidebar');
+  document.getElementById('sidebarToggle').addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+  function closeDrawer() { document.body.classList.remove('has-mobile-drawer-open'); }
+  document.getElementById('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (ctx.classList.contains('is-open')) { cerrar(true); return; }
+    if (!tip.hidden) { hideTip(true); return; }
+    closeDrawer();
+    ps.classList.remove('open');
+  });
+  mqSheet.addEventListener('change', () => cerrar(false));
+
+  /* ═══ Conmutador de revisión ═══ */
+  document.querySelectorAll('.review-switch [data-n]').forEach((b) => b.addEventListener('click', () => {
+    escenario = +b.dataset.n;
+    document.querySelectorAll('.review-switch [data-n]').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    if (!ESCENARIOS[escenario].includes(actual)) actual = 'LIG-001';
+    tab = 0; query = '';
+    cerrar(false);
+    renderTodo(true);
+    tip.hidden = true;
+    store.set('vb-ctx-tip', '0');
+    showTip();
+  }));
+
+  renderTodo(true);
+  showTip();
+})();
+</script>
+</body>
+</html>

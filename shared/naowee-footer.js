@@ -623,6 +623,16 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.3 —  DECISIONES DEL 19-10 (preguntas del back sobre el cargue masivo de deportistas):
+             · El club se identifica por su NIT; la plantilla ya no trae liga ni
+               federación (salen del club). Se valida que el club esté en la
+               jurisdicción de quien carga.
+             · Documento repetido en el archivo: se rechazan todas sus filas.
+             · Teléfono opcional; si viene, 7 o 10 dígitos.
+             · Archivo de máximo 10 MB y 5.000 filas.
+             · Persona que ya existe sin club = error; el club la vincula directo
+               con aviso a la persona y a la liga; al nuevo le llega la invitación
+               actual de Naowee. Radicado = código del lote. */
 /* v1.9.2 —  DECISIONES DEL 14-10 (preguntas del back sobre DEP-590 y DEP-591):
              · Cancelar cualquier organismo termina sus vínculos (hacia arriba y hacia
                abajo) y rechaza las solicitudes pendientes hacia él con el motivo; sus
@@ -684,7 +694,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.2';
+const MODULE_VERSION = 'v1.9.3';
 
 (function () {
   function mount() {
