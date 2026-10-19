@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contexto de organismo · Variante C</title>
+<!-- Variante C (P-15): elegir el organismo al entrar + franja «Trabajas en» encima del título de cada página.
+     Archivo de revisión autocontenido: reusa los CSS reales del shell y escribe solo lo nuevo (.ctx-*, .entrada-*). -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/tokens.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/shell.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/components.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/forms.css?v=1.7.1">
+<link rel="stylesheet" href="../../shared/naowee-footer.css?v=1.7.1">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   PIEZA 1 — Pantalla de entrada «¿Con qué organismo vas a trabajar?»
+   Mismo esqueleto que index.html (fondo suave, masthead con logos,
+   H1 azul, tarjetas .role-card). Sin eyebrow en mayúsculas ni flechas.
+   ═══════════════════════════════════════════════════════════════ */
+[hidden] { display: none !important; }
+
+.entrada {
+  min-height: 100vh; padding: 56px 24px 96px;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(255, 117, 0, .08), transparent 60%),
+    radial-gradient(900px 500px at -5% 110%, rgba(0, 43, 91, .08), transparent 55%),
+    linear-gradient(180deg, #f8f9fc 0%, #eef0f7 100%);
+}
+.entrada__wrap { max-width: 880px; margin: 0 auto; }
+
+.masthead { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; }
+.masthead__logos { display: flex; align-items: center; gap: 12px; }
+.masthead__logos img { height: 40px; width: auto; display: block; }
+.masthead__sep { width: 1px; height: 30px; background: var(--border-dark); }
+.masthead__user {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 14px 6px 6px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+}
+.masthead__user .ava-ring { width: 32px; height: 32px; font-size: 12px; }
+.masthead__user-txt { display: flex; flex-direction: column; line-height: 1.2; }
+.masthead__user-txt strong { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.masthead__user-txt small { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); }
+
+.entrada__hero { max-width: 640px; margin-bottom: 28px; }
+.entrada__hola { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin: 0 0 8px; }
+.entrada__hero h1 {
+  font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; line-height: 1.1;
+  letter-spacing: -1px; color: var(--azul); margin: 0 0 12px;
+}
+.entrada__hero p.sub { font-size: 15px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
+
+.org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); gap: 16px; }
+
+/* Tarjeta de organismo — derivada de .role-card (index.html) */
+.org-card {
+  --tipo-color: var(--naranja);
+  position: relative; overflow: hidden; width: 100%;
+  display: flex; flex-direction: column; gap: 16px; text-align: left;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 22px;
+  font-family: inherit; color: var(--text-primary); cursor: pointer;
+  transition: transform var(--duration-normal) var(--easing-smoothout),
+              box-shadow var(--duration-normal) var(--easing-smoothout),
+              border-color var(--duration-normal) var(--easing-smoothout);
+}
+.org-card::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 4px;
+  background: var(--tipo-color); transform: scaleY(0); transform-origin: top;
+  transition: transform var(--duration-normal) var(--easing-smoothout);
+}
+.org-card:hover {
+  transform: translateY(-3px); box-shadow: var(--shadow-card);
+  border-color: color-mix(in srgb, var(--tipo-color) 45%, var(--border));
+}
+.org-card:hover::before, .org-card:focus-visible::before { transform: scaleY(1); }
+.org-card:focus-visible {
+  outline: none; border-color: var(--tipo-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tipo-color) 22%, transparent);
+}
+.org-card__top { display: flex; align-items: flex-start; gap: 14px; }
+.org-ico {
+  width: 46px; height: 46px; border-radius: var(--radius-md); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  background: color-mix(in srgb, var(--tipo-color) 12%, #fff);
+}
+.org-card__name { display: block; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.org-card__meta { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+.org-card__tipo { font-weight: 700; color: var(--tipo-color); }
+.org-card__foot {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding-top: 14px; border-top: 1px solid var(--border);
+}
+.org-card__pend { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.org-card__pend .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.org-card__pend.is-clear { color: var(--text-secondary); font-weight: 500; }
+.org-card__pend.is-clear .dot { background: var(--green); }
+.org-card__last { margin-left: auto; }
+.org-card__cta { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent); }
+.org-card__last + .org-card__cta { margin-left: 0; }
+
+.entrada__nota {
+  margin: 28px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary);
+  border-left: 3px solid var(--border-dark); padding-left: 14px; max-width: 640px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PIEZA 2 — Franja de contexto «Trabajas en» (encima del H1)
+   Superficie gris suave + borde, como el resto de bloques de la suite.
+   Reusa .naowee-dropdown (wrapper --open) para cambiar de organismo.
+   ═══════════════════════════════════════════════════════════════ */
+.ctx-bar {
+  --tipo-color: var(--naranja);
+  position: sticky; top: -28px; z-index: 30;
+  display: flex; align-items: center; gap: 14px;
+  margin: 0 0 20px; padding: 10px 10px 10px 14px;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  transition: box-shadow var(--duration-normal) var(--easing-smoothout), background var(--duration-normal);
+}
+.ctx-bar.is-stuck { background: var(--surface); box-shadow: 0 6px 18px -8px rgba(40, 40, 52, .18); }
+.ctx-bar .org-ico { width: 38px; height: 38px; font-size: 19px; background: color-mix(in srgb, var(--tipo-color) 12%, #fff); }
+.ctx-bar__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ctx-bar__lbl { font-size: 12px; font-weight: 600; color: var(--text-secondary); line-height: 16px; }
+.ctx-bar__name { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 20px; }
+.ctx-bar__meta { font-weight: 500; color: var(--text-secondary); font-size: 13px; }
+.ctx-bar__meta::before { content: '·'; margin: 0 6px; color: var(--text-muted); }
+
+.ctx-dd { flex-shrink: 0; }
+.ctx-dd .naowee-dropdown__trigger { min-height: 40px; background: var(--surface); font-weight: 600; font-size: 13.5px; gap: 8px; }
+.ctx-dd .naowee-dropdown__icon { color: var(--accent); }
+.ctx-dd__dot {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-full);
+  background: var(--accent); color: #fff; font-size: 10.5px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+}
+.ctx-dd .naowee-dropdown__menu { left: auto; right: 0; width: 380px; }
+.ctx-dd.naowee-dropdown--open .naowee-dropdown__menu { max-height: min(560px, 72vh); }
+.ctx-dd__head { font-size: 12px; font-weight: 600; color: var(--text-secondary); padding: 6px 12px 6px; }
+.ctx-opt {
+  width: 100%; border: none; background: transparent; font-family: inherit; text-align: left;
+  align-items: flex-start !important; gap: 12px !important; padding: 10px 12px !important;
+}
+.ctx-opt .org-ico { width: 34px; height: 34px; font-size: 17px; }
+.ctx-opt__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ctx-opt__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.ctx-opt__meta { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.ctx-opt__pend { font-size: 12px; font-weight: 600; color: var(--naowee-color-feedback-text-caution-quiet-on-fill); }
+.ctx-opt__pend.is-clear { color: var(--text-muted); font-weight: 500; }
+.ctx-opt.is-selected .ctx-opt__name { color: var(--accent); }
+.ctx-opt .naowee-dropdown__opt-check { margin-top: 8px; }
+.ctx-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--bg-soft); }
+.ctx-dd__foot { border-top: 1px solid var(--border); margin: 6px -6px 0; padding: 8px 6px 0; }
+.ctx-dd__foot button {
+  width: 100%; border: none; background: transparent; font-family: inherit; cursor: pointer;
+  text-align: left; padding: 9px 12px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 600; color: var(--accent);
+}
+.ctx-dd__foot button:hover { background: var(--accent-bg); }
+.ctx-dd__foot button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Foco de teclado visible en piezas del shell que no lo traen */
+.nav-row:focus-visible, .naowee-tab:focus-visible, .user-chip:focus-visible,
+.header-burger:focus-visible, .burger-btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.page-head__title:focus, #entradaTitle:focus { outline: none; }
+.naowee-searchbox__input:focus-visible { outline: none; }
+
+/* Chip de usuario: organismo actual en la segunda línea */
+.user-chip { max-width: 300px; }
+.user-role, .user-name { max-width: 200px; }
+
+/* ═══ Conmutador de revisión (solo para revisar la variante) ═══ */
+.review {
+  position: fixed; left: 16px; bottom: 16px; z-index: 90; font-size: 13px;
+}
+.review > summary {
+  list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px 8px 8px; background: #fff; border: 1px dashed var(--border-dark);
+  border-radius: var(--radius-full); box-shadow: 0 4px 14px rgba(40, 40, 52, .12);
+  font-weight: 600; color: var(--text-primary);
+}
+.review > summary::-webkit-details-marker { display: none; }
+.review > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.review__badge { font-size: 10.5px; font-weight: 700; background: var(--naranja); color: #fff; padding: 3px 8px; border-radius: var(--radius-full); }
+.review__panel {
+  position: absolute; left: 0; bottom: calc(100% + 8px); width: min(300px, calc(100vw - 32px));
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: 0 18px 48px rgba(40, 40, 52, .18); padding: 12px 14px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.review__lbl { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0; }
+.review .demo-role-switcher__mode-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.review .naowee-btn { width: 100%; }
+
+/* ═══ Responsive ═══ */
+@media (max-width: 1023px) {
+  .ctx-bar { top: -20px; }
+}
+@media (max-width: 600px) {
+  .entrada { padding: 24px 16px 96px; }
+  .masthead { margin-bottom: 28px; gap: 10px; }
+  .masthead__logos img { height: 32px; }
+  .masthead__user { padding: 4px; }
+  .masthead__user-txt { display: none; }
+  .entrada__hola { font-size: 14px; }
+  .entrada__hero p.sub { font-size: 14px; }
+  .org-card { padding: 16px; gap: 14px; }
+  .org-card__foot { padding-top: 12px; }
+
+  /* Franja: nombre en dos líneas como máximo, «Cambiar» compacto a la derecha */
+  .ctx-bar { padding: 10px 8px 10px 10px; gap: 10px; position: sticky; }
+  .ctx-bar > .org-ico { display: none; }
+  .ctx-bar__name { font-size: 14px; line-height: 18px; }
+  .ctx-bar__meta { display: block; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ctx-bar__meta::before { content: none; }
+  .ctx-dd { position: static; }
+  .ctx-dd .naowee-dropdown__trigger { padding: 0 10px; gap: 6px; }
+  .ctx-dd .naowee-dropdown--open .naowee-dropdown__trigger, .ctx-dd.naowee-dropdown--open .naowee-dropdown__trigger { padding: 0 9px; }
+  .ctx-dd__long { display: none; }
+  .ctx-dd .naowee-dropdown__icon { display: none; }
+  .ctx-dd .naowee-dropdown__menu { left: 0; right: 0; width: auto; top: calc(100% + 6px); }
+  .ctx-bar { position: sticky; }
+}
+@media (min-width: 601px) { .ctx-dd__short { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .org-card, .org-card::before, .ctx-bar { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PIEZA 1 · Pantalla de entrada ═══════════════ -->
+<main class="entrada" id="entrada" hidden>
+  <div class="entrada__wrap">
+    <header class="masthead">
+      <div class="masthead__logos">
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte">
+        <div class="masthead__sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID">
+      </div>
+      <div class="masthead__user">
+        <span class="ava-ring" style="background:#7c3aed22;color:#7c3aed">SM</span>
+        <span class="masthead__user-txt"><strong>Sandra Mejía</strong><small>CC 31.567.890</small></span>
+      </div>
+    </header>
+
+    <section class="entrada__hero">
+      <p class="entrada__hola">Hola, Sandra</p>
+      <h1 id="entradaTitle" tabindex="-1">¿Con qué organismo vas a trabajar?</h1>
+      <p class="sub" id="entradaSub"></p>
+    </section>
+
+    <div class="org-grid" id="orgGrid" role="list"></div>
+
+    <p class="entrada__nota">Puedes cambiar de organismo en cualquier momento desde la franja <strong>Trabajas en</strong>, encima del título de cada página. Lo que apruebes o cargues queda a nombre del organismo elegido.</p>
+  </div>
+</main>
+
+<!-- ═══════════════ PIEZA 2 · Shell real con la franja ═══════════════ -->
+<div class="shell" id="app" hidden>
+  <aside class="sidebar" id="naoweeSidebar">
+    <div class="sidebar-logo">
+      <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+      <div class="logo-sep"></div>
+      <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav" role="navigation" aria-label="Menú principal"></nav>
+  </aside>
+
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" id="chipAva">SM</div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name">Sandra Mejía</span>
+            <span class="user-role" id="chipRole"></span>
+          </div>
+          <span class="user-chip__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="profile-dd profile-dd--identity-only">
+          <div class="profile-dd__header">
+            <span class="ava-ring" id="ddAva" style="width:42px;height:42px;font-size:14px">SM</span>
+            <div class="profile-dd__user">
+              <strong>Sandra Mejía</strong>
+              <span class="profile-dd__doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>CC 31.567.890</span>
+              <span class="profile-dd__current-role" id="ddRole"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page" id="page">
+      <div class="page-inner">
+        <span id="ctxSentinel" aria-hidden="true" style="display:block;height:1px;margin-bottom:-1px"></span>
+        <!-- Franja de contexto: solo existe si la persona administra 2 o más organismos -->
+        <section class="ctx-bar" id="ctxBar" aria-label="Organismo en el que trabajas" hidden>
+          <span class="org-ico" id="ctxIco" aria-hidden="true"></span>
+          <div class="ctx-bar__txt">
+            <span class="ctx-bar__lbl">Trabajas en</span>
+            <span class="ctx-bar__name" id="ctxName"></span>
+          </div>
+          <div class="naowee-dropdown ctx-dd" id="ctxDd">
+            <button type="button" class="naowee-dropdown__trigger" id="ctxTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="ctxMenu">
+              <span class="naowee-dropdown__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
+              <span class="ctx-dd__long">Cambiar de organismo</span><span class="ctx-dd__short">Cambiar</span>
+              <span class="ctx-dd__dot" id="ctxDot" hidden></span>
+              <span class="naowee-dropdown__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </button>
+            <div class="naowee-dropdown__menu" id="ctxMenu" role="listbox" aria-label="Tus organismos"></div>
+          </div>
+        </section>
+
+        <div class="page-head">
+          <h1 class="page-head__title" id="pageTitle" tabindex="-1">Mis clubes</h1>
+          <p class="page-head__sub" id="pageSub"></p>
+        </div>
+        <div id="bandejaRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="shell-backdrop" id="backdrop"></div>
+
+<!-- ═══ Conmutador de revisión (no es parte del producto) ═══ -->
+<details class="review" id="review">
+  <summary><span class="review__badge">Revisión</span>Variante C</summary>
+  <div class="review__panel">
+    <p class="review__lbl">Persona de ejemplo</p>
+    <div class="demo-role-switcher__mode-switch" role="group" aria-label="Cantidad de organismos">
+      <button type="button" class="demo-role-switcher__mode-btn" data-n="1">1 organismo</button>
+      <button type="button" class="demo-role-switcher__mode-btn" data-n="2">2 organismos</button>
+      <button type="button" class="demo-role-switcher__mode-btn" data-n="4">4 organismos</button>
+    </div>
+    <button type="button" class="naowee-btn naowee-btn--quiet naowee-btn--small" id="reviewEntrada">Ver pantalla de entrada</button>
+  </div>
+</details>
+
+<script>
+(() => {
+  /* ─── Iconos (mismos trazos que sidebar.js / bandeja.js) ─── */
+  const IC = {
+    sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
+    level: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+    list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    toastOk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  };
+
+  /* ─── Tipos de organismo: color y emoji del rol (ROLES de sidebar.js / TIPO_EMOJI de bandeja.js) ─── */
+  const TIPO = {
+    federacion: { label: 'Federación', color: '#1f78d1', emoji: '🏅' },
+    liga:       { label: 'Liga',       color: '#7c3aed', emoji: '🚩' },
+    club:       { label: 'Club',       color: '#1f8923', emoji: '🛡️' }
+  };
+  const VARIANT = { 'Preinscrito': 'neutral', 'En revisión': 'caution', 'En corrección': 'caution', 'Activo': 'positive', 'Rechazado': 'negative', 'Suspendido': 'caution', 'Enviada': 'caution', 'Aprobada': 'positive', 'Rechazada': 'negative' };
+
+  /* ─── Organismos de ejemplo (nombres/NIT de organismos-data.js; 3 filas inventadas para tener pendientes) ─── */
+  const ORGS = {
+    'LIG-001': {
+      tipo: 'liga', nombre: 'Liga de Patinaje del Valle', deporte: 'Patinaje', territorio: 'Valle del Cauca', ultima: true,
+      filas: [
+        { nombre: 'Club Patinaje Tuluá', sub: 'Patinaje · Tuluá', nit: '805020012-2', estado: 'En revisión' },
+        { nombre: 'Club Patín Cali', sub: 'Patinaje · Cali', nit: '805020001-1', estado: 'Activo' },
+        { nombre: 'Club Patín Vallecaucano', sub: 'Patinaje · Cali', nit: '805020003-3', estado: 'Activo' },
+        { nombre: 'Club Ruedas del Sur', sub: 'Patinaje · Palmira', nit: '805020002-2', estado: 'Preinscrito' },
+        { nombre: 'Club Rueda Libre Palmira', sub: 'Patinaje · Palmira', nit: '805020010-0', estado: 'Suspendido' }
+      ]
+    },
+    'LIG-006': {
+      tipo: 'liga', nombre: 'Liga de Natación del Valle', deporte: 'Natación, Polo Acuático', territorio: 'Valle del Cauca',
+      filas: [
+        { nombre: 'Club Delfines de Buga', sub: 'Natación · Buga', nit: '805020011-1', estado: 'En revisión' },
+        { nombre: 'Club Acuático Cartago', sub: 'Polo Acuático · Cartago', nit: '805020013-3', estado: 'En revisión' },
+        { nombre: 'Club Deportivo Aguas del Valle', sub: 'Natación · Cali', nit: '805020007-7', estado: 'Activo' },
+        { nombre: 'Club Natación Pacífico', sub: 'Natación · Buenaventura', nit: '805020008-8', estado: 'Rechazado' }
+      ]
+    },
+    'CLU-001': {
+      tipo: 'club', nombre: 'Club Patín Cali', deporte: 'Patinaje', territorio: 'Cali, Valle del Cauca',
+      filas: [
+        { nombre: 'Samuel Rivas Ortega', sub: 'TI 1029887766', dep: 'Patinaje', mod: 'Carreras', estado: 'Enviada', fecha: '2026-10-10' },
+        { nombre: 'Laura Cifuentes Mora', sub: 'CC 1144332211', dep: 'Patinaje', mod: 'Artístico', estado: 'Enviada', fecha: '2026-10-09' },
+        { nombre: 'Tomás Herrera Gil', sub: 'TI 1029445566', dep: 'Patinaje', mod: 'Hockey en línea', estado: 'Enviada', fecha: '2026-10-07' },
+        { nombre: 'Valentina Ortiz', sub: 'CC 1144556778', dep: 'Patinaje', mod: 'Carreras', estado: 'Aprobada', fecha: '2026-09-21' }
+      ]
+    },
+    'FED-040': {
+      tipo: 'federacion', nombre: 'Federación Colombiana de Patinaje', deporte: 'Patinaje', territorio: 'Nacional',
+      filas: [
+        { nombre: 'Liga de Patinaje de Bogotá', sub: 'Patinaje · Bogotá D.C.', nit: '805010003-3', estado: 'En revisión' },
+        { nombre: 'Liga de Patinaje del Huila', sub: 'Patinaje · Huila', nit: '805010014-4', estado: 'En revisión' },
+        { nombre: 'Liga de Patinaje de Santander', sub: 'Patinaje · Santander', nit: '805010015-5', estado: 'En corrección' },
+        { nombre: 'Liga de Patinaje del Valle', sub: 'Patinaje · Valle del Cauca', nit: '805010001-1', estado: 'Activo' },
+        { nombre: 'Liga de Patinaje de Antioquia', sub: 'Patinaje · Antioquia', nit: '805010002-2', estado: 'Activo' }
+      ]
+    }
+  };
+  const PERSONAS = { 1: ['LIG-001'], 2: ['LIG-001', 'LIG-006'], 4: ['LIG-001', 'LIG-006', 'CLU-001', 'FED-040'] };
+
+  /* ─── Lo que cambia por tipo: página, menú y tabla ─── */
+  const VISTA = {
+    liga: {
+      titulo: 'Mis clubes', plural: 'clubes', sing: 'club', col: 'Club',
+      sub: 'Revisión de los clubes que dependen de tu liga: aprobar, rechazar o solicitar corrección con motivo obligatorio.',
+      filtros: ['Accionables', 'En revisión', 'En corrección', 'Rechazado', 'Activo', 'Todos'],
+      menu: [
+        { section: null, items: [{ id: 'jer', label: 'Jerarquía SND', icon: 'sitemap' }, { id: 'j1', label: 'Clubes', icon: 'level', child: true }, { id: 'j2', label: 'Deportistas', icon: 'level', child: true }] },
+        { section: 'MIS CLUBES', items: [{ id: 'bandeja', label: 'Mis clubes', icon: 'inbox' }, { id: 'cargue', label: 'Cargue masivo', icon: 'upload' }] },
+        { section: 'DEPORTISTAS', items: [{ id: 'deps', label: 'Mis deportistas', icon: 'users' }] }
+      ]
+    },
+    federacion: {
+      titulo: 'Mis ligas', plural: 'ligas', sing: 'liga', col: 'Liga',
+      sub: 'Revisión de las ligas que dependen de tu federación: aprobar, rechazar o solicitar corrección con motivo obligatorio.',
+      filtros: ['Accionables', 'En revisión', 'En corrección', 'Rechazado', 'Activo', 'Todos'],
+      menu: [
+        { section: null, items: [{ id: 'jer', label: 'Jerarquía SND', icon: 'sitemap' }, { id: 'j1', label: 'Ligas', icon: 'level', child: true }, { id: 'j2', label: 'Clubes', icon: 'level', child: true }, { id: 'j3', label: 'Deportistas', icon: 'level', child: true }] },
+        { section: 'MIS LIGAS', items: [{ id: 'bandeja', label: 'Mis ligas', icon: 'inbox' }, { id: 'cargue', label: 'Cargue masivo', icon: 'upload' }] },
+        { section: 'DEPORTISTAS', items: [{ id: 'deps', label: 'Mis deportistas', icon: 'users' }] }
+      ]
+    },
+    club: {
+      titulo: 'Solicitudes de deportistas', plural: 'solicitudes', sing: 'solicitud', col: 'Deportista',
+      sub: 'Confirma o rechaza la afiliación de los deportistas que pidieron unirse a tu club.',
+      filtros: ['Pendientes', 'Aprobadas', 'Rechazadas', 'Todas'],
+      menu: [
+        { section: 'DEPORTISTAS', items: [{ id: 'deps', label: 'Mis deportistas', icon: 'users' }, { id: 'bandeja', label: 'Solicitudes de deportistas', icon: 'inbox' }] }
+      ]
+    }
+  };
+
+  const esPendiente = (f) => f.estado === 'En revisión' || f.estado === 'Enviada';
+  const pendientes = (id) => ORGS[id].filas.filter(esPendiente).length;
+  const pendTxt = (id) => {
+    const n = pendientes(id), t = ORGS[id].tipo;
+    if (!n) return 'Nada pendiente';
+    if (t === 'club') return n === 1 ? '1 solicitud por confirmar' : `${n} solicitudes por confirmar`;
+    const v = VISTA[t];
+    return n === 1 ? `1 ${v.sing} por revisar` : `${n} ${v.plural} por revisar`;
+  };
+  const metaTxt = (o) => `${o.deporte} · ${o.territorio}`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ─── Estado ─── */
+  const state = { n: 2, orgId: null, filtro: null, q: '' };
+  const $ = (id) => document.getElementById(id);
+  const lista = () => PERSONAS[state.n];
+
+  /* ═══════════════ PIEZA 1 · Entrada ═══════════════ */
+  function mostrarEntrada() {
+    $('app').hidden = true;
+    $('entrada').hidden = false;
+    const ids = lista();
+    $('entradaSub').textContent = `Administras ${ids.length} organismos. Elige uno para empezar: el menú, la bandeja y los deportistas que verás serán los de ese organismo.`;
+    $('orgGrid').innerHTML = ids.map((id) => {
+      const o = ORGS[id], t = TIPO[o.tipo], n = pendientes(id);
+      return `<div role="listitem"><button type="button" class="org-card" data-org="${id}" style="--tipo-color:${t.color}">
+        <span class="org-card__top">
+          <span class="org-ico" aria-hidden="true">${t.emoji}</span>
+          <span>
+            <span class="org-card__name">${esc(o.nombre)}</span>
+            <span class="org-card__meta"><span class="org-card__tipo">${t.label}</span> · ${esc(o.deporte)}<br>${esc(o.territorio)}</span>
+          </span>
+        </span>
+        <span class="org-card__foot">
+          <span class="org-card__pend${n ? '' : ' is-clear'}"><span class="dot" aria-hidden="true"></span>${pendTxt(id)}</span>
+          ${o.ultima ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet org-card__last">Tu última sesión</span>' : ''}
+          <span class="org-card__cta">Entrar</span>
+        </span>
+      </button></div>`;
+    }).join('');
+    $('orgGrid').querySelectorAll('[data-org]').forEach((b) => b.addEventListener('click', () => entrarA(b.dataset.org, true)));
+    document.title = '¿Con qué organismo vas a trabajar? — SUID';
+    window.scrollTo(0, 0);
+    $('entradaTitle').focus({ preventScroll: true });
+  }
+
+  function entrarA(id, desdeEntrada) {
+    state.orgId = id; state.filtro = null; state.q = '';
+    Object.values(ORGS).forEach((o) => { o.ultima = false; });
+    ORGS[id].ultima = true;
+    $('entrada').hidden = true;
+    $('app').hidden = false;
+    renderApp();
+    if (desdeEntrada) $('pageTitle').focus({ preventScroll: true });
+  }
+
+  /* ═══════════════ PIEZA 2 · App ═══════════════ */
+  function renderApp() {
+    const o = ORGS[state.orgId], t = TIPO[o.tipo], v = VISTA[o.tipo];
+    if (!state.filtro) state.filtro = v.filtros[v.filtros.length - 1];
+
+    /* Sidebar del organismo elegido */
+    const pend = pendientes(state.orgId);
+    $('sidebarNav').innerHTML = v.menu.map((s) => `
+      ${s.section ? `<div class="nav-section">${s.section}</div>` : ''}
+      ${s.items.map((it) => {
+        const act = it.id === 'bandeja';
+        return `<a class="nav-row ${it.child ? 'nav-row--child' : ''} ${act ? 'active' : ''}" href="#" data-nav="${it.id}"${act ? ' aria-current="page"' : ''}>
+          ${act ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+          <span class="icon">${IC[it.icon]}</span><span class="lbl">${it.label}</span>
+          ${it.id === 'bandeja' && pend ? `<span class="nav-badge" aria-label="${pend} pendientes">${pend}</span>` : ''}
+        </a>`;
+      }).join('')}`).join('');
+
+    /* Chip de identidad: rol + organismo actual */
+    $('chipAva').style.cssText = `background:${t.color}22;color:${t.color}`;
+    $('ddAva').style.cssText = `width:42px;height:42px;font-size:14px;background:${t.color}22;color:${t.color}`;
+    $('chipRole').textContent = lista().length > 1 ? o.nombre : t.label;
+    $('ddRole').style.color = t.color;
+    $('ddRole').innerHTML = `<span class="profile-dd__check-ico">${IC.check}</span>${t.label} · ${esc(o.nombre)}`;
+
+    /* Franja: solo con 2+ organismos */
+    const multi = lista().length > 1;
+    $('ctxBar').hidden = !multi;
+    if (multi) renderFranja();
+
+    /* Página */
+    $('pageTitle').textContent = v.titulo;
+    $('pageSub').textContent = v.sub;
+    document.title = `${v.titulo} · ${o.nombre} — SUID`;
+    renderBandeja();
+  }
+
+  function renderFranja() {
+    const o = ORGS[state.orgId], t = TIPO[o.tipo];
+    $('ctxBar').style.setProperty('--tipo-color', t.color);
+    $('ctxIco').textContent = t.emoji;
+    $('ctxName').innerHTML = `${esc(o.nombre)}<span class="ctx-bar__meta">${t.label} · ${esc(metaTxt(o))}</span>`;
+    const otrosPend = lista().filter((id) => id !== state.orgId).reduce((a, id) => a + pendientes(id), 0);
+    $('ctxDot').hidden = !otrosPend;
+    $('ctxDot').textContent = otrosPend;
+    $('ctxTrigger').setAttribute('aria-label', `Cambiar de organismo${otrosPend ? ` (${otrosPend} pendientes en tus otros organismos)` : ''}`);
+    $('ctxTrigger').title = otrosPend ? `Tienes ${otrosPend} pendientes en tus otros organismos` : 'Cambiar de organismo';
+    $('ctxMenu').innerHTML = `<div class="ctx-dd__head">Tus organismos (${lista().length})</div>` + lista().map((id) => {
+      const x = ORGS[id], tx = TIPO[x.tipo], sel = id === state.orgId, n = pendientes(id);
+      return `<button type="button" class="naowee-dropdown__opt ctx-opt${sel ? ' is-selected' : ''}" role="option" aria-selected="${sel}" data-org="${id}" style="--tipo-color:${tx.color}">
+        <span class="org-ico" aria-hidden="true" style="background:color-mix(in srgb, ${tx.color} 12%, #fff)">${tx.emoji}</span>
+        <span class="ctx-opt__txt">
+          <span class="ctx-opt__name">${esc(x.nombre)}</span>
+          <span class="ctx-opt__meta">${tx.label} · ${esc(metaTxt(x))}</span>
+          <span class="ctx-opt__pend${n ? '' : ' is-clear'}">${pendTxt(id)}</span>
+        </span>
+        <span class="naowee-dropdown__opt-check" aria-hidden="true">${IC.check}</span>
+      </button>`;
+    }).join('') + `<div class="ctx-dd__foot"><button type="button" id="ctxVerTodos">Ver todos en la pantalla de entrada</button></div>`;
+  }
+
+  function renderBandeja() {
+    const o = ORGS[state.orgId], v = VISTA[o.tipo], club = o.tipo === 'club';
+    const FILTER_ICO = { 'Accionables': IC.bolt, 'Pendientes': IC.bolt, 'En revisión': IC.clock, 'En corrección': IC.edit, 'Rechazado': IC.x, 'Rechazadas': IC.x, 'Activo': IC.check, 'Aprobadas': IC.check, 'Todos': IC.list, 'Todas': IC.list };
+    const MAP = { 'Accionables': 'En revisión', 'Pendientes': 'Enviada', 'Aprobadas': 'Aprobada', 'Rechazadas': 'Rechazada' };
+    const f = state.filtro, q = state.q.trim().toLowerCase();
+    const rows = o.filas.filter((r) => (f === 'Todos' || f === 'Todas' || r.estado === (MAP[f] || f))
+      && (!q || r.nombre.toLowerCase().includes(q) || (r.nit || r.sub).toLowerCase().includes(q)));
+    const badge = (e) => `<span class="naowee-badge naowee-badge--${VARIANT[e] || 'neutral'} naowee-badge--quiet naowee-badge--small">${esc(e)}</span>`;
+    const emoji = club ? '🏃' : TIPO[o.tipo === 'liga' ? 'club' : 'liga'].emoji;
+
+    const head = club
+      ? '<tr><th>Deportista</th><th>Deporte</th><th>Estado</th><th>Fecha</th><th></th></tr>'
+      : `<tr><th>${v.col}</th><th>NIT</th><th>Estado</th><th></th></tr>`;
+    const body = rows.map((r) => club
+      ? `<tr><td data-label="Deportista"><div class="bj-org"><span class="bj-org__emoji">${emoji}</span><div><div class="bj-org__name">${esc(r.nombre)}</div><div class="bj-org__sub">${esc(r.sub)}</div></div></div></td>
+          <td data-label="Deporte"><div><div class="bj-org__name" style="font-weight:500">${esc(r.dep)}</div><div class="bj-org__sub">${esc(r.mod)}</div></div></td>
+          <td data-label="Estado">${badge(r.estado)}</td>
+          <td class="cg-table__nit" data-label="Fecha">${r.fecha}</td>
+          <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-row>${r.estado === 'Enviada' ? 'Revisar' : 'Ver'}</button></td></tr>`
+      : `<tr><td data-label="${v.col}"><div class="bj-org"><span class="bj-org__emoji">${emoji}</span><div><div class="bj-org__name">${esc(r.nombre)}</div><div class="bj-org__sub">${esc(r.sub)}</div></div></div></td>
+          <td class="cg-table__nit" data-label="NIT">${r.nit}</td>
+          <td data-label="Estado">${badge(r.estado)}</td>
+          <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-row>${r.estado === 'En revisión' ? 'Revisar' : 'Ver'}</button></td></tr>`).join('');
+
+    const mensaje = club
+      ? `Solicitudes de afiliación a <strong>${esc(o.nombre)}</strong>. Al confirmar, el deportista queda vinculado al club y a su liga.`
+      : `Bandeja de <strong>${v.plural}</strong> de <strong>${esc(o.nombre)}</strong>. Aprueba, rechaza o solicita corrección (motivo obligatorio).`;
+
+    $('bandejaRoot').innerHTML = `
+      <div class="naowee-message naowee-message--informative" style="margin-bottom:16px"><span class="naowee-message__icon">${IC.info}</span><div class="naowee-message__body"><p class="naowee-message__text">${mensaje}</p></div></div>
+      <div class="naowee-card bj-panel">
+        <div class="bj-panel__bar">
+          <div class="naowee-searchbox bj-search${state.q ? ' naowee-searchbox--has-value' : ''}">
+            <div class="naowee-searchbox__input-wrap">
+              <span class="naowee-searchbox__icon">${IC.search}</span>
+              <input class="naowee-searchbox__input" id="bjSearch" placeholder="${club ? 'Buscar por nombre o documento…' : 'Buscar por nombre o NIT…'}" aria-label="Buscar" value="${esc(state.q)}">
+            </div>
+          </div>
+        </div>
+        <div class="naowee-tabs bj-tabs" role="tablist" aria-label="Filtrar por estado">
+          ${v.filtros.map((x) => `<button type="button" role="tab" aria-selected="${x === f}" class="naowee-tab ${x === f ? 'naowee-tab--selected' : ''}" data-f="${x}">${FILTER_ICO[x] || ''}${x}</button>`).join('')}
+        </div>
+        ${rows.length
+          ? `<div class="cg-table-wrap"><table class="cg-table bj-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`
+          : `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${IC.inbox}</span><p class="naowee-empty-state__title">Sin ${v.plural}</p><p class="naowee-empty-state__description">No hay ${v.plural} que coincidan con el filtro en ${esc(o.nombre)}.</p></div>`}
+      </div>`;
+
+    $('bandejaRoot').querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+      state.filtro = b.dataset.f; renderBandeja();
+      $('bandejaRoot').querySelector(`[data-f="${state.filtro}"]`).focus();
+    }));
+    const s = $('bjSearch');
+    s.addEventListener('input', () => {
+      state.q = s.value; const pos = s.selectionStart; renderBandeja();
+      const n = $('bjSearch'); n.focus(); n.setSelectionRange(pos, pos);
+    });
+    $('bandejaRoot').querySelectorAll('[data-row]').forEach((b) => b.addEventListener('click', () => toast('El detalle no hace parte de esta variante.', 'info')));
+  }
+
+  /* ─── Dropdown de la franja (wrapper .naowee-dropdown--open, regla del DS) ─── */
+  const dd = $('ctxDd'), trig = $('ctxTrigger');
+  const opts = () => [...$('ctxMenu').querySelectorAll('.ctx-opt, #ctxVerTodos')];
+  function abrir(foco) {
+    dd.classList.add('naowee-dropdown--open'); trig.setAttribute('aria-expanded', 'true');
+    if (foco) (opts().find((x) => x.classList.contains('is-selected')) || opts()[0]).focus();
+  }
+  function cerrar(volver) {
+    if (!dd.classList.contains('naowee-dropdown--open')) return;
+    dd.classList.remove('naowee-dropdown--open'); trig.setAttribute('aria-expanded', 'false');
+    if (volver) trig.focus();
+  }
+  trig.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dd.classList.contains('naowee-dropdown--open') ? cerrar(false) : abrir(e.detail === 0);
+  });
+  trig.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); abrir(true); } });
+  $('ctxMenu').addEventListener('keydown', (e) => {
+    const l = opts(), i = l.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); l[(i + 1) % l.length].focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); l[(i - 1 + l.length) % l.length].focus(); }
+    if (e.key === 'Tab') cerrar(false);
+  });
+  $('ctxMenu').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (e.target.closest('#ctxVerTodos')) { cerrar(false); mostrarEntrada(); return; }
+    const b = e.target.closest('[data-org]');
+    if (!b) return;
+    const id = b.dataset.org;
+    cerrar(true);
+    if (id === state.orgId) return;
+    entrarA(id, false);
+    toast(`Ahora trabajas en ${ORGS[id].nombre}.`, 'success');
+  });
+
+  /* ─── Chip de usuario (solo identidad) ─── */
+  const sw = $('profileSwitcher'), chip = $('userChipTrigger');
+  const toggleChip = (e) => { e.stopPropagation(); const o = sw.classList.toggle('open'); chip.setAttribute('aria-expanded', o); };
+  chip.addEventListener('click', toggleChip);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(e); } });
+
+  /* ─── Sidebar: colapsar, drawer móvil, ítems ─── */
+  $('sidebarToggle').addEventListener('click', () => $('naoweeSidebar').classList.toggle('collapsed'));
+  $('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  $('backdrop').addEventListener('click', () => document.body.classList.remove('has-mobile-drawer-open'));
+  $('sidebarNav').addEventListener('click', (e) => {
+    const a = e.target.closest('[data-nav]'); if (!a) return;
+    e.preventDefault();
+    document.body.classList.remove('has-mobile-drawer-open');
+    if (a.dataset.nav !== 'bandeja') toast(`${a.querySelector('.lbl').textContent}: fuera del alcance de esta variante.`, 'info');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dd.contains(e.target)) cerrar(false);
+    if (!sw.contains(e.target)) { sw.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (dd.classList.contains('naowee-dropdown--open')) cerrar(true);
+    sw.classList.remove('open');
+    document.body.classList.remove('has-mobile-drawer-open');
+    $('review').open = false;
+  });
+
+  /* Sombra de la franja cuando queda fija al hacer scroll */
+  new IntersectionObserver(([en]) => $('ctxBar').classList.toggle('is-stuck', !en.isIntersecting), { root: $('page'), threshold: 0 })
+    .observe($('ctxSentinel'));
+
+  /* ─── Snackbar canónico (#evToast de naowee-footer.css) ─── */
+  let tt;
+  function toast(msg, kind) {
+    let el = $('evToast');
+    if (!el) { el = document.createElement('div'); el.id = 'evToast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.className = `evtoast--${kind}`;
+    el.innerHTML = `<span class="evtoast__badge">${kind === 'success' ? IC.toastOk : IC.info}</span><span class="evtoast__text">${esc(msg)}</span>`;
+    requestAnimationFrame(() => el.classList.add('is-visible'));
+    clearTimeout(tt); tt = setTimeout(() => el.classList.remove('is-visible'), 2600);
+  }
+
+  /* ─── Conmutador de revisión ─── */
+  const syncReview = () => document.querySelectorAll('[data-n]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.n === state.n)));
+  document.querySelectorAll('[data-n]').forEach((b) => b.addEventListener('click', () => {
+    state.n = +b.dataset.n; syncReview();
+    if (state.n === 1) { entrarA('LIG-001', false); toast('Con un solo organismo se entra directo: sin pantalla de elección ni franja.', 'info'); }
+    else if (!$('entrada').hidden || !lista().includes(state.orgId)) mostrarEntrada();
+    else renderApp();
+  }));
+  $('reviewEntrada').addEventListener('click', () => {
+    $('review').open = false;
+    if (state.n === 1) { entrarA('LIG-001', false); toast('Con un solo organismo no hay pantalla de elección: se entra directo.', 'info'); return; }
+    mostrarEntrada();
+  });
+
+  syncReview();
+  mostrarEntrada();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usuarios · Variante A</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/naowee-ds-tokens.css">
+<link rel="stylesheet" href="../../shared/tokens.css">
+<link rel="stylesheet" href="../../shared/shell.css">
+<link rel="stylesheet" href="../../shared/components.css">
+<link rel="stylesheet" href="../../shared/forms.css">
+<link rel="stylesheet" href="../../shared/naowee-footer.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   VARIANTE A — Tabla de usuarios + pestaña de catálogo
+   · Cuenta principal destacada arriba (una sola, la habilita el nivel superior).
+   · Panel igual al de la bandeja (.bj-panel + .naowee-tabs + .cg-table):
+     pestaña «Usuarios» y pestaña «Roles que puedes asignar».
+   · Invitar / crear y desactivar en .reg-modal.
+   Solo estilos nuevos .us-*; el resto es shell, bandeja y formularios reales.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Foco visible (anillo del DS §Button) en lo que el shell no cubre */
+.nav-row:focus-visible,
+.burger-btn:focus-visible,
+.header-burger:focus-visible,
+.user-chip:focus-visible,
+.reg-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); border-radius: var(--radius-sm); }
+.naowee-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-tabpanel:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .15); }
+.bj-filter__select:focus-visible { box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ─── Encabezado con acción principal ─── */
+.us-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; }
+.us-head .page-head { margin: 0; flex: 1 1 420px; }
+.us-head__act { flex-shrink: 0; }
+
+/* ─── Cuenta principal ─── */
+.us-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px 18px; margin: 22px 0 16px; }
+.us-ava {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; letter-spacing: .2px;
+}
+.us-ava--sm { width: 32px; height: 32px; font-size: 11.5px; background: var(--bg-soft); color: var(--text-secondary); }
+.us-main__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.us-main__name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.us-main__role { font-size: 13.5px; color: var(--text-primary); margin: 3px 0 0; font-weight: 500; }
+.us-main__meta { font-size: 12.5px; color: var(--text-secondary); margin: 2px 0 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.us-main__side { text-align: right; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); max-width: 280px; }
+.us-main__side strong { color: var(--text-primary); font-weight: 600; }
+
+/* Administradores del Ministerio (solo lectura) */
+.us-admins { margin: 22px 0 16px; padding: 0; overflow: hidden; }
+.us-admins__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px 12px; }
+.us-admins__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.us-admins__sub { font-size: 13px; color: var(--text-secondary); margin: 3px 0 0; line-height: 1.45; }
+.us-admins__list { list-style: none; margin: 0; padding: 0 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
+.us-admins__item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); min-width: 0; }
+.us-admins__item .us-ava { width: 36px; height: 36px; font-size: 12px; }
+.us-admins__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.us-admins__mail { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.us-admins .naowee-message { margin: 4px 20px 16px; }
+.us-admins .naowee-message__text { font-size: 13px; line-height: 1.45; }
+
+/* ─── Panel (mismo esqueleto que la bandeja) ─── */
+.us-count { font-size: 12.5px; color: var(--text-secondary); margin-left: auto; font-variant-numeric: tabular-nums; }
+.us-tabcount { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.naowee-tab--selected .us-tabcount { color: var(--accent); }
+
+.us-user { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.us-user .bj-org__sub { overflow-wrap: anywhere; }
+.us-you { margin-left: 4px; vertical-align: 1px; }
+.us-sub { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.us-row--off .bj-org__name, .us-row--off .us-cell-strong { color: var(--text-secondary); }
+.us-row--new td { animation: usNew 2.4s ease-out both; }
+@keyframes usNew { 0%, 40% { background: var(--accent-bg); } 100% { background: transparent; } }
+.us-cell-strong { font-weight: 600; color: var(--text-primary); }
+.us-acts { display: flex; justify-content: flex-end; gap: 4px; flex-wrap: nowrap; }
+.us-nowrap { white-space: nowrap; }
+.bj-table .us-td-user { min-width: 230px; }
+.naowee-btn--mute.us-btn-neg { color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.naowee-btn--mute.us-btn-neg svg { color: currentColor; }
+.naowee-btn--mute.us-btn-neg:hover { background: var(--naowee-color-feedback-fill-negative-quiet); }
+.naowee-btn--mute.us-btn-neg:focus-visible { box-shadow: 0 0 0 3px rgba(218, 22, 48, .2); }
+
+.us-panel-note {
+  display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px 20px;
+  border-top: 1px solid var(--border); background: var(--bg-soft);
+  font-size: 12.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.us-panel-note svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--text-muted); }
+
+/* ─── Catálogo de roles ─── */
+.us-cat { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.us-cat > .naowee-message .naowee-message__text { font-size: 13.5px; line-height: 1.5; }
+.us-cat__group { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 6px 0 -4px; }
+.us-roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.us-role { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
+.us-role--mine { border-color: var(--border-dark); }
+.us-role__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.us-role__name { font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
+.us-role__badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.us-role__does { font-size: 13.5px; line-height: 1.5; color: var(--text-primary); margin: 0; }
+.us-role__kv { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
+.us-role__kv dt { color: var(--text-secondary); margin: 0; }
+.us-role__kv dd { color: var(--text-primary); margin: 0; font-weight: 500; }
+.us-role__foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
+.us-role__foot svg { width: 14px; height: 14px; flex-shrink: 0; }
+.us-role__foot--yes { color: var(--naowee-color-feedback-text-positive-quiet-on-fill); }
+.us-role__foot--no { color: var(--text-secondary); font-weight: 500; }
+
+/* ─── Diálogos ─── */
+.us-dlg { max-width: 600px; }
+.us-dlg .naowee-message__text { font-size: 13.5px; line-height: 1.5; }
+.us-dlg .bj-select { appearance: auto; height: var(--field-h, 44px); padding: 0 12px; }
+.us-dlg .bj-select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-dlg .naowee-textfield--error .bj-select { border-color: var(--field-border-error); }
+.us-field-help { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.45; }
+.us-roleinfo { margin-top: 10px; padding: 12px 14px; border-radius: var(--radius-lg); background: var(--bg-soft); font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+.us-roleinfo[hidden] { display: none; }
+.us-roleinfo strong { font-weight: 600; }
+.us-roleinfo .naowee-badge { margin-left: 4px; vertical-align: 1px; }
+.us-dlg .reg-choice-group { justify-content: flex-start; }
+.us-dlg .reg-choice { flex: 1 1 200px; max-width: none; }
+.us-dlg .reg-choice:focus-within { box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-dlg .reg-choice.is-selected:focus-within { box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px rgba(215, 64, 9, .22); }
+.us-fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+.us-fieldset legend { padding: 0; }
+.us-confirm { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+.us-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
+.us-list li + li { margin-top: 4px; }
+
+/* ─── Conmutador de revisión (no es parte del diseño) ─── */
+.review-toggle {
+  position: fixed; right: 16px; bottom: 16px; z-index: 90;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px;
+  background: #fff; border: 1px dashed var(--border-dark); border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(40, 40, 52, .12); font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.review-toggle select {
+  height: 32px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-full);
+  padding: 0 10px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: #fff; cursor: pointer;
+}
+.review-toggle select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ─── Responsive ─── */
+@media (max-width: 960px) {
+  .us-admins__list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .us-head__act, .us-head__act .naowee-btn { width: 100%; }
+  .us-main { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
+  .us-main__side { grid-column: 1 / -1; text-align: left; max-width: none; padding-top: 12px; border-top: 1px solid var(--border); }
+  .us-count { margin-left: 0; width: 100%; }
+  .bj-panel__bar .bj-filter { width: 100%; }
+  .bj-panel__bar .bj-filter__select { flex: 1; }
+  .us-acts { justify-content: flex-start; flex-wrap: wrap; }
+  .cg-table tbody td.us-td-user { grid-template-columns: 1fr; padding-top: 4px; }
+  .cg-table tbody td.us-td-user::before { display: none; }
+  .bj-table .us-td-user { min-width: 0; }
+  .us-tab-q { display: none; }
+  .us-roles { grid-template-columns: minmax(0, 1fr); }
+  .us-cat { padding: 14px 12px 16px; }
+  .bj-modal__foot .naowee-btn { flex: 1; }
+}
+@media (max-width: 600px) {
+  .top-header { gap: 8px; }
+  .review-toggle { right: 8px; bottom: 8px; padding-left: 10px; }
+  .review-toggle__lbl { display: none; }
+  .us-admins__head, .us-panel-note { padding-left: 16px; padding-right: 16px; }
+  .us-admins__list { padding: 0 16px; }
+  .us-admins .naowee-message { margin: 4px 16px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .us-row--new td { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot">
+    <aside class="sidebar" id="naoweeSidebar">
+      <div class="sidebar-logo">
+        <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú" aria-expanded="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+        <div class="logo-sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav" aria-label="Menú principal"></nav>
+    </aside>
+  </div>
+
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" id="chipAva"></div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name" id="chipName"></span>
+            <span class="user-role" id="chipRole"></span>
+          </div>
+          <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+        <div class="profile-dd profile-dd--identity-only" role="menu">
+          <div class="profile-dd__header">
+            <span class="ava-ring" id="ddAva" style="width:42px;height:42px;font-size:14px"></span>
+            <div class="profile-dd__user">
+              <strong id="ddName"></strong>
+              <span class="profile-dd__doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg><span id="ddDoc"></span></span>
+              <span class="profile-dd__current-role" id="ddRole"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="page-inner">
+        <div id="usRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell-backdrop" id="drawerBackdrop"></div>
+
+<!-- Solo para la revisión del diseño -->
+<div class="review-toggle" role="group" aria-label="Simular quién mira">
+  <label class="review-toggle__lbl" for="reviewSel">Ver como</label>
+  <select id="reviewSel">
+    <option value="coc" selected>Comité Olímpico · Camilo Duarte</option>
+    <option value="min">Ministerio · María F. Rojas</option>
+    <option value="liga">Liga sin marca · Sandra Mejía</option>
+  </select>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ─── Iconos (mismo set que shared/sidebar.js). REGLA: toda clave usada existe aquí. ─── */
+  const sv = (d, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 1.6}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const I = {
+    sitemap: sv('<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/>'),
+    level: sv('<line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>'),
+    inbox: sv('<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'),
+    upload: sv('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
+    filePlus: sv('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/>'),
+    id: sv('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/>'),
+    users: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    userPlus: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>', 1.8),
+    shield: sv('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><polyline points="9 12 11 14 15 10"/>'),
+    search: sv('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', 1.8),
+    mail: sv('<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>', 1.8),
+    ban: sv('<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>', 1.8),
+    refresh: sv('<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>', 1.8),
+    lock: sv('<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>', 1.9),
+    check: sv('<polyline points="20 6 9 17 4 12"/>', 2.4),
+    x: sv('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', 2),
+    info: sv('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>', 2.2),
+    alert: sv('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', 2),
+    pause: sv('<circle cx="12" cy="12" r="9"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/>', 2),
+    usersLg: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 1.4)
+  };
+
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const fmt = (iso) => { const [y, m, d] = iso.split('-'); return `${Number(d)} ${MESES[Number(m) - 1]} ${y}`; };
+  const HOY = '2026-10-13';
+  const ini = (n) => n.split(/\s+/).filter((w) => /^[A-ZÁÉÍÓÚÑ]/.test(w)).slice(0, 2).map((w) => w[0]).join('');
+  const badge = (variant, txt, extra) => `<span class="naowee-badge naowee-badge--${variant} naowee-badge--quiet naowee-badge--small${extra ? ' ' + extra : ''}">${esc(txt)}</span>`;
+  const ESTADO = { 'Invitado': 'informative', 'Activo': 'positive', 'Desactivado': 'neutral' };
+  const msg = (variant, icon, html) => `<div class="naowee-message naowee-message--${variant}"><span class="naowee-message__icon">${I[icon]}</span><div class="naowee-message__body"><p class="naowee-message__text">${html}</p></div></div>`;
+
+  /* ═══════════════ Catálogo de roles internos ═══════════════
+     origin: base (cuenta principal) · transversal (cualquier organismo) · olimpica (marca «Funcionalidades olímpicas») · ministerio.
+     creator: rol que puede crearlo (clave del catálogo, o 'naowee' / 'superior'). */
+  const ROL = {
+    admin: { name: 'Administrador de organismo', origin: 'base',
+      does: 'Es la cuenta principal del organismo y hay una sola. Crea y gestiona a los usuarios internos y responde por el organismo ante el nivel superior.',
+      creator: 'superior', creatorTxt: 'El nivel superior, al activar el organismo' },
+    revisor: { name: 'Revisor de registros', origin: 'transversal', proposal: 'P-24',
+      does: 'Aprueba o devuelve los registros del nivel de abajo en nombre del organismo.',
+      creator: 'admin', creatorTxt: 'Administrador de organismo' },
+    gestor: { name: 'Gestor de comité olímpico', origin: 'olimpica',
+      does: 'Invita y asigna metodólogos y consulta el Ciclo Olímpico.',
+      creator: 'admin', creatorTxt: 'Administrador de organismo' },
+    metodologo: { name: 'Metodólogo', origin: 'olimpica',
+      does: 'Registra opiniones sobre los deportistas del Ciclo Olímpico.',
+      creator: 'gestor', creatorTxt: 'Gestor de comité olímpico' },
+    minAdmin: { name: 'Administrador del Ministerio', origin: 'ministerio',
+      does: 'Todos tienen el mismo alcance: rectoría del sistema, aprobaciones y usuarios territoriales.',
+      creator: 'naowee', creatorTxt: 'Naowee' },
+    encDep: { name: 'Encargado departamental', origin: 'territorial',
+      does: 'Consulta la información de su departamento y registra deportistas autodeclarados.',
+      creator: 'minAdmin', creatorTxt: 'Administrador del Ministerio', anchor: 'Un departamento' },
+    encMun: { name: 'Encargado municipal', origin: 'territorial',
+      does: 'Consulta la información de su municipio y registra deportistas autodeclarados.',
+      creator: 'minAdmin', creatorTxt: 'Administrador del Ministerio', anchor: 'Un municipio' }
+  };
+  const ORIGEN = {
+    transversal: ['neutral', 'Transversal'], olimpica: ['brand', 'Funcionalidades olímpicas'],
+    territorial: ['neutral', 'Territorial']
+  };
+
+  /* Departamentos y municipios (lista corta de la maqueta) */
+  const GEO = {
+    'Amazonas': ['Leticia', 'Puerto Nariño'],
+    'Antioquia': ['Medellín', 'Envigado', 'Rionegro', 'Apartadó'],
+    'Chocó': ['Quibdó', 'Istmina', 'Nuquí'],
+    'Huila': ['Neiva', 'Acevedo', 'Pitalito', 'Garzón'],
+    'Valle del Cauca': ['Cali', 'Palmira', 'Buga', 'Tuluá']
+  };
+
+  /* ═══════════════ Vistas ═══════════════ */
+  const VIEWS = {
+    coc: {
+      kind: 'org',
+      me: { name: 'Camilo Duarte', ini: 'CD', role: 'Comité (COC)', color: '#d74009', doc: 'CC 79.456.123', mail: 'cduarte@coc.demo.co' },
+      org: 'Comité Olímpico Colombiano', orgShort: 'el Comité',
+      enabledBy: 'Ministerio del Deporte', enabledOn: '2026-02-12',
+      marca: 'Funcionalidades olímpicas',
+      catalog: ['admin', 'gestor', 'metodologo', 'revisor'],
+      menu: 'coc',
+      users: [
+        { id: 'u1', name: 'Paula Andrea Restrepo', doc: 'CC 52.889.104', mail: 'prestrepo@coc.demo.co', rol: 'gestor', estado: 'Activo', f: '2026-03-03', by: 'Camilo Duarte', byRol: 'admin' },
+        { id: 'u2', name: 'Andrés Felipe Gómez', doc: 'CC 1.020.334.778', mail: 'agomez@coc.demo.co', rol: 'gestor', estado: 'Invitado', f: '2026-10-09', by: 'Camilo Duarte', byRol: 'admin' },
+        { id: 'u3', name: 'Luisa Fernanda Ortiz', doc: 'CC 1.037.612.990', mail: 'lortiz@coc.demo.co', rol: 'metodologo', estado: 'Activo', f: '2026-04-15', by: 'Paula Andrea Restrepo', byRol: 'gestor' },
+        { id: 'u4', name: 'Jorge Iván Salazar', doc: 'CC 80.154.327', mail: 'jsalazar@coc.demo.co', rol: 'metodologo', estado: 'Activo', f: '2026-04-15', by: 'Paula Andrea Restrepo', byRol: 'gestor' },
+        { id: 'u5', name: 'Natalia Cárdenas Vega', doc: 'CE 4.118.902', mail: 'ncardenas@coc.demo.co', rol: 'metodologo', estado: 'Desactivado', f: '2026-09-02', by: 'Paula Andrea Restrepo', byRol: 'gestor', prev: 'Activo' }
+      ]
+    },
+    liga: {
+      kind: 'org',
+      me: { name: 'Sandra Mejía', ini: 'SM', role: 'Liga', color: '#7c3aed', doc: 'CC 31.567.890', mail: 'direccion@ligapatinajevalle.demo.co' },
+      org: 'Liga de Patinaje del Valle', orgShort: 'la liga',
+      enabledBy: 'Federación Colombiana de Patinaje', enabledOn: '2026-03-24',
+      marca: null,
+      catalog: ['admin', 'revisor'],
+      menu: 'liga',
+      users: []
+    },
+    min: {
+      kind: 'min',
+      me: { name: 'María F. Rojas', ini: 'MR', role: 'Admin Mindeporte', color: '#002B5B', doc: 'CC 41.234.567', mail: 'maria.rojas@mindeporte.demo.co' },
+      org: 'Ministerio del Deporte',
+      admins: [
+        { name: 'María F. Rojas', mail: 'maria.rojas@mindeporte.demo.co', color: '#002B5B', you: true },
+        { name: 'Germán Ospina Lara', mail: 'german.ospina@mindeporte.demo.co', color: '#1f78d1' },
+        { name: 'Claudia Patricia Vélez', mail: 'claudia.velez@mindeporte.demo.co', color: '#0e7490' }
+      ],
+      catalog: ['minAdmin', 'encDep', 'encMun'],
+      menu: 'min',
+      users: [
+        { id: 't1', name: 'Diego Alejandro Muñoz', doc: 'CC 7.731.556', mail: 'dmunoz@huila.demo.gov.co', rol: 'encDep', depto: 'Huila', estado: 'Activo', f: '2026-05-06', by: 'María F. Rojas' },
+        { id: 't2', name: 'Yolanda Castaño Perdomo', doc: 'CC 36.287.114', mail: 'ycastano@acevedo.demo.gov.co', rol: 'encMun', depto: 'Huila', mun: 'Acevedo', estado: 'Activo', f: '2026-05-20', by: 'María F. Rojas' },
+        { id: 't3', name: 'Hernán Darío Quintero', doc: 'CC 16.274.905', mail: 'hquintero@palmira.demo.gov.co', rol: 'encMun', depto: 'Valle del Cauca', mun: 'Palmira', estado: 'Invitado', f: '2026-10-08', by: 'Germán Ospina Lara' },
+        { id: 't4', name: 'Ricardo Peña Ahumada', doc: 'CC 15.881.240', mail: 'rpena@leticia.demo.gov.co', rol: 'encMun', depto: 'Amazonas', mun: 'Leticia', estado: 'Activo', f: '2026-06-11', by: 'Claudia Patricia Vélez' },
+        { id: 't5', name: 'Marcela Rentería Palacios', doc: 'CC 35.602.478', mail: 'mrenteria@choco.demo.gov.co', rol: 'encDep', depto: 'Chocó', estado: 'Desactivado', f: '2026-08-29', by: 'María F. Rojas', prev: 'Activo' }
+      ]
+    }
+  };
+
+  let V = null;        // vista viva (se muta con invitar / desactivar)
+  let S = { tab: 'users', q: '', estado: 'Todos', newId: null };
+  let seq = 100;
+
+  function load(key) {
+    const b = VIEWS[key];
+    V = { key, ...b, users: b.users.map((u) => ({ ...u })) };
+    S = { tab: 'users', q: '', estado: 'Todos', newId: null };
+  }
+  const isMin = () => V.kind === 'min';
+  const viewerRol = () => (isMin() ? 'minAdmin' : 'admin');
+  const canCreate = () => V.catalog.filter((k) => ROL[k].creator === viewerRol());
+
+  /* ═══════════════ Shell ═══════════════ */
+  function renderShell() {
+    const p = V.me;
+    $('chipAva').textContent = p.ini; $('chipAva').style.cssText = `background:${p.color}22;color:${p.color}`;
+    $('ddAva').textContent = p.ini; $('ddAva').style.background = `${p.color}22`; $('ddAva').style.color = p.color;
+    $('chipName').textContent = p.name; $('ddName').textContent = p.name;
+    $('chipRole').textContent = p.role; $('ddDoc').textContent = p.doc;
+    $('ddRole').textContent = `${p.role} · ${V.org}`; $('ddRole').style.color = p.color;
+
+    const row = (id, label, icon, opts = {}) => `
+      <a href="#" class="nav-row ${opts.child ? 'nav-row--child' : ''} ${opts.active ? 'active' : ''}" data-id="${id}"${opts.active ? ' aria-current="page"' : ''}>
+        ${opts.active && !opts.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+        <span class="icon">${I[icon]}</span><span class="lbl">${esc(label)}</span>
+      </a>`;
+    const sec = (t) => `<div class="nav-section">${t}</div>`;
+    const jer = (levels) => row('jer', 'Jerarquía SND', 'sitemap') + levels.map((l) => row(`j-${l}`, l, 'level', { child: true })).join('');
+    const usuarios = row('usuarios', 'Usuarios', 'users', { active: true });
+    let html = '';
+    if (V.menu === 'min') {
+      html = jer(['Comités', 'Federaciones', 'Ligas', 'Clubes', 'Deportistas']) + sec('GESTIÓN') +
+        row('bandeja', 'Bandeja de aprobaciones', 'inbox') + row('registro', 'Registro de organismo', 'filePlus') + usuarios;
+    } else if (V.menu === 'coc') {
+      html = jer(['Federaciones', 'Ligas', 'Clubes', 'Deportistas']) + sec('MI SECTOR') +
+        row('bandeja', 'Mis federaciones', 'inbox') + row('cargue', 'Cargue masivo', 'upload') +
+        sec('DEPORTISTAS') + row('dep', 'Mis deportistas', 'users') +
+        sec('MI ORGANISMO') + row('mi', 'Mi organismo', 'id') + usuarios;
+    } else {
+      html = jer(['Clubes', 'Deportistas']) + sec('MIS CLUBES') +
+        row('bandeja', 'Mis clubes', 'inbox') + row('cargue', 'Cargue masivo', 'upload') +
+        sec('DEPORTISTAS') + row('dep', 'Mis deportistas', 'users') +
+        sec('MI ORGANISMO') + row('mi', 'Mi organismo', 'id') + usuarios;
+    }
+    $('sidebarNav').innerHTML = html;
+  }
+
+  /* ═══════════════ Página ═══════════════ */
+  function headHtml() {
+    const sub = isMin()
+      ? 'Los administradores del Ministerio y los usuarios territoriales que consultan un departamento o un municipio.'
+      : `La cuenta principal de ${esc(V.org)} y los usuarios internos que trabajan con ella. Cada uno ve solo lo que su rol le permite.`;
+    const btn = isMin() ? 'Crear usuario territorial' : 'Invitar usuario';
+    return `<div class="us-head">
+      <div class="page-head">
+        <h1 class="page-head__title">Usuarios</h1>
+        <p class="page-head__sub">${sub}</p>
+      </div>
+      <div class="us-head__act"><button type="button" class="naowee-btn naowee-btn--loud" data-act="invite">${I.userPlus}${btn}</button></div>
+    </div>`;
+  }
+
+  function mainHtml() {
+    if (isMin()) {
+      return `<section class="naowee-card us-admins" aria-labelledby="usAdmTitle">
+        <div class="us-admins__head">
+          <div>
+            <h2 class="us-admins__title" id="usAdmTitle">Administradores del Ministerio</h2>
+            <p class="us-admins__sub">${V.admins.length} cuentas con el mismo alcance.</p>
+          </div>
+          ${badge('neutral', 'Solo lectura', 'naowee-badge--large')}
+        </div>
+        <ul class="us-admins__list">
+          ${V.admins.map((a) => `<li class="us-admins__item">
+            <span class="us-ava" style="background:${a.color}22;color:${a.color}" aria-hidden="true">${esc(ini(a.name))}</span>
+            <div style="min-width:0">
+              <div class="us-admins__name">${esc(a.name)}${a.you ? badge('brand', 'Tú') : ''}</div>
+              <div class="us-admins__mail">${esc(a.mail)}</div>
+            </div>
+          </li>`).join('')}
+        </ul>
+        ${msg('informative', 'info', '<strong>Los crea Naowee.</strong> Para sumar o retirar un administrador del Ministerio, pídelo a soporte de Naowee.')}
+      </section>`;
+    }
+    const p = V.me;
+    return `<section class="naowee-card us-main" aria-label="Cuenta principal">
+      <span class="us-ava" style="background:${p.color}22;color:${p.color}" aria-hidden="true">${esc(p.ini)}</span>
+      <div style="min-width:0">
+        <div class="us-main__top"><h2 class="us-main__name">${esc(p.name)}</h2>${badge('brand', 'Cuenta principal')}${badge('positive', 'Activo')}</div>
+        <p class="us-main__role">Administrador de organismo · Tú</p>
+        <p class="us-main__meta">${esc(p.doc)} · ${esc(p.mail)}</p>
+      </div>
+      <p class="us-main__side">La habilitó <strong>${esc(V.enabledBy)}</strong> el ${fmt(V.enabledOn)}, al activar ${esc(V.orgShort)}. Es la única cuenta principal; si cambia la persona, la reasigna el nivel superior.</p>
+    </section>`;
+  }
+
+  function panelHtml() {
+    const n = V.users.length;
+    const tabs = [
+      ['users', `Usuarios<span class="us-tab-q">${isMin() ? 'territoriales' : 'internos'}</span>`, n],
+      ['roles', 'Roles que puedes asignar', null]
+    ];
+    return `<section class="naowee-card bj-panel" aria-label="Usuarios y roles">
+      <div class="naowee-tabs bj-tabs" role="tablist" aria-label="Vistas de usuarios" id="usTabs">
+        ${tabs.map(([id, l, c]) => `<button type="button" role="tab" id="tab-${id}" aria-controls="panel-${id}" class="naowee-tab ${S.tab === id ? 'naowee-tab--selected' : ''}" aria-selected="${S.tab === id}" tabindex="${S.tab === id ? 0 : -1}" data-tab="${id}">${l}${c != null ? `<span class="us-tabcount">${c}</span>` : ''}</button>`).join('')}
+      </div>
+      <div class="us-tabpanel" role="tabpanel" id="panel-${S.tab}" aria-labelledby="tab-${S.tab}" tabindex="0">
+        ${S.tab === 'users' ? usersHtml() : rolesHtml()}
+      </div>
+      ${isMin() ? '' : `<p class="us-panel-note">${I.lock}<span>Un usuario interno nunca ve más que el administrador que lo creó. Nadie se borra: un usuario desactivado conserva su historial y puedes reactivarlo.</span></p>`}
+    </section>`;
+  }
+
+  function filtered() {
+    const q = S.q.trim().toLowerCase();
+    return V.users.filter((u) => (S.estado === 'Todos' || u.estado === S.estado) &&
+      (!q || [u.name, u.doc, u.mail, ROL[u.rol].name, u.depto || '', u.mun || ''].join(' ').toLowerCase().includes(q)));
+  }
+
+  function usersHtml() {
+    if (!V.users.length) {
+      return `<div class="naowee-empty-state">
+        <span class="naowee-empty-state__icon">${I.usersLg}</span>
+        <p class="naowee-empty-state__title">Por ahora solo estás tú</p>
+        <p class="naowee-empty-state__description">Invita a las personas que te ayudan a gestionar ${esc(V.orgShort)}. Llegan con un correo para activar su cuenta.</p>
+        <div class="naowee-empty-state__action"><button type="button" class="naowee-btn naowee-btn--quiet" data-act="invite">${I.userPlus}Invitar usuario</button></div>
+      </div>`;
+    }
+    const list = filtered();
+    const bar = `<div class="bj-panel__bar">
+      <div class="naowee-searchbox bj-search${S.q ? ' naowee-searchbox--has-value' : ''}">
+        <div class="naowee-searchbox__input-wrap">
+          <span class="naowee-searchbox__icon">${I.search}</span>
+          <input class="naowee-searchbox__input" id="usSearch" type="search" value="${esc(S.q)}" placeholder="${isMin() ? 'Buscar por nombre, documento o territorio' : 'Buscar por nombre, documento o rol'}" aria-label="Buscar usuarios">
+          <button type="button" class="naowee-searchbox__clear" id="usClear" aria-label="Limpiar búsqueda">${I.x}</button>
+        </div>
+      </div>
+      <label class="bj-filter"><span class="bj-filter__lbl">Estado</span>
+        <select class="bj-filter__select" id="usEstado">
+          ${['Todos', 'Activo', 'Invitado', 'Desactivado'].map((e) => `<option value="${e}"${S.estado === e ? ' selected' : ''}>${e === 'Todos' ? 'Todos los estados' : e}</option>`).join('')}
+        </select>
+      </label>
+      <span class="us-count" aria-live="polite">${list.length === V.users.length ? `${list.length} ${list.length === 1 ? 'usuario' : 'usuarios'}` : `${list.length} de ${V.users.length}`}</span>
+    </div>`;
+    if (!list.length) {
+      return bar + `<div class="naowee-empty-state">
+        <span class="naowee-empty-state__icon">${I.search}</span>
+        <p class="naowee-empty-state__title">Sin resultados</p>
+        <p class="naowee-empty-state__description">Ningún usuario coincide con la búsqueda o el estado elegido.</p>
+      </div>`;
+    }
+    const col2 = isMin() ? 'Territorio' : 'Rol';
+    return bar + `<div class="cg-table-wrap"><table class="cg-table bj-table">
+      <thead><tr><th scope="col">Usuario</th><th scope="col">${col2}</th><th scope="col">Estado</th><th scope="col">Creado por</th><th scope="col"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Acciones</span></th></tr></thead>
+      <tbody>${list.map(rowHtml).join('')}</tbody>
+    </table></div>`;
+  }
+
+  function rowHtml(u) {
+    const r = ROL[u.rol];
+    const off = u.estado === 'Desactivado';
+    const second = isMin()
+      ? `<span class="us-cell-strong">${esc(u.mun || u.depto)}</span><span class="us-sub">${u.mun ? `Municipal · ${esc(u.depto)}` : 'Departamental'}</span>`
+      : `<span class="us-cell-strong">${esc(r.name)}</span>${r.proposal ? `<span class="us-sub">Rol propuesto (${r.proposal})</span>` : ''}`;
+    const when = u.estado === 'Invitado' ? `Invitado el ${fmt(u.f)}` : off ? `Desactivado el ${fmt(u.f)}` : `Activo desde ${fmt(u.f)}`;
+    const byRol = isMin() ? 'Administrador del Ministerio' : ROL[u.byRol].name;
+    const acts = [];
+    if (u.estado === 'Invitado') acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="resend" data-id="${u.id}" aria-label="Reenviar invitación a ${esc(u.name)}">${I.mail}Reenviar</button>`);
+    if (off) acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="reactivate" data-id="${u.id}" aria-label="Reactivar a ${esc(u.name)}">${I.refresh}Reactivar</button>`);
+    else acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small us-btn-neg" data-act="deactivate" data-id="${u.id}" aria-label="Desactivar a ${esc(u.name)}">${I.ban}Desactivar</button>`);
+    return `<tr class="${off ? 'us-row--off' : ''}${S.newId === u.id ? ' us-row--new' : ''}" data-row="${u.id}">
+      <td class="us-td-user" data-label="Usuario"><div class="us-user"><span class="us-ava us-ava--sm" aria-hidden="true">${esc(ini(u.name))}</span><div style="min-width:0"><div class="bj-org__name">${esc(u.name)}</div><div class="bj-org__sub">${esc(u.doc)}</div><div class="bj-org__sub">${esc(u.mail)}</div></div></div></td>
+      <td data-label="${col2Label()}"><div>${second}</div></td>
+      <td data-label="Estado"><div>${badge(ESTADO[u.estado], u.estado)}<span class="us-sub us-nowrap">${when}</span></div></td>
+      <td data-label="Creado por"><div><span class="us-cell-strong" style="font-weight:500">${esc(u.by)}${u.by === V.me.name ? ' (tú)' : ''}</span><span class="us-sub">${esc(byRol)}</span></div></td>
+      <td class="bj-row-action" data-label=""><div class="us-acts">${acts.join('')}</div></td>
+    </tr>`;
+  }
+  const col2Label = () => (isMin() ? 'Territorio' : 'Rol');
+
+  function rolesHtml() {
+    const mine = viewerRol();
+    let intro = '';
+    if (V.key === 'coc') {
+      intro = msg('informative', 'info', `${esc(V.org)} tiene la marca <strong>Funcionalidades olímpicas</strong>; por eso puede usar sus roles. Los roles transversales sirven para cualquier organismo: hoy no hay ninguno aprobado y el Revisor de registros es una propuesta.`);
+    } else if (V.key === 'liga') {
+      intro = msg('informative', 'info', `Tu liga no tiene marcas: además de tu cuenta principal, solo aplican los roles transversales. Hoy no hay ninguno aprobado; el Revisor de registros es una propuesta.`);
+    } else {
+      intro = msg('informative', 'info', 'Los administradores del Ministerio los crea Naowee. Tú creas a los usuarios territoriales, anclados a un departamento o a un municipio.');
+    }
+    const card = (k) => {
+      const r = ROL[k];
+      const yours = r.creator === mine;
+      const isMe = k === mine;
+      const o = ORIGEN[r.origin];
+      const badges = (o ? badge(o[0], o[1]) : '') + (r.proposal ? badge('informative', `Propuesta ${r.proposal}`) : '') + (isMe ? badge('brand', 'Tu rol') : '');
+      let foot;
+      if (yours) foot = `<p class="us-role__foot us-role__foot--yes">${I.check}Lo creas tú</p>`;
+      else if (isMe) foot = `<p class="us-role__foot us-role__foot--no">${I.lock}Es tu cuenta; no se asigna desde aquí</p>`;
+      else foot = `<p class="us-role__foot us-role__foot--no">${I.lock}No lo creas tú: lo crea ${r.creator === 'naowee' ? 'Naowee' : `el ${esc(r.creatorTxt)}`}</p>`;
+      return `<article class="us-role${yours ? ' us-role--mine' : ''}">
+        <div class="us-role__top"><h3 class="us-role__name">${esc(r.name)}</h3><div class="us-role__badges">${badges}</div></div>
+        <p class="us-role__does">${esc(r.does)}</p>
+        <dl class="us-role__kv">
+          <dt>Quién lo crea</dt><dd>${esc(r.creatorTxt)}</dd>
+          ${r.anchor ? `<dt>Ámbito</dt><dd>${esc(r.anchor)}</dd>` : ''}
+          ${!isMin() && k !== 'admin' ? `<dt>En tu organismo</dt><dd>${V.users.filter((u) => u.rol === k && u.estado !== 'Desactivado').length} activos o invitados</dd>` : ''}
+        </dl>
+        ${foot}
+      </article>`;
+    };
+    let groups;
+    if (isMin()) {
+      groups = [['Ministerio del Deporte', ['minAdmin']], ['Usuarios territoriales', ['encDep', 'encMun']]];
+    } else if (V.key === 'coc') {
+      groups = [['Cuenta principal', ['admin']], ['Marca Funcionalidades olímpicas', ['gestor', 'metodologo']], ['Transversales', ['revisor']]];
+    } else {
+      groups = [['Cuenta principal', ['admin']], ['Transversales', ['revisor']]];
+    }
+    return `<div class="us-cat">${intro}${groups.map(([t, ks]) => `<h3 class="us-cat__group">${esc(t)}</h3><div class="us-roles">${ks.map(card).join('')}</div>`).join('')}</div>`;
+  }
+
+  function render(keepFocusSel) {
+    renderShell();
+    $('usRoot').innerHTML = headHtml() + mainHtml() + panelHtml();
+    if (keepFocusSel) {
+      const el = document.querySelector(keepFocusSel);
+      if (el) { el.focus(); if (el.setSelectionRange && el.type === 'search') el.setSelectionRange(el.value.length, el.value.length); }
+    }
+  }
+  function renderPanel(focusSel) {
+    const old = document.querySelector('.bj-panel');
+    const tmp = document.createElement('div'); tmp.innerHTML = panelHtml();
+    old.replaceWith(tmp.firstElementChild);
+    // El contador de la pestaña vive en el panel; el botón principal no cambia.
+    if (focusSel) { const el = document.querySelector(focusSel); if (el) { el.focus(); if (el.type === 'search') el.setSelectionRange(el.value.length, el.value.length); } }
+  }
+
+  /* ═══════════════ Diálogos ═══════════════ */
+  function modal({ title, body, ok, okClass, size }, onOk, opener) {
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay bj-modal-ov';
+    ov.innerHTML = `
+      <div class="reg-modal bj-modal us-dlg${size === 'sm' ? ' bj-modal--sm' : ''}" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+        <div class="reg-modal__head"><h3 class="reg-modal__title" id="dlgTitle">${esc(title)}</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.x}</button></div>
+        <div class="reg-modal__body">${body}</div>
+        <div class="reg-modal__foot bj-modal__foot">
+          <button type="button" class="naowee-btn naowee-btn--mute" data-close>Cancelar</button>
+          <button type="button" class="naowee-btn ${okClass || 'naowee-btn--loud'}" id="dlgOk">${esc(ok)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    const close = (after) => {
+      if (ov.__closing) return; ov.__closing = true;
+      ov.classList.remove('is-open');
+      document.removeEventListener('keydown', onKey, true);
+      setTimeout(() => { ov.remove(); if (after) after(); else if (opener && document.body.contains(opener)) opener.focus(); }, 300);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const f = [...ov.querySelectorAll('button, select, textarea, input')].filter((x) => !x.disabled && x.offsetParent !== null);
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+    ov.querySelector('#dlgOk').addEventListener('click', () => onOk(ov, close));
+    setTimeout(() => { const f = ov.querySelector('input:not([type=radio]), select') || ov.querySelector('#dlgOk'); f.focus(); }, 60);
+    return ov;
+  }
+
+  const field = (id, label, input, help, full) => `
+    <div class="naowee-textfield${full ? ' reg-grid-2--full' : ''}" data-field="${id}">
+      <label class="naowee-textfield__label naowee-textfield__label--required" for="${id}">${label}</label>
+      ${input}
+      ${help ? `<p class="us-field-help" id="${id}Help">${help}</p>` : ''}
+      <div class="naowee-helper naowee-helper--negative" id="${id}Err" hidden><span class="naowee-helper__text"><span class="naowee-helper__badge">${I.x}</span><span data-errtxt></span></span></div>
+    </div>`;
+  const text = (id, type, ph, extra) => `<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="${id}" type="${type}" placeholder="${ph}" aria-describedby="${id}Err" ${extra || ''}></div>`;
+  const select = (id, opts, ph) => `<select class="bj-select" id="${id}" aria-describedby="${id}Err">${ph ? `<option value="">${ph}</option>` : ''}${opts}</select>`;
+
+  function personFields() {
+    return field('fName', 'Nombre completo', text('fName', 'text', 'Como aparece en el documento', 'autocomplete="name"'), '', true) +
+      field('fTipo', 'Tipo de documento', select('fTipo', ['Cédula de ciudadanía', 'Cédula de extranjería', 'Permiso por protección temporal', 'Pasaporte'].map((t) => `<option>${t}</option>`).join(''))) +
+      field('fDoc', 'Número de documento', text('fDoc', 'text', 'Sin puntos ni espacios', 'inputmode="numeric"')) +
+      field('fMail', 'Correo electrónico', text('fMail', 'email', 'nombre@dominio.co', 'autocomplete="email"'), 'Le llega aquí el enlace para activar su cuenta.', true);
+  }
+
+  function setErr(ov, id, txt) {
+    const w = ov.querySelector(`[data-field="${id}"]`);
+    const e = ov.querySelector(`#${id}Err`);
+    const input = ov.querySelector(`#${id}`);
+    if (txt) {
+      w.classList.add('naowee-textfield--error'); e.hidden = false; e.querySelector('[data-errtxt]').textContent = txt;
+      if (input) input.setAttribute('aria-invalid', 'true');
+    } else {
+      w.classList.remove('naowee-textfield--error'); e.hidden = true;
+      if (input) input.removeAttribute('aria-invalid');
+    }
+  }
+  const TIPO_CORTO = { 'Cédula de ciudadanía': 'CC', 'Cédula de extranjería': 'CE', 'Permiso por protección temporal': 'PPT', 'Pasaporte': 'PA' };
+  const fmtDoc = (n) => (/^\d+$/.test(n) ? Number(n).toLocaleString('es-CO').replace(/,/g, '.') : n.toUpperCase());
+
+  function validatePerson(ov) {
+    const v = (id) => ov.querySelector(`#${id}`).value.trim();
+    const errs = [];
+    const name = v('fName'), doc = v('fDoc').replace(/[.\s]/g, ''), mail = v('fMail');
+    setErr(ov, 'fName', name.split(/\s+/).length < 2 ? 'Escribe nombre y apellido.' : null); if (name.split(/\s+/).length < 2) errs.push('fName');
+    let dErr = null;
+    if (!doc) dErr = 'Escribe el número de documento.';
+    else if (V.users.some((u) => u.doc.replace(/\D/g, '') === doc.replace(/\D/g, '')) || V.me.doc.replace(/\D/g, '') === doc.replace(/\D/g, '')) dErr = 'Ya hay un usuario con ese documento.';
+    setErr(ov, 'fDoc', dErr); if (dErr) errs.push('fDoc');
+    let mErr = null;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) mErr = 'Escribe un correo válido.';
+    else if (V.users.some((u) => u.mail.toLowerCase() === mail.toLowerCase())) mErr = 'Ya hay un usuario con ese correo.';
+    setErr(ov, 'fMail', mErr); if (mErr) errs.push('fMail');
+    return { errs, data: { name, doc: `${TIPO_CORTO[v('fTipo')]} ${fmtDoc(doc)}`, mail } };
+  }
+  const clearOnInput = (ov) => ov.querySelectorAll('input, select').forEach((el) => {
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => { const w = el.closest('[data-field]'); if (w && w.classList.contains('naowee-textfield--error')) setErr(ov, w.dataset.field, null); });
+  });
+
+  /* Invitar usuario interno (COC / Liga) */
+  function openInvite(opener) {
+    const opts = canCreate();
+    const others = V.catalog.filter((k) => k !== 'admin' && !opts.includes(k));
+    const roleInfo = (k) => { const r = ROL[k]; return `<strong>${esc(r.name)}.</strong> ${esc(r.does)}${r.proposal ? badge('informative', `Propuesta ${r.proposal}`) : ''}`; };
+    const body = `
+      <p class="us-confirm" style="font-size:13.5px;color:var(--text-secondary)">Le enviamos un correo para que active su cuenta. Mientras no lo haga, aparece como <strong style="color:var(--text-primary)">Invitado</strong>.</p>
+      <div class="reg-grid-2">
+        ${personFields()}
+        ${field('fRol', 'Rol interno', select('fRol', opts.map((k) => `<option value="${k}">${esc(ROL[k].name)}${ROL[k].proposal ? ' (propuesta)' : ''}</option>`).join(''), 'Selecciona un rol'),
+          others.length ? `Solo ves los roles que tú puedes crear. ${others.map((k) => `El ${esc(ROL[k].name)} lo invita el ${esc(ROL[k].creatorTxt)}.`).join(' ')}` : 'Solo ves los roles que tú puedes crear.', true)}
+      </div>
+      <div class="us-roleinfo" id="fRolInfo" hidden aria-live="polite"></div>`;
+    const ov = modal({ title: 'Invitar usuario', body, ok: 'Enviar invitación' }, (ov, close) => {
+      const { errs, data } = validatePerson(ov);
+      const rol = ov.querySelector('#fRol').value;
+      setErr(ov, 'fRol', rol ? null : 'Selecciona el rol que va a tener.'); if (!rol) errs.push('fRol');
+      if (errs.length) { ov.querySelector(`#${errs[0]}`).focus(); return; }
+      const u = { id: `n${++seq}`, ...data, rol, estado: 'Invitado', f: HOY, by: V.me.name, byRol: 'admin' };
+      V.users.unshift(u);
+      close(() => afterCreate(u, `Le enviamos la invitación a ${u.mail}.`));
+    }, opener);
+    clearOnInput(ov);
+    ov.querySelector('#fRol').addEventListener('change', (e) => {
+      const box = ov.querySelector('#fRolInfo');
+      box.hidden = !e.target.value; box.innerHTML = e.target.value ? roleInfo(e.target.value) : '';
+    });
+  }
+
+  /* Crear usuario territorial (Ministerio) */
+  function openTerritorial(opener) {
+    const body = `
+      <p class="us-confirm" style="font-size:13.5px;color:var(--text-secondary)">Podrá consultar la información de su territorio y registrar deportistas autodeclarados. Le enviamos un correo para activar su cuenta.</p>
+      <div class="reg-grid-2">
+        ${personFields()}
+        <fieldset class="us-fieldset reg-grid-2--full naowee-textfield" data-field="fAmb">
+          <legend class="naowee-textfield__label naowee-textfield__label--required">Ámbito</legend>
+          <div class="reg-choice-group" id="fAmbGroup">
+            <label class="reg-choice"><input type="radio" name="fAmb" value="dep" id="fAmb"><span class="reg-choice__dot" aria-hidden="true"></span><span class="reg-choice__body"><span class="reg-choice__title">Departamental</span><span class="reg-choice__desc">Consulta todo un departamento</span></span></label>
+            <label class="reg-choice"><input type="radio" name="fAmb" value="mun"><span class="reg-choice__dot" aria-hidden="true"></span><span class="reg-choice__body"><span class="reg-choice__title">Municipal</span><span class="reg-choice__desc">Consulta solo un municipio</span></span></label>
+          </div>
+          <div class="naowee-helper naowee-helper--negative" id="fAmbErr" hidden><span class="naowee-helper__text"><span class="naowee-helper__badge">${I.x}</span><span data-errtxt></span></span></div>
+        </fieldset>
+        ${field('fDep', 'Departamento', select('fDep', Object.keys(GEO).map((d) => `<option>${d}</option>`).join(''), 'Selecciona un departamento'))}
+        <div id="fMunWrap" hidden>${field('fMun', 'Municipio', select('fMun', '', 'Primero elige el departamento'))}</div>
+      </div>`;
+    const ov = modal({ title: 'Crear usuario territorial', body, ok: 'Crear y enviar invitación' }, (ov, close) => {
+      const { errs, data } = validatePerson(ov);
+      const amb = (ov.querySelector('input[name=fAmb]:checked') || {}).value;
+      const dep = ov.querySelector('#fDep').value, mun = ov.querySelector('#fMun').value;
+      setErr(ov, 'fAmb', amb ? null : 'Elige si es departamental o municipal.'); if (!amb) errs.push('fAmb');
+      setErr(ov, 'fDep', dep ? null : 'Selecciona el departamento.'); if (!dep) errs.push('fDep');
+      if (amb === 'mun') { setErr(ov, 'fMun', mun ? null : 'Selecciona el municipio.'); if (!mun) errs.push('fMun'); }
+      if (errs.length) { ov.querySelector(`#${errs[0]}`).focus(); return; }
+      const u = { id: `n${++seq}`, ...data, rol: amb === 'mun' ? 'encMun' : 'encDep', depto: dep, mun: amb === 'mun' ? mun : null, estado: 'Invitado', f: HOY, by: V.me.name };
+      V.users.unshift(u);
+      close(() => afterCreate(u, `Creamos el usuario de ${u.mun || u.depto} y le enviamos la invitación a ${u.mail}.`));
+    }, opener);
+    clearOnInput(ov);
+    const fillMun = () => {
+      const dep = ov.querySelector('#fDep').value;
+      const m = ov.querySelector('#fMun');
+      m.innerHTML = `<option value="">${dep ? 'Selecciona un municipio' : 'Primero elige el departamento'}</option>` + (GEO[dep] || []).map((x) => `<option>${x}</option>`).join('');
+      m.disabled = !dep;
+    };
+    fillMun();
+    ov.querySelectorAll('input[name=fAmb]').forEach((r) => r.addEventListener('change', () => {
+      ov.querySelectorAll('.reg-choice').forEach((c) => c.classList.toggle('is-selected', c.querySelector('input').checked));
+      setErr(ov, 'fAmb', null);
+      const mun = r.value === 'mun';
+      ov.querySelector('#fMunWrap').hidden = !mun;
+      if (!mun) setErr(ov, 'fMun', null);
+    }));
+    ov.querySelector('#fDep').addEventListener('change', fillMun);
+  }
+
+  function afterCreate(u, text) {
+    S.tab = 'users'; S.q = ''; S.estado = 'Todos'; S.newId = u.id;
+    renderPanel();
+    const row = document.querySelector(`[data-row="${u.id}"]`);
+    if (row) { row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); const b = row.querySelector('button'); if (b) b.focus({ preventScroll: true }); }
+    toast(text, 'success');
+  }
+
+  /* Desactivar */
+  function openDeactivate(u, opener) {
+    const r = ROL[u.rol];
+    const created = V.users.filter((x) => x.by === u.name && x.estado !== 'Desactivado');
+    const extra = [];
+    extra.push(u.estado === 'Invitado' ? 'El enlace de la invitación deja de funcionar.' : 'Deja de entrar al SUID desde ahora y se cierra su sesión.');
+    extra.push(isMin() ? 'Lo que registró en su territorio se conserva.' : 'Lo que registró se conserva con su nombre.');
+    if (created.length) extra.push(`Los ${created.length} usuarios que invitó siguen activos; puedes desactivarlos por separado.`);
+    extra.push('Puedes reactivarlo cuando quieras: no se borra.');
+    const body = `<p class="us-confirm"><strong>${esc(u.name)}</strong> · ${esc(isMin() ? (u.mun ? `Encargado municipal de ${u.mun}` : `Encargado departamental de ${u.depto}`) : r.name)}</p>
+      <ul class="us-list">${extra.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
+    modal({ title: 'Desactivar usuario', body, ok: 'Desactivar usuario', okClass: 'bj-btn-danger', size: 'sm' }, (ov, close) => {
+      u.prev = u.estado; u.estado = 'Desactivado'; u.f = HOY;
+      close(() => { S.newId = null; renderPanel(`[data-act="reactivate"][data-id="${u.id}"]`); toast(`${u.name} quedó desactivado.`, 'caution'); });
+    }, opener);
+  }
+
+  function reactivate(u) {
+    u.estado = u.prev === 'Invitado' ? 'Invitado' : 'Activo'; u.f = HOY; delete u.prev;
+    S.newId = null;
+    renderPanel(`[data-act="deactivate"][data-id="${u.id}"]`);
+    toast(u.estado === 'Invitado' ? `${u.name} vuelve a Invitado. Le reenviamos la invitación.` : `${u.name} está activo de nuevo.`, 'success');
+  }
+
+  /* ═══════════════ Eventos ═══════════════ */
+  $('usRoot').addEventListener('click', (e) => {
+    const t = e.target.closest('.naowee-tab');
+    if (t) { selectTab(t.dataset.tab, false); return; }
+    if (e.target.closest('#usClear')) { S.q = ''; renderPanel('#usSearch'); return; }
+    const a = e.target.closest('[data-act]');
+    if (!a) return;
+    const u = V.users.find((x) => x.id === a.dataset.id);
+    if (a.dataset.act === 'invite') return isMin() ? openTerritorial(a) : openInvite(a);
+    if (a.dataset.act === 'deactivate') return openDeactivate(u, a);
+    if (a.dataset.act === 'reactivate') return reactivate(u);
+    if (a.dataset.act === 'resend') { toast(`Reenviamos la invitación a ${u.mail}.`, 'info'); }
+  });
+  $('usRoot').addEventListener('input', (e) => {
+    if (e.target.id === 'usSearch') { S.q = e.target.value; S.newId = null; renderPanel('#usSearch'); }
+  });
+  $('usRoot').addEventListener('change', (e) => {
+    if (e.target.id === 'usEstado') { S.estado = e.target.value; S.newId = null; renderPanel('#usEstado'); }
+  });
+  function selectTab(tab, focus) {
+    S.tab = tab; S.newId = null;
+    renderPanel(focus ? `#tab-${tab}` : null);
+  }
+  $('usRoot').addEventListener('keydown', (e) => {
+    const t = e.target.closest('.naowee-tab');
+    if (!t || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const ids = ['users', 'roles']; let i = ids.indexOf(t.dataset.tab);
+    i = e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length;
+    selectTab(ids[i], true);
+  });
+
+  /* ─── Shell: colapsar, drawer, chip de usuario ─── */
+  const sidebar = $('naoweeSidebar');
+  $('sidebarToggle').addEventListener('click', () => {
+    const c = sidebar.classList.toggle('collapsed');
+    $('sidebarToggle').setAttribute('aria-expanded', String(!c));
+    $('sidebarToggle').setAttribute('aria-label', c ? 'Expandir menú' : 'Colapsar menú');
+  });
+  $('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  $('drawerBackdrop').addEventListener('click', () => document.body.classList.remove('has-mobile-drawer-open'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.body.classList.remove('has-mobile-drawer-open');
+      $('profileSwitcher').classList.remove('open');
+      $('userChipTrigger').setAttribute('aria-expanded', 'false');
+    }
+  });
+  const chip = $('userChipTrigger');
+  const toggleChip = (e) => { e.stopPropagation(); chip.setAttribute('aria-expanded', String($('profileSwitcher').classList.toggle('open'))); };
+  chip.addEventListener('click', toggleChip);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(e); } });
+  document.addEventListener('click', (e) => {
+    if (!$('profileSwitcher').contains(e.target)) { $('profileSwitcher').classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); }
+  });
+  $('sidebarNav').addEventListener('click', (e) => {
+    const row = e.target.closest('.nav-row');
+    if (!row) return;
+    e.preventDefault();
+    if (!row.classList.contains('active')) toast(`${row.querySelector('.lbl').textContent.trim()}: en esta maqueta solo está Usuarios.`);
+    document.body.classList.remove('has-mobile-drawer-open');
+  });
+
+  /* ─── Toast (snackbar canónico #evToast) ─── */
+  let tTimer = null;
+  function toast(text, kind) {
+    let t = $('evToast');
+    if (!t) { t = document.createElement('div'); t.id = 'evToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.className = `evtoast--${kind || 'info'}`;
+    t.innerHTML = `<span class="evtoast__badge">${kind === 'error' ? I.x : kind === 'caution' ? I.pause : kind === 'success' ? I.check : I.info}</span><span class="evtoast__text"></span>`;
+    t.querySelector('.evtoast__text').textContent = text;
+    requestAnimationFrame(() => t.classList.add('is-visible'));
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('is-visible'), 3600);
+  }
+
+  /* ─── Conmutador de revisión ─── */
+  const pick = (k) => { load(k); render(); document.querySelector('.page').scrollTop = 0; history.replaceState(null, '', `#${k}`); };
+  $('reviewSel').addEventListener('change', (e) => pick(e.target.value));
+  const fromHash = location.hash.slice(1);
+  if (VIEWS[fromHash]) $('reviewSel').value = fromHash;
+  pick($('reviewSel').value);
+})();
+</script>
+</body>
+</html>

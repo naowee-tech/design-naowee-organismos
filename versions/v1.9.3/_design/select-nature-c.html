@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SUID – Crear cuenta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/naowee-tech/naowee-design-system@v1.8.0/dist/design-system.css">
+<style>
+/* Variant C · "Coherente con la suite" — lenguaje del login público (incentivo-01-login) sobre DS v1.8.0.
+   Todo escrito contra las clases ur-* para portarlo a registro-publico.html. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-height: 100vh; display: flex; flex-direction: column;
+  font-family: var(--naowee-font-family);
+  background: var(--naowee-color-background-primary);
+  color: var(--naowee-color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; position: relative;
+}
+/* Halo naranja de la suite (mismo gesto que .auth-shell::before del login) */
+body::before {
+  content: ''; position: fixed; right: -280px; bottom: -280px; width: 720px; height: 720px;
+  background: radial-gradient(circle, rgba(255,117,0,.10) 0%, rgba(255,117,0,0) 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ═══ HEADER ═══ */
+.ur-top {
+  height: 88px; padding: 0 var(--naowee-spacing-padding-medium);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--naowee-spacing-gap-xtiny);
+  background: var(--naowee-color-background-primary);
+  border-bottom: var(--naowee-border-width-small) solid var(--naowee-color-border-default);
+  position: relative; z-index: 2; flex-shrink: 0;
+}
+.ur-top > a { display: inline-flex; border-radius: var(--naowee-border-radius-small); }
+.ur-top > a:focus-visible { outline: 2px solid var(--naowee-color-interactive-border-active); outline-offset: 4px; }
+.ur-top img { height: 56px; width: auto; display: block; }
+.ur-top p {
+  margin: 0; font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20);
+  color: var(--naowee-color-text-secondary); text-align: right;
+}
+.ur-top p a { font-size: inherit; font-weight: var(--naowee-font-weight-semibold); margin-left: var(--naowee-spacing-gap-xnano); }
+
+/* ═══ MAIN ═══ */
+.ur-main {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: var(--naowee-spacing-padding-large) var(--naowee-spacing-padding-xsmall);
+  position: relative; z-index: 1;
+}
+.ur { width: 100%; max-width: 457px; display: flex; flex-direction: column; }
+
+.ur-head { display: flex; flex-direction: column; gap: var(--naowee-spacing-gap-xtiny); }
+.ur-head--center { text-align: center; }
+.ur-title {
+  margin: 0; font-size: var(--naowee-font-size-32); line-height: 36px;
+  font-weight: var(--naowee-font-weight-bold); letter-spacing: -.3px;
+  color: var(--naowee-color-text-primary);
+}
+.ur-sub {
+  margin: 0; font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-24);
+  color: var(--naowee-color-text-secondary); text-wrap: balance;
+}
+
+/* ═══ DEVNOTE (solo demo · secundario) ═══ */
+.ur-devnote-wrap { display: flex; justify-content: center; margin-top: var(--naowee-spacing-gap-tiny); }
+.wz-devnote {
+  display: inline-flex; align-items: center; gap: var(--naowee-spacing-gap-nano);
+  padding: 3px 10px 3px 3px; border-radius: var(--naowee-border-radius-full);
+  border: 1px dashed #d9a441; background: #fff8e6;
+  font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold);
+  line-height: var(--naowee-font-line-height-16); color: #8a5a00; cursor: help;
+}
+.wz-devnote:focus-visible { outline: 2px solid var(--naowee-color-interactive-border-active); outline-offset: 2px; }
+.wz-devnote .naowee-badge {
+  height: 18px; padding: 0 8px; font-size: var(--naowee-font-size-10); font-weight: var(--naowee-font-weight-bold);
+  background: #ffe7b3; color: #7a4d00;
+}
+
+/* ═══ SELECTOR (radio cards) ═══ */
+.ur-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--naowee-spacing-gap-xtiny);
+  margin: var(--naowee-spacing-gap-small) 0 var(--naowee-spacing-gap-medium);
+}
+.ur-card {
+  position: relative; appearance: none; -webkit-appearance: none; text-align: left;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--naowee-spacing-gap-pico);
+  padding: var(--naowee-spacing-padding-tiny);
+  font-family: var(--naowee-font-family); color: var(--naowee-color-text-primary);
+  background: var(--naowee-color-fill-primary);
+  border: var(--naowee-border-width-medium) solid var(--naowee-color-interactive-border-idle);
+  border-radius: var(--naowee-border-radius-large);
+  box-shadow: var(--naowee-shadow-small);
+  cursor: pointer;
+  transition: border-color var(--naowee-transition-default), background var(--naowee-transition-default),
+              box-shadow var(--naowee-transition-default), transform var(--naowee-transition-fast);
+}
+/* Icono en "tile" de marca (mismo idioma que .demo-option__icon del login) */
+.ur-card svg {
+  width: var(--naowee-size-icon-large); height: var(--naowee-size-icon-large);
+  padding: 10px;
+  border-radius: var(--naowee-border-radius-medium);
+  background: var(--naowee-color-brand-fill-quiet); color: var(--naowee-color-brand-icon-loud);
+  margin-bottom: var(--naowee-spacing-gap-xtiny); flex-shrink: 0;
+  transition: background var(--naowee-transition-default), color var(--naowee-transition-default);
+}
+.ur-card__t {
+  font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-22);
+  font-weight: var(--naowee-font-weight-semibold); color: var(--naowee-color-text-primary);
+}
+.ur-card__d {
+  font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20);
+  color: var(--naowee-color-text-secondary);
+}
+/* Círculo de radio (réplica de .naowee-radio__circle en un pseudo, sin tocar el markup) */
+.ur-card::after {
+  content: ''; position: absolute; top: var(--naowee-spacing-padding-tiny); right: var(--naowee-spacing-padding-tiny);
+  width: var(--naowee-size-selection-controls-tiny); height: var(--naowee-size-selection-controls-tiny);
+  border-radius: var(--naowee-border-radius-full);
+  border: var(--naowee-border-width-medium) solid var(--naowee-color-interactive-border-idle);
+  background: var(--naowee-color-fill-primary);
+  transition: border-color var(--naowee-transition-default), background var(--naowee-transition-default), box-shadow var(--naowee-transition-smooth);
+}
+/* Hover */
+.ur-card:hover { border-color: var(--naowee-color-interactive-border-hover); box-shadow: var(--naowee-shadow-card); transform: translateY(-1px); }
+.ur-card:hover::after { border-color: var(--naowee-color-interactive-border-hover); }
+.ur-card:active { transform: translateY(0); }
+/* Selected (clase que ya pone registro-publico.js; aria-checked como respaldo) */
+.ur-card.is-selected, .ur-card[aria-checked="true"] {
+  border-color: var(--naowee-color-interactive-border-active);
+  background: linear-gradient(0deg, rgba(255,237,199,.35), rgba(255,237,199,.35)), var(--naowee-color-fill-primary);
+  box-shadow: var(--naowee-shadow-focus-accent), var(--naowee-shadow-card);
+}
+.ur-card.is-selected::after, .ur-card[aria-checked="true"]::after {
+  border-color: var(--naowee-color-selected-fill-idle);
+  background: var(--naowee-color-selected-fill-idle);
+  box-shadow: inset 0 0 0 3px var(--naowee-color-fill-primary);
+}
+.ur-card.is-selected svg, .ur-card[aria-checked="true"] svg {
+  background: var(--naowee-color-brand-fill-loud); color: var(--naowee-color-brand-icon-loud-on-fill);
+}
+.ur-card.is-selected:hover, .ur-card[aria-checked="true"]:hover { border-color: var(--naowee-color-interactive-fill-loud-hover); }
+/* Focus visible: anillo DS + outline sólido para contraste AA */
+.ur-card:focus { outline: none; }
+.ur-card:focus-visible {
+  outline: 2px solid var(--naowee-color-interactive-border-active); outline-offset: 3px;
+}
+
+/* ═══ ACCIONES ═══ (tamaño lo pone el DS: naowee-btn--large + --full) */
+.ur-actions { display: flex; }
+.ur-btn--block { width: 100%; }
+
+/* ═══ LEGAL ═══ */
+.ur-legal {
+  margin: var(--naowee-spacing-gap-large) 0 0; text-align: center;
+  font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20);
+  color: var(--naowee-color-text-secondary);
+}
+
+/* ═══ FOOTER ═══ */
+.ur-foot {
+  position: relative; z-index: 1; text-align: center;
+  padding: 0 var(--naowee-spacing-padding-xsmall) var(--naowee-spacing-padding-small);
+  font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-16);
+  color: var(--naowee-color-text-disabled);
+}
+.ur-foot strong { color: var(--naowee-color-text-secondary); font-weight: var(--naowee-font-weight-semibold); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ur-card, .ur-card::after, .ur-card svg { transition: none; }
+  .ur-card:hover { transform: none; }
+}
+@media (max-width: 640px) {
+  .ur-top { height: 72px; padding: 0 var(--naowee-spacing-padding-tiny); }
+  .ur-top img { height: 44px; }
+  .ur-top p { font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-16); max-width: 150px; }
+  .ur-main { align-items: flex-start; padding: var(--naowee-spacing-padding-small) var(--naowee-spacing-padding-xtiny) var(--naowee-spacing-padding-medium); }
+  .ur-title { font-size: var(--naowee-font-size-28); line-height: var(--naowee-font-line-height-34); }
+  .ur-sub { font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); }
+  .ur-cards { gap: var(--naowee-spacing-gap-micro); margin: var(--naowee-spacing-gap-xsmall) 0 var(--naowee-spacing-gap-small); }
+  .ur-card { padding: var(--naowee-spacing-padding-xtiny); }
+  .ur-card::after { top: var(--naowee-spacing-padding-xtiny); right: var(--naowee-spacing-padding-xtiny); }
+  .ur-card svg { width: var(--naowee-size-icon-medium); height: var(--naowee-size-icon-medium); padding: 8px; margin-bottom: var(--naowee-spacing-gap-micro); }
+  .ur-legal { margin-top: var(--naowee-spacing-gap-small); }
+}
+</style>
+</head>
+<body>
+
+<header class="ur-top">
+  <a href="index.html"><img src="../shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
+  <p>¿Ya tienes una cuenta? <a class="naowee-textlink" href="index.html">Inicia sesión</a></p>
+</header>
+
+<main class="ur-main"><div class="ur">
+  <div class="ur-head ur-head--center">
+    <h1 class="ur-title">Crear cuenta</h1>
+    <p class="ur-sub" id="urSub">Comienza indicando si eres persona natural o entidad jurídica</p>
+  </div>
+  <div class="ur-devnote-wrap"><span class="wz-devnote" tabindex="0" role="button"><span class="naowee-badge">Solo demo</span>Notas para devs</span></div>
+  <div class="ur-cards" role="radiogroup" aria-labelledby="urSub">
+    <button type="button" class="ur-card" data-card="nature" data-value="persona" role="radio" aria-checked="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M4 17l4-1 2-4 4 2 1 4"/><path d="M10 12l-2 5"/></svg><span class="ur-card__t">Persona</span><span class="ur-card__d">Natural</span>
+    </button>
+    <button type="button" class="ur-card" data-card="nature" data-value="entidad" role="radio" aria-checked="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="ur-card__t">Entidad</span><span class="ur-card__d">Jurídica</span>
+    </button>
+  </div>
+  <div class="ur-actions"><button type="button" class="ur-btn ur-btn--block naowee-btn naowee-btn--loud naowee-btn--large naowee-btn--full" disabled>Siguiente</button></div>
+  <p class="ur-legal"><a class="naowee-textlink" href="#">Política de privacidad</a> y <a class="naowee-textlink" href="#">Términos y condiciones</a></p>
+</div></main>
+
+<footer class="ur-foot">Hecho by <strong>Naowee</strong></footer>
+
+<script>
+(function () {
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.ur-card'));
+  var btn = document.querySelector('.ur-actions .ur-btn');
+  function select(card, focus) {
+    cards.forEach(function (c) {
+      var on = c === card;
+      c.classList.toggle('is-selected', on);
+      c.setAttribute('aria-checked', on ? 'true' : 'false');
+      c.tabIndex = on ? 0 : -1;
+    });
+    btn.disabled = !card;
+    if (focus && card) card.focus();
+  }
+  cards.forEach(function (c, i) {
+    c.addEventListener('click', function () { select(c); });
+    c.addEventListener('keydown', function (e) {
+      var d = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      select(cards[(i + d + cards.length) % cards.length], true);
+    });
+  });
+  var pre = new URLSearchParams(location.search).get('sel');
+  var preCard = cards.filter(function (c) { return c.dataset.value === pre; })[0];
+  if (preCard) select(preCard); else cards[0].tabIndex = 0;
+})();
+</script>
+</body>
+</html>

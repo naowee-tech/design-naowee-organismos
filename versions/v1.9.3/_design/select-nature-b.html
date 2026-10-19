@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear cuenta · SUID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/naowee-tech/naowee-design-system@v1.8.0/dist/design-system.css">
+<style>
+/* ═══ select-nature · Variante B «Marca SUID con presencia»
+   Audacia en UN lugar: el fondo (pista atlética en arcos naranja + halo cálido).
+   Todo lo demás: tokens DS v1.8.0, disciplinado. ═══ */
+:root {
+  --ur-ink: var(--naowee-color-text-primary);
+  --ur-sub: var(--naowee-color-text-secondary);
+  --ur-muted: var(--naowee-color-gray-600);
+  --ur-accent: var(--naowee-color-brand-fill-loud);           /* orange-700 */
+  --ur-accent-quiet: var(--naowee-color-brand-fill-quiet);    /* orange-100 */
+}
+html, body { margin: 0; }
+body {
+  font-family: var(--naowee-font-family, 'Inter'), -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ur-ink);
+  min-height: 100vh; display: flex; flex-direction: column;
+  background: var(--naowee-color-background-primary);
+  position: relative; overflow-x: hidden;
+}
+
+/* ── Fondo de marca: franja superior + halo + carriles de pista ── */
+body::before { /* franja de marca */
+  content: ""; position: fixed; inset: 0 0 auto 0; height: 4px; z-index: 5;
+  background: linear-gradient(90deg, var(--naowee-color-brand-gradient-start), var(--naowee-color-brand-gradient-end));
+}
+body::after { /* pista: óvalo de carriles que rodea el formulario (el «infield») */
+  --track: 380px 300px at 50% 54%;
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    repeating-radial-gradient(ellipse var(--track),
+      transparent 0 40px,
+      color-mix(in srgb, var(--naowee-color-orange-500) 26%, transparent) 40px 41.5px),
+    radial-gradient(ellipse var(--track), transparent 0 100%, color-mix(in srgb, var(--naowee-color-orange-100) 60%, transparent) 101%, transparent 170%);
+  -webkit-mask-image: radial-gradient(ellipse var(--track), transparent 0 100%, #000 100.5%, #000 140%, transparent 180%);
+          mask-image: radial-gradient(ellipse var(--track), transparent 0 100%, #000 100.5%, #000 140%, transparent 180%);
+}
+
+/* ── Header ── */
+.ur-top {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--naowee-spacing-gap-xtiny);
+  padding: var(--naowee-spacing-padding-small) var(--naowee-spacing-padding-medium) 0;
+}
+.ur-top img { height: 64px; width: auto; display: block; }
+.ur-top p { margin: 0; font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); color: var(--ur-sub); text-align: right; }
+.ur-top a { font-weight: var(--naowee-font-weight-semibold); }
+
+/* ── Main ── */
+.ur-main { position: relative; z-index: 1; flex: 1; display: flex; align-items: center; justify-content: center;
+           padding: var(--naowee-spacing-padding-large) 16px var(--naowee-spacing-padding-huge); }
+.ur { width: 100%; max-width: 392px; }
+
+.ur-head { margin-bottom: var(--naowee-spacing-gap-xtiny); }
+.ur-head--center { text-align: center; }
+.ur-title {
+  margin: 0; font-size: var(--naowee-font-size-40); line-height: var(--naowee-font-line-height-48);
+  font-weight: var(--naowee-font-weight-bold); letter-spacing: -0.025em; color: var(--ur-ink);
+}
+.ur-sub {
+  margin: var(--naowee-spacing-gap-micro) auto 0; max-width: 360px;
+  font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-24); color: var(--ur-sub);
+}
+
+/* Solo demo · pill secundaria (patrón wz-devnote) */
+.ur-devnote-wrap { display: flex; justify-content: center; }
+.wz-devnote {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px 3px 3px; border-radius: var(--naowee-border-radius-full, 999px);
+  border: 1px dashed var(--naowee-color-yellow-900); background: var(--naowee-color-yellow-100);
+  font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); color: #8a5a00; cursor: help;
+}
+.wz-devnote:focus-visible { outline: 2px solid var(--ur-accent); outline-offset: 2px; }
+.wz-devnote .naowee-badge { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; background: #ffe7b3; color: #7a4d00; font-weight: 700; }
+
+/* ── Tarjetas de selección (radio cards) ── */
+.ur-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--naowee-spacing-gap-xtiny);
+  margin: var(--naowee-spacing-gap-small) 0 var(--naowee-spacing-gap-small);
+}
+.ur-card {
+  position: relative; box-sizing: border-box; min-height: 176px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: var(--naowee-spacing-padding-tiny) var(--naowee-spacing-padding-micro);
+  font: inherit; cursor: pointer; text-align: center;
+  background: var(--naowee-color-background-primary);
+  border: 1px solid var(--naowee-color-interactive-border-idle);
+  border-radius: var(--naowee-border-radius-large, 16px);
+  box-shadow: var(--naowee-shadow-card);
+  transition: border-color .15s, box-shadow .15s, transform .15s, background-color .15s;
+}
+.ur-card svg { /* el SVG hace de «icon tile» sin wrapper extra */
+  box-sizing: border-box; width: 64px; height: 64px; padding: 14px; margin-bottom: var(--naowee-spacing-gap-micro);
+  border-radius: var(--naowee-border-radius-default-large, 14px);
+  background: var(--ur-accent-quiet); color: var(--naowee-color-brand-icon-loud);
+  transition: background-color .15s, color .15s;
+}
+.ur-card__t { font-size: var(--naowee-font-size-18); line-height: var(--naowee-font-line-height-24); font-weight: var(--naowee-font-weight-semibold); color: var(--ur-ink); }
+.ur-card__d { font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); color: var(--ur-sub); }
+
+/* indicador de radio en la esquina */
+.ur-card::after {
+  content: ""; position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; box-sizing: border-box;
+  border-radius: 50%; border: 1.5px solid var(--naowee-color-interactive-border-idle); background: var(--naowee-color-background-primary);
+  transition: all .15s;
+}
+.ur-card:hover { border-color: var(--naowee-color-interactive-border-hover); transform: translateY(-2px); box-shadow: var(--naowee-shadow-medium); }
+.ur-card:focus-visible { outline: none; border-color: var(--ur-accent); box-shadow: var(--naowee-shadow-focus-accent), var(--naowee-shadow-card); }
+
+.ur-card.is-selected {
+  border: 2px solid var(--ur-accent); padding: calc(var(--naowee-spacing-padding-tiny) - 1px) calc(var(--naowee-spacing-padding-micro) - 1px);
+  background: color-mix(in srgb, var(--naowee-color-orange-100) 35%, var(--naowee-color-background-primary));
+  box-shadow: var(--naowee-shadow-brand-md); transform: none;
+}
+.ur-card.is-selected svg { background: var(--ur-accent); color: var(--naowee-color-brand-icon-loud-on-fill); }
+.ur-card.is-selected::after {
+  top: 11px; right: 11px; border-color: var(--ur-accent);
+  background: var(--ur-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 10.5l2.6 2.5L14 7.5'/%3E%3C/svg%3E") center / 20px no-repeat;
+}
+.ur-card.is-selected:focus-visible { box-shadow: var(--naowee-shadow-focus-accent), var(--naowee-shadow-brand-md); }
+
+/* ── Acción ── */
+.ur-actions { display: flex; justify-content: center; }
+.ur-btn--block { width: 100%; }
+
+/* ── Legal + footer ── */
+.ur-legal { margin: var(--naowee-spacing-gap-xsmall) 0 0; text-align: center; font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20); color: var(--ur-sub); }
+.ur-legal a { color: var(--naowee-color-text-link-idle-neutral); }
+.ur-legal a:hover { color: var(--naowee-color-text-link-hover); }
+.ur-foot { position: relative; z-index: 1; text-align: center; font-size: 13px /* DS no tiene 13 */; color: var(--ur-muted); padding: 0 16px var(--naowee-spacing-padding-small); }
+.ur-foot strong { color: var(--ur-sub); font-weight: var(--naowee-font-weight-semibold); }
+
+a:focus-visible { outline: 2px solid var(--ur-accent); outline-offset: 2px; border-radius: 2px; }
+
+@media (max-width: 560px) {
+  .ur-top { padding: var(--naowee-spacing-padding-tiny) 16px 0; }
+  .ur-top img { height: 44px; }
+  .ur-top p, .ur-top p a { font-size: 13px /* DS no tiene 13 */; line-height: var(--naowee-font-line-height-18); }
+  .ur-top p { max-width: 170px; }
+  .ur-main { padding: var(--naowee-spacing-padding-small) 16px var(--naowee-spacing-padding-medium); align-items: flex-start; }
+  .ur-title { font-size: var(--naowee-font-size-32); line-height: var(--naowee-font-line-height-40); }
+  .ur-sub { max-width: 300px; font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-22); }
+  .ur-cards { gap: var(--naowee-spacing-gap-micro); margin: var(--naowee-spacing-gap-xsmall) 0; }
+  .ur-card { min-height: 156px; }
+  .ur-card svg { width: 56px; height: 56px; padding: 14px; }
+  body::after { --track: 230px 150px at 50% 112%; }
+  .ur-card svg { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .ur-card, .ur-card svg, .ur-card::after { transition: none; } .ur-card:hover { transform: none; } }
+</style>
+</head>
+<body>
+<header class="ur-top">
+  <a href="../index.html" aria-label="SUID · Inicio"><img src="../shared/logos/suid.png" alt="SUID"></a>
+  <p>¿Ya tienes una cuenta? <a class="naowee-textlink" href="#">Inicia sesión</a></p>
+</header>
+
+<main class="ur-main"><div class="ur">
+  <div class="ur-head ur-head--center">
+    <h1 class="ur-title" id="ur-title">Crear cuenta</h1>
+    <p class="ur-sub">Comienza indicando si eres persona natural o entidad jurídica</p>
+  </div>
+  <div class="ur-devnote-wrap"><span class="wz-devnote" tabindex="0" role="button"><span class="naowee-badge naowee-badge--caution naowee-badge--small">Solo demo</span> Notas para devs</span></div>
+  <div class="ur-cards" role="radiogroup" aria-labelledby="ur-title">
+    <button type="button" class="ur-card" data-card="nature" data-value="persona" role="radio" aria-checked="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M4 17l4-1 2-4 4 2 1 4"/><path d="M10 12l-2 5"/></svg><span class="ur-card__t">Persona</span><span class="ur-card__d">Natural</span>
+    </button>
+    <button type="button" class="ur-card" data-card="nature" data-value="entidad" role="radio" aria-checked="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg><span class="ur-card__t">Entidad</span><span class="ur-card__d">Jurídica</span>
+    </button>
+  </div>
+  <div class="ur-actions"><button type="button" class="ur-btn ur-btn--block naowee-btn naowee-btn--loud naowee-btn--large" disabled>Siguiente</button></div>
+  <p class="ur-legal"><a class="naowee-textlink" href="#">Política de privacidad</a> y <a class="naowee-textlink" href="#">Términos y condiciones</a></p>
+</div></main>
+
+<footer class="ur-foot">Hecho by <strong>Naowee</strong></footer>
+
+<script>
+(function () {
+  var cards = document.querySelectorAll('.ur-card');
+  var btn = document.querySelector('.ur-actions .ur-btn');
+  function select(v) {
+    cards.forEach(function (c) {
+      var on = c.dataset.value === v;
+      c.classList.toggle('is-selected', on);
+      c.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    btn.disabled = !v;
+  }
+  cards.forEach(function (c) { c.addEventListener('click', function () { select(c.dataset.value); }); });
+  var sel = new URLSearchParams(location.search).get('sel');
+  if (sel) select(sel);
+})();
+</script>
+</body>
+</html>

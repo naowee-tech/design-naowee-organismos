@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contexto de organismo · Variante A</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/naowee-ds-tokens.css">
+<link rel="stylesheet" href="../../shared/tokens.css">
+<link rel="stylesheet" href="../../shared/shell.css">
+<link rel="stylesheet" href="../../shared/components.css">
+<link rel="stylesheet" href="../../shared/forms.css">
+<link rel="stylesheet" href="../../shared/naowee-footer.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   VARIANTE A — El organismo activo vive arriba del menú lateral (P-15)
+   Solo estilos nuevos del bloque de contexto; todo lo demás es el shell real.
+   Paleta: colores de rol de ROLES (liga #7c3aed · club #1f8923 · federación #1f78d1).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Foco visible (anillo del DS §Button) en lo que el shell no cubre */
+.nav-row:focus-visible,
+.burger-btn:focus-visible,
+.header-burger:focus-visible,
+.user-chip:focus-visible,
+.naowee-tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.naowee-tab:focus-visible { box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ─── Bloque de contexto (sidebar) ─── */
+.ctx { flex-shrink: 0; padding: 14px 12px 12px; border-bottom: 1px solid var(--border); }
+.ctx[hidden] { display: none; }
+.ctx-trigger {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 10px 10px 10px; text-align: left; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  font-family: inherit; color: var(--text-primary); position: relative;
+  transition: border-color var(--duration-fast), background var(--duration-fast), box-shadow var(--duration-fast);
+}
+.ctx-trigger:hover { border-color: var(--border-dark); background: var(--bg-soft); }
+.ctx-trigger[aria-expanded="true"] { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(215, 64, 9, .12); }
+.ctx-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.ctx.is-flash .ctx-trigger { animation: ctxFlash .9s var(--easing-smoothout); }
+@keyframes ctxFlash { 0% { background: var(--accent-bg-warm); } 100% { background: var(--surface); } }
+
+.ctx-ava {
+  position: relative; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12.5px; font-weight: 800; letter-spacing: .2px;
+}
+.ctx-ava__dot {
+  position: absolute; top: -3px; right: -3px; width: 11px; height: 11px;
+  border-radius: 50%; background: var(--accent); border: 2px solid #fff; display: none;
+}
+.ctx-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ctx-kicker { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); line-height: 16px; }
+.ctx-count {
+  font-size: 10px; font-weight: 700; line-height: 14px; padding: 1px 6px; border-radius: var(--radius-full);
+  background: var(--accent-bg); color: var(--accent);
+}
+.ctx-name {
+  font-size: 14px; font-weight: 700; line-height: 1.25; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ctx-sub { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx-chev {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; color: var(--text-secondary);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.ctx-chev svg { width: 16px; height: 16px; }
+.ctx-trigger:hover .ctx-chev,
+.ctx-trigger[aria-expanded="true"] .ctx-chev { background: #FFEDC7; color: var(--accent); }
+
+/* Aviso de pendientes en otro organismo: lo que hace notar que hay más de uno */
+.ctx-hint {
+  display: flex; align-items: flex-start; gap: 8px; width: 100%; margin-top: 8px;
+  padding: 8px 10px; border: none; border-radius: var(--radius-md); cursor: pointer;
+  background: var(--naowee-color-feedback-fill-caution-quiet); text-align: left;
+  font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4;
+  color: var(--naowee-color-feedback-text-caution-quiet-on-fill);
+  transition: background var(--duration-fast);
+}
+.ctx-hint[hidden] { display: none; }
+.ctx-hint:hover { background: var(--accent-bg-warm); }
+.ctx-hint:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.ctx-hint__dot { flex-shrink: 0; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--accent); }
+.ctx-hint strong { font-weight: 700; }
+
+/* Colapsado (desktop): solo el monograma, con punto si hay pendientes en otro organismo */
+.sidebar.collapsed .ctx { padding: 14px 0 12px; display: flex; justify-content: center; }
+.sidebar.collapsed .ctx-trigger { width: 48px; height: 48px; padding: 0; justify-content: center; border-color: transparent; background: transparent; }
+.sidebar.collapsed .ctx-trigger:hover { background: var(--bg-soft); }
+.sidebar.collapsed .ctx-meta,
+.sidebar.collapsed .ctx-chev,
+.sidebar.collapsed .ctx-hint { display: none; }
+.sidebar.collapsed .ctx.has-pending .ctx-ava__dot { display: block; }
+
+/* ─── Panel del selector (vive en <body>: el sidebar recorta con overflow:hidden) ─── */
+.ctx-pop {
+  position: fixed; z-index: 120; width: 320px; max-width: calc(100vw - 24px);
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(40, 40, 52, .12); padding: 6px;
+  opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden;
+  transition: opacity var(--duration-normal), transform var(--duration-normal) var(--easing-smoothout), visibility 0s linear var(--duration-normal);
+}
+.ctx-pop.is-open { opacity: 1; transform: translateY(0); pointer-events: auto; visibility: visible; transition-delay: 0s; }
+.ctx-pop__head { padding: 10px 12px 6px; }
+.ctx-pop__title { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.ctx-pop__lead { margin: 2px 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.ctx-pop__list { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; max-height: min(60vh, 420px); overflow-y: auto; }
+.ctx-opt {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+  border: none; background: transparent; border-radius: var(--radius-md); cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--text-primary);
+  transition: background var(--duration-fast);
+}
+.ctx-opt:hover { background: var(--bg-soft); }
+.ctx-opt:focus-visible { outline: none; background: var(--bg-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.ctx-opt[aria-checked="true"] { background: var(--accent-bg); }
+.ctx-opt[aria-checked="true"]:hover { background: var(--accent-bg-warm); }
+.ctx-opt .ctx-ava { width: 34px; height: 34px; border-radius: 9px; font-size: 12px; }
+.ctx-opt__meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ctx-opt__name { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.ctx-opt__sub { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; line-height: 1.35; }
+.ctx-opt__end { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.ctx-opt__check { width: 18px; height: 18px; color: var(--accent); display: flex; }
+.ctx-opt__check svg { width: 16px; height: 16px; }
+.ctx-pop__foot { border-top: 1px solid var(--border); margin: 4px -6px -6px; padding: 10px 18px 12px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; }
+
+.ctx-sheet-handle { display: none; }
+.ctx-backdrop {
+  position: fixed; inset: 0; z-index: 110; background: rgba(40, 40, 52, .42);
+  opacity: 0; pointer-events: none; transition: opacity var(--duration-normal) ease;
+}
+
+/* ─── Contexto compacto en el header (solo <1024px: el drawer está cerrado) ─── */
+.ctx-mini {
+  display: none; align-items: center; gap: 8px; min-width: 0; flex: 0 1 auto;
+  height: 44px; padding: 0 8px 0 4px; cursor: pointer;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-full);
+  font-family: inherit; color: var(--text-primary); text-align: left;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.ctx-mini:hover { border-color: var(--border-dark); }
+.ctx-mini:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.ctx-mini .ctx-ava { width: 34px; height: 34px; border-radius: 50%; font-size: 11.5px; }
+.ctx-mini.has-pending .ctx-ava__dot { display: block; }
+.ctx-mini__meta { display: flex; flex-direction: column; min-width: 0; }
+.ctx-mini__kicker { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); line-height: 13px; }
+.ctx-mini__name { font-size: 13px; font-weight: 700; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx-mini .ctx-chev { width: 22px; height: 22px; }
+.ctx-mini .ctx-chev svg { width: 16px; height: 16px; }
+
+/* ─── Conmutador de revisión (no es parte del diseño) ─── */
+.review-toggle {
+  position: fixed; right: 16px; bottom: 16px; z-index: 90;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px;
+  background: #fff; border: 1px dashed var(--border-dark); border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(40, 40, 52, .12); font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.review-toggle .demo-role-switcher__mode-switch { border-radius: var(--radius-full); }
+.review-toggle .demo-role-switcher__mode-btn { border-radius: var(--radius-full); padding: 6px 10px; }
+.review-toggle .demo-role-switcher__mode-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ─── Responsive ─── */
+@media (max-width: 1023px) {
+  /* En el drawer el bloque va completo aunque el sidebar esté marcado como colapsado */
+  .sidebar.collapsed .ctx { padding: 14px 12px 12px; display: block; }
+  .sidebar.collapsed .ctx[hidden] { display: none; }
+  .sidebar.collapsed .ctx-trigger { width: 100%; height: auto; padding: 10px; justify-content: flex-start; border-color: var(--border); background: var(--surface); }
+  .sidebar.collapsed .ctx-meta,
+  .sidebar.collapsed .ctx-chev { display: flex; }
+  .sidebar.collapsed .ctx-hint { display: flex; }
+  .sidebar.collapsed .ctx-hint[hidden] { display: none; }
+  .sidebar.collapsed .ctx-ava__dot { display: none; }
+
+  .ctx-mini { display: flex; }
+  .ctx-mini[hidden] { display: none; }
+
+  /* El panel pasa a hoja inferior */
+  .ctx-pop {
+    left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto; max-width: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0; border-bottom: none;
+    box-shadow: var(--shadow-sheet); padding: 6px 10px calc(14px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+  }
+  .ctx-pop.is-open { transform: translateY(0); }
+  .ctx-sheet-handle { display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--border-dark); margin: 6px auto 4px; }
+  .ctx-pop__list { max-height: 60vh; }
+  .ctx-opt { padding: 10px; }
+  .ctx-pop__foot { margin: 4px -10px 0; }
+  body.ctx-sheet-open .ctx-backdrop { opacity: 1; pointer-events: auto; }
+}
+@media (max-width: 600px) {
+  .top-header { gap: 8px; }
+  .review-toggle { right: 8px; bottom: 8px; padding-left: 10px; }
+  .review-toggle__lbl-long { display: none; }
+}
+@media (max-width: 380px) {
+  .ctx-mini__kicker { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot">
+    <aside class="sidebar" id="naoweeSidebar">
+      <div class="sidebar-logo">
+        <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú" aria-expanded="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+        <div class="logo-sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+      </div>
+
+      <!-- Contexto activo: solo existe si la persona administra 2 o más organismos -->
+      <div class="ctx" id="ctx" hidden>
+        <button class="ctx-trigger" id="ctxTrigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="ctxPop">
+          <span class="ctx-ava" id="ctxAva"><span class="ctx-ava__txt"></span><span class="ctx-ava__dot" aria-hidden="true"></span></span>
+          <span class="ctx-meta">
+            <span class="ctx-kicker">Trabajas en <span class="ctx-count" id="ctxCount"></span></span>
+            <span class="ctx-name" id="ctxName"></span>
+            <span class="ctx-sub" id="ctxSub"></span>
+          </span>
+          <span class="ctx-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 9 12 4 17 9"/><polyline points="7 15 12 20 17 15"/></svg></span>
+        </button>
+        <button class="ctx-hint" id="ctxHint" type="button" hidden><span class="ctx-hint__dot" aria-hidden="true"></span><span id="ctxHintText"></span></button>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebarNav" aria-label="Menú principal"></nav>
+    </aside>
+  </div>
+
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="ctx-mini" id="ctxMini" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="ctxPop" hidden>
+        <span class="ctx-ava" id="ctxMiniAva"><span class="ctx-ava__txt"></span><span class="ctx-ava__dot" aria-hidden="true"></span></span>
+        <span class="ctx-mini__meta">
+          <span class="ctx-mini__kicker">Trabajas en</span>
+          <span class="ctx-mini__name" id="ctxMiniName"></span>
+        </span>
+        <span class="ctx-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 9 12 4 17 9"/><polyline points="7 15 12 20 17 15"/></svg></span>
+      </button>
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" style="background:#7c3aed22;color:#7c3aed">SM</div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name">Sandra Mejía</span>
+            <span class="user-role" id="userRole">Liga</span>
+          </div>
+          <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+        <div class="profile-dd profile-dd--identity-only" role="menu">
+          <div class="profile-dd__header">
+            <span class="ava-ring" style="width:42px;height:42px;font-size:14px;background:#7c3aed22;color:#7c3aed">SM</span>
+            <div class="profile-dd__user">
+              <strong>Sandra Mejía</strong>
+              <span class="profile-dd__doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>CC 31.567.890</span>
+              <span class="profile-dd__current-role" id="ddRole" style="color:#7c3aed"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="page-inner">
+        <div class="page-head">
+          <h1 class="page-head__title" id="pageTitle">Mis clubes</h1>
+          <p class="page-head__sub" id="pageSub"></p>
+        </div>
+        <div id="bandejaRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Selector de organismo (panel en desktop, hoja inferior en móvil) -->
+<div class="ctx-backdrop" id="ctxBackdrop"></div>
+<div class="ctx-pop" id="ctxPop" role="menu" aria-labelledby="ctxPopTitle">
+  <span class="ctx-sheet-handle" aria-hidden="true"></span>
+  <div class="ctx-pop__head">
+    <p class="ctx-pop__title" id="ctxPopTitle">Cambiar de organismo</p>
+    <p class="ctx-pop__lead">Elige en cuál vas a trabajar.</p>
+  </div>
+  <div class="ctx-pop__list" id="ctxList"></div>
+  <div class="ctx-pop__foot">Al cambiar, el menú, la bandeja, la jerarquía y los deportistas pasan a ese organismo.</div>
+</div>
+
+<div class="shell-backdrop" id="drawerBackdrop"></div>
+
+<!-- Solo para la revisión del diseño -->
+<div class="review-toggle" role="group" aria-label="Simular cuántos organismos administra">
+  <span><span class="review-toggle__lbl-long">Ver con </span>organismos</span>
+  <div class="demo-role-switcher__mode-switch">
+    <button type="button" class="demo-role-switcher__mode-btn" data-set="1" aria-pressed="false" title="Administra un solo organismo">1</button>
+    <button type="button" class="demo-role-switcher__mode-btn" data-set="2" aria-pressed="true" title="Dos ligas del Valle">2</button>
+    <button type="button" class="demo-role-switcher__mode-btn" data-set="4" aria-pressed="false" title="Ligas, club y federación">4</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── Iconos (mismo set que shared/sidebar.js) ─── */
+  const ICON = {
+    sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+    users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    level: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  };
+
+  /* Colores por tipo = colores de rol en ROLES (shared/sidebar.js) */
+  const TIPO = {
+    liga:       { label: 'Liga',       color: '#7c3aed', emoji: '🚩' },
+    club:       { label: 'Club',       color: '#1f8923', emoji: '🛡️' },
+    federacion: { label: 'Federación', color: '#1f78d1', emoji: '🏅' }
+  };
+
+  /* ─── Organismos de ejemplo ─── */
+  const ORGS = {
+    'LIG-001': { id: 'LIG-001', tipo: 'liga', nombre: 'Liga de Patinaje del Valle', ini: 'PV', deporte: 'Patinaje', lugar: 'Valle del Cauca',
+      rows: [
+        { nombre: 'Club Patín Cali', sub: 'Patinaje', nit: '805020001-1', estado: 'Activo' },
+        { nombre: 'Club Patín Vallecaucano', sub: 'Patinaje', nit: '805020003-3', estado: 'Activo' },
+        { nombre: 'Club Ruedas del Sur', sub: 'Patinaje', nit: '805020002-2', estado: 'En revisión' },
+        { nombre: 'Club Rueda Libre Palmira', sub: 'Patinaje', nit: '805020010-0', estado: 'En corrección' },
+        { nombre: 'Club Patines de Tuluá', sub: 'Patinaje', nit: '805020014-4', estado: 'En revisión' }
+      ] },
+    'LIG-006': { id: 'LIG-006', tipo: 'liga', nombre: 'Liga de Natación del Valle', ini: 'NV', deporte: 'Natación, Polo Acuático', lugar: 'Valle del Cauca',
+      rows: [
+        { nombre: 'Club Deportivo Aguas del Valle', sub: 'Natación', nit: '805020007-7', estado: 'Activo' },
+        { nombre: 'Club Delfines de Buga', sub: 'Natación', nit: '805020011-1', estado: 'En revisión' },
+        { nombre: 'Club Polo Acuático Cali', sub: 'Polo Acuático', nit: '805020012-2', estado: 'Activo' },
+        { nombre: 'Club Natación Pacífico', sub: 'Natación', nit: '805020008-8', estado: 'Rechazado' }
+      ] },
+    'CLU-001': { id: 'CLU-001', tipo: 'club', nombre: 'Club Patín Cali', ini: 'PC', deporte: 'Patinaje', lugar: 'Cali',
+      rows: [
+        { nombre: 'Valentina Ortiz', sub: 'CC 1.144.556.778', deporte: 'Patinaje', modalidad: 'Velocidad', tipo: 'Afiliación', estado: 'Enviada', fecha: '2026-10-09' },
+        { nombre: 'Samuel Rivas Lozano', sub: 'TI 1.107.223.904', deporte: 'Patinaje', modalidad: 'Artístico', tipo: 'Afiliación', estado: 'Aprobada', fecha: '2026-09-21' },
+        { nombre: 'Daniela Cuero', sub: 'CC 1.006.338.120', deporte: 'Patinaje', modalidad: 'Velocidad', tipo: 'Baja', estado: 'Rechazada', fecha: '2026-09-02' }
+      ] },
+    'FED-040': { id: 'FED-040', tipo: 'federacion', nombre: 'Federación Colombiana de Patinaje', ini: 'FP', deporte: 'Patinaje', lugar: 'Nacional',
+      rows: [
+        { nombre: 'Liga de Patinaje del Valle', sub: 'Patinaje', nit: '805010001-1', estado: 'Activo' },
+        { nombre: 'Liga de Patinaje de Antioquia', sub: 'Patinaje', nit: '811010002-2', estado: 'En revisión' },
+        { nombre: 'Liga de Patinaje de Bogotá', sub: 'Patinaje', nit: '830010003-3', estado: 'Activo' },
+        { nombre: 'Liga de Patinaje del Meta', sub: 'Patinaje', nit: '822010004-4', estado: 'En corrección' }
+      ] }
+  };
+  const SETS = { 1: ['LIG-001'], 2: ['LIG-001', 'LIG-006'], 4: ['LIG-001', 'LIG-006', 'CLU-001', 'FED-040'] };
+
+  /* Qué cuenta como "por revisar" y cómo se dice, por tipo */
+  const pendientes = (o) => o.rows.filter((r) => (o.tipo === 'club' ? r.estado === 'Enviada' : r.estado === 'En revisión')).length;
+  const pendLabel = (o, n) => {
+    if (o.tipo === 'club') return n === 1 ? '1 solicitud por revisar' : `${n} solicitudes por revisar`;
+    if (o.tipo === 'federacion') return n === 1 ? '1 liga por revisar' : `${n} ligas por revisar`;
+    return n === 1 ? '1 club por revisar' : `${n} clubes por revisar`;
+  };
+  const subOf = (o) => `${TIPO[o.tipo].label} · ${o.deporte}`;
+
+  /* Menú por tipo de organismo (mismo MENU_BY_ROLE de shared/sidebar.js) */
+  const MENU = {
+    liga: [
+      { section: null, items: [
+        { id: 'jerarquia', label: 'Jerarquía SND', icon: 'sitemap' },
+        { id: 'j-club', label: 'Clubes', icon: 'level', child: true },
+        { id: 'j-dep', label: 'Deportistas', icon: 'level', child: true }
+      ] },
+      { section: 'MIS CLUBES', items: [
+        { id: 'bandeja', label: 'Mis clubes', icon: 'inbox' },
+        { id: 'cargue', label: 'Cargue masivo', icon: 'upload' }
+      ] },
+      { section: 'DEPORTISTAS', items: [{ id: 'deportistas', label: 'Mis deportistas', icon: 'users' }] }
+    ],
+    federacion: [
+      { section: null, items: [
+        { id: 'jerarquia', label: 'Jerarquía SND', icon: 'sitemap' },
+        { id: 'j-liga', label: 'Ligas', icon: 'level', child: true },
+        { id: 'j-club', label: 'Clubes', icon: 'level', child: true },
+        { id: 'j-dep', label: 'Deportistas', icon: 'level', child: true }
+      ] },
+      { section: 'MIS LIGAS', items: [
+        { id: 'bandeja', label: 'Mis ligas', icon: 'inbox' },
+        { id: 'cargue', label: 'Cargue masivo', icon: 'upload' }
+      ] },
+      { section: 'DEPORTISTAS', items: [{ id: 'deportistas', label: 'Mis deportistas', icon: 'users' }] }
+    ],
+    club: [
+      { section: 'DEPORTISTAS', items: [
+        { id: 'deportistas', label: 'Mis deportistas', icon: 'users' },
+        { id: 'bandeja', label: 'Solicitudes de deportistas', icon: 'inbox' }
+      ] }
+    ]
+  };
+
+  const PAGE = {
+    liga: { title: 'Mis clubes', plural: 'clubes', col: 'Club',
+      sub: (o) => `Clubes de la ${o.nombre}: aprueba, rechaza o solicita corrección con motivo obligatorio.` },
+    federacion: { title: 'Mis ligas', plural: 'ligas', col: 'Liga',
+      sub: (o) => `Ligas de la ${o.nombre}: aprueba, rechaza o solicita corrección con motivo obligatorio.` },
+    club: { title: 'Solicitudes de deportistas', plural: 'solicitudes', col: 'Deportista',
+      sub: (o) => `Solicitudes de afiliación y baja que llegan al ${o.nombre}.` }
+  };
+
+  const BADGE = { 'Activo': 'positive', 'En revisión': 'caution', 'En corrección': 'caution', 'Rechazado': 'negative', 'Preinscrito': 'neutral',
+    'Enviada': 'caution', 'Aprobada': 'positive', 'Rechazada': 'negative' };
+  const badge = (e) => `<span class="naowee-badge naowee-badge--${BADGE[e] || 'neutral'} naowee-badge--quiet naowee-badge--small">${e}</span>`;
+
+  /* ─── Estado ─── */
+  let set = SETS[2];
+  let currentId = 'LIG-001';
+  let filtro = null;
+  const cur = () => ORGS[currentId];
+  const others = () => set.filter((id) => id !== currentId).map((id) => ORGS[id]);
+
+  const $ = (id) => document.getElementById(id);
+  const sidebar = $('naoweeSidebar');
+  const trigger = $('ctxTrigger');
+  const mini = $('ctxMini');
+  const pop = $('ctxPop');
+  const list = $('ctxList');
+
+  function paintAva(el, o) {
+    el.style.background = TIPO[o.tipo].color + '22';
+    el.style.color = TIPO[o.tipo].color;
+    el.querySelector('.ctx-ava__txt').textContent = o.ini;
+  }
+
+  /* ─── Bloque de contexto ─── */
+  function renderCtx() {
+    const multi = set.length > 1;
+    $('ctx').hidden = !multi;
+    mini.hidden = !multi;
+    const o = cur();
+    $('userRole').textContent = multi ? o.nombre : TIPO[o.tipo].label;
+    $('ddRole').innerHTML = `<span class="profile-dd__check-ico">${ICON.check}</span>${TIPO[o.tipo].label} · ${o.nombre}`;
+    if (!multi) return;
+
+    paintAva($('ctxAva'), o);
+    paintAva($('ctxMiniAva'), o);
+    $('ctxName').textContent = o.nombre;
+    $('ctxSub').textContent = subOf(o);
+    $('ctxCount').textContent = `${set.length} organismos`;
+    $('ctxMiniName').textContent = o.nombre;
+
+    const conPend = others().filter((x) => pendientes(x) > 0);
+    const total = conPend.reduce((s, x) => s + pendientes(x), 0);
+    const hint = $('ctxHint');
+    $('ctx').classList.toggle('has-pending', total > 0);
+    mini.classList.toggle('has-pending', total > 0);
+    if (conPend.length === 1) {
+      const x = conPend[0];
+      $('ctxHintText').innerHTML = `${pendLabel(x, pendientes(x))} en <strong>${x.nombre}</strong>`;
+      hint.dataset.go = x.id;
+      hint.hidden = false;
+    } else if (conPend.length > 1) {
+      $('ctxHintText').innerHTML = `<strong>${total} pendientes</strong> en tus otros ${conPend.length} organismos`;
+      hint.dataset.go = '';
+      hint.hidden = false;
+    } else {
+      hint.hidden = true;
+    }
+
+    const aria = `Trabajas en ${o.nombre}, ${subOf(o)}. Administras ${set.length} organismos. Cambiar de organismo`;
+    trigger.setAttribute('aria-label', aria + (total ? `. Hay ${total} pendientes en otros organismos` : ''));
+    mini.setAttribute('aria-label', aria);
+  }
+
+  /* ─── Menú lateral ─── */
+  function renderNav() {
+    const o = cur();
+    const n = pendientes(o);
+    $('sidebarNav').innerHTML = MENU[o.tipo].map((s) => `
+      ${s.section ? `<div class="nav-section">${s.section}</div>` : ''}
+      ${s.items.map((it) => {
+        const active = it.id === 'bandeja';
+        return `<a href="#" class="nav-row ${it.child ? 'nav-row--child' : ''} ${active ? 'active' : ''}" data-id="${it.id}"${active ? ' aria-current="page"' : ''}>
+          ${active && !it.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+          <span class="icon">${ICON[it.icon]}</span>
+          <span class="lbl">${it.label}</span>
+          ${it.id === 'bandeja' && n ? `<span class="nav-badge" aria-label="${n} por revisar">${n}</span>` : ''}
+        </a>`;
+      }).join('')}`).join('');
+  }
+
+  /* ─── Página: título + tabla ─── */
+  function renderPage() {
+    const o = cur();
+    const p = PAGE[o.tipo];
+    $('pageTitle').textContent = p.title;
+    $('pageSub').textContent = p.sub(o);
+    document.title = `${p.title} · ${o.nombre}`;
+
+    const esClub = o.tipo === 'club';
+    const tabs = esClub ? ['Pendientes', 'Aprobadas', 'Rechazadas', 'Todas'] : ['Accionables', 'En revisión', 'En corrección', 'Rechazado', 'Activo', 'Todos'];
+    if (!tabs.includes(filtro)) filtro = tabs[0];
+    const match = (r) => {
+      if (filtro === 'Todos' || filtro === 'Todas') return true;
+      if (filtro === 'Accionables') return r.estado === 'En revisión';
+      if (filtro === 'Pendientes') return r.estado === 'Enviada';
+      if (filtro === 'Aprobadas') return r.estado === 'Aprobada';
+      if (filtro === 'Rechazadas') return r.estado === 'Rechazada';
+      return r.estado === filtro;
+    };
+    const rows = o.rows.filter(match);
+    const accion = (r) => (r.estado === 'En revisión' || r.estado === 'Enviada') ? 'Revisar' : 'Ver';
+
+    const tabla = rows.length ? `
+      <div class="cg-table-wrap">
+        <table class="cg-table bj-table">
+          <thead><tr>${esClub
+            ? '<th>Deportista</th><th>Deporte</th><th>Estado</th><th>Fecha</th><th></th>'
+            : `<th>${p.col}</th><th>NIT</th><th>Estado</th><th></th>`}</tr></thead>
+          <tbody>${rows.map((r) => esClub ? `
+            <tr>
+              <td data-label="Deportista"><div class="bj-org"><span class="bj-org__emoji">🏃</span><div><div class="bj-org__name">${r.nombre}</div><div class="bj-org__sub">${r.sub}</div></div></div></td>
+              <td data-label="Deporte"><div class="bj-org__name" style="font-weight:500">${r.deporte}</div><div class="bj-org__sub">${r.modalidad}</div></td>
+              <td data-label="Estado"><div class="bj-sol-cell">${badge(r.estado)}</div><div class="bj-org__sub">${r.tipo}</div></td>
+              <td class="cg-table__nit" data-label="Fecha">${r.fecha}</td>
+              <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small">${accion(r)}</button></td>
+            </tr>` : `
+            <tr>
+              <td data-label="${p.col}"><div class="bj-org"><span class="bj-org__emoji">${o.tipo === 'federacion' ? TIPO.liga.emoji : TIPO.club.emoji}</span><div><div class="bj-org__name">${r.nombre}</div><div class="bj-org__sub">${r.sub}</div></div></div></td>
+              <td class="cg-table__nit" data-label="NIT">${r.nit}</td>
+              <td data-label="Estado">${badge(r.estado)}</td>
+              <td class="bj-row-action" data-label=""><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small">${accion(r)}</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : `
+      <div class="naowee-empty-state"><span class="naowee-empty-state__icon">${ICON.inbox}</span><p class="naowee-empty-state__title">Sin ${p.plural}</p><p class="naowee-empty-state__description">No hay ${p.plural} ${filtro === tabs[0] ? 'pendientes de tu revisión' : 'que coincidan con el filtro'} en ${o.nombre}.</p></div>`;
+
+    $('bandejaRoot').innerHTML = `
+      <div class="naowee-message naowee-message--informative" style="margin-bottom:16px"><span class="naowee-message__icon">${ICON.info}</span><div class="naowee-message__body"><p class="naowee-message__text">${esClub
+        ? `Solicitudes de deportistas del <strong>${o.nombre}</strong>. Aprueba o rechaza cada afiliación o baja.`
+        : `Bandeja de <strong>${p.plural}</strong> de <strong>${o.nombre}</strong>. Aprueba, rechaza o solicita corrección (motivo obligatorio).`}</p></div></div>
+      <div class="naowee-card bj-panel">
+        <div class="bj-panel__bar">
+          <div class="naowee-searchbox bj-search"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">${ICON.search}</span><input class="naowee-searchbox__input" aria-label="Buscar" placeholder="${esClub ? 'Buscar por nombre, documento o deporte…' : 'Buscar por nombre o NIT…'}"></div></div>
+        </div>
+        <div class="naowee-tabs bj-tabs" role="tablist">${tabs.map((t) => `<button type="button" role="tab" aria-selected="${t === filtro}" class="naowee-tab ${t === filtro ? 'naowee-tab--selected' : ''}" data-f="${t}">${t}</button>`).join('')}</div>
+        ${tabla}
+      </div>`;
+  }
+
+  function renderAll() { renderCtx(); renderNav(); renderPage(); }
+
+  /* ─── Panel del selector ─── */
+  let opener = null;
+  function renderList() {
+    list.innerHTML = set.map((id) => {
+      const o = ORGS[id];
+      const isCur = id === currentId;
+      const n = pendientes(o);
+      return `<button type="button" class="ctx-opt" role="menuitemradio" aria-checked="${isCur}" data-id="${id}" tabindex="-1">
+        <span class="ctx-ava" style="background:${TIPO[o.tipo].color}22;color:${TIPO[o.tipo].color}">${o.ini}</span>
+        <span class="ctx-opt__meta"><span class="ctx-opt__name">${o.nombre}</span><span class="ctx-opt__sub">${subOf(o)} · ${o.lugar}</span></span>
+        <span class="ctx-opt__end">
+          ${!isCur && n ? `<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">${n} por revisar</span>` : ''}
+          ${isCur ? `<span class="ctx-opt__check" aria-hidden="true">${ICON.check}</span>` : ''}
+        </span>
+      </button>`;
+    }).join('');
+  }
+  const isMobile = () => window.innerWidth < 1024;
+
+  function openPop(from) {
+    opener = from;
+    renderList();
+    hideTip();
+    if (!isMobile()) {
+      const r = from.getBoundingClientRect();
+      if (sidebar.classList.contains('collapsed')) {
+        pop.style.left = `${r.right + 12}px`;
+        pop.style.top = `${r.top}px`;
+      } else {
+        pop.style.left = `${r.left}px`;
+        pop.style.top = `${r.bottom + 6}px`;
+      }
+    } else {
+      document.body.classList.add('ctx-sheet-open');
+    }
+    pop.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+    mini.setAttribute('aria-expanded', 'true');
+    const c = list.querySelector('[aria-checked="true"]') || list.querySelector('.ctx-opt');
+    setTimeout(() => c && c.focus(), 30);
+  }
+  function closePop(restore) {
+    if (!pop.classList.contains('is-open')) return;
+    pop.classList.remove('is-open');
+    document.body.classList.remove('ctx-sheet-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    mini.setAttribute('aria-expanded', 'false');
+    if (restore && opener && opener.offsetParent !== null) opener.focus();
+  }
+  const togglePop = (from) => (pop.classList.contains('is-open') ? closePop(true) : openPop(from));
+
+  function switchTo(id) {
+    if (!ORGS[id]) return;
+    const changed = id !== currentId;
+    currentId = id;
+    filtro = null;
+    closePop(false);
+    document.body.classList.remove('has-mobile-drawer-open');
+    renderAll();
+    if (changed) {
+      const ctx = $('ctx');
+      ctx.classList.remove('is-flash'); void ctx.offsetWidth; ctx.classList.add('is-flash');
+      toast(`Ahora trabajas en ${cur().nombre}`);
+      (isMobile() ? mini : trigger).focus();
+    }
+  }
+
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); togglePop(trigger); });
+  mini.addEventListener('click', (e) => { e.stopPropagation(); togglePop(mini); });
+  $('ctxHint').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const go = e.currentTarget.dataset.go;
+    if (go) switchTo(go); else openPop(trigger);
+  });
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('.ctx-opt');
+    if (b) switchTo(b.dataset.id);
+  });
+  pop.addEventListener('click', (e) => e.stopPropagation());
+  pop.addEventListener('keydown', (e) => {
+    const opts = [...list.querySelectorAll('.ctx-opt')];
+    const i = opts.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); opts[(i + 1) % opts.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); opts[(i - 1 + opts.length) % opts.length].focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); opts[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); opts[opts.length - 1].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closePop(true); }
+    else if (e.key === 'Tab') { closePop(true); }
+  });
+  $('ctxBackdrop').addEventListener('click', () => closePop(true));
+  document.addEventListener('click', () => closePop(false));
+  window.addEventListener('resize', () => closePop(false));
+
+  /* ─── Tooltip del bloque con sidebar colapsado (reusa .nav-tooltip) ─── */
+  const tip = document.createElement('div');
+  tip.className = 'nav-tooltip';
+  document.body.appendChild(tip);
+  function showTip(el, text) {
+    if (!sidebar.classList.contains('collapsed') || isMobile() || pop.classList.contains('is-open')) return;
+    tip.textContent = text;
+    const r = el.getBoundingClientRect();
+    tip.style.left = `${r.right + 12}px`;
+    tip.style.top = `${r.top + r.height / 2}px`;
+    tip.classList.add('is-visible');
+  }
+  function hideTip() { tip.classList.remove('is-visible'); }
+  const ctxTipText = () => {
+    const t = `Trabajas en ${cur().nombre}`;
+    return $('ctx').classList.contains('has-pending') ? `${t} · hay pendientes en otro organismo` : t;
+  };
+  trigger.addEventListener('mouseenter', () => showTip(trigger, ctxTipText()));
+  trigger.addEventListener('focus', () => showTip(trigger, ctxTipText()));
+  trigger.addEventListener('mouseleave', hideTip);
+  trigger.addEventListener('blur', hideTip);
+  $('sidebarNav').addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.nav-row');
+    if (row) showTip(row, row.querySelector('.lbl').textContent.trim());
+  });
+  $('sidebarNav').addEventListener('mouseleave', hideTip);
+
+  /* ─── Shell: colapsar, drawer, chip de usuario, navegación simulada ─── */
+  $('sidebarToggle').addEventListener('click', () => {
+    const c = sidebar.classList.toggle('collapsed');
+    $('sidebarToggle').setAttribute('aria-expanded', String(!c));
+    $('sidebarToggle').setAttribute('aria-label', c ? 'Expandir menú' : 'Colapsar menú');
+    closePop(false); hideTip();
+  });
+  $('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  $('drawerBackdrop').addEventListener('click', () => document.body.classList.remove('has-mobile-drawer-open'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.body.classList.remove('has-mobile-drawer-open');
+      $('profileSwitcher').classList.remove('open');
+      $('userChipTrigger').setAttribute('aria-expanded', 'false');
+    }
+  });
+  const chip = $('userChipTrigger');
+  const toggleChip = (e) => {
+    e.stopPropagation();
+    const o = $('profileSwitcher').classList.toggle('open');
+    chip.setAttribute('aria-expanded', String(o));
+  };
+  chip.addEventListener('click', toggleChip);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(e); } });
+  document.addEventListener('click', (e) => {
+    if (!$('profileSwitcher').contains(e.target)) { $('profileSwitcher').classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); }
+  });
+  $('sidebarNav').addEventListener('click', (e) => {
+    const row = e.target.closest('.nav-row');
+    if (!row) return;
+    e.preventDefault();
+    if (!row.classList.contains('active')) toast(`${row.querySelector('.lbl').textContent.trim()}: en esta maqueta solo está la bandeja.`);
+    document.body.classList.remove('has-mobile-drawer-open');
+  });
+  $('bandejaRoot').addEventListener('click', (e) => {
+    const t = e.target.closest('.naowee-tab');
+    if (t) { filtro = t.dataset.f; renderPage(); $('bandejaRoot').querySelector(`[data-f="${filtro}"]`).focus(); }
+  });
+
+  /* ─── Toast (snackbar canónico #evToast) ─── */
+  let tTimer = null;
+  function toast(msg) {
+    let t = $('evToast');
+    if (!t) { t = document.createElement('div'); t.id = 'evToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.className = 'evtoast--info';
+    t.innerHTML = `<span class="evtoast__badge">${ICON.swap}</span><span class="evtoast__text"></span>`;
+    t.querySelector('.evtoast__text').textContent = msg;
+    requestAnimationFrame(() => t.classList.add('is-visible'));
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('is-visible'), 2600);
+  }
+
+  /* ─── Conmutador de revisión ─── */
+  document.querySelectorAll('.review-toggle [data-set]').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.review-toggle [data-set]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      set = SETS[b.dataset.set];
+      if (!set.includes(currentId)) currentId = set[0];
+      closePop(false);
+      renderAll();
+    });
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

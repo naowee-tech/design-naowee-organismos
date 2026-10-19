@@ -1,0 +1,176 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE ORGANISMOS — Usuarios (Fase 3)
+   Cuenta principal arriba + panel igual al de la bandeja (.bj-panel +
+   .naowee-tabs + .cg-table): «Usuarios» y «Roles del organismo».
+   Invitar / crear territorial / desactivar en .reg-modal.
+   Solo layout local .us-*; el resto es shell, bandeja y formularios.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Encabezado con acción principal ─── */
+.us-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 22px; }
+.us-head .page-head { margin: 0; flex: 1 1 420px; }
+.us-head__act { flex-shrink: 0; }
+.us-head__act:empty { display: none; }
+
+/* ─── Cuenta principal ─── */
+.us-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px 18px; margin: 0 0 16px; }
+.us-ava {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; letter-spacing: .2px;
+  background: var(--accent-bg); color: var(--accent);
+}
+.us-ava--sm { width: 32px; height: 32px; font-size: 11.5px; background: var(--bg-soft); color: var(--text-secondary); }
+.us-main__top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.us-main__name { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.us-main__role { font-size: 13.5px; color: var(--text-primary); margin: 3px 0 0; font-weight: 500; }
+.us-main__meta { font-size: 12.5px; color: var(--text-secondary); margin: 2px 0 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.us-main__side { text-align: right; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); max-width: 280px; margin: 0; }
+.us-main__side strong { color: var(--text-primary); font-weight: 600; }
+
+/* Administradores del Ministerio (solo lectura) */
+.us-admins { margin: 0 0 16px; padding: 0; overflow: hidden; }
+.us-admins__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 20px 12px; }
+.us-admins__title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.us-admins__sub { font-size: 13px; color: var(--text-secondary); margin: 3px 0 0; line-height: 1.45; }
+.us-admins__list { list-style: none; margin: 0; padding: 0 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; }
+.us-admins__item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); min-width: 0; }
+.us-admins__item .us-ava { width: 36px; height: 36px; font-size: 12px; }
+.us-admins__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.us-admins__mail { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.us-admins .naowee-message { margin: 4px 20px 16px; }
+.us-admins .naowee-message__text { font-size: 13px; line-height: 1.45; }
+.us-admins__compact { display: none; }
+.us-stack { display: inline-flex; flex-shrink: 0; }
+.us-stack .us-ava { width: 28px; height: 28px; font-size: 10.5px; box-shadow: 0 0 0 2px var(--surface); }
+.us-stack .us-ava + .us-ava { margin-left: -8px; }
+
+/* ─── Panel (mismo esqueleto que la bandeja) ─── */
+.us-count { font-size: 12.5px; color: var(--text-secondary); margin-left: auto; font-variant-numeric: tabular-nums; }
+.us-tabcount { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-left: 2px; font-variant-numeric: tabular-nums; }
+.naowee-tab--selected .us-tabcount { color: var(--accent); }
+.us-panel .naowee-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-tabpanel:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .15); }
+.us-panel .bj-filter__select:focus-visible { box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-tablehelp { display: flex; gap: 8px; align-items: flex-start; margin: 0 16px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--bg-soft); font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+.us-tablehelp svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--text-muted); }
+
+.us-user { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.us-user .bj-org__sub { overflow-wrap: anywhere; }
+.us-sub { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.us-nowrap { white-space: nowrap; }
+.us-cell-strong { font-weight: 600; color: var(--text-primary); }
+.us-row--off .bj-org__name, .us-row--off .us-cell-strong { color: var(--text-secondary); }
+.us-row--new td { animation: usNew 2.4s ease-out both; }
+@keyframes usNew { 0%, 40% { background: var(--accent-bg); } 100% { background: transparent; } }
+.bj-table .us-td-user { min-width: 230px; }
+.us-acts { display: flex; justify-content: flex-end; gap: 4px; flex-wrap: nowrap; }
+.naowee-btn--mute.us-btn-neg { color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.naowee-btn--mute.us-btn-neg svg { color: currentColor; }
+.naowee-btn--mute.us-btn-neg:hover { background: var(--naowee-color-feedback-fill-negative-quiet); }
+.naowee-btn--mute.us-btn-neg:focus-visible { box-shadow: 0 0 0 3px rgba(218, 22, 48, .2); }
+
+.us-panel-note {
+  display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px 20px;
+  border-top: 1px solid var(--border); background: var(--bg-soft);
+  font-size: 12.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.us-panel-note svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--text-muted); }
+
+/* ─── Roles del organismo ─── */
+.us-cat { padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.us-cat > .naowee-message .naowee-message__text { font-size: 13.5px; line-height: 1.5; }
+.us-cat__group { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 6px 0 -4px; }
+.us-roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.us-role { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); }
+.us-role--mine { border-color: var(--border-dark); }
+.us-role__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.us-role__name { font-size: 14.5px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.3; }
+.us-role__badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.us-role__does { font-size: 13.5px; line-height: 1.5; color: var(--text-primary); margin: 0; }
+.us-role__kv { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; }
+.us-role__kv dt { color: var(--text-secondary); margin: 0; }
+.us-role__kv dd { color: var(--text-primary); margin: 0; font-weight: 500; }
+.us-role__foot { display: flex; align-items: center; gap: 6px; margin: auto 0 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
+.us-role__foot svg { width: 14px; height: 14px; flex-shrink: 0; }
+.us-role__foot--yes { color: var(--naowee-color-feedback-text-positive-quiet-on-fill); }
+.us-role__foot--no { color: var(--text-secondary); font-weight: 500; }
+
+/* Puede / no puede (tarjeta de rol y diálogo de invitar) */
+.us-can { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.us-can__col { min-width: 0; }
+.us-can__title { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin: 0 0 4px; }
+.us-can ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.us-can li { display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: var(--text-primary); }
+.us-can li svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.us-can__yes svg { color: var(--naowee-color-feedback-fill-positive-loud); }
+.us-can__no svg { color: var(--naowee-color-feedback-fill-negative-loud); }
+.us-role .us-can { grid-template-columns: 1fr; }
+
+/* ─── Diálogos ─── */
+.us-dlg { max-width: 600px; }
+.us-dlg .naowee-message__text { font-size: 13.5px; line-height: 1.5; }
+.us-dlg .bj-select { appearance: auto; height: var(--field-h, 44px); padding: 0 12px; }
+.us-dlg .bj-select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-dlg .naowee-textfield--error .bj-select { border-color: var(--field-border-error); }
+.us-dlg .reg-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-lead { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.us-lead strong { color: var(--text-primary); }
+.us-field-help { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.45; }
+.us-roleinfo { padding: 14px 16px; border-radius: var(--radius-lg); background: var(--bg-soft); display: flex; flex-direction: column; gap: 10px; }
+.us-roleinfo__head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.us-roleinfo__who { font-size: 12.5px; color: var(--text-secondary); margin: 0; }
+.us-roleinfo__who strong { color: var(--text-primary); font-weight: 600; }
+.us-dlg .reg-choice-group { justify-content: flex-start; }
+.us-dlg .reg-choice { flex: 1 1 200px; max-width: none; }
+.us-dlg .reg-choice:focus-within { box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.us-dlg .reg-choice.is-selected:focus-within { box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px rgba(215, 64, 9, .22); }
+.us-fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+.us-fieldset legend { padding: 0; }
+.us-dup[hidden] { display: none; }
+.us-who { margin: 0; display: grid; grid-template-columns: 110px 1fr; gap: 6px 14px; padding: 14px 16px; background: var(--bg-soft); border-radius: var(--radius-lg); }
+.us-who dt { font-size: 12px; color: var(--text-secondary); margin: 0; }
+.us-who dd { font-size: 13px; color: var(--text-primary); margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.us-subtitle { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0 0 -8px; }
+.us-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
+.us-list li + li { margin-top: 4px; }
+.us-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ─── Responsive ─── */
+@media (max-width: 960px) {
+  .us-admins__list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .us-head__act, .us-head__act .naowee-btn { width: 100%; }
+  /* Cuenta principal en una línea compacta */
+  .us-main { grid-template-columns: auto minmax(0, 1fr); padding: 12px 14px; gap: 10px; }
+  .us-main .us-ava { width: 32px; height: 32px; font-size: 11.5px; }
+  .us-main__name { font-size: 14px; }
+  .us-main__role, .us-main__meta, .us-main__side { display: none; }
+  .us-admins__head, .us-admins__list, .us-admins .naowee-message { display: none; }
+  .us-admins__compact { display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+  .us-admins__compact strong { color: var(--text-primary); font-weight: 600; }
+  /* Buscador a ancho completo */
+  .us-panel .bj-search { flex-basis: 100%; max-width: none; min-width: 0; }
+  .us-panel .bj-panel__bar .bj-filter { flex: 1; }
+  .us-panel .bj-panel__bar .bj-filter__select { flex: 1; }
+  .us-count { margin-left: 0; }
+  .us-tablehelp { margin: 0 12px; }
+  .us-acts { justify-content: flex-start; flex-wrap: wrap; }
+  .cg-table tbody td.us-td-user { grid-template-columns: 1fr; padding-top: 4px; }
+  .cg-table tbody td.us-td-user::before { display: none; }
+  .bj-table .us-td-user { min-width: 0; }
+  .us-tab-q { display: none; }
+  .us-roles { grid-template-columns: minmax(0, 1fr); }
+  .us-cat { padding: 14px 12px 16px; }
+  .us-can { grid-template-columns: 1fr; }
+  .us-who { grid-template-columns: 1fr; gap: 2px; }
+  .us-who dt { margin-top: 6px; }
+  .us-dlg .bj-modal__foot .naowee-btn { flex: 1; }
+}
+@media (max-width: 600px) {
+  .us-panel-note { padding-left: 16px; padding-right: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .us-row--new td { animation: none; }
+}
