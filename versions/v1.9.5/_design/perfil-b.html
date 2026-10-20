@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi perfil · SUID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/naowee-tech/naowee-design-system@v1.8.0/dist/design-system.css">
+<link rel="stylesheet" href="../shared/naowee-ds-tokens.css">
+<style>
+/* ═══ Perfil unificado · Variante B «Roles como vistas del perfil»
+   Una sola persona; la barra de roles cuelga de su tarjeta de identidad y
+   funciona como pestañas de secciones, no como selector de contexto. ═══ */
+:root {
+  --p-ink: var(--naowee-color-text-primary);
+  --p-sub: var(--naowee-color-text-secondary);
+  --p-muted: var(--naowee-color-gray-600);
+  --p-line: var(--naowee-color-border-default);
+  --p-line-strong: var(--naowee-color-border-primary);
+  --p-accent: var(--naowee-color-brand-fill-loud);
+  --p-accent-quiet: var(--naowee-color-brand-fill-quiet);
+  --p-soft: var(--naowee-color-background-secondary);
+  --p-radius: var(--naowee-border-radius-large);
+  --p-gutter: var(--naowee-spacing-padding-medium);
+  --p-field-h: 46px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--naowee-font-family, 'Inter'), -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--p-ink); background: var(--naowee-color-background-primary);
+  -webkit-font-smoothing: antialiased; min-width: 0;
+  font-size: var(--naowee-font-size-14); line-height: var(--naowee-font-line-height-20);
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--naowee-color-interactive-border-active); outline-offset: 2px; border-radius: var(--naowee-border-radius-tiny); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Header 88px ── */
+.top { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 var(--p-gutter); border-bottom: var(--naowee-border-width-small) solid var(--p-line); background: var(--naowee-color-background-primary); }
+.top img { height: 56px; width: auto; display: block; }
+.who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.who__txt { text-align: right; min-width: 0; }
+.who__n { font-weight: var(--naowee-font-weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who__r { font-size: var(--naowee-font-size-12); color: var(--p-sub); }
+.ava { display: grid; place-items: center; border-radius: 50%; font-weight: var(--naowee-font-weight-bold); flex: none;
+  background: var(--p-accent-quiet); color: var(--naowee-color-orange-800); }
+.ava--sm { width: 40px; height: 40px; font-size: var(--naowee-font-size-14); }
+
+/* ── Page ── */
+.page { max-width: 1200px; margin: 0 auto; padding: var(--naowee-spacing-padding-xsmall) var(--p-gutter) var(--naowee-spacing-padding-huge); }
+.back { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 6px; margin-left: -6px;
+  border: 0; background: none; border-radius: var(--naowee-border-radius-small); color: var(--p-sub);
+  font-weight: var(--naowee-font-weight-semibold); cursor: pointer; text-decoration: none; }
+.back:hover { background: var(--p-soft); color: var(--p-ink); }
+
+/* Consulta banner */
+.consult { display: none; gap: 16px; align-items: flex-start; margin: 0 0 var(--naowee-spacing-gap-xsmall);
+  padding: 16px 20px; border: 1px solid var(--naowee-color-feedback-border-informative-loud, var(--naowee-color-blue-300));
+  background: var(--naowee-color-feedback-fill-informative-quiet, var(--naowee-color-blue-100)); border-radius: var(--naowee-border-radius-medium); }
+.consult svg { color: var(--naowee-color-blue-800); margin-top: 1px; }
+.consult b { display: block; margin-bottom: 2px; }
+.consult p { margin: 0; color: var(--p-ink); }
+.is-consulta .consult { display: flex; }
+
+/* ── Identity card + role bar ── */
+.id { border: 1px solid var(--p-line); border-radius: var(--p-radius); background: var(--naowee-color-background-primary); margin-top: 12px; }
+.id__body { display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: start; padding: 28px 32px 24px; }
+.id__ava { width: 88px; height: 88px; font-size: var(--naowee-font-size-28); }
+.id__name { margin: 2px 0 6px; font-size: var(--naowee-font-size-28); line-height: var(--naowee-font-line-height-34); font-weight: var(--naowee-font-weight-bold); letter-spacing: -.3px; overflow-wrap: anywhere; }
+.id__doc { margin: 0; color: var(--p-sub); }
+.facets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.facet { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--naowee-border-radius-full);
+  background: var(--p-soft); color: var(--naowee-color-gray-800); font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); }
+.facet svg.i { width: 14px; height: 14px; }
+.id__acts { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.acct { display: none; align-items: center; gap: 10px; }
+.is-consulta .acct { display: flex; }
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 32px; padding: 18px 0 22px; border-top: 1px solid var(--p-line); }
+.strip > div { padding-right: 16px; min-width: 0; }
+.strip > div + div { padding-left: 20px; border-left: 1px solid var(--p-line); }
+.strip dt { font-size: var(--naowee-font-size-12); color: var(--p-muted); margin-bottom: 2px; }
+.strip dd { margin: 0; font-weight: var(--naowee-font-weight-semibold); overflow-wrap: anywhere; }
+
+/* Role bar: pestañas ancladas al borde inferior de la tarjeta de identidad */
+.rolebar { position: relative; border-top: 1px solid var(--p-line); background: var(--p-soft); border-radius: 0 0 var(--p-radius) var(--p-radius); }
+.rolebar__scroll { display: flex; align-items: stretch; gap: 4px; padding: 0 24px; overflow-x: auto; scrollbar-width: none; }
+.rolebar__scroll::-webkit-scrollbar { display: none; }
+.rtab { position: relative; display: inline-flex; align-items: center; gap: 8px; flex: none; height: 56px; padding: 0 16px;
+  border: 0; background: none; cursor: pointer; color: var(--p-sub); font-weight: var(--naowee-font-weight-semibold); white-space: nowrap; }
+.rtab::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: transparent; }
+.rtab:hover { color: var(--p-ink); }
+.rtab[aria-selected="true"] { color: var(--p-ink); }
+.rtab[aria-selected="true"]::after { background: var(--p-accent); }
+.rtab[aria-selected="true"] svg.i { color: var(--p-accent); }
+.rtab:focus-visible { outline-offset: -4px; }
+.rtab .n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center;
+  background: var(--naowee-color-gray-200); color: var(--naowee-color-gray-800); font-size: var(--naowee-font-size-12); }
+.rtab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--naowee-color-orange-600); }
+.rtab--sep { width: 1px; height: 24px; align-self: center; background: var(--p-line-strong); flex: none; margin: 0 4px; }
+.rtab--add { color: var(--naowee-color-text-link-idle); }
+.rtab--add:hover { color: var(--naowee-color-text-link-hover); }
+.rolebar__hint { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 6px;
+  font-size: var(--naowee-font-size-12); color: var(--p-muted); pointer-events: none; }
+.rolebar__hint svg.i { width: 14px; height: 14px; }
+.rolebar::before, .rolebar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 24px; pointer-events: none; z-index: 1; display: none; }
+
+.rolebar::before { left: 0; width: 40px; border-radius: 0 0 0 var(--p-radius); background: linear-gradient(270deg, transparent, var(--p-soft) 70%); }
+.rolebar::after { right: 0; width: 40px; border-radius: 0 0 var(--p-radius) 0; background: linear-gradient(90deg, transparent, var(--p-soft) 70%); }
+.rolebar.can-l::before, .rolebar.can-r::after { display: block; }
+
+/* ── Views ── */
+.view { display: none; margin-top: var(--naowee-spacing-gap-xsmall); }
+.view.is-on { display: block; }
+.view__intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 8px 0 20px; }
+.view__intro h2 { margin: 0; font-size: var(--naowee-font-size-20); line-height: var(--naowee-font-line-height-28); font-weight: var(--naowee-font-weight-bold); }
+.view__intro p { margin: 4px 0 0; color: var(--p-sub); max-width: 640px; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.stack { display: grid; gap: 24px; min-width: 0; }
+
+.card { border: 1px solid var(--p-line); border-radius: var(--p-radius); background: var(--naowee-color-background-primary); min-width: 0; }
+.card__h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; }
+.card__h h3 { margin: 0; display: flex; align-items: center; gap: 12px; font-size: var(--naowee-font-size-16); line-height: var(--naowee-font-line-height-24); font-weight: var(--naowee-font-weight-bold); }
+.card__b { padding: 0 24px 24px; }
+.tile { width: 40px; height: 40px; border-radius: var(--naowee-border-radius-medium); display: grid; place-items: center; flex: none;
+  background: var(--p-accent-quiet); color: var(--p-accent); }
+.tile svg.i { width: 20px; height: 20px; }
+.tile--neutral { background: var(--p-soft); color: var(--naowee-color-gray-700); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px;
+  border-radius: var(--naowee-border-radius-small); border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  font-weight: var(--naowee-font-weight-semibold); text-decoration: none; }
+.btn svg.i { width: 16px; height: 16px; }
+.btn--loud { background: var(--naowee-color-interactive-fill-loud-idle); color: var(--naowee-color-text-inverse); }
+.btn--loud:hover { background: var(--naowee-color-interactive-fill-loud-hover); }
+.btn--quiet { background: var(--naowee-color-background-primary); border-color: var(--p-line-strong); color: var(--p-ink); }
+.btn--quiet:hover { border-color: var(--naowee-color-interactive-border-hover); }
+.btn--mute { background: none; color: var(--naowee-color-text-link-idle); padding: 0 10px; }
+.btn--mute:hover { background: var(--naowee-color-interactive-fill-mute-hover); }
+.btn--link { background: none; color: var(--p-sub); padding: 0 10px; }
+.btn--link:hover { background: var(--p-soft); color: var(--p-ink); }
+.btn--sm { height: 34px; padding: 0 12px; font-size: var(--naowee-font-size-14); }
+
+/* badges */
+.badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--naowee-border-radius-full);
+  font-size: var(--naowee-font-size-12); font-weight: var(--naowee-font-weight-semibold); white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge--ok { background: var(--naowee-color-green-100); color: var(--naowee-color-green-800); }
+.badge--wait { background: var(--naowee-color-yellow-100); color: var(--naowee-color-gray-900); }
+.badge--wait::before { background: var(--naowee-color-yellow-900); }
+.badge--info { background: var(--naowee-color-blue-100); color: var(--naowee-color-blue-800); }
+.badge--off { background: var(--naowee-color-gray-200); color: var(--naowee-color-gray-800); }
+.badge--plain::before { display: none; }
+
+/* sub-tabs (datos personales, trayectoria, análisis) */
+.tabs { display: flex; gap: 4px; padding: 0 24px; border-bottom: 1px solid var(--p-line); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { position: relative; flex: none; height: 48px; padding: 0 12px; border: 0; background: none; cursor: pointer;
+  color: var(--p-sub); font-weight: var(--naowee-font-weight-medium); white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--p-ink); font-weight: var(--naowee-font-weight-semibold); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--p-ink); border-radius: 2px; }
+.tab:focus-visible { outline-offset: -4px; }
+.panel { display: none; padding: 24px; }
+.panel.is-on { display: block; }
+.panel__h { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+.panel__h h4 { margin: 0; font-size: var(--naowee-font-size-16); font-weight: var(--naowee-font-weight-semibold); }
+
+/* read-only fields at 46px */
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 24px; margin: 0; }
+.field dt { font-size: var(--naowee-font-size-12); color: var(--p-sub); font-weight: var(--naowee-font-weight-medium); margin-bottom: 6px; }
+.field dd { margin: 0; min-height: var(--p-field-h); display: flex; align-items: center; padding: 0 14px; border-radius: var(--naowee-border-radius-small);
+  background: var(--p-soft); border: 1px solid var(--p-soft); font-weight: var(--naowee-font-weight-medium); overflow-wrap: anywhere; }
+
+/* role overview cards (Resumen) */
+.ov { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.ovc { display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--p-line); border-radius: var(--p-radius); background: var(--naowee-color-background-primary); min-width: 0; }
+.ovc__h { display: flex; align-items: center; gap: 12px; }
+.ovc__h b { display: block; font-size: var(--naowee-font-size-16); }
+.ovc__h small { color: var(--p-sub); font-size: var(--naowee-font-size-12); }
+.ovc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ovc li { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; }
+.ovc li span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ovc__go { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 6px 0; cursor: pointer;
+  color: var(--naowee-color-text-link-idle); font-weight: var(--naowee-font-weight-semibold); }
+.ovc__go:hover { color: var(--naowee-color-text-link-hover); text-decoration: underline; text-underline-offset: 3px; }
+.ovc__go svg.i { width: 16px; height: 16px; }
+.section-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.section-label h2 { margin: 0; font-size: var(--naowee-font-size-16); font-weight: var(--naowee-font-weight-bold); }
+.section-label p { margin: 0; color: var(--p-sub); font-size: var(--naowee-font-size-12); }
+
+/* lists: affiliations, links, minors */
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 16px 0; border-top: 1px solid var(--p-line); }
+.row:first-child { border-top: 0; padding-top: 4px; }
+.row__t { font-weight: var(--naowee-font-weight-semibold); overflow-wrap: anywhere; }
+.row__s { color: var(--p-sub); font-size: var(--naowee-font-size-12); margin-top: 2px; }
+.row__end { display: flex; align-items: center; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.note { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--naowee-border-radius-medium);
+  background: var(--p-soft); color: var(--p-sub); font-size: var(--naowee-font-size-12); line-height: var(--naowee-font-line-height-18); }
+.note svg.i { width: 16px; height: 16px; margin-top: 1px; }
+
+/* minors */
+.minor { grid-template-columns: auto minmax(0, 1fr) auto; }
+.minor .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--p-sub); font-size: var(--naowee-font-size-12); margin-top: 4px; }
+
+/* trayectoria table */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font-size: var(--naowee-font-size-12); color: var(--p-sub); font-weight: var(--naowee-font-weight-semibold); padding: 0 12px 10px; border-bottom: 1px solid var(--p-line); white-space: nowrap; }
+.tbl td { padding: 16px 12px; border-bottom: 1px solid var(--p-line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl th:first-child, .tbl td:first-child { padding-left: 0; }
+.yr { font-weight: var(--naowee-font-weight-bold); }
+.ev b { display: block; }
+.ev small { color: var(--p-sub); }
+.cyc { display: inline-flex; margin-top: 4px; font-size: var(--naowee-font-size-10); font-weight: var(--naowee-font-weight-semibold); letter-spacing: .3px; text-transform: uppercase;
+  color: var(--naowee-color-orange-800); }
+.medal { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--naowee-font-weight-semibold); }
+.medal i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.m-gold i { background: var(--naowee-color-yellow-800); }
+.m-silver i { background: var(--naowee-color-gray-400); }
+.medals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.medals div { padding: 16px; border: 1px solid var(--p-line); border-radius: var(--naowee-border-radius-medium); }
+.medals b { display: block; font-size: var(--naowee-font-size-28); line-height: var(--naowee-font-line-height-34); }
+.medals span { color: var(--p-sub); font-size: var(--naowee-font-size-12); }
+
+/* biometría */
+.bio { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bio div { padding: 14px 16px; border-radius: var(--naowee-border-radius-medium); background: var(--p-soft); }
+.bio span { display: block; font-size: var(--naowee-font-size-12); color: var(--p-sub); }
+.bio b { font-size: var(--naowee-font-size-20); line-height: var(--naowee-font-line-height-28); }
+.bio small { color: var(--p-sub); font-weight: var(--naowee-font-weight-medium); }
+
+/* análisis */
+.eval-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--p-sub); font-size: var(--naowee-font-size-12); margin-bottom: 16px; }
+.eval p { margin: 0; max-width: 72ch; line-height: var(--naowee-font-line-height-22); }
+.restrict { display: inline-flex; align-items: center; gap: 6px; font-size: var(--naowee-font-size-12); color: var(--p-sub); }
+.restrict svg.i { width: 14px; height: 14px; }
+
+/* role spec card */
+.spec { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: var(--naowee-border-radius-medium); background: var(--p-soft); }
+.spec b { display: block; font-size: var(--naowee-font-size-18); }
+.spec small { color: var(--p-sub); }
+
+/* dialog */
+dialog { border: 0; padding: 0; border-radius: var(--naowee-border-radius-xlarge); width: min(560px, calc(100vw - 32px)); box-shadow: var(--naowee-shadow-modal, 0 24px 48px rgba(0,0,0,.18)); color: var(--p-ink); }
+dialog::backdrop { background: rgba(40, 40, 52, .45); }
+.dlg__h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 24px 24px 8px; }
+.dlg__h h2 { margin: 0; font-size: var(--naowee-font-size-20); }
+.dlg__h p { margin: 6px 0 0; color: var(--p-sub); }
+.dlg__b { padding: 16px 24px 24px; display: grid; gap: 12px; }
+.opt { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; text-align: left; width: 100%; padding: 16px; border: 1px solid var(--p-line-strong);
+  border-radius: var(--naowee-border-radius-medium); background: var(--naowee-color-background-primary); cursor: pointer; }
+.opt:hover { border-color: var(--p-accent); box-shadow: var(--naowee-shadow-focus-accent); }
+.opt b { display: block; }
+.opt small { color: var(--p-sub); }
+.icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 0; background: none; border-radius: var(--naowee-border-radius-small); cursor: pointer; color: var(--p-sub); flex: none; }
+.icon-btn:hover { background: var(--p-soft); }
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .rolebar__hint { display: none; }
+}
+@media (max-width: 1024px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .id__body { grid-template-columns: auto 1fr; }
+  .id__acts { grid-column: 2; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center; margin-top: -8px; }
+  .id__acts > div:last-child { margin-left: -10px; }
+  .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; }
+  .strip > div:nth-child(3) { padding-left: 0; border-left: 0; }
+}
+@media (max-width: 760px) {
+  :root { --p-gutter: 16px; }
+  .top { height: 72px; }
+  .top img { height: 44px; }
+  .who__txt { display: none; }
+  .id__body { grid-template-columns: auto 1fr; padding: 20px 20px 16px; gap: 16px; }
+  .id__ava { width: 64px; height: 64px; font-size: var(--naowee-font-size-20); }
+  .id__name { font-size: var(--naowee-font-size-20); line-height: var(--naowee-font-line-height-28); }
+  .id__acts { grid-column: 1 / -1; margin-top: 0; }
+  .strip { margin: 0 20px; }
+  .strip > div:nth-child(4) { grid-column: 1 / -1; padding-left: 0; border-left: 0; }
+  .rolebar__scroll { padding: 0 8px; gap: 0; }
+  .rtab { height: 52px; padding: 0 12px; }
+  .facets { display: none; }
+  .id__acts { gap: 4px; }
+  .card__h { padding: 16px; flex-wrap: wrap; }
+  .card__b { padding: 0 16px 16px; }
+  .tabs { padding: 0 8px; }
+  .panel { padding: 16px; }
+  .fields { grid-template-columns: 1fr; gap: 16px; }
+  /* trayectoria como tarjetas */
+  .tbl thead { display: none; }
+  .tbl, .tbl tbody, .tbl tr, .tbl td { display: block; width: 100%; }
+  .tbl tr { padding: 14px 0; border-bottom: 1px solid var(--p-line); display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
+  .tbl tr:last-child { border-bottom: 0; }
+  .tbl td { padding: 0; border: 0; }
+  .tbl td[data-l]::before { content: attr(data-l) ": "; color: var(--p-sub); font-size: var(--naowee-font-size-12); }
+  .tbl td.yr { grid-row: span 2; }
+  .tbl td:not(.yr):not(.ev) { grid-column: 2; font-size: var(--naowee-font-size-12); }
+  .row, .minor { grid-template-columns: auto minmax(0, 1fr); }
+  .row__end { grid-column: 1 / -1; justify-content: flex-start; }
+  .medals { gap: 8px; }
+  .medals div { padding: 12px; }
+}
+@media (max-width: 420px) {
+  .ov { grid-template-columns: 1fr; }
+  .ovc li { flex-wrap: wrap; }
+  .ovc li span:first-child { white-space: normal; }
+  .bio { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 320px) {
+  .strip { grid-template-columns: 1fr; }
+  .strip > div + div { padding-left: 0; border-left: 0; }
+  .top { padding: 0 12px; gap: 8px; }
+  .top img { height: 36px; }
+  .page { padding-left: 12px; padding-right: 12px; }
+  .id__body { grid-template-columns: 1fr; padding: 16px; }
+  .strip { margin: 0 16px; }
+  .ovc { padding: 16px; }
+  .row { grid-template-columns: 1fr; }
+  .row > .tile, .row > .ava { display: none; }
+  .bio { grid-template-columns: 1fr; }
+  .medals { grid-template-columns: 1fr; }
+  .btn { white-space: normal; text-align: center; height: auto; min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+  .consult { padding: 12px; gap: 10px; }
+  .view__intro .btn, .card__h .btn--loud { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .view.is-on { animation: fade .18s ease-out; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><circle cx="14" cy="4.5" r="2"/><path d="M8 21l3-6 3 2v5M6 11l3-3 4 1 3 4h3M11 15l-1-5"/></symbol>
+  <symbol id="i-kids" viewBox="0 0 24 24"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M2.5 20c0-3.5 2.6-6 5.5-6s5.5 2.5 5.5 6M13.5 20c.2-2.8 1.6-5 3.5-5s3.4 2 3.5 5"/></symbol>
+  <symbol id="i-whistle" viewBox="0 0 24 24"><circle cx="9" cy="14" r="5"/><path d="M12 10l9-3v4l-6 2M9 14h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></symbol>
+  <symbol id="i-org" viewBox="0 0 24 24"><path d="M4 21V8l8-5 8 5v13M9 21v-6h6v6M3 21h18"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="15" r="5"/><path d="M8.5 10.5L5 3h4l3 5 3-5h4l-3.5 7.5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7l-4-4zM14 3v4h4M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+
+<header class="top">
+  <a href="#" aria-label="SUID, inicio"><img src="../shared/logos/suid.png" alt="SUID · Sistema Único de Información del Deporte"></a>
+  <div class="who">
+    <div class="who__txt"><div class="who__n" id="whoName">Laura Gómez</div><div class="who__r" id="whoRole">Mi cuenta</div></div>
+    <span class="ava ava--sm" id="whoAva" aria-hidden="true">LG</span>
+  </div>
+</header>
+
+<main class="page" id="page">
+  <div class="consult" role="status">
+    <svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
+    <div><b>Consulta de usuario</b><p>Esta vista es de consulta y edición de datos del usuario. Los cambios que hagas quedan registrados a tu nombre.</p></div>
+  </div>
+
+  <a class="back" href="#" id="backBtn"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg><span>Volver</span></a>
+
+  <!-- Identidad: nunca cambia al moverse entre roles -->
+  <section class="id" aria-labelledby="pName">
+    <div class="id__body">
+      <span class="ava id__ava" aria-hidden="true">LG</span>
+      <div style="min-width:0">
+        <h1 class="id__name" id="pName">Laura Marcela Gómez Restrepo</h1>
+        <p class="id__doc">C.C. 1.032.987.456 · 34 años</p>
+        <div class="facets" id="facets" aria-label="Roles de la persona"></div>
+      </div>
+      <div class="id__acts">
+        <div class="acct"><span class="badge badge--ok" id="acctBadge">Cuenta activa</span><button class="btn btn--quiet btn--sm" id="acctBtn" type="button">Inactivar cuenta</button></div>
+        <div style="display:flex; gap:4px; flex-wrap:wrap">
+          <a class="btn btn--link btn--sm" href="#"><svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>Documentos</a>
+          <a class="btn btn--link btn--sm" href="#" id="cfgLink"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg>Configuración</a>
+        </div>
+      </div>
+    </div>
+    <dl class="strip">
+      <div><dt>Deporte principal</dt><dd>Patinaje</dd></div>
+      <div><dt>Departamento</dt><dd>Valle del Cauca</dd></div>
+      <div><dt>Municipio</dt><dd>Cali</dd></div>
+      <div><dt>Correo</dt><dd>laura.gomez@correo.co</dd></div>
+    </dl>
+    <nav class="rolebar" aria-label="Secciones del perfil">
+      <div class="rolebar__scroll" role="tablist" id="rolebar"></div>
+      <span class="rolebar__hint" id="rbHint"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg>Secciones de un mismo perfil</span>
+    </nav>
+  </section>
+
+  <!-- ═══ RESUMEN ═══ -->
+  <section class="view" id="v-resumen" role="tabpanel" aria-labelledby="t-resumen">
+    <div id="ovWrap">
+      <div class="section-label"><h2>Roles</h2><p id="ovCaption">Todos hacen parte de este mismo perfil. Abrir uno no cambia permisos ni cuenta.</p></div>
+      <div class="ov" id="ov"></div>
+    </div>
+
+    <div class="card" id="personal">
+      <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-user"/></svg></span>Datos personales</h3></div>
+      <div class="tabs" role="tablist" aria-label="Datos personales" data-tabs="p"></div>
+      <div data-panels="p"></div>
+    </div>
+  </section>
+
+  <!-- ═══ DEPORTISTA ═══ -->
+  <section class="view" id="v-deportista" role="tabpanel" aria-labelledby="t-deportista">
+    <div class="view__intro">
+      <div><h2>Deportista</h2><p>Patinaje de carreras. Tu trayectoria, tus afiliaciones a clubes y tu biometría.</p></div>
+    </div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="card">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-medal"/></svg></span>Trayectoria deportiva</h3></div>
+          <div class="tabs" role="tablist" aria-label="Trayectoria" data-tabs="t">
+            <button class="tab" role="tab" aria-selected="true" data-panel="t-tray">Trayectoria</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="t-med">Medallería (2)</button>
+          </div>
+          <div class="panel is-on" id="t-tray">
+            <table class="tbl">
+              <thead><tr><th>Año</th><th>Evento</th><th>Prueba</th><th>Fase</th><th>Posición</th><th>Marca</th><th>Medalla</th></tr></thead>
+              <tbody>
+                <tr><td class="yr">2025</td><td class="ev"><b>Juegos Nacionales</b><small>Patinaje</small><br><span class="cyc">Ciclo olímpico</span></td><td data-l="Prueba">500 m</td><td data-l="Fase">Final</td><td data-l="Posición">2.º</td><td data-l="Marca">41,82 s</td><td><span class="medal m-silver"><i></i>Plata</span></td></tr>
+                <tr><td class="yr">2024</td><td class="ev"><b>Campeonato Nacional</b><small>Patinaje</small></td><td data-l="Prueba">1000 m</td><td data-l="Fase">Final</td><td data-l="Posición">1.º</td><td data-l="Marca">1:24,35</td><td><span class="medal m-gold"><i></i>Oro</span></td></tr>
+                <tr><td class="yr">2023</td><td class="ev"><b>Juegos Departamentales</b><small>Patinaje</small></td><td data-l="Prueba">500 m</td><td data-l="Fase">Semifinal</td><td data-l="Posición">4.º</td><td data-l="Marca">42,40 s</td><td style="color:var(--p-muted)">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel" id="t-med">
+            <div class="medals"><div><b>1</b><span>Oro</span></div><div><b>1</b><span>Plata</span></div><div><b>0</b><span>Bronce</span></div></div>
+            <ul class="rows">
+              <li class="row"><span class="medal m-gold"><i></i></span><div><div class="row__t">Oro · 1000 m</div><div class="row__s">Campeonato Nacional 2024</div></div><span></span></li>
+              <li class="row"><span class="medal m-silver"><i></i></span><div><div class="row__t">Plata · 500 m</div><div class="row__s">Juegos Nacionales 2025</div></div><span></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span>Afiliaciones</h3>
+            <button class="btn btn--quiet btn--sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Solicitar afiliación</button></div>
+          <div class="card__b">
+            <ul class="rows">
+              <li class="row"><span class="tile tile--neutral"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span><div><div class="row__t">Club Patín Cali</div><div class="row__s">Club · Cali, Valle del Cauca · desde mar. 2021</div></div><div class="row__end"><span class="badge badge--ok">Vinculado</span></div></li>
+              <li class="row"><span class="tile tile--neutral"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span><div><div class="row__t">Club Patín Vallecaucano</div><div class="row__s">Club · Palmira, Valle del Cauca · enviada el 30 sep. 2026</div></div><div class="row__end"><span class="badge badge--wait">Solicitada</span><button class="btn btn--mute btn--sm" type="button">Cancelar solicitud</button></div></li>
+            </ul>
+            <div class="note" style="margin-top:12px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>La afiliación la aprueba el club. Mientras está solicitada, sigues compitiendo con tu club actual.</div>
+          </div>
+        </div>
+
+        <div class="card" id="analisis">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg></span>Análisis cualitativo</h3>
+            <span class="restrict"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Solo Comité Olímpico y ROOT</span></div>
+          <div class="tabs" role="tablist" aria-label="Análisis cualitativo" data-tabs="a">
+            <button class="tab" role="tab" aria-selected="true" data-panel="a1">Técnica</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="a2">Táctica</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="a3">Física</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="a4">Conclusiones</button>
+            <button class="tab" role="tab" aria-selected="false" data-panel="a5">Recomendaciones</button>
+          </div>
+          <div class="panel is-on eval" id="a1"><div class="eval-meta"><span>500 m · Juegos Nacionales 2025</span><span>18 nov. 2025</span><span>Metodólogo: Andrés Ruiz</span></div><p>Salida reactiva y buena frecuencia en los primeros 100 m. En la curva final pierde línea al abrir la cadera; conviene trabajar la posición baja sostenida en el último tramo.</p></div>
+          <div class="panel eval" id="a2"><div class="eval-meta"><span>500 m · Juegos Nacionales 2025</span><span>18 nov. 2025</span></div><p>Lee bien la carrera desde el segundo lugar; le falta decisión para atacar por fuera antes de la última curva.</p></div>
+          <div class="panel eval" id="a3"><div class="eval-meta"><span>500 m · Juegos Nacionales 2025</span><span>18 nov. 2025</span></div><p>Potencia anaeróbica alta. Recuperación entre series por debajo de lo esperado para la fase final.</p></div>
+          <div class="panel eval" id="a4"><div class="eval-meta"><span>500 m · Juegos Nacionales 2025</span><span>18 nov. 2025</span></div><p>Deportista con proyección de podio nacional en velocidad; candidata a seguimiento del ciclo.</p></div>
+          <div class="panel eval" id="a5"><div class="eval-meta"><span>500 m · Juegos Nacionales 2025</span><span>18 nov. 2025</span></div><p>Bloque de técnica de curva dos veces por semana y series de 200 m con recuperación corta.</p></div>
+        </div>
+      </div>
+
+      <aside class="stack">
+        <div class="card">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-pulse"/></svg></span>Biometría</h3><button class="btn btn--quiet btn--sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-edit"/></svg>Editar</button></div>
+          <div class="card__b">
+            <div class="bio">
+              <div><span>Altura</span><b>166</b> <small>cm</small></div>
+              <div><span>Peso</span><b>58</b> <small>kg</small></div>
+              <div><span>Tipo de sangre</span><b>O+</b></div>
+              <div><span>IMC</span><b>21,0</b></div>
+            </div>
+            <p style="margin:12px 0 0; color:var(--p-sub); font-size:var(--naowee-font-size-12)">Actualizado el 12 ago. 2026</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ═══ TUTOR LEGAL ═══ -->
+  <section class="view" id="v-tutor" role="tabpanel" aria-labelledby="t-tutor">
+    <div class="view__intro">
+      <div><h2 id="minTitle">Mis menores</h2><p>Administras el perfil de los menores a tu cargo. Un menor solo puede tener el rol de deportista.</p></div>
+      <button class="btn btn--loud" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Registrar menor</button>
+    </div>
+    <div class="card">
+      <div class="card__b" style="padding-top:20px">
+        <ul class="rows">
+          <li class="row minor"><span class="ava ava--sm" aria-hidden="true">TG</span>
+            <div><div class="row__t">Tomás Gómez</div>
+              <div class="meta"><span>T.I. · 12 años</span><span>Patinaje</span><span>Nació el 4 may. 2014</span><span>Vínculo: Padre/Madre</span></div></div>
+            <div class="row__end"><span class="badge badge--ok">Registrado</span><a class="btn btn--quiet btn--sm" href="#">Ver perfil</a><a class="btn btn--mute btn--sm" href="#"><svg class="i" aria-hidden="true"><use href="#i-edit"/></svg>Editar</a></div></li>
+          <li class="row minor"><span class="ava ava--sm" aria-hidden="true">SG</span>
+            <div><div class="row__t">Sara Gómez</div>
+              <div class="meta"><span>T.I. · 9 años</span><span>Natación</span><span>Nació el 21 ene. 2017</span><span>Vínculo: Padre/Madre</span></div></div>
+            <div class="row__end"><span class="badge badge--wait">En revisión</span><a class="btn btn--quiet btn--sm" href="#">Ver perfil</a><a class="btn btn--mute btn--sm" href="#"><svg class="i" aria-hidden="true"><use href="#i-edit"/></svg>Editar</a></div></li>
+        </ul>
+      </div>
+    </div>
+    <div class="note" style="margin-top:16px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>"En revisión" significa que el Ministerio está validando los documentos del menor. Puedes seguir editando sus datos mientras tanto.</div>
+  </section>
+
+  <!-- ═══ PERSONAL DE APOYO ═══ -->
+  <section class="view" id="v-apoyo" role="tabpanel" aria-labelledby="t-apoyo">
+    <div class="view__intro">
+      <div><h2>Personal de apoyo</h2><p>Tu rol específico y los organismos con los que trabajas.</p></div>
+    </div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="card">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span>Vínculos con organismos</h3>
+            <button class="btn btn--quiet btn--sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Solicitar vínculo</button></div>
+          <div class="card__b">
+            <ul class="rows">
+              <li class="row"><span class="tile tile--neutral"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span><div><div class="row__t">Liga de Patinaje del Valle</div><div class="row__s">Liga · Docente/Entrenador · desde ene. 2024</div></div><div class="row__end"><span class="badge badge--ok">Vinculado</span></div></li>
+              <li class="row"><span class="tile tile--neutral"><svg class="i" aria-hidden="true"><use href="#i-org"/></svg></span><div><div class="row__t">Club Patín Cali</div><div class="row__s">Club · Docente/Entrenador · enviada el 2 oct. 2026</div></div><div class="row__end"><span class="badge badge--wait">Solicitada</span><button class="btn btn--mute btn--sm" type="button">Cancelar solicitud</button></div></li>
+            </ul>
+            <div class="note" style="margin-top:12px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>Cada vínculo lo aprueba el organismo. Ser personal de apoyo no requiere aprobación; trabajar para un organismo sí.</div>
+          </div>
+        </div>
+      </div>
+      <aside class="stack">
+        <div class="card">
+          <div class="card__h"><h3><span class="tile"><svg class="i" aria-hidden="true"><use href="#i-whistle"/></svg></span>Rol específico</h3><button class="btn btn--quiet btn--sm" type="button"><svg class="i" aria-hidden="true"><use href="#i-edit"/></svg>Editar</button></div>
+          <div class="card__b">
+            <div class="spec"><div><b>Docente/Entrenador</b><small>Principal · Patinaje</small></div></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<dialog id="addRole" aria-labelledby="addTitle">
+  <div class="dlg__h">
+    <div><h2 id="addTitle">Agregar rol</h2><p>El rol se agrega a este mismo perfil y no requiere aprobación. Los vínculos con organismos sí se aprueban después.</p></div>
+    <button class="icon-btn" type="button" data-close aria-label="Cerrar"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg__b" id="addOpts"></div>
+</dialog>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var consulta = q.get('modo') === 'consulta';
+  var ALL = ['deportista', 'tutor', 'apoyo'];
+  var roles = (q.get('roles') || ALL.join(',')).split(',').filter(function (r) { return ALL.indexOf(r) > -1; });
+  if (!roles.length) roles = ['deportista'];
+  var single = roles.length === 1;
+  var R = {
+    deportista: { label: 'Deportista', icon: 'i-run', meta: '<span class="dot" title="Tiene una solicitud pendiente"></span>', sub: 'Patinaje · carreras' },
+    tutor: { label: 'Tutor legal', icon: 'i-kids', meta: '<span class="n">2</span>', sub: '2 menores a cargo' },
+    apoyo: { label: 'Personal de apoyo', icon: 'i-whistle', meta: '<span class="dot" title="Tiene una solicitud pendiente"></span>', sub: 'Docente/Entrenador' }
+  };
+  function ic(id) { return '<svg class="i" aria-hidden="true"><use href="#' + id + '"/></svg>'; }
+
+  if (consulta) {
+    document.body.classList.add('is-consulta');
+    document.getElementById('whoName').textContent = 'Carolina Pérez';
+    document.getElementById('whoRole').textContent = 'Administradora · Gestión de usuarios';
+    document.getElementById('whoAva').textContent = 'CP';
+    document.querySelector('#backBtn span').textContent = 'Volver al listado';
+    document.getElementById('minTitle').textContent = 'Menores a cargo';
+    document.getElementById('cfgLink').style.display = 'none';
+  } else {
+    document.getElementById('analisis').remove(); // solo Comité Olímpico / ROOT
+  }
+
+  /* facets (identidad) */
+  document.getElementById('facets').innerHTML = roles.map(function (r) {
+    return '<span class="facet">' + ic(R[r].icon) + R[r].label + '</span>';
+  }).join('');
+  document.querySelector('.id__doc').textContent = 'C.C. 1.032.987.456 · 34 años';
+
+  /* role bar */
+  var bar = document.getElementById('rolebar');
+  var first = single ? { id: 'resumen', label: 'Datos personales', icon: 'i-user' } : { id: 'resumen', label: 'Resumen', icon: 'i-user' };
+  var html = tabBtn(first.id, first.label, first.icon, '');
+  roles.forEach(function (r) { html += tabBtn(r, R[r].label, R[r].icon, R[r].meta); });
+  html += '<span class="rtab--sep" aria-hidden="true"></span><button class="rtab rtab--add" type="button" id="addBtn">' + ic('i-plus') + 'Agregar rol</button>';
+  bar.innerHTML = html;
+  if (single) document.getElementById('rbHint').style.display = 'none';
+  function tabBtn(id, label, icon, meta) {
+    return '<button class="rtab" role="tab" id="t-' + id + '" aria-controls="v-' + id + '" aria-selected="false" tabindex="-1" data-view="' + id + '">' + ic(icon) + label + meta + '</button>';
+  }
+
+  /* remove views for roles the person doesn't have */
+  ALL.forEach(function (r) { if (roles.indexOf(r) < 0) { var v = document.getElementById('v-' + r); if (v) v.remove(); } });
+
+  /* resumen overview */
+  var OV = {
+    deportista: '<ul><li><span>Club Patín Cali</span><span class="badge badge--ok">Vinculado</span></li><li><span>Club Patín Vallecaucano</span><span class="badge badge--wait">Solicitada</span></li><li><span>Último resultado</span><span class="medal m-silver"><i></i>Plata 2025</span></li></ul>',
+    tutor: '<ul><li><span>Tomás Gómez · 12 años</span><span class="badge badge--ok">Registrado</span></li><li><span>Sara Gómez · 9 años</span><span class="badge badge--wait">En revisión</span></li></ul>',
+    apoyo: '<ul><li><span>Liga de Patinaje del Valle</span><span class="badge badge--ok">Vinculado</span></li><li><span>Club Patín Cali</span><span class="badge badge--wait">Solicitada</span></li></ul>'
+  };
+  var GO = { deportista: 'Ver trayectoria y afiliaciones', tutor: consulta ? 'Ver menores a cargo' : 'Ver mis menores', apoyo: 'Ver vínculos' };
+  if (single) document.getElementById('ovWrap').remove();
+  else document.getElementById('ov').innerHTML = roles.map(function (r) {
+    return '<article class="ovc"><div class="ovc__h"><span class="tile">' + ic(R[r].icon) + '</span><div><b>' + R[r].label + '</b><small>' + R[r].sub + '</small></div></div>' + OV[r] +
+      '<button class="ovc__go" type="button" data-go="' + r + '">' + GO[r] + ic('i-chev') + '</button></article>';
+  }).join('');
+  if (single) {
+    // con un solo rol, su contenido vive en su pestaña; el resumen se reduce a datos personales
+  }
+
+  /* personal data tabs */
+  var P = [
+    ['Datos', [['Nombre', 'Laura'], ['Segundo nombre', 'Marcela'], ['Apellido', 'Gómez'], ['Segundo apellido', 'Restrepo'], ['Tipo de documento', 'Cédula de ciudadanía'], ['Número de documento', '1.032.987.456'], ['Fecha expedición documento', '14/03/2010'], ['Sexo', 'Femenino'], ['Fecha de nacimiento', '02/02/1992'], ['Edad', '34 años'], ['Departamento de nacimiento', 'Valle del Cauca'], ['Municipio de nacimiento', 'Cali'], ['Nacionalidad', 'Colombiana'], ['Deporte principal', 'Patinaje']]],
+    ['Ubicación', [['Dirección', 'Cra. 66 # 9-45'], ['Departamento', 'Valle del Cauca'], ['Municipio', 'Cali'], ['Zona', 'Urbana']]],
+    ['Contacto', [['Teléfono', '315 482 9071'], ['Correo electrónico', 'laura.gomez@correo.co']]],
+    ['Salud', [['EPS', 'Sura EPS'], ['Nombre del contacto de emergencia', 'Andrés Gómez'], ['Teléfono de emergencia', '318 220 4410'], ['Relación con contacto de emergencia', 'Hermano'], ['Protección menores', 'No aplica']]],
+    ['Sociodemográfico', [['Identidad de género', 'Mujer'], ['Orientación sexual', 'Prefiere no responder'], ['Discapacidad', 'Ninguna'], ['Pertenencia étnica', 'Ninguna'], ['Víctima del conflicto armado', 'No'], ['Priorización', 'No']]],
+    ['Datos adicionales', [['Talla de uniforme', 'M'], ['Grado escolar', 'Profesional']]]
+  ];
+  document.querySelector('[data-tabs="p"]').innerHTML = P.map(function (t, i) {
+    return '<button class="tab" role="tab" aria-selected="' + (i === 0) + '" data-panel="p' + i + '">' + t[0] + '</button>';
+  }).join('');
+  document.querySelector('[data-panels="p"]').innerHTML = P.map(function (t, i) {
+    return '<div class="panel' + (i === 0 ? ' is-on' : '') + '" id="p' + i + '" role="tabpanel"><div class="panel__h"><h4>' + t[0] + '</h4><button class="btn btn--quiet btn--sm" type="button">' + ic('i-edit') + 'Editar</button></div><dl class="fields">' +
+      t[1].map(function (f) { return '<div class="field"><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('') + '</dl></div>';
+  }).join('');
+
+  /* sub-tabs */
+  document.querySelectorAll('[data-tabs]').forEach(function (list) {
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('.tab'); if (!b) return;
+      var card = list.parentElement;
+      list.querySelectorAll('.tab').forEach(function (x) { x.setAttribute('aria-selected', x === b); });
+      card.querySelectorAll(':scope > .panel, :scope > [data-panels] > .panel').forEach(function (p) { p.classList.toggle('is-on', p.id === b.dataset.panel); });
+    });
+  });
+
+  /* role views */
+  var alias = { menores: 'tutor', tutor: 'tutor', deportista: 'deportista', trayectoria: 'deportista', apoyo: 'apoyo', resumen: 'resumen' };
+  function show(id, push) {
+    if (!document.getElementById('v-' + id)) id = 'resumen';
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('is-on', v.id === 'v-' + id); });
+    bar.querySelectorAll('[data-view]').forEach(function (b) {
+      var on = b.dataset.view === id; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
+      if (on) bar.scrollLeft = Math.max(0, b.offsetLeft - 56);
+    });
+    if (push) {
+      var u = new URL(location.href); if (id === 'resumen') u.searchParams.delete('seccion'); else u.searchParams.set('seccion', id === 'tutor' ? 'menores' : id);
+      history.replaceState(null, '', u);
+    }
+    if (typeof fades === 'function') fades();
+  }
+  function fades() { var nav = bar.parentElement; nav.classList.toggle('can-l', bar.scrollLeft > 4); nav.classList.toggle('can-r', bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 4); }
+  bar.addEventListener('scroll', fades, { passive: true }); window.addEventListener('resize', fades);
+  bar.addEventListener('click', function (e) { var b = e.target.closest('[data-view]'); if (b) show(b.dataset.view, true); });
+  bar.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var tabs = [].slice.call(bar.querySelectorAll('[data-view]')); var i = tabs.indexOf(document.activeElement); if (i < 0) return;
+    var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length]; n.focus(); show(n.dataset.view, true);
+  });
+  document.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-go]'); if (g) { show(g.dataset.go, true); document.querySelector('.id').scrollIntoView({ block: 'start' }); }
+  });
+  show(alias[q.get('seccion')] || 'resumen', false); fades();
+
+  /* agregar rol */
+  var dlg = document.getElementById('addRole');
+  var ADD = {
+    deportista: ['i-run', 'Deportista', 'Elige tu deporte. Luego puedes solicitar afiliación a un club.', 'Agregar otro deporte'],
+    tutor: ['i-kids', 'Tutor legal', 'Registra a un menor de edad a tu cargo.', 'Registrar otro menor'],
+    apoyo: ['i-whistle', 'Personal de apoyo', 'Elige tu rol específico: entrenador, médico, fisioterapeuta…', 'Agregar otro rol específico']
+  };
+  document.getElementById('addOpts').innerHTML = ALL.map(function (r) {
+    var has = roles.indexOf(r) > -1, a = ADD[r];
+    return '<button class="opt" type="button"><span class="tile">' + ic(a[0]) + '</span><span><b>' + (has ? a[3] : a[1]) + '</b><small>' + (has ? 'Ya eres ' + a[1].toLowerCase() + '. ' : '') + a[2] + '</small></span></button>';
+  }).join('');
+  document.getElementById('addBtn').addEventListener('click', function () { dlg.showModal(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+  if (q.get('dialogo') === 'agregar') dlg.showModal();
+
+  /* estado de la cuenta (modo consulta) */
+  var active = true;
+  document.getElementById('acctBtn').addEventListener('click', function () {
+    active = !active;
+    var b = document.getElementById('acctBadge');
+    b.className = 'badge ' + (active ? 'badge--ok' : 'badge--off'); b.textContent = active ? 'Cuenta activa' : 'Cuenta inactiva';
+    this.textContent = active ? 'Inactivar cuenta' : 'Activar cuenta';
+  });
+})();
+</script>
+</body>
+</html>

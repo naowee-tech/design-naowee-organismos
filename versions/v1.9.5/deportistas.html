@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis deportistas — Naowee Organismos</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="shared/tokens.css?v=1.9.5">
+<link rel="stylesheet" href="shared/shell.css?v=1.9.5">
+<link rel="stylesheet" href="shared/components.css?v=1.9.5">
+<link rel="stylesheet" href="shared/forms.css?v=1.9.5">
+<link rel="stylesheet" href="shared/deportistas.css?v=1.9.5">
+<link rel="stylesheet" href="shared/devnotes.css?v=1.9.5">
+<link rel="stylesheet" href="shared/naowee-footer.css?v=1.9.5">
+
+<!-- SheetJS (plantilla .xlsx y lectura del cargue masivo de deportistas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot"></div>
+  <div class="main">
+    <header class="top-header" id="topHeader"></header>
+    <div class="page">
+      <div class="page-inner">
+        <div class="page-head dp-head">
+          <div class="dp-head__txt">
+            <h1 class="page-head__title" id="pageTitle">Mis deportistas</h1>
+            <p class="page-head__sub" id="pageSub">Plantel con afiliación confirmada a tu club. Consulta la ficha de cada deportista y la cadena que heredó al ser aprobado.</p>
+          </div>
+          <div class="dp-head__actions" id="dpActions">
+            <span class="wz-devnote" tabindex="0" role="button" data-devnote="clubTitulo" style="display:none"></span>
+          </div>
+        </div>
+        <div id="deportistasRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared/bundles/deportistas.js"></script>
+
+<script src="shared/naowee-footer.js?v=1.9.5"></script>
+<script src="shared/tour.js?v=1.9.5"></script>
+
+</body>
+</html>
