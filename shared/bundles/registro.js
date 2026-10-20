@@ -11,22 +11,42 @@
   });
 
   // shared/organismos-data.js
+  function deportesComiteSeed(id) {
+    if (!_deportesComite[id]) {
+      const feds = SEED_ORGANISMOS.filter((o) => o.tipo === "federacion" && o.parentId === id).flatMap((o) => deportesDe(o));
+      _deportesComite[id] = [.../* @__PURE__ */ new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return _deportesComite[id].slice();
+  }
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
     if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    if (org.tipo === "comite") return DEPORTES_COMITE_EXTRA[org.id] ? deportesComiteSeed(org.id) : [];
     return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
   }
   function conDeportes(org) {
     const deportes = deportesDe(org);
+    if (org.tipo === "comite") return { ...org, deportes, deporte: "\u2014" };
     return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
   }
   function duenoDeporte(dep) {
     return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
   }
   function catalogoDeportes() {
-    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
-    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
+    const conOrg = allOrganismos().filter((o) => o.tipo === "federacion" || o.tipo === "comite").flatMap((o) => o.deportes);
+    return [.../* @__PURE__ */ new Set([...conOrg, ...SIN_FEDERACION, ...SIN_COMITE])].sort((a, b) => a.localeCompare(b, "es"));
+  }
+  function comiteDeDeporte(dep) {
+    return allOrganismos().find((o) => o.tipo === "comite" && o.estado !== "Cancelado" && o.deportes.includes(dep)) || null;
+  }
+  function deportesLibresDeComite(comiteId, propiaId) {
+    const com = getOrganismo(comiteId);
+    if (!com) return [];
+    return deportesDe(com).filter((dp) => {
+      const f = duenoDeporte(dp);
+      return !f || f.id === propiaId;
+    });
   }
   function seedAfiliaciones() {
     const out = [];
@@ -299,7 +319,7 @@
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, SIN_FEDERACION, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, SIN_FEDERACION, DEPORTES_COMITE_EXTRA, SIN_COMITE, _deportesComite, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, DESDE_ENVIO, _todayISO;
   var init_organismos_data = __esm({
     "shared/organismos-data.js"() {
       init_estados();
@@ -441,6 +461,13 @@
         "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
       };
       SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+      DEPORTES_COMITE_EXTRA = {
+        COC: ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"],
+        CPC: ["Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"],
+        FSC: ["Nataci\xF3n de Sordos"]
+      };
+      SIN_COMITE = ["Bolo Criollo", "Juegos Tradicionales", "Ultimate"];
+      _deportesComite = {};
       ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
@@ -1506,7 +1533,7 @@
     let fields = "";
     if (STATE.tipo === "federacion") {
       fields = `
-      ${ddPlaceholder("sector", "Sector", true)}
+      ${ddPlaceholder("sector", "Comit\xE9", true)}
       ${deportesChecks()}
       ${tf({ id: "f-nombre", label: "Nombre de la federaci\xF3n", required: true, path: "nombre", value: d.nombre, placeholder: "Ej: Federaci\xF3n Colombiana de \u2026" })}
       ${tf({ id: "f-nit", label: "NIT", required: true, path: "nit", value: d.nit, placeholder: "800123456-7", mask: "tel", maxLength: 13 })}`;
@@ -1540,6 +1567,7 @@
       ${tf({ id: "f-nombre", label: "Nombre del Comit\xE9", required: true, path: "nombre", value: d.nombre, placeholder: "Ej: Comit\xE9 Ol\xEDmpico Colombiano" })}
       ${ddPlaceholder("sector", "Sector", true)}
       ${tf({ id: "f-nit", label: "NIT", required: true, path: "nit", value: d.nit, placeholder: "860028097-1", mask: "tel", maxLength: 13 })}
+      ${deportesChecks()}
       ${actoUploader()}
       <div class="reg-section-label">Aceptaci\xF3n</div>
       ${privacyCheck()}
@@ -1598,7 +1626,7 @@
       ["Tipo", TIPO_SINGULAR[STATE.tipo]],
       ["Nombre", d.nombre],
       ["NIT / RUT", d.nit],
-      ["Sector", d.sector],
+      STATE.tipo === "federacion" ? ["Comit\xE9", (comitePorSector(d.sector) || {}).nombre] : ["Sector", d.sector],
       ["Deportes", (d.deportes || []).join(", ") || d.deporte],
       ["\xC1mbito", d.ambito],
       ["Tipo de club", d.tipoClub],
@@ -1660,18 +1688,22 @@
   </div>`;
   }
   function deportesOpciones() {
-    if (STATE.tipo === "federacion") return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || duenoDeporte(dp).id === (COMPLETAR && COMPLETAR.id) || COMPLETAR && deportesDe(COMPLETAR).includes(dp));
+    if (STATE.tipo === "comite") return catalogoDeportes().filter((dp) => !comiteDeDeporte(dp));
+    if (STATE.tipo === "federacion") {
+      const com = STATE.data.sector ? comitePorSector(STATE.data.sector) : null;
+      return com ? deportesLibresDeComite(com.id, COMPLETAR && COMPLETAR.id) : [];
+    }
     const sup = getOrganismo(STATE.data.superiorId);
     return sup ? deportesDe(sup) : [];
   }
   function deportesChecks() {
     const ops = deportesOpciones();
     const sel = STATE.data.deportes || [];
-    const ayuda = STATE.tipo === "federacion" ? "Solo aparecen deportes que a\xFAn no tienen federaci\xF3n." : "Elige uno o varios de los deportes de tu superior.";
+    const ayuda = { comite: "Solo aparecen deportes que no est\xE1n en otro comit\xE9. Las federaciones de este comit\xE9 eligen dentro de esta lista.", federacion: "Solo aparecen los deportes de tu comit\xE9 que a\xFAn no tienen federaci\xF3n." }[STATE.tipo] || "Elige uno o varios de los deportes de tu superior.";
     return `<div class="reg-deportes" data-field="f-deportes" id="f-deportes">
     <span class="naowee-textfield__label naowee-textfield__label--required">Deportes</span>
     ${ops.length ? `<div class="reg-deportes__list">${ops.map((dp) => `<label class="naowee-checkbox${sel.includes(dp) ? " naowee-checkbox--checked" : ""}"><input type="checkbox" data-dep="${esc(dp)}"${sel.includes(dp) ? " checked" : ""}><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">${esc(dp)}</span></label>`).join("")}</div>
-      <span class="reg-deportes__hint">${ayuda}</span>` : `<span class="reg-deportes__hint">${STATE.tipo === "federacion" ? "No hay deportes del cat\xE1logo sin federaci\xF3n." : "Elige primero el organismo superior."}</span>`}
+      <span class="reg-deportes__hint">${ayuda}</span>` : `<span class="reg-deportes__hint">${STATE.tipo === "comite" ? "No hay deportes del cat\xE1logo fuera de un comit\xE9." : STATE.tipo === "federacion" ? STATE.data.sector ? "Tu comit\xE9 no tiene deportes sin federaci\xF3n." : "Elige primero el comit\xE9 para ver sus deportes." : "Elige primero el organismo superior."}</span>`}
   </div>`;
   }
   function ddPlaceholder(key, label, required) {
@@ -1862,7 +1894,7 @@
     const d = STATE.data;
     switch (key) {
       case "sector":
-        return SECTORES.map((s) => ({ v: s, t: s }));
+        return STATE.tipo === "federacion" ? activosDeTipo("comite").map((c) => ({ v: c.sector, t: c.nombre })) : SECTORES.map((s) => ({ v: s, t: s }));
       case "deporte":
         return DEPORTES.map((s) => ({ v: s, t: s }));
       case "tipoDoc":
@@ -1891,8 +1923,18 @@
   }
   function ddApply(key, opt) {
     const d = STATE.data;
-    if (key === "sector") d.sector = opt.v;
-    else if (key === "deporte") d.deporte = opt.v;
+    if (key === "sector") {
+      d.sector = opt.v;
+      if (STATE.tipo === "federacion") {
+        d.deportes = [];
+        d.deporte = "";
+        const box = document.getElementById("f-deportes");
+        if (box) {
+          box.outerHTML = deportesChecks();
+          bindDeportes();
+        }
+      }
+    } else if (key === "deporte") d.deporte = opt.v;
     else if (key === "tipoDoc") d.repLegal.tipoDoc = opt.v;
     else if (key === "zona") d.ubicacion.zona = opt.v;
     else if (key === "depto") d.ubicacion.depto = opt.v;
@@ -2171,6 +2213,7 @@
         reqTf("f-nombre", d.nombre.trim());
         if (!d.sector) errs.push({ field: "dd-sector", kind: "dd" });
         reqTf("f-nit", d.nit.trim());
+        if (!(d.deportes || []).length) errs.push({ field: "f-deportes", kind: "tf", msg: "Elige los deportes del comit\xE9" });
         reqTf("f-acto", d.actoAdministrativo.trim(), "Adjunta el acto administrativo de reconocimiento");
         if (!d.aceptaPoliticas) errs.push({ field: "f-politicas", kind: "check" });
       } else if (STATE.tipo === "federacion") {
@@ -2342,7 +2385,7 @@
       nit: d.nit.trim(),
       sector,
       deporte: STATE.tipo === "comite" ? "\u2014" : (d.deportes || []).join(", ") || "\u2014",
-      deportes: STATE.tipo === "comite" ? [] : d.deportes || [],
+      deportes: d.deportes || [],
       parentId,
       estado: STATE.tipo === "comite" ? "Activo" : "En revisi\xF3n",
       repLegal: { ...d.repLegal },
@@ -2504,7 +2547,7 @@
       };
       TIPO_META = {
         comite: { emoji: "\u{1F3DB}\uFE0F", label: "Comit\xE9 (cabeza de sector)", desc: "Nivel ra\xEDz del SND. Solo lo crea el Ministerio (ORG-01)." },
-        federacion: { emoji: "\u{1F3C5}", label: "Federaci\xF3n deportiva", desc: "Se adscribe a su Comit\xE9 por sector (ORG-02)." },
+        federacion: { emoji: "\u{1F3C5}", label: "Federaci\xF3n deportiva", desc: "Se adscribe a su Comit\xE9 y elige entre sus deportes (ORG-02)." },
         liga: { emoji: "\u{1F6A9}", label: "Liga deportiva", desc: "Departamental o distrital, bajo su Federaci\xF3n (ORG-03)." },
         club: { emoji: "\u{1F6E1}\uFE0F", label: "Club deportivo", desc: "Promotor, profesional o escuela, bajo su Liga (ORG-04)." }
       };

@@ -137,14 +137,29 @@
     "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
     "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
   };
+  var DEPORTES_COMITE_EXTRA = {
+    COC: ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"],
+    CPC: ["Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"],
+    FSC: ["Nataci\xF3n de Sordos"]
+  };
+  var _deportesComite = {};
+  function deportesComiteSeed(id) {
+    if (!_deportesComite[id]) {
+      const feds = SEED_ORGANISMOS.filter((o) => o.tipo === "federacion" && o.parentId === id).flatMap((o) => deportesDe(o));
+      _deportesComite[id] = [.../* @__PURE__ */ new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return _deportesComite[id].slice();
+  }
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
     if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    if (org.tipo === "comite") return DEPORTES_COMITE_EXTRA[org.id] ? deportesComiteSeed(org.id) : [];
     return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
   }
   function conDeportes(org) {
     const deportes = deportesDe(org);
+    if (org.tipo === "comite") return { ...org, deportes, deporte: "\u2014" };
     return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
   }
   var AF_DESDE = "2026-03-25";

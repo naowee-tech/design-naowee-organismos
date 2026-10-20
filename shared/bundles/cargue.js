@@ -11,22 +11,27 @@
   });
 
   // shared/organismos-data.js
+  function deportesComiteSeed(id) {
+    if (!_deportesComite[id]) {
+      const feds = SEED_ORGANISMOS.filter((o) => o.tipo === "federacion" && o.parentId === id).flatMap((o) => deportesDe(o));
+      _deportesComite[id] = [.../* @__PURE__ */ new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return _deportesComite[id].slice();
+  }
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
     if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    if (org.tipo === "comite") return DEPORTES_COMITE_EXTRA[org.id] ? deportesComiteSeed(org.id) : [];
     return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
   }
   function conDeportes(org) {
     const deportes = deportesDe(org);
+    if (org.tipo === "comite") return { ...org, deportes, deporte: "\u2014" };
     return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
   }
   function duenoDeporte(dep) {
     return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
-  }
-  function catalogoDeportes() {
-    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
-    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
   }
   function seedAfiliaciones() {
     const out = [];
@@ -230,7 +235,7 @@
   function solicitudesDeClub(clubId) {
     return allSolicitudes().filter((s) => s.clubId === clubId);
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, SIN_FEDERACION, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, DEPORTES_COMITE_EXTRA, _deportesComite, ESTADOS_SIN_DUENO, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, ID_PREFIX, _todayISO;
   var init_organismos_data = __esm({
     "shared/organismos-data.js"() {
       init_estados();
@@ -371,7 +376,12 @@
         "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
         "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
       };
-      SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+      DEPORTES_COMITE_EXTRA = {
+        COC: ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"],
+        CPC: ["Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"],
+        FSC: ["Nataci\xF3n de Sordos"]
+      };
+      _deportesComite = {};
       ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
@@ -1330,9 +1340,9 @@
       const deps = cell("deportes").split(",").map((x) => x.trim()).filter(Boolean);
       if (!deps.length) errors.push("Deportes vac\xEDos");
       else if (targetTipo === "federacion") {
-        const cat = catalogoDeportes();
+        const delComite = deportesDe(superior);
         deps.forEach((dp) => {
-          if (!cat.includes(dp)) errors.push(`\xAB${dp}\xBB no est\xE1 en el cat\xE1logo`);
+          if (!delComite.includes(dp)) errors.push(`\xAB${dp}\xBB no es deporte de ${superior.nombre}`);
           else if (duenoDeporte(dp)) errors.push(`\xAB${dp}\xBB ya tiene federaci\xF3n (${duenoDeporte(dp).nombre})`);
         });
       } else {

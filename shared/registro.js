@@ -17,7 +17,7 @@
 import {
   seedDemoData, allOrganismos, getOrganismo, activosDeTipo,
   comitePorSector, addOrganismo, auditLog, readStore, writeStore, clearStore, enviarRegistro,
-  deportesDe, duenoDeporte, catalogoDeportes, deportesOcupados
+  deportesDe, duenoDeporte, catalogoDeportes, deportesOcupados, comiteDeDeporte, deportesLibresDeComite
 } from './organismos-data.js';
 import { getRoleFromQuery, ROLES } from './sidebar.js';
 
@@ -40,7 +40,7 @@ const I = {
 /* ─── Catálogos ─── */
 const TIPO_META = {
   comite: { emoji: '🏛️', label: 'Comité (cabeza de sector)', desc: 'Nivel raíz del SND. Solo lo crea el Ministerio (ORG-01).' },
-  federacion: { emoji: '🏅', label: 'Federación deportiva', desc: 'Se adscribe a su Comité por sector (ORG-02).' },
+  federacion: { emoji: '🏅', label: 'Federación deportiva', desc: 'Se adscribe a su Comité y elige entre sus deportes (ORG-02).' },
   liga: { emoji: '🚩', label: 'Liga deportiva', desc: 'Departamental o distrital, bajo su Federación (ORG-03).' },
   club: { emoji: '🛡️', label: 'Club deportivo', desc: 'Promotor, profesional o escuela, bajo su Liga (ORG-04).' }
 };
@@ -261,7 +261,7 @@ function paneDatos() {
   let fields = '';
   if (STATE.tipo === 'federacion') {
     fields = `
-      ${ddPlaceholder('sector', 'Sector', true)}
+      ${ddPlaceholder('sector', 'Comité', true)}
       ${deportesChecks()}
       ${tf({ id: 'f-nombre', label: 'Nombre de la federación', required: true, path: 'nombre', value: d.nombre, placeholder: 'Ej: Federación Colombiana de …' })}
       ${tf({ id: 'f-nit', label: 'NIT', required: true, path: 'nit', value: d.nit, placeholder: '800123456-7', mask: 'tel', maxLength: 13 })}`;
@@ -297,6 +297,7 @@ function paneComite() {
       ${tf({ id: 'f-nombre', label: 'Nombre del Comité', required: true, path: 'nombre', value: d.nombre, placeholder: 'Ej: Comité Olímpico Colombiano' })}
       ${ddPlaceholder('sector', 'Sector', true)}
       ${tf({ id: 'f-nit', label: 'NIT', required: true, path: 'nit', value: d.nit, placeholder: '860028097-1', mask: 'tel', maxLength: 13 })}
+      ${deportesChecks()}
       ${actoUploader()}
       <div class="reg-section-label">Aceptación</div>
       ${privacyCheck()}
@@ -365,7 +366,7 @@ function paneConfirmar() {
     ['Tipo', TIPO_SINGULAR[STATE.tipo]],
     ['Nombre', d.nombre],
     ['NIT / RUT', d.nit],
-    ['Sector', d.sector],
+    STATE.tipo === 'federacion' ? ['Comité', (comitePorSector(d.sector) || {}).nombre] : ['Sector', d.sector],
     ['Deportes', (d.deportes || []).join(', ') || d.deporte],
     ['Ámbito', d.ambito],
     ['Tipo de club', d.tipoClub],
@@ -427,22 +428,28 @@ function tf(o) {
     <div class="naowee-textfield__input-wrap"><input ${attrs}></div>
   </div>`;
 }
-/* Deportes del organismo (uno o varios). Federación: deportes del catálogo que aún no tienen
-   federación (un deporte = una federación, DEP-545). Liga y club: dentro de los de su superior. */
+/* Deportes del organismo (uno o varios), siempre dentro de los de su superior (decisión 2026-10-20).
+   Comité: los del catálogo que no están en otro comité; los asigna el Ministerio.
+   Federación: los de su comité que aún no tienen federación (un deporte = una federación, DEP-545).
+   Liga y club: los de su superior. Sin superior elegido no se muestra ninguno. */
 function deportesOpciones() {
-  if (STATE.tipo === 'federacion') return catalogoDeportes().filter((dp) => !duenoDeporte(dp) || duenoDeporte(dp).id === (COMPLETAR && COMPLETAR.id) || (COMPLETAR && deportesDe(COMPLETAR).includes(dp)));
+  if (STATE.tipo === 'comite') return catalogoDeportes().filter((dp) => !comiteDeDeporte(dp));
+  if (STATE.tipo === 'federacion') {
+    const com = STATE.data.sector ? comitePorSector(STATE.data.sector) : null;
+    return com ? deportesLibresDeComite(com.id, COMPLETAR && COMPLETAR.id) : [];
+  }
   const sup = getOrganismo(STATE.data.superiorId);
   return sup ? deportesDe(sup) : [];
 }
 function deportesChecks() {
   const ops = deportesOpciones();
   const sel = STATE.data.deportes || [];
-  const ayuda = STATE.tipo === 'federacion' ? 'Solo aparecen deportes que aún no tienen federación.' : 'Elige uno o varios de los deportes de tu superior.';
+  const ayuda = { comite: 'Solo aparecen deportes que no están en otro comité. Las federaciones de este comité eligen dentro de esta lista.', federacion: 'Solo aparecen los deportes de tu comité que aún no tienen federación.' }[STATE.tipo] || 'Elige uno o varios de los deportes de tu superior.';
   return `<div class="reg-deportes" data-field="f-deportes" id="f-deportes">
     <span class="naowee-textfield__label naowee-textfield__label--required">Deportes</span>
     ${ops.length ? `<div class="reg-deportes__list">${ops.map((dp) => `<label class="naowee-checkbox${sel.includes(dp) ? ' naowee-checkbox--checked' : ''}"><input type="checkbox" data-dep="${esc(dp)}"${sel.includes(dp) ? ' checked' : ''}><span class="naowee-checkbox__box">${I.check}</span><span class="naowee-checkbox__label">${esc(dp)}</span></label>`).join('')}</div>
       <span class="reg-deportes__hint">${ayuda}</span>`
-      : `<span class="reg-deportes__hint">${STATE.tipo === 'federacion' ? 'No hay deportes del catálogo sin federación.' : 'Elige primero el organismo superior.'}</span>`}
+      : `<span class="reg-deportes__hint">${STATE.tipo === 'comite' ? 'No hay deportes del catálogo fuera de un comité.' : STATE.tipo === 'federacion' ? (STATE.data.sector ? 'Tu comité no tiene deportes sin federación.' : 'Elige primero el comité para ver sus deportes.') : 'Elige primero el organismo superior.'}</span>`}
   </div>`;
 }
 function deporteReadonly() {
@@ -631,7 +638,9 @@ function selectTipo(tipo) {
 function ddOptions(key) {
   const d = STATE.data;
   switch (key) {
-    case 'sector': return SECTORES.map((s) => ({ v: s, t: s }));
+    case 'sector': return STATE.tipo === 'federacion'
+      ? activosDeTipo('comite').map((c) => ({ v: c.sector, t: c.nombre }))
+      : SECTORES.map((s) => ({ v: s, t: s }));
     case 'deporte': return DEPORTES.map((s) => ({ v: s, t: s }));
     case 'tipoDoc': return TIPO_DOC.map((s) => ({ v: s, t: s }));
     case 'zona': return ZONAS.map((s) => ({ v: s, t: s }));
@@ -655,7 +664,14 @@ function ddCurrentValue(key) {
 }
 function ddApply(key, opt) {
   const d = STATE.data;
-  if (key === 'sector') d.sector = opt.v;
+  if (key === 'sector') {
+    d.sector = opt.v;
+    if (STATE.tipo === 'federacion') {
+      d.deportes = []; d.deporte = '';
+      const box = document.getElementById('f-deportes');
+      if (box) { box.outerHTML = deportesChecks(); bindDeportes(); }
+    }
+  }
   else if (key === 'deporte') d.deporte = opt.v;
   else if (key === 'tipoDoc') d.repLegal.tipoDoc = opt.v;
   else if (key === 'zona') d.ubicacion.zona = opt.v;
@@ -896,6 +912,7 @@ function validateStep(step) {
       reqTf('f-nombre', d.nombre.trim());
       if (!d.sector) errs.push({ field: 'dd-sector', kind: 'dd' });
       reqTf('f-nit', d.nit.trim());
+      if (!(d.deportes || []).length) errs.push({ field: 'f-deportes', kind: 'tf', msg: 'Elige los deportes del comité' });
       reqTf('f-acto', d.actoAdministrativo.trim(), 'Adjunta el acto administrativo de reconocimiento');
       if (!d.aceptaPoliticas) errs.push({ field: 'f-politicas', kind: 'check' });
     } else if (STATE.tipo === 'federacion') {
@@ -1033,7 +1050,7 @@ function submit() {
 
   const org = {
     tipo: STATE.tipo, nombre: d.nombre.trim(), nit: d.nit.trim(),
-    sector, deporte: STATE.tipo === 'comite' ? '—' : ((d.deportes || []).join(', ') || '—'), deportes: STATE.tipo === 'comite' ? [] : (d.deportes || []),
+    sector, deporte: STATE.tipo === 'comite' ? '—' : ((d.deportes || []).join(', ') || '—'), deportes: d.deportes || [],
     parentId, estado: STATE.tipo === 'comite' ? 'Activo' : 'En revisión',
     repLegal: { ...d.repLegal }, ubicacion: { ...d.ubicacion }, contacto: { ...d.contacto },
     documentos: { ...d.documentos }, aceptaPoliticas: d.aceptaPoliticas
