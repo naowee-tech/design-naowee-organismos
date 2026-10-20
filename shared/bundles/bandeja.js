@@ -1618,6 +1618,24 @@
     }
   });
 
+  // shared/devnotes.js?v=1.7.0
+  function mountDevnotes(registry, root2 = document) {
+    root2.querySelectorAll("[data-devnote]").forEach((el) => {
+      if (el.dataset.mounted) return;
+      const n = registry[el.dataset.devnote];
+      if (!n) return;
+      const list = (items) => `<ul>${(items || []).map((i) => `<li>${i}</li>`).join("")}</ul>`;
+      const body = n.sections ? n.sections.map((s) => `<div class="wz-devnote__sec"><div class="wz-devnote__sec-title">${s.title}</div>${list(s.items)}</div>`).join("") : list(n.items);
+      el.innerHTML = `<span class="naowee-badge">Solo demo</span>Notas para devs
+      <span class="wz-devnote__pop" role="tooltip"><span class="wz-devnote__head">${n.title} <em>\xB7 nota para devs, no es parte del producto</em></span>${body}</span>`;
+      el.dataset.mounted = "1";
+    });
+  }
+  var init_devnotes = __esm({
+    "shared/devnotes.js?v=1.7.0"() {
+    }
+  });
+
   // shared/bandeja.js
   var bandeja_exports = {};
   function seedBandejaDemo() {
@@ -2001,10 +2019,7 @@
       closeModal(ov, () => openDocViewer(label, file, () => openDetail(id)));
     }));
     if (accionable) {
-      ov.querySelector("#bjApr").addEventListener("click", () => {
-        doApprove(id);
-        close();
-      });
+      ov.querySelector("#bjApr").addEventListener("click", () => openAprobar(id, ov));
       ov.querySelector("#bjRej").addEventListener("click", () => openMotivo(id, "Rechazado", ov));
       ov.querySelector("#bjCorr").addEventListener("click", () => openMotivo(id, "Correcci\xF3n solicitada", ov));
     }
@@ -2046,7 +2061,40 @@
     ${items.length ? items.map((d) => `<div class="bj-doc"><span class="bj-doc__ico">${I.doc}</span><div style="min-width:0"><div class="bj-doc__name">${esc(d.label)}</div><div class="bj-doc__file">${esc(d.file)}</div></div><button type="button" class="bj-doc__view" data-doc-view="${esc(d.label)}||${esc(d.file)}">Ver</button></div>`).join("") : `<div class="naowee-message naowee-message--caution"><span class="naowee-message__icon">${I.alert}</span><div class="naowee-message__body"><p class="naowee-message__text">El organismo a\xFAn no adjunt\xF3 el <strong>reconocimiento deportivo</strong> ni los soportes requeridos. El reconocimiento es un acto legal externo (IVC) \u2014 verif\xEDcalo antes de aprobar.</p></div></div>`}
   </div>`;
   }
-  function doApprove(id) {
+  function openAprobar(id, detailOv) {
+    closeModal(detailOv);
+    const o = getOrganismo(id);
+    const esFed = o.tipo === "federacion";
+    const ov = openModal(`
+    <div class="reg-modal bj-modal bj-modal--sm" role="dialog" aria-modal="true">
+      <div class="reg-modal__head"><h3 class="reg-modal__title">${esFed ? "Aprobar mi mitad" : "Aprobar"} \xB7 ${esc(o.nombre)}</h3><button type="button" class="reg-modal__close" id="apClose" aria-label="Cerrar">${I.x}</button></div>
+      <div class="reg-modal__body">
+        ${esFed ? `<p class="bj-detail__note">Queda Activa cuando el ${roleCode === "MINDEPORTE" ? "comit\xE9" : "Ministerio"} tambi\xE9n la apruebe.</p>` : ""}
+        <div class="bj-field">
+          <label class="bj-label" for="apTxt">Observaci\xF3n <span class="bj-req">*</span></label>
+          <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="apTxt" rows="3" placeholder="Ej.: requisitos completos y reconocimiento vigente"></textarea></div>
+          <p class="bj-err" id="apErr" style="display:none">Escribe una observaci\xF3n para aprobar.</p>
+        </div>
+      </div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" id="apCancel">Cancelar</button><button type="button" class="naowee-btn bj-btn-success" id="apOk">${esFed ? "Aprobar mi mitad" : "Aprobar"}</button></div>
+    </div>`);
+    const backToDetail = () => closeModal(ov, () => openDetail(id));
+    ov.addEventListener("click", (e) => {
+      if (e.target === ov) backToDetail();
+    });
+    ov.querySelector("#apClose").addEventListener("click", backToDetail);
+    ov.querySelector("#apCancel").addEventListener("click", backToDetail);
+    ov.querySelector("#apOk").addEventListener("click", () => {
+      const txt = ov.querySelector("#apTxt").value.trim();
+      if (!txt) {
+        ov.querySelector("#apErr").style.display = "block";
+        return;
+      }
+      closeModal(ov);
+      doApprove(id, txt);
+    });
+  }
+  function doApprove(id, motivo) {
     const o = getOrganismo(id);
     const meta = { rol: roleCode, responsable: role.userName || roleCode, fecha: today() };
     if (o.tipo === "federacion") {
@@ -2054,13 +2102,13 @@
       const v = { mindeporte: "pendiente", comite: "pendiente", ...o.validacion || {}, [half]: "aprobado" };
       const nuevo = resolverFederacion(v);
       const lbl = roleCode === "MINDEPORTE" ? "Ministerio aprob\xF3" : "Comit\xE9 aprob\xF3";
-      if (nuevo !== o.estado) setEstado(id, nuevo, { ...meta, accion: lbl + (nuevo === "Activo" ? " \u2192 Activo" : ""), patch: { validacion: v } });
+      if (nuevo !== o.estado) setEstado(id, nuevo, { ...meta, accion: lbl + (nuevo === "Activo" ? " \u2192 Activo" : ""), motivo, patch: { validacion: v } });
       else {
         updateOrganismo(id, { validacion: v });
-        auditLog({ orgId: id, ...meta, accion: lbl, de: o.estado, a: o.estado, motivo: "" });
+        auditLog({ orgId: id, ...meta, accion: lbl, de: o.estado, a: o.estado, motivo });
       }
     } else {
-      setEstado(id, "Activo", { ...meta, accion: "Aprobado \u2192 Activo" });
+      setEstado(id, "Activo", { ...meta, accion: "Aprobado \u2192 Activo", motivo });
     }
     toast(`Aprobaci\xF3n registrada \u2014 se notific\xF3 a ${o.nombre} por email y app`, "success");
     render();
@@ -2223,13 +2271,14 @@
   function toast(text, variant) {
     window.naoweeToast && window.naoweeToast(text, variant === "negative" ? "error" : "success");
   }
-  var roleCode, role, enNombreDe, TARGET, target, scopeId, halfOf, TIPO_EMOJI, TIPO_SING, MOTIVOS, VISIBLES, root, esc, norm, today, I, query, estadoFiltro, sectorFiltro, page, PAGE_SIZE, puedeAccionar, afilFiltro, AFIL_ESTADO, AFIL_SOL_VARIANT, MOTIVOS_AFIL, puedeAfil, VAL_VARIANT, ROL_DE_TIPO, DOC_LABELS;
+  var roleCode, role, enNombreDe, TARGET, target, scopeId, halfOf, TIPO_EMOJI, TIPO_SING, MOTIVOS, VISIBLES, root, esc, norm, today, I, query, estadoFiltro, sectorFiltro, page, PAGE_SIZE, puedeAccionar, afilFiltro, AFIL_ESTADO, AFIL_SOL_VARIANT, MOTIVOS_AFIL, puedeAfil, VAL_VARIANT, ROL_DE_TIPO, DOC_LABELS, DEVNOTES;
   var init_bandeja = __esm({
     "shared/bandeja.js"() {
       init_sidebar();
       init_organismos_data();
       init_permissions();
       init_estados();
+      init_devnotes();
       roleCode = getRoleFromQuery();
       role = ROLES[roleCode] || {};
       enNombreDe = (verbo) => {
@@ -2302,18 +2351,44 @@
         rut: "RUT",
         personeria: "Certificado de personer\xEDa jur\xEDdica"
       };
+      DEVNOTES = {
+        bandeja: {
+          title: "Bandeja de aprobaci\xF3n de organismos",
+          sections: [
+            { title: "Qu\xE9 decide cada rol", items: [
+              "La liga decide sobre sus clubes, la federaci\xF3n sobre sus ligas y el comit\xE9 y el Ministerio sobre las federaciones.",
+              "Federaci\xF3n: dos avales en cualquier orden. El comit\xE9 ocupa el puesto <code>PARENT</code> y el Ministerio el puesto <code>MINISTRY</code>. Queda Activa con los dos; con uno sigue En revisi\xF3n.",
+              "Un rechazo de cualquiera de los dos la deja Rechazada. Devolver la deja En correcci\xF3n y el organismo corrige y reenv\xEDa (ronda nueva).",
+              "El superior debe estar Activo para decidir. Quien tambi\xE9n administra el organismo en revisi\xF3n no decide sobre \xE9l (P-24)."
+            ] },
+            { title: "Back listo (DEP-591, READY FOR QA)", items: [
+              "<code>GET /public-gateway/v1/organizations/registration-requests?page=1&limit=20</code>: los registros en revisi\xF3n que le tocan al organismo de la sesi\xF3n. Respuesta <code>{data: [registro], meta: {page, limit, total}}</code>.",
+              "<code>POST /public-gateway/v1/organizations/:code/registration/decisions</code> con <code>{expected_version, round, decision, reason}</code>. <code>decision</code>: <code>APPROVE</code> | <code>RETURN</code> | <code>REJECT</code>. <code>reason</code> es obligatorio en las tres.",
+              "<code>GET /public-gateway/v1/organizations/:code/registration/history</code>: rondas, decisiones de cada puesto y cambios de estado, para la trazabilidad.",
+              "Cada registro trae <code>status</code> (<code>PENDING_REVIEW</code>, <code>IN_CORRECTION</code>, <code>ACTIVE</code>, <code>REJECTED</code>\u2026), <code>version</code>, <code>round</code>, <code>data</code> (lo enviado) y <code>rounds[].decisions[]</code> con <code>slot</code> y <code>decision</code>.",
+              "Errores: <code>reason_required</code> (422), <code>conflict_of_interest</code> y <code>registration_forbidden</code> (403), <code>organization_not_active</code> (403). Si la versi\xF3n cambi\xF3, releer y volver a intentar.",
+              "Bruno: <code>api-collection/registration-cycle/</code> del gateway (Aprobar club, Devolver, Aval del comit\xE9, Rechazo ministerial de aval)."
+            ] },
+            { title: "En otras tareas", items: [
+              "Preinscritos, propuestas de club y solicitudes de v\xEDnculo: DEP-586.",
+              "Lo que ve el organismo que fue devuelto o rechazado y su reenv\xEDo: DEP-584 y DEP-585."
+            ] }
+          ]
+        }
+      };
       seedBandejaDemo();
       seedAfiliacionesDemo(getDemoMode());
       render();
+      mountDevnotes(DEVNOTES, document);
     }
   });
 
   // shared/devnotes.js
   var devnotes_exports = {};
   __export(devnotes_exports, {
-    mountDevnotes: () => mountDevnotes
+    mountDevnotes: () => mountDevnotes2
   });
-  function mountDevnotes(registry, root2 = document) {
+  function mountDevnotes2(registry, root2 = document) {
     root2.querySelectorAll("[data-devnote]").forEach((el) => {
       if (el.dataset.mounted) return;
       const n = registry[el.dataset.devnote];
@@ -2325,7 +2400,7 @@
       el.dataset.mounted = "1";
     });
   }
-  var init_devnotes = __esm({
+  var init_devnotes2 = __esm({
     "shared/devnotes.js"() {
     }
   });
@@ -2347,7 +2422,7 @@
   mountBackdrop();
   mountDemoSwitcher({ roleCode: roleCode2 });
   Promise.resolve().then(() => init_bandeja());
-  Promise.resolve().then(() => (init_devnotes(), devnotes_exports)).then(({ mountDevnotes: mountDevnotes2 }) => mountDevnotes2({ bandeja: { title: "Bandeja \xB7 c\xF3mo funciona por dentro", sections: [
+  Promise.resolve().then(() => (init_devnotes2(), devnotes_exports)).then(({ mountDevnotes: mountDevnotes3 }) => mountDevnotes3({ bandeja: { title: "Bandeja \xB7 c\xF3mo funciona por dentro", sections: [
     { title: "Qui\xE9n ve qu\xE9", items: [
       "Cada organismo Activo ve lo que cuelga directamente de \xE9l y est\xE1 <strong>En revisi\xF3n</strong>: lo que carg\xF3 y lo que se autorregistr\xF3 eligi\xE9ndolo como superior. Aprobar, devolver a correcci\xF3n y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.",
       "Nadie decide si su propio organismo no est\xE1 Activo. Federaciones: doble validaci\xF3n Comit\xE9 + Ministerio, sin orden; queda Activa con los dos avales (P-19, cerrada el 2026-10-13).",

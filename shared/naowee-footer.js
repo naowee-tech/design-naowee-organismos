@@ -623,6 +623,11 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.5 —  BANDEJA DE APROBACIÓN alineada al back de DEP-591 (2026-10-20):
+             · Aprobar también pide observación: el back exige motivo en toda decisión.
+             · Notas para devs en la bandeja con el contrato real (bandeja, decisiones
+               APPROVE/RETURN/REJECT, puestos PARENT/MINISTRY del doble aval, historial
+               y errores) y qué queda en DEP-584/585/586. */
 /* v1.9.4 —  DEPORTES POR COMITÉ (decisión 2026-10-20, hallazgo de QA en el registro de federación):
              · Cada comité tiene su lista de deportes; la asigna el Ministerio al crearlo
                (nuevo selector en el alta del comité) y solo él la cambia.
@@ -702,7 +707,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.4';
+const MODULE_VERSION = 'v1.9.5';
 
 (function () {
   function mount() {

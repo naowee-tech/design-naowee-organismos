@@ -15,6 +15,7 @@ import {
 } from './organismos-data.js';
 import { can, scopeFor } from './permissions.js';
 import { estadoBadgeVariant, resolverFederacion, puedeTransicionar } from './estados.js';
+import { mountDevnotes } from './devnotes.js?v=1.7.0';
 
 const roleCode = getRoleFromQuery();
 const role = ROLES[roleCode] || {};
@@ -473,7 +474,7 @@ function openDetail(id) {
     closeModal(ov, () => openDocViewer(label, file, () => openDetail(id)));   // sin apilar: cierra detalle → abre visor → vuelve al detalle
   }));
   if (accionable) {
-    ov.querySelector('#bjApr').addEventListener('click', () => { doApprove(id); close(); });
+    ov.querySelector('#bjApr').addEventListener('click', () => openAprobar(id, ov));
     ov.querySelector('#bjRej').addEventListener('click', () => openMotivo(id, 'Rechazado', ov));
     ov.querySelector('#bjCorr').addEventListener('click', () => openMotivo(id, 'Corrección solicitada', ov));
   }
@@ -528,8 +529,35 @@ function docsBlock(o) {
   </div>`;
 }
 
-/* ── Aprobar ── */
-function doApprove(id) {
+/* ── Aprobar (el back pide motivo en toda decisión, también al aprobar) ── */
+function openAprobar(id, detailOv) {
+  closeModal(detailOv);
+  const o = getOrganismo(id);
+  const esFed = o.tipo === 'federacion';
+  const ov = openModal(`
+    <div class="reg-modal bj-modal bj-modal--sm" role="dialog" aria-modal="true">
+      <div class="reg-modal__head"><h3 class="reg-modal__title">${esFed ? 'Aprobar mi mitad' : 'Aprobar'} · ${esc(o.nombre)}</h3><button type="button" class="reg-modal__close" id="apClose" aria-label="Cerrar">${I.x}</button></div>
+      <div class="reg-modal__body">
+        ${esFed ? `<p class="bj-detail__note">Queda Activa cuando el ${roleCode === 'MINDEPORTE' ? 'comité' : 'Ministerio'} también la apruebe.</p>` : ''}
+        <div class="bj-field">
+          <label class="bj-label" for="apTxt">Observación <span class="bj-req">*</span></label>
+          <div class="naowee-textfield__input-wrap bj-ta-wrap"><textarea id="apTxt" rows="3" placeholder="Ej.: requisitos completos y reconocimiento vigente"></textarea></div>
+          <p class="bj-err" id="apErr" style="display:none">Escribe una observación para aprobar.</p>
+        </div>
+      </div>
+      <div class="reg-modal__foot bj-modal__foot"><button type="button" class="naowee-btn naowee-btn--mute" id="apCancel">Cancelar</button><button type="button" class="naowee-btn bj-btn-success" id="apOk">${esFed ? 'Aprobar mi mitad' : 'Aprobar'}</button></div>
+    </div>`);
+  const backToDetail = () => closeModal(ov, () => openDetail(id));
+  ov.addEventListener('click', (e) => { if (e.target === ov) backToDetail(); });
+  ov.querySelector('#apClose').addEventListener('click', backToDetail);
+  ov.querySelector('#apCancel').addEventListener('click', backToDetail);
+  ov.querySelector('#apOk').addEventListener('click', () => {
+    const txt = ov.querySelector('#apTxt').value.trim();
+    if (!txt) { ov.querySelector('#apErr').style.display = 'block'; return; }
+    closeModal(ov); doApprove(id, txt);
+  });
+}
+function doApprove(id, motivo) {
   const o = getOrganismo(id);
   const meta = { rol: roleCode, responsable: role.userName || roleCode, fecha: today() };
   if (o.tipo === 'federacion') {
@@ -537,10 +565,10 @@ function doApprove(id) {
     const v = { mindeporte: 'pendiente', comite: 'pendiente', ...(o.validacion || {}), [half]: 'aprobado' };
     const nuevo = resolverFederacion(v);
     const lbl = roleCode === 'MINDEPORTE' ? 'Ministerio aprobó' : 'Comité aprobó';
-    if (nuevo !== o.estado) setEstado(id, nuevo, { ...meta, accion: lbl + (nuevo === 'Activo' ? ' → Activo' : ''), patch: { validacion: v } });
-    else { updateOrganismo(id, { validacion: v }); auditLog({ orgId: id, ...meta, accion: lbl, de: o.estado, a: o.estado, motivo: '' }); }
+    if (nuevo !== o.estado) setEstado(id, nuevo, { ...meta, accion: lbl + (nuevo === 'Activo' ? ' → Activo' : ''), motivo, patch: { validacion: v } });
+    else { updateOrganismo(id, { validacion: v }); auditLog({ orgId: id, ...meta, accion: lbl, de: o.estado, a: o.estado, motivo }); }
   } else {
-    setEstado(id, 'Activo', { ...meta, accion: 'Aprobado → Activo' });
+    setEstado(id, 'Activo', { ...meta, accion: 'Aprobado → Activo', motivo });
   }
   toast(`Aprobación registrada — se notificó a ${o.nombre} por email y app`, 'success');
   render();
@@ -663,6 +691,34 @@ function wire() {
 }
 function toast(text, variant) { window.naoweeToast && window.naoweeToast(text, variant === 'negative' ? 'error' : 'success'); }
 
+/* SOLO DEMO · notas para devs del encabezado. Contrato real: DEP-591 (user-auth-ms + gateway en staging). */
+const DEVNOTES = {
+  bandeja: {
+    title: 'Bandeja de aprobación de organismos',
+    sections: [
+      { title: 'Qué decide cada rol', items: [
+        'La liga decide sobre sus clubes, la federación sobre sus ligas y el comité y el Ministerio sobre las federaciones.',
+        'Federación: dos avales en cualquier orden. El comité ocupa el puesto <code>PARENT</code> y el Ministerio el puesto <code>MINISTRY</code>. Queda Activa con los dos; con uno sigue En revisión.',
+        'Un rechazo de cualquiera de los dos la deja Rechazada. Devolver la deja En corrección y el organismo corrige y reenvía (ronda nueva).',
+        'El superior debe estar Activo para decidir. Quien también administra el organismo en revisión no decide sobre él (P-24).'
+      ] },
+      { title: 'Back listo (DEP-591, READY FOR QA)', items: [
+        '<code>GET /public-gateway/v1/organizations/registration-requests?page=1&limit=20</code>: los registros en revisión que le tocan al organismo de la sesión. Respuesta <code>{data: [registro], meta: {page, limit, total}}</code>.',
+        '<code>POST /public-gateway/v1/organizations/:code/registration/decisions</code> con <code>{expected_version, round, decision, reason}</code>. <code>decision</code>: <code>APPROVE</code> | <code>RETURN</code> | <code>REJECT</code>. <code>reason</code> es obligatorio en las tres.',
+        '<code>GET /public-gateway/v1/organizations/:code/registration/history</code>: rondas, decisiones de cada puesto y cambios de estado, para la trazabilidad.',
+        'Cada registro trae <code>status</code> (<code>PENDING_REVIEW</code>, <code>IN_CORRECTION</code>, <code>ACTIVE</code>, <code>REJECTED</code>…), <code>version</code>, <code>round</code>, <code>data</code> (lo enviado) y <code>rounds[].decisions[]</code> con <code>slot</code> y <code>decision</code>.',
+        'Errores: <code>reason_required</code> (422), <code>conflict_of_interest</code> y <code>registration_forbidden</code> (403), <code>organization_not_active</code> (403). Si la versión cambió, releer y volver a intentar.',
+        'Bruno: <code>api-collection/registration-cycle/</code> del gateway (Aprobar club, Devolver, Aval del comité, Rechazo ministerial de aval).'
+      ] },
+      { title: 'En otras tareas', items: [
+        'Preinscritos, propuestas de club y solicitudes de vínculo: DEP-586.',
+        'Lo que ve el organismo que fue devuelto o rechazado y su reenvío: DEP-584 y DEP-585.'
+      ] }
+    ]
+  }
+};
+
 seedBandejaDemo();
 seedAfiliacionesDemo(getDemoMode());
 render();
+mountDevnotes(DEVNOTES, document);
