@@ -138,24 +138,40 @@
     "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
   };
   var SIN_FEDERACION = ["Breaking", "Flag Football", "P\xE1del", "Skateboarding", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"];
+  var DEPORTES_COMITE_EXTRA = {
+    COC: ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"],
+    CPC: ["Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"],
+    FSC: ["Nataci\xF3n de Sordos"]
+  };
+  var SIN_COMITE = ["Bolo Criollo", "Juegos Tradicionales", "Ultimate"];
+  var _deportesComite = {};
+  function deportesComiteSeed(id) {
+    if (!_deportesComite[id]) {
+      const feds = SEED_ORGANISMOS.filter((o) => o.tipo === "federacion" && o.parentId === id).flatMap((o) => deportesDe(o));
+      _deportesComite[id] = [.../* @__PURE__ */ new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return _deportesComite[id].slice();
+  }
   var PARADEPORTES = ["Para Atletismo", "Para Nataci\xF3n", "Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa", "Atletismo de Sordos"];
   var ESTADOS_SIN_DUENO = ["Rechazado", "Cancelado"];
   function deportesDe(org) {
     if (!org) return [];
     if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
     if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+    if (org.tipo === "comite") return DEPORTES_COMITE_EXTRA[org.id] ? deportesComiteSeed(org.id) : [];
     return org.deporte && org.deporte !== "\u2014" ? String(org.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
   }
   function conDeportes(org) {
     const deportes = deportesDe(org);
+    if (org.tipo === "comite") return { ...org, deportes, deporte: "\u2014" };
     return { ...org, deportes, deporte: deportes.length ? deportes.join(", ") : org.deporte || "\u2014" };
   }
   function duenoDeporte(dep) {
     return allOrganismos().find((o) => o.tipo === "federacion" && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
   }
   function catalogoDeportes() {
-    const conFed = allOrganismos().filter((o) => o.tipo === "federacion").flatMap((o) => o.deportes);
-    return [.../* @__PURE__ */ new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, "es"));
+    const conOrg = allOrganismos().filter((o) => o.tipo === "federacion" || o.tipo === "comite").flatMap((o) => o.deportes);
+    return [.../* @__PURE__ */ new Set([...conOrg, ...SIN_FEDERACION, ...SIN_COMITE])].sort((a, b) => a.localeCompare(b, "es"));
   }
   var AF_DESDE = "2026-03-25";
   var AFILIACIONES_EXTRA = [
@@ -748,15 +764,19 @@
   }
   function deportesPermitidos() {
     const t = STATE.entTipo, d = STATE.d;
-    if (t === "federacion") return d.sector ? CATALOGO_DEPORTES() : [];
+    if (t === "federacion") {
+      const com = d.sector ? comitePorSector(d.sector) : null;
+      return com ? deportesDe(com) : [];
+    }
     return deportesDe(getOrganismo(d.superiorId));
   }
   function superiorSection() {
     const t = STATE.entTipo, d = STATE.d;
     if (t === "federacion") {
       const com = d.sector ? comitePorSector(d.sector) : null;
-      return `${dd("sector", "Sector", CAT.sector, d.sector, true)}
-      ${com ? `<p class="rp-inline-note">${I.check} Tu federaci\xF3n quedar\xE1 adscrita al <strong>${esc(com.nombre)}</strong>.</p>` : ""}`;
+      const comites = opt(activosDeTipo("comite").map((c) => [c.sector, c.nombre]));
+      return `${dd("sector", "Comit\xE9", comites, d.sector, true)}
+      ${com ? `<p class="rp-inline-note">${I.check} Tu federaci\xF3n elige entre los deportes de este comit\xE9.</p>` : ""}`;
     }
     const ops = superiorOpts();
     const filtro = t === "club" ? dd("filtroDeporte", "Deporte", opt([...new Set(activosDeTipo("liga").flatMap(deportesDe))].sort((a, b) => a.localeCompare(b, "es"))), d.filtroDeporte, false, true) : "";
@@ -766,7 +786,7 @@
   function deportesField() {
     const d = STATE.d, t = STATE.entTipo;
     const lista = deportesPermitidos();
-    if (!lista.length) return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label><p class="rp-inline-note">${t === "federacion" ? "Elige el sector para ver los deportes." : `Elige tu ${SUPERIOR_TXT[t]} para ver sus deportes.`}</p></div>`;
+    if (!lista.length) return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label><p class="rp-inline-note">${t === "federacion" ? "Elige tu comit\xE9 para ver sus deportes." : `Elige tu ${SUPERIOR_TXT[t]} para ver sus deportes.`}</p></div>`;
     const libres = t === "federacion" ? lista.filter((dep) => !duenoDeporte(dep, d.sector)) : lista;
     const ocupados = lista.length - libres.length;
     const chips = libres.map((dep) => {
@@ -1320,8 +1340,8 @@
     entbasicos: { title: "B\xE1sicos (Entidad)", sections: [
       { title: "Se mantiene", items: ["NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisi\xF3n \u2192 mensaje de revisi\xF3n pendiente; con cuenta \u2192 Iniciar sesi\xF3n.", "Naturaleza jur\xEDdica, tama\xF1o y representante legal. <b>Corregir al migrar</b>: hoy no se env\xEDa el apellido del representante."] },
       { title: "Solo demo", items: ["La b\xFAsqueda de NIT est\xE1 simulada: <code>805010003-3</code> devuelve en revisi\xF3n y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la b\xFAsqueda; el que no tiene registro adem\xE1s deja el formulario lleno para poder dar Siguiente."] },
-      { title: "Nuevo: organismo superior", items: ["Federaci\xF3n \u2192 elige sector y queda adscrita al comit\xE9 del sector. Liga \u2192 elige federaci\xF3n. Club \u2192 filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).", "La lista solo trae organismos <b>Activos</b>. Si el suyo no est\xE1: soporte, que escala al Ministerio (P-17).", "En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden despu\xE9s como afiliaci\xF3n."] },
-      { title: "Nuevo: deportes", items: ["Lista de deportes del cat\xE1logo. Federaci\xF3n: del cat\xE1logo, sin repetir deportes que ya tiene otra federaci\xF3n. <b>Un deporte pertenece a una sola federaci\xF3n en todo el sistema</b>, sin importar el comit\xE9 (decisi\xF3n 2026-10-09, Daniel Pizarro, DEP-545). Liga: de su federaci\xF3n. Club: de su liga.", "Sin carga hist\xF3rica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio env\xEDe el listado.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
+      { title: "Nuevo: organismo superior", items: ["Federaci\xF3n \u2192 elige su <b>comit\xE9</b> (decisi\xF3n 2026-10-20; antes eleg\xEDa sector). Liga \u2192 elige federaci\xF3n. Club \u2192 filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).", "La lista solo trae organismos <b>Activos</b>. Si el suyo no est\xE1: soporte, que escala al Ministerio (P-17).", "En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden despu\xE9s como afiliaci\xF3n."] },
+      { title: "Nuevo: deportes", items: ["<b>Cada comit\xE9 tiene su lista de deportes</b>: la asigna el Ministerio al crearlo y solo \xE9l la cambia (decisi\xF3n 2026-10-20). Federaci\xF3n: solo los de su comit\xE9 que no tiene otra federaci\xF3n; mientras no elija comit\xE9 no se muestra ning\xFAn deporte. <b>Un deporte pertenece a una sola federaci\xF3n en todo el sistema</b> (decisi\xF3n 2026-10-09, DEP-545). Liga: de su federaci\xF3n. Club: de su liga.", "Sin carga hist\xF3rica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio env\xEDe el listado.", "SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo."] },
       { title: "Contrato propuesto", items: ["<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.", "El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> \u2286 deportes del superior, NIT \xFAnico, un deporte en una sola federaci\xF3n."] },
       { title: "Brecha con user-auth-ms (revisado 07-10-2026, rama staging)", items: [
         "<b>Ya soportado</b> en <code>organizations_details</code>: NIT \xFAnico, nombre, naturaleza jur\xEDdica, tama\xF1o, representante (tipo y n\xFAmero de documento, nombre, correo), departamento, municipio, direcci\xF3n, tel\xE9fono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.",

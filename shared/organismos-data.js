@@ -201,6 +201,24 @@ const DEPORTES_SEED = {
 /* Solo demo: deportes del catálogo sin federación, para poder probar el alta de una. Los
    paradeportes que ya existen en catalog-ms sin federación en la demo van aquí también. */
 export const SIN_FEDERACION = ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa'];
+/* Deportes de cada comité (decisión 2026-10-20): los asigna el Ministerio al crear el comité y solo él
+   los cambia. La federación elige dentro de los de su comité; la liga, de su federación; el club, de su liga.
+   Seed de la demo: los de sus federaciones + los que aún no tienen federación en ese sector. */
+const DEPORTES_COMITE_EXTRA = {
+  COC: ['Breaking', 'Flag Football', 'Pádel', 'Skateboarding'],
+  CPC: ['Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa'],
+  FSC: ['Natación de Sordos']
+};
+/* Solo demo: deportes del catálogo que no están en ningún comité, para probar el alta de un comité. */
+export const SIN_COMITE = ['Bolo Criollo', 'Juegos Tradicionales', 'Ultimate'];
+const _deportesComite = {};
+function deportesComiteSeed(id) {
+  if (!_deportesComite[id]) {
+    const feds = SEED_ORGANISMOS.filter((o) => o.tipo === 'federacion' && o.parentId === id).flatMap((o) => deportesDe(o));
+    _deportesComite[id] = [...new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, 'es'));
+  }
+  return _deportesComite[id].slice();
+}
 export const PARADEPORTES = ['Para Atletismo', 'Para Natación', 'Para Powerlifting', 'Para Bádminton', 'Para Tenis de Mesa', 'Atletismo de Sordos'];
 const ESTADOS_SIN_DUENO = ['Rechazado', 'Cancelado'];
 
@@ -208,21 +226,35 @@ export function deportesDe(org) {
   if (!org) return [];
   if (Array.isArray(org.deportes) && org.deportes.length) return org.deportes.slice();
   if (DEPORTES_SEED[org.id]) return DEPORTES_SEED[org.id].slice();
+  if (org.tipo === 'comite') return DEPORTES_COMITE_EXTRA[org.id] ? deportesComiteSeed(org.id) : [];
   return org.deporte && org.deporte !== '—' ? String(org.deporte).split(',').map((x) => x.trim()).filter(Boolean) : [];
 }
 /* Lectura normalizada: siempre trae `deportes` (lista) y `deporte` (texto). */
 function conDeportes(org) {
   const deportes = deportesDe(org);
+  /* El comité no muestra su lista como texto: son decenas de deportes. */
+  if (org.tipo === 'comite') return { ...org, deportes, deporte: '—' };
   return { ...org, deportes, deporte: deportes.length ? deportes.join(', ') : (org.deporte || '—') };
 }
 /* Federación que gobierna un deporte (la única), o null. */
 export function duenoDeporte(dep) {
   return allOrganismos().find((o) => o.tipo === 'federacion' && !ESTADOS_SIN_DUENO.includes(o.estado) && o.deportes.includes(dep)) || null;
 }
-/* Catálogo de la demo = deportes con federación + los que aún no tienen (el real es GET /sports). */
+/* Catálogo de la demo = deportes de los comités y federaciones + los que aún no tienen (el real es GET /sports). */
 export function catalogoDeportes() {
-  const conFed = allOrganismos().filter((o) => o.tipo === 'federacion').flatMap((o) => o.deportes);
-  return [...new Set([...conFed, ...SIN_FEDERACION])].sort((a, b) => a.localeCompare(b, 'es'));
+  const conOrg = allOrganismos().filter((o) => o.tipo === 'federacion' || o.tipo === 'comite').flatMap((o) => o.deportes);
+  return [...new Set([...conOrg, ...SIN_FEDERACION, ...SIN_COMITE])].sort((a, b) => a.localeCompare(b, 'es'));
+}
+/* Comité al que pertenece un deporte (a lo sumo uno), o null. */
+export function comiteDeDeporte(dep) {
+  return allOrganismos().find((o) => o.tipo === 'comite' && o.estado !== 'Cancelado' && o.deportes.includes(dep)) || null;
+}
+/* Deportes que puede tomar una federación de ese comité: los del comité sin federación
+   (o los que ya son de `propiaId`, al corregir). */
+export function deportesLibresDeComite(comiteId, propiaId) {
+  const com = getOrganismo(comiteId);
+  if (!com) return [];
+  return deportesDe(com).filter((dp) => { const f = duenoDeporte(dp); return !f || f.id === propiaId; });
 }
 
 /* ─── 8) Afiliaciones: UNA sola relación para los tres casos (Modelo, nao-docs) ───

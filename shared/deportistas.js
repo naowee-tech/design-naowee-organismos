@@ -750,11 +750,8 @@ if (root) {
   let cg = { parsed: null, hecho: null };
 
   function cgActor() { return scopeId ? getOrganismo(scopeId) : null; }
-  /* El comité no tiene deportes propios: son los de sus federaciones. */
-  function deportesDeActor(actor) {
-    if (actor.tipo !== 'comite') return deportesDe(actor);
-    return [...new Set(childrenOf(actor.id).filter((o) => o.tipo === 'federacion').flatMap((o) => deportesDe(o)))];
-  }
+  /* Cada organismo carga deportistas de sus deportes; el comité, de la lista que le asignó el Ministerio. */
+  function deportesDeActor(actor) { return deportesDe(actor); }
   function cgHeaders(actor) {
     return actor.tipo === 'club' ? [...CG_BASE] : [...CG_BASE, CG_COL_CLUB];
   }

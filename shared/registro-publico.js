@@ -11,7 +11,7 @@
        su superior. Pasos: Básicos · Documentos · Sede y contacto.
    Notas para devs (Solo demo) por paso: shared/devnotes.js.
    ═══════════════════════════════════════════════════════════════ */
-import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore, deportesDe, duenoDeporte, catalogoDeportes, SIN_FEDERACION, PARADEPORTES } from './organismos-data.js';
+import { allDeportistas, allOrganismos, getOrganismo, activosDeTipo, comitePorSector, addOrganismo, auditLog, readStore, writeStore, deportesDe, duenoDeporte, catalogoDeportes, deportesLibresDeComite, SIN_FEDERACION, PARADEPORTES } from './organismos-data.js';
 import { mountDevnotes } from './devnotes.js?v=1.7.0';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -386,15 +386,17 @@ function superiorOpts() {
 }
 function deportesPermitidos() {
   const t = STATE.entTipo, d = STATE.d;
-  if (t === 'federacion') return d.sector ? CATALOGO_DEPORTES() : [];
+  /* Federación: solo los deportes de su comité (decisión 2026-10-20); sin comité elegido, ninguno. */
+  if (t === 'federacion') { const com = d.sector ? comitePorSector(d.sector) : null; return com ? deportesDe(com) : []; }
   return deportesDe(getOrganismo(d.superiorId));
 }
 function superiorSection() {
   const t = STATE.entTipo, d = STATE.d;
   if (t === 'federacion') {
     const com = d.sector ? comitePorSector(d.sector) : null;
-    return `${dd('sector', 'Sector', CAT.sector, d.sector, true)}
-      ${com ? `<p class="rp-inline-note">${I.check} Tu federación quedará adscrita al <strong>${esc(com.nombre)}</strong>.</p>` : ''}`;
+    const comites = opt(activosDeTipo('comite').map((c) => [c.sector, c.nombre]));
+    return `${dd('sector', 'Comité', comites, d.sector, true)}
+      ${com ? `<p class="rp-inline-note">${I.check} Tu federación elige entre los deportes de este comité.</p>` : ''}`;
   }
   const ops = superiorOpts();
   const filtro = t === 'club' ? dd('filtroDeporte', 'Deporte', opt([...new Set(activosDeTipo('liga').flatMap(deportesDe))].sort((a, b) => a.localeCompare(b, 'es'))), d.filtroDeporte, false, true) : '';
@@ -406,7 +408,7 @@ function superiorSection() {
 function deportesField() {
   const d = STATE.d, t = STATE.entTipo;
   const lista = deportesPermitidos();
-  if (!lista.length) return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label><p class="rp-inline-note">${t === 'federacion' ? 'Elige el sector para ver los deportes.' : `Elige tu ${SUPERIOR_TXT[t]} para ver sus deportes.`}</p></div>`;
+  if (!lista.length) return `<div class="naowee-textfield" data-field="f-deportes"><label class="naowee-textfield__label naowee-textfield__label--required">Deportes</label><p class="rp-inline-note">${t === 'federacion' ? 'Elige tu comité para ver sus deportes.' : `Elige tu ${SUPERIOR_TXT[t]} para ver sus deportes.`}</p></div>`;
   const libres = t === 'federacion' ? lista.filter((dep) => !duenoDeporte(dep, d.sector)) : lista;
   const ocupados = lista.length - libres.length;
   const chips = libres.map((dep) => {
@@ -797,8 +799,8 @@ const DEVNOTES = {
   entbasicos: { title: 'Básicos (Entidad)', sections: [
     { title: 'Se mantiene', items: ['NIT con formato <code>#########-#</code> y consulta <code>GET /user/public/organization/search</code>. En revisión → mensaje de revisión pendiente; con cuenta → Iniciar sesión.', 'Naturaleza jurídica, tamaño y representante legal. <b>Corregir al migrar</b>: hoy no se envía el apellido del representante.'] },
     { title: 'Solo demo', items: ['La búsqueda de NIT está simulada: <code>805010003-3</code> devuelve en revisión y <code>860077223-7</code> cuenta existente; <code>900123456-1</code> (o cualquier otro) no tiene registro y deja avanzar. Los ejemplos bajo el campo son botones que lo llenan y disparan la búsqueda; el que no tiene registro además deja el formulario lleno para poder dar Siguiente.'] },
-    { title: 'Nuevo: organismo superior', items: ['Federación → elige sector y queda adscrita al comité del sector. Liga → elige federación. Club → filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).', 'La lista solo trae organismos <b>Activos</b>. Si el suyo no está: soporte, que escala al Ministerio (P-17).', 'En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden después como afiliación.'] },
-    { title: 'Nuevo: deportes', items: ['Lista de deportes del catálogo. Federación: del catálogo, sin repetir deportes que ya tiene otra federación. <b>Un deporte pertenece a una sola federación en todo el sistema</b>, sin importar el comité (decisión 2026-10-09, Daniel Pizarro, DEP-545). Liga: de su federación. Club: de su liga.', 'Sin carga histórica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio envíe el listado.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
+    { title: 'Nuevo: organismo superior', items: ['Federación → elige su <b>comité</b> (decisión 2026-10-20; antes elegía sector). Liga → elige federación. Club → filtra por deporte y elige liga; el departamento no filtra porque un club puede estar en una liga de otro departamento (P-20).', 'La lista solo trae organismos <b>Activos</b>. Si el suyo no está: soporte, que escala al Ministerio (P-17).', 'En el registro el club elige <b>una</b> liga (la que lo activa). Otras ligas de sus deportes se piden después como afiliación.'] },
+    { title: 'Nuevo: deportes', items: ['<b>Cada comité tiene su lista de deportes</b>: la asigna el Ministerio al crearlo y solo él la cambia (decisión 2026-10-20). Federación: solo los de su comité que no tiene otra federación; mientras no elija comité no se muestra ningún deporte. <b>Un deporte pertenece a una sola federación en todo el sistema</b> (decisión 2026-10-09, DEP-545). Liga: de su federación. Club: de su liga.', 'Sin carga histórica en esta entrega: los deportes de las federaciones ya migradas se cargan cuando Negocio envíe el listado.', 'SUP no es deporte: es modalidad de Surf. Las modalidades no se configuran en el organismo.'] },
     { title: 'Contrato propuesto', items: ['<code>POST /user/public/organization</code>: <code>organization_type</code> pasa a FEDERATION | LEAGUE | CLUB y se agregan <code>parent_organization_code</code> y <code>sport_codes[]</code>; deja de enviar <code>coverage_code</code> y <code>snd_sector_entity_code</code>.', 'El back valida: superior Activo y del tipo correcto, <code>sport_codes</code> ⊆ deportes del superior, NIT único, un deporte en una sola federación.'] },
     { title: 'Brecha con user-auth-ms (revisado 07-10-2026, rama staging)', items: [
       '<b>Ya soportado</b> en <code>organizations_details</code>: NIT único, nombre, naturaleza jurídica, tamaño, representante (tipo y número de documento, nombre, correo), departamento, municipio, dirección, teléfono y correo. Estados <code>PENDING_REVIEW</code>, <code>REJECTED</code>, <code>SUSPENDED</code>.',

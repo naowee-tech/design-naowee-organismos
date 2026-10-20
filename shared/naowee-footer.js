@@ -623,6 +623,14 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.9.4 —  DEPORTES POR COMITÉ (decisión 2026-10-20, hallazgo de QA en el registro de federación):
+             · Cada comité tiene su lista de deportes; la asigna el Ministerio al crearlo
+               (nuevo selector en el alta del comité) y solo él la cambia.
+             · Registro de federación (público e interno): elige el comité, no el sector,
+               y ve solo los deportes de ese comité sin federación. Sin comité elegido
+               no se muestra ningún deporte.
+             · Cargue masivo de federaciones: los deportes deben ser del comité que carga.
+             · El comité carga deportistas de su lista de deportes. */
 /* v1.9.3 —  DECISIONES DEL 19-10 (preguntas del back sobre el cargue masivo de deportistas):
              · El club se identifica por su NIT; la plantilla ya no trae liga ni
                federación (salen del club). Se valida que el club esté en la
@@ -694,7 +702,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.3';
+const MODULE_VERSION = 'v1.9.4';
 
 (function () {
   function mount() {

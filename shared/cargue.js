@@ -8,7 +8,7 @@
    Solo componentes .naowee-* + layout local .cg-*.
    ═══════════════════════════════════════════════════════════════ */
 import { getRoleFromQuery, ROLES, getDemoMode } from './sidebar.js';
-import { allOrganismos, getOrganismo, addOrganismosBulk, recordCargue, allCargues, auditLog, deportesDe, duenoDeporte, catalogoDeportes } from './organismos-data.js';
+import { allOrganismos, getOrganismo, addOrganismosBulk, recordCargue, allCargues, auditLog, deportesDe, duenoDeporte } from './organismos-data.js';
 import { scopeFor } from './permissions.js';
 
 const roleCode = getRoleFromQuery();
@@ -137,14 +137,14 @@ function validate(body) {
     if (!cell('repNumDoc') || !cell('repNombre') || !cell('repApellido')) errors.push('Representante legal incompleto');
     if (cell('repCorreo') && !EMAIL_RE.test(cell('repCorreo'))) errors.push('Correo del rep. legal inválido');
     if (!cell('depto') || !cell('ciudad')) errors.push('Departamento/Ciudad vacíos');
-    /* Deportes del organismo: la federación, deportes del catálogo sin federación (un deporte = una
-       federación); la liga y el club, dentro de los de su superior. */
+    /* Deportes del organismo: dentro de los de su superior (la federación, de los de su comité,
+       decisión 2026-10-20); además, en federaciones, sin otra federación (un deporte = una federación). */
     const deps = cell('deportes').split(',').map((x) => x.trim()).filter(Boolean);
     if (!deps.length) errors.push('Deportes vacíos');
     else if (targetTipo === 'federacion') {
-      const cat = catalogoDeportes();
+      const delComite = deportesDe(superior);
       deps.forEach((dp) => {
-        if (!cat.includes(dp)) errors.push(`«${dp}» no está en el catálogo`);
+        if (!delComite.includes(dp)) errors.push(`«${dp}» no es deporte de ${superior.nombre}`);
         else if (duenoDeporte(dp)) errors.push(`«${dp}» ya tiene federación (${duenoDeporte(dp).nombre})`);
       });
     } else {

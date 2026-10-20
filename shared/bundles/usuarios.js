@@ -16,14 +16,23 @@
   });
 
   // shared/organismos-data.js
+  function deportesComiteSeed(id) {
+    if (!_deportesComite[id]) {
+      const feds = SEED_ORGANISMOS.filter((o) => o.tipo === "federacion" && o.parentId === id).flatMap((o) => deportesDe(o));
+      _deportesComite[id] = [.../* @__PURE__ */ new Set([...feds, ...DEPORTES_COMITE_EXTRA[id]])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return _deportesComite[id].slice();
+  }
   function deportesDe(org2) {
     if (!org2) return [];
     if (Array.isArray(org2.deportes) && org2.deportes.length) return org2.deportes.slice();
     if (DEPORTES_SEED[org2.id]) return DEPORTES_SEED[org2.id].slice();
+    if (org2.tipo === "comite") return DEPORTES_COMITE_EXTRA[org2.id] ? deportesComiteSeed(org2.id) : [];
     return org2.deporte && org2.deporte !== "\u2014" ? String(org2.deporte).split(",").map((x) => x.trim()).filter(Boolean) : [];
   }
   function conDeportes(org2) {
     const deportes = deportesDe(org2);
+    if (org2.tipo === "comite") return { ...org2, deportes, deporte: "\u2014" };
     return { ...org2, deportes, deporte: deportes.length ? deportes.join(", ") : org2.deporte || "\u2014" };
   }
   function seedAfiliaciones() {
@@ -233,7 +242,7 @@
     auditLog({ orgId: list[i].orgId === "MIN" ? "" : list[i].orgId, fecha: _todayISO(), responsable: meta.responsable || "", accion: `Usuario ${estado === "Desactivado" ? "desactivado" : "reactivado"}: ${list[i].nombre}`, a: estado });
     return { ...list[i] };
   }
-  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, TER_PREFIX, nombreTerritorio, MARCAS, CATALOGO_ROLES, ROLES_MINISTERIO, USUARIOS_SEED;
+  var COMITES, FEDERACIONES_COC, FEDERACIONES_FICTICIAS, LIGAS, CLUBES, DEPORTISTAS, SEED_ORGANISMOS, SEED_DEPORTISTAS, DEPORTES_SEED, DEPORTES_COMITE_EXTRA, _deportesComite, AF_DESDE, AFILIACIONES_EXTRA, STORE_PREFIX, SEED_FLAG, SEED_VERSION, _todayISO, TER_PREFIX, nombreTerritorio, MARCAS, CATALOGO_ROLES, ROLES_MINISTERIO, USUARIOS_SEED;
   var init_organismos_data = __esm({
     "shared/organismos-data.js"() {
       init_estados();
@@ -374,6 +383,12 @@
         "LIG-006": ["Nataci\xF3n", "Polo Acu\xE1tico"],
         "CLU-007": ["Nataci\xF3n", "Polo Acu\xE1tico"]
       };
+      DEPORTES_COMITE_EXTRA = {
+        COC: ["Breaking", "Flag Football", "P\xE1del", "Skateboarding"],
+        CPC: ["Para Powerlifting", "Para B\xE1dminton", "Para Tenis de Mesa"],
+        FSC: ["Nataci\xF3n de Sordos"]
+      };
+      _deportesComite = {};
       AF_DESDE = "2026-03-25";
       AFILIACIONES_EXTRA = [
         /* Multi-afiliación de deportes distintos: Mateo patina en Cali y nada en Aguas del Valle. */
