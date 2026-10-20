@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciclo del organismo · Variante A</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="../../shared/naowee-ds-tokens.css">
+<link rel="stylesheet" href="../../shared/tokens.css">
+<link rel="stylesheet" href="../../shared/shell.css">
+<link rel="stylesheet" href="../../shared/components.css">
+<link rel="stylesheet" href="../../shared/forms.css">
+<link rel="stylesheet" href="../../shared/detalle.css">
+<link rel="stylesheet" href="../../shared/naowee-footer.css">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   VARIANTE A — El ciclo vive dentro de la ficha del organismo
+   · «Mi organismo» = la misma ficha (organismo-detalle.html) vista por su
+     administrador, con un bloque de estado arriba del hero.
+   · Sanciones del Ministerio = acciones en .od-hero__actions que abren un
+     .reg-modal con motivo obligatorio y la consecuencia explicada.
+   Solo estilos nuevos .oc-*; el resto es el shell y la ficha reales.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Foco visible (anillo del DS §Button) en lo que el shell no cubre */
+.nav-row:focus-visible,
+.burger-btn:focus-visible,
+.header-burger:focus-visible,
+.user-chip:focus-visible,
+.reg-modal__close:focus-visible,
+.naowee-breadcrumb__item:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); border-radius: var(--radius-sm); }
+.naowee-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .22); }
+.od-panel:focus-visible { outline: none; box-shadow: inset 0 0 0 3px rgba(215, 64, 9, .15); }
+.od-hero__name:focus { outline: none; }
+
+/* ─── Menú reducido del administrador ─── */
+.oc-navnote {
+  margin: 10px 20px 0 30px; padding: 10px 12px; border-radius: var(--radius-md);
+  background: var(--bg-soft); font-size: 12px; line-height: 1.45; color: var(--text-secondary);
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.oc-navnote svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; color: var(--text-muted); }
+.sidebar.collapsed .oc-navnote { display: none; }
+
+/* ─── Bloque de estado (arriba del hero) ─── */
+.oc-status {
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0 28px;
+  padding: 22px 24px; margin-bottom: 16px;
+  border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface);
+}
+.oc-status--single { grid-template-columns: minmax(0, 1fr); }
+.oc-status__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.oc-status__since { font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.oc-status__title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0 0 6px; line-height: 1.3; letter-spacing: -.005em; }
+.oc-status__text { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin: 0; max-width: 62ch; }
+.oc-status__text strong { color: var(--text-primary); font-weight: 600; }
+
+.oc-motivo { margin-top: 16px; padding: 14px 16px; background: var(--bg-soft); border-radius: var(--radius-lg); }
+.oc-motivo__lbl { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0 0 4px; }
+.oc-motivo__txt { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.4; }
+.oc-motivo__det { font-size: 13.5px; color: var(--text-primary); margin: 4px 0 0; line-height: 1.5; }
+.oc-motivo__who { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+.oc-motivo__who b { color: var(--text-primary); font-weight: 600; }
+
+.oc-missing { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.oc-missing li {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  background: var(--bg-soft); border-radius: var(--radius-full); font-size: 12.5px; color: var(--text-primary);
+}
+.oc-missing li svg { width: 13px; height: 13px; color: var(--text-secondary); }
+
+.oc-status__cta { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-top: 18px; }
+.oc-status__hint { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+
+.oc-lock {
+  grid-column: 1 / -1; display: flex; gap: 8px; align-items: flex-start;
+  margin: 20px 0 0; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 12.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.oc-lock svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--text-muted); }
+
+/* Ciclo: misma gramática que el historial (.od-tl-*), con modificadores de paso */
+.oc-cycle { border-left: 1px solid var(--border); padding-left: 24px; }
+.oc-cycle__title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 2px 0 14px; }
+.oc-cycle .od-tl-row { padding-bottom: 12px; }
+.oc-cycle .od-tl-dot { background: var(--border-dark); }
+.oc-cycle .od-tl-row.oc-step--done .od-tl-dot { background: var(--naowee-color-feedback-fill-positive-loud); }
+.oc-cycle .od-tl-row.oc-step--warn .od-tl-dot { background: var(--naowee-color-feedback-fill-caution-loud); }
+.oc-cycle .od-tl-row.oc-step--neg .od-tl-dot { background: var(--naowee-color-feedback-fill-negative-loud); }
+.oc-cycle .od-tl-row.oc-step--now .od-tl-dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-bg-warm); }
+.oc-cycle .od-tl-row.oc-step--next .od-tl-dot { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--border-dark); }
+.oc-step--next:not(:last-child)::before { background: none; border-left: 1.5px dashed var(--border-dark); width: 0; }
+.oc-step--next .od-tl-head { color: var(--text-secondary); }
+.oc-step--now .od-tl-head strong { color: var(--accent); }
+.oc-here {
+  display: inline-flex; align-items: center; margin-left: 6px; padding: 1px 8px; vertical-align: 1px;
+  border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent);
+  font-size: 11px; font-weight: 600; line-height: 16px;
+}
+
+/* ─── Acciones del Ministerio en el hero ─── */
+.oc-hero-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.naowee-btn--mute.oc-btn-neg { color: var(--naowee-color-feedback-text-negative-quiet-on-fill); }
+.naowee-btn--mute.oc-btn-neg svg { color: currentColor; }
+.naowee-btn--mute.oc-btn-neg:hover { background: var(--naowee-color-feedback-fill-negative-quiet); }
+.naowee-btn--mute.oc-btn-neg:focus-visible { box-shadow: 0 0 0 3px rgba(218, 22, 48, .2); }
+.oc-hero-note { font-size: 12px; color: var(--text-secondary); text-align: right; max-width: 260px; line-height: 1.45; margin: 0; }
+
+/* ─── Diálogo de sanción ─── */
+.oc-dlg .naowee-message__text { font-size: 13.5px; line-height: 1.5; }
+.oc-consq { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-primary); }
+.oc-consq li + li { margin-top: 4px; }
+.oc-consq .naowee-badge { margin-left: 4px; vertical-align: 1px; }
+.oc-dlg .bj-select { appearance: auto; height: 44px; padding: 0 12px; }
+.oc-dlg .bj-select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+.oc-dlg .bj-ta-wrap.is-err { border-color: var(--field-border-error, #ed314a); }
+.oc-help { font-size: 12px; color: var(--text-secondary); margin: 6px 0 0; line-height: 1.45; }
+.oc-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); cursor: pointer; }
+.oc-check input { width: 18px; height: 18px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--naowee-color-feedback-fill-negative-loud); cursor: pointer; }
+.oc-check input:focus-visible { outline: 3px solid rgba(218, 22, 48, .25); outline-offset: 2px; }
+.oc-dlg .bj-btn-danger:focus-visible, .oc-dlg .naowee-btn--mute:focus-visible { box-shadow: 0 0 0 3px rgba(215, 64, 9, .25); }
+
+/* Documentos con estado distinto de «Adjunto» */
+.od-doc--miss { border-style: dashed; }
+.od-doc--miss .od-doc__ico { color: var(--text-muted); }
+
+/* ─── Conmutador de revisión (no es parte del diseño) ─── */
+.review-toggle {
+  position: fixed; right: 16px; bottom: 16px; z-index: 90;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px;
+  background: #fff; border: 1px dashed var(--border-dark); border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(40, 40, 52, .12); font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.review-toggle select {
+  height: 32px; border: 1px solid var(--field-border-idle); border-radius: var(--radius-full);
+  padding: 0 10px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: #fff; cursor: pointer;
+}
+.review-toggle select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(215, 64, 9, .22); }
+
+/* ─── Responsive ─── */
+@media (max-width: 1023px) {
+  .sidebar.collapsed .oc-navnote { display: flex; }
+}
+@media (max-width: 860px) {
+  .oc-status { grid-template-columns: minmax(0, 1fr); padding: 18px 16px; }
+  .oc-cycle { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px; }
+}
+@media (max-width: 760px) {
+  .oc-hero-acts { justify-content: flex-start; }
+  .oc-hero-note { text-align: left; max-width: none; }
+  .oc-status__cta .naowee-btn { width: 100%; }
+  .bj-modal__foot .naowee-btn { flex: 1; }
+}
+@media (max-width: 600px) {
+  .top-header { gap: 8px; }
+  .review-toggle { right: 8px; bottom: 8px; padding-left: 10px; }
+  .review-toggle__lbl { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div id="sidebarRoot">
+    <aside class="sidebar" id="naoweeSidebar">
+      <div class="sidebar-logo">
+        <button class="burger-btn" id="sidebarToggle" type="button" aria-label="Colapsar menú" aria-expanded="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="#282834" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <img src="../../shared/logos/ministerio.svg" alt="Ministerio del Deporte" class="sb-logo-img"/>
+        <div class="logo-sep"></div>
+        <img src="../../shared/logos/suid.png" alt="SUID" class="sb-logo-img"/>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav" aria-label="Menú principal"></nav>
+    </aside>
+  </div>
+
+  <div class="main">
+    <header class="top-header" id="topHeader">
+      <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="profile-switcher" id="profileSwitcher">
+        <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Mi cuenta">
+          <div class="ava">
+            <div class="ava-ring" id="chipAva"></div>
+            <div class="ava-dot"></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name" id="chipName"></span>
+            <span class="user-role" id="chipRole"></span>
+          </div>
+          <button class="user-chip__chevron" type="button" tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </div>
+        <div class="profile-dd profile-dd--identity-only" role="menu">
+          <div class="profile-dd__header">
+            <span class="ava-ring" id="ddAva" style="width:42px;height:42px;font-size:14px"></span>
+            <div class="profile-dd__user">
+              <strong id="ddName"></strong>
+              <span class="profile-dd__doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg><span id="ddDoc"></span></span>
+              <span class="profile-dd__current-role" id="ddRole"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="page-inner">
+        <div id="detalleRoot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="shell-backdrop" id="drawerBackdrop"></div>
+
+<!-- Solo para la revisión del diseño -->
+<div class="review-toggle" role="group" aria-label="Simular quién mira y en qué estado">
+  <label class="review-toggle__lbl" for="reviewSel">Ver como</label>
+  <select id="reviewSel">
+    <optgroup label="Administrador del club">
+      <option value="adm-pre">Admin · Preinscrito</option>
+      <option value="adm-rev">Admin · En revisión</option>
+      <option value="adm-corr" selected>Admin · En corrección</option>
+      <option value="adm-rech">Admin · Rechazado</option>
+      <option value="adm-susp">Admin · Suspendido</option>
+      <option value="adm-canc">Admin · Cancelado</option>
+    </optgroup>
+    <optgroup label="Ministerio del Deporte">
+      <option value="min-act">Ministerio · Activo</option>
+      <option value="min-susp">Ministerio · Suspendido</option>
+    </optgroup>
+  </select>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /* ─── Iconos (mismo set que shared/sidebar.js y shared/detalle.js). REGLA: toda clave usada existe aquí. ─── */
+  const I = {
+    sitemap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v4M5 17v-2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2M12 11v3"/></svg>',
+    level: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+    filePlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+    club: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    sep: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="10" y1="9" x2="10" y2="15"/><line x1="14" y1="9" x2="14" y2="15"/></svg>',
+    ban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    inboxLg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>'
+  };
+
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const fmt = (iso) => { const [y, m, d] = iso.split('-'); return `${Number(d)} ${MESES[Number(m) - 1]} ${y}`; };
+  const HOY = '2026-10-13';
+  const BADGE = { 'Preinscrito': 'neutral', 'En revisión': 'caution', 'En corrección': 'caution', 'Activo': 'positive', 'Rechazado': 'negative', 'Suspendido': 'caution', 'Cancelado': 'negative' };
+  const badge = (e, size) => `<span class="naowee-badge naowee-badge--${BADGE[e] || 'neutral'} naowee-badge--quiet naowee-badge--${size || 'small'}">${esc(e)}</span>`;
+  const msg = (variant, icon, html) => `<div class="naowee-message naowee-message--${variant}"><span class="naowee-message__icon">${I[icon]}</span><div class="naowee-message__body"><p class="naowee-message__text">${html}</p></div></div>`;
+
+  /* ─── Personas ─── */
+  const PERSONA = {
+    admin: { name: 'Diana Loaiza', ini: 'DL', role: 'Club', color: '#1f8923', doc: 'CC 1.113.645.210', org: 'Club Ruedas del Sur' },
+    min:   { name: 'María F. Rojas', ini: 'MR', role: 'Admin Mindeporte', color: '#002B5B', doc: 'CC 41.234.567', org: 'Ministerio del Deporte' }
+  };
+
+  /* ─── Organismo de ejemplo ─── */
+  const ORG = {
+    nombre: 'Club Ruedas del Sur', nit: '805020002-2', deporte: 'Patinaje', tipoClub: 'Escuela',
+    municipio: 'Palmira', depto: 'Valle del Cauca', liga: 'Liga de Patinaje del Valle',
+    chain: ['Comité Olímpico Colombiano', 'Federación Colombiana de Patinaje', 'Liga de Patinaje del Valle']
+  };
+  const LIGA_WHO = 'Sandra Mejía · Liga de Patinaje del Valle';
+  const MIN_WHO = 'María F. Rojas · Ministerio del Deporte';
+
+  /* Motivos (lo que el superior o el Ministerio escribió) */
+  const MOT = {
+    corr: { lbl: 'Motivo de la devolución', txt: 'Falta el reconocimiento del ente municipal', det: 'Adjunten la resolución de reconocimiento expedida por el ente deportivo de Palmira. Lo demás está completo.', who: 'Sandra Mejía', org: 'Liga de Patinaje del Valle', f: '2026-03-18' },
+    rech: { lbl: 'Motivo del rechazo', txt: 'Reconocimiento deportivo no válido o vencido', det: 'El reconocimiento adjunto venció en 2024. Carguen el vigente para volver a revisarlo.', who: 'Sandra Mejía', org: 'Liga de Patinaje del Valle', f: '2026-03-18' },
+    susp: { lbl: 'Motivo de la suspensión', txt: 'Reconocimiento deportivo vencido', det: 'El reconocimiento deportivo del club venció el 30 sep 2026 y no se ha renovado.', who: 'María F. Rojas', org: 'Ministerio del Deporte', f: '2026-10-02' },
+    canc: { lbl: 'Motivo de la cancelación', txt: 'Pérdida de personería jurídica', det: 'La entidad fue liquidada según el certificado de existencia y representación.', who: 'María F. Rojas', org: 'Ministerio del Deporte', f: '2026-10-05' }
+  };
+
+  /* Historial (más reciente primero) */
+  const H = {
+    pre:  { f: '2026-03-03', a: 'Preinscripción', q: LIGA_WHO, m: 'Cargue masivo de clubes' },
+    env:  { f: '2026-03-12', a: 'Registro enviado a revisión', q: 'Diana Loaiza · Club Ruedas del Sur' },
+    corr: { f: '2026-03-18', a: 'Corrección solicitada', q: LIGA_WHO, m: MOT.corr.txt },
+    rech: { f: '2026-03-18', a: 'Registro rechazado', q: LIGA_WHO, m: MOT.rech.txt },
+    reenv:{ f: '2026-03-20', a: 'Registro reenviado con la corrección', q: 'Diana Loaiza · Club Ruedas del Sur' },
+    apr:  { f: '2026-03-24', a: 'Registro aprobado', q: LIGA_WHO },
+    susp: { f: '2026-10-02', a: 'Suspendido', q: MIN_WHO, m: MOT.susp.txt },
+    canc: { f: '2026-10-05', a: 'Cancelado', q: MIN_WHO, m: MOT.canc.txt }
+  };
+
+  const DOCS = ['Reconocimiento deportivo', 'Reconocimiento del ente municipal', 'RUT', 'Certificado de personería jurídica'];
+  const FILES = { 'Reconocimiento deportivo': 'reconocimiento-deportivo.pdf', 'Reconocimiento del ente municipal': 'reconocimiento-municipal.pdf', 'RUT': 'rut-805020002.pdf', 'Certificado de personería jurídica': 'personeria-juridica.pdf' };
+
+  const SCEN = {
+    'adm-pre':  { who: 'admin', estado: 'Preinscrito',   hist: ['pre'], docs: { _all: 'pend' }, rep: false },
+    'adm-rev':  { who: 'admin', estado: 'En revisión',   hist: ['env', 'pre'] },
+    'adm-corr': { who: 'admin', estado: 'En corrección', hist: ['corr', 'env', 'pre'], mot: 'corr', docs: { 'Reconocimiento del ente municipal': 'falta' } },
+    'adm-rech': { who: 'admin', estado: 'Rechazado',     hist: ['rech', 'env', 'pre'], mot: 'rech', docs: { 'Reconocimiento deportivo': 'rech' } },
+    'adm-susp': { who: 'admin', estado: 'Suspendido',    hist: ['susp', 'apr', 'reenv', 'corr', 'env', 'pre'], mot: 'susp', deps: true },
+    'adm-canc': { who: 'admin', estado: 'Cancelado',     hist: ['canc', 'apr', 'reenv', 'corr', 'env', 'pre'], mot: 'canc', deps: true },
+    'min-act':  { who: 'min',   estado: 'Activo',        hist: ['apr', 'reenv', 'corr', 'env', 'pre'], deps: true },
+    'min-susp': { who: 'min',   estado: 'Suspendido',    hist: ['susp', 'apr', 'reenv', 'corr', 'env', 'pre'], mot: 'susp', deps: true }
+  };
+
+  const DEPORTISTAS = [
+    { n: 'Mariana Cifuentes Ruiz', s: 'Patinaje — Velocidad · TI 1.113.902.441' },
+    { n: 'Juan Esteban Viveros', s: 'Patinaje — Velocidad · TI 1.113.887.020' },
+    { n: 'Sara Lucía Montaño', s: 'Patinaje — Artístico · CC 1.006.215.774' }
+  ];
+
+  let S = null;   // estado vivo del escenario (se muta con las acciones del Ministerio)
+  function load(key) {
+    const b = SCEN[key];
+    S = { key, who: b.who, estado: b.estado, mot: b.mot ? { ...MOT[b.mot] } : null,
+      hist: b.hist.map((k) => ({ ...H[k] })), docs: b.docs || {}, rep: b.rep !== false, deps: !!b.deps, tab: 'info' };
+  }
+  const P = () => PERSONA[S.who];
+  const isAdmin = () => S.who === 'admin';
+
+  /* ═══════════════ Shell ═══════════════ */
+  function renderShell() {
+    const p = P();
+    $('chipAva').textContent = p.ini; $('chipAva').style.cssText = `background:${p.color}22;color:${p.color}`;
+    $('ddAva').textContent = p.ini; $('ddAva').style.background = `${p.color}22`; $('ddAva').style.color = p.color;
+    $('chipName').textContent = p.name; $('ddName').textContent = p.name;
+    $('chipRole').textContent = p.role; $('ddDoc').textContent = p.doc;
+    $('ddRole').textContent = `${p.role} · ${p.org}`; $('ddRole').style.color = p.color;
+
+    const row = (id, label, icon, opts = {}) => `
+      <a href="#" class="nav-row ${opts.child ? 'nav-row--child' : ''} ${opts.active ? 'active' : ''}" data-id="${id}"${opts.active ? ' aria-current="page"' : ''}>
+        ${opts.active && !opts.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
+        <span class="icon">${I[icon]}</span><span class="lbl">${esc(label)}</span>
+      </a>`;
+    if (isAdmin()) {
+      $('sidebarNav').innerHTML = row('mi', 'Mi organismo', 'club', { active: true }) +
+        `<p class="oc-navnote">${I.lock}<span>El resto del menú se habilita cuando tu club esté activo.</span></p>`;
+    } else {
+      $('sidebarNav').innerHTML = row('jer', 'Jerarquía SND', 'sitemap', { active: true }) +
+        [['Comités'], ['Federaciones'], ['Ligas'], ['Clubes'], ['Deportistas']].map(([l]) => row(`j-${l}`, l, 'level', { child: true })).join('') +
+        `<div class="nav-section">GESTIÓN</div>` +
+        row('bandeja', 'Bandeja de aprobaciones', 'inbox') + row('registro', 'Registro de organismo', 'filePlus');
+    }
+  }
+
+  /* ═══════════════ Bloque de estado («Mi organismo») ═══════════════ */
+  function motivoHtml(m) {
+    return `<div class="oc-motivo">
+      <p class="oc-motivo__lbl">${esc(m.lbl)}</p>
+      <p class="oc-motivo__txt">${esc(m.txt)}</p>
+      ${m.det ? `<p class="oc-motivo__det">${esc(m.det)}</p>` : ''}
+      <p class="oc-motivo__who"><b>${esc(m.who)}</b> · ${esc(m.org)} · ${fmt(m.f)}</p>
+    </div>`;
+  }
+  const step = (kind, title, sub, here) => `
+    <div class="od-tl-row oc-step--${kind}"><span class="od-tl-dot" aria-hidden="true"></span><div>
+      <div class="od-tl-head"><strong>${esc(title)}</strong>${here ? '<span class="oc-here">Estás aquí</span>' : ''}</div>
+      ${sub ? `<div class="od-tl-sub">${esc(sub)}</div>` : ''}
+    </div></div>`;
+
+  function cycleHtml() {
+    const e = S.estado;
+    let steps = '';
+    if (e === 'Preinscrito') {
+      steps = step('done', 'Preinscrito por la liga', `${fmt('2026-03-03')} · cargue masivo`) +
+        step('now', 'Completar datos y documentos', 'Lo haces tú', true) +
+        step('next', 'Revisión de la liga', ORG.liga) +
+        step('next', 'Activo', 'Se habilita tu menú completo');
+    } else if (e === 'En revisión') {
+      steps = step('done', 'Enviaste tu registro', fmt('2026-03-12')) +
+        step('now', 'Revisión de la liga', ORG.liga, true) +
+        step('next', 'Activo', 'Se habilita tu menú completo');
+    } else if (e === 'En corrección' || e === 'Rechazado') {
+      const rech = e === 'Rechazado';
+      steps = step('done', 'Enviaste tu registro', fmt('2026-03-12')) +
+        step(rech ? 'neg' : 'warn', rech ? 'La liga lo rechazó' : 'La liga pidió una corrección', fmt(S.mot.f)) +
+        step('now', 'Corregir y reenviar', 'Lo haces tú', true) +
+        step('next', 'Nueva revisión de la liga', ORG.liga) +
+        step('next', 'Activo', 'Se habilita tu menú completo');
+    } else if (e === 'Suspendido') {
+      steps = step('done', 'Registro aprobado', `${fmt('2026-03-24')} · ${ORG.liga}`) +
+        step('warn', 'Suspendido por el Ministerio', fmt(S.mot.f), true) +
+        step('next', 'Si el Ministerio lo reactiva', 'Vuelve a revisión de la liga (propuesta P-08)') +
+        step('next', 'Activo de nuevo', 'Cuando la liga lo apruebe');
+    } else if (e === 'Cancelado') {
+      steps = step('done', 'Registro aprobado', `${fmt('2026-03-24')} · ${ORG.liga}`) +
+        step('neg', 'Cancelado por el Ministerio', `${fmt(S.mot.f)} · es definitivo`, true);
+    }
+    return `<div class="oc-cycle"><p class="oc-cycle__title" id="ocCycleTitle">Cómo sigue tu registro</p><div role="list" aria-labelledby="ocCycleTitle">${steps.replace(/class="od-tl-row/g, 'role="listitem" class="od-tl-row')}</div></div>`;
+  }
+
+  const ADMIN_COPY = {
+    'Preinscrito': {
+      title: 'Completa el registro de tu club',
+      text: `La <strong>${ORG.liga}</strong> preinscribió a tu club el ${fmt('2026-03-03')}. Completa los datos y documentos que faltan y envíalo para que la liga lo revise.`,
+      cta: 'Completar registro', icon: 'edit',
+      hint: 'Puedes guardar y seguir después; la liga solo lo ve cuando lo envías.'
+    },
+    'En revisión': {
+      title: 'Tu registro está en revisión',
+      text: `Lo enviaste el ${fmt('2026-03-12')}. La <strong>${ORG.liga}</strong> lo está revisando. Te avisaremos por correo y en la app cuando decida.`,
+      hint: 'No tienes nada pendiente por ahora.'
+    },
+    'En corrección': {
+      title: 'La liga te pidió una corrección',
+      text: 'Corrige lo que te piden y vuelve a enviarlo. No empiezas de cero: tus datos y documentos siguen ahí y solo cambias lo necesario.',
+      cta: 'Corregir y reenviar', icon: 'edit',
+      hint: 'Al reenviarlo vuelve a la bandeja de la liga.'
+    },
+    'Rechazado': {
+      title: 'La liga rechazó tu registro',
+      text: 'Puedes corregir lo que señala el motivo y enviarlo de nuevo. Tus datos y documentos siguen guardados.',
+      cta: 'Corregir y reenviar', icon: 'edit',
+      hint: 'Al reenviarlo vuelve a la bandeja de la liga.'
+    },
+    'Suspendido': {
+      title: 'El Ministerio suspendió a tu club',
+      text: 'Mientras dure la suspensión no puedes aprobar, cargar ni confirmar afiliaciones. Tus deportistas no cambian de estado. Para resolverla, comunícate con el Ministerio del Deporte.',
+      hint: 'Si el Ministerio la levanta, tu registro vuelve a revisión de la liga antes de que puedas operar.'
+    },
+    'Cancelado': {
+      title: 'El registro de tu club fue cancelado',
+      text: 'Es una decisión definitiva del Ministerio: el club no puede volver a operar en el SUID. Puedes consultar su información, pero no modificarla.'
+    }
+  };
+
+  function adminStatusHtml() {
+    const c = ADMIN_COPY[S.estado];
+    const since = S.mot ? `desde el ${fmt(S.mot.f)}` : S.estado === 'En revisión' ? `desde el ${fmt('2026-03-12')}` : `desde el ${fmt('2026-03-03')}`;
+    const missing = S.estado === 'Preinscrito'
+      ? `<p class="oc-motivo__lbl" style="margin:16px 0 0" id="ocMissLbl">Te falta</p><ul class="oc-missing" aria-labelledby="ocMissLbl" style="margin-top:6px">${['Representante legal', ...DOCS].map((d) => `<li>${I[d === 'Representante legal' ? 'user' : 'doc']}${esc(d)}</li>`).join('')}</ul>`
+      : '';
+    const cta = c.cta
+      ? `<div class="oc-status__cta"><button type="button" class="naowee-btn naowee-btn--loud" data-cta>${I[c.icon]}${esc(c.cta)}</button>${c.hint ? `<span class="oc-status__hint">${esc(c.hint)}</span>` : ''}</div>`
+      : (c.hint ? `<p class="oc-status__hint" style="margin:14px 0 0">${esc(c.hint)}</p>` : '');
+    return `
+      <section class="oc-status" aria-labelledby="ocStatusTitle">
+        <div>
+          <div class="oc-status__head">${badge(S.estado, 'large')}<span class="oc-status__since">${since}</span></div>
+          <h2 class="oc-status__title" id="ocStatusTitle">${esc(c.title)}</h2>
+          <p class="oc-status__text">${c.text}</p>
+          ${S.mot ? motivoHtml(S.mot) : ''}
+          ${missing}
+          ${cta}
+        </div>
+        ${cycleHtml()}
+        <p class="oc-lock">${I.lock}<span>Mientras tu club no esté activo, tu menú solo muestra «Mi organismo»: no puedes aprobar, cargar ni confirmar afiliaciones.</span></p>
+      </section>`;
+  }
+
+  /* Lo que ve el Ministerio cuando el organismo no está Activo */
+  function minStatusHtml() {
+    if (S.estado === 'Activo') return '';
+    let body = '';
+    if (S.estado === 'Suspendido') {
+      body = `<h2 class="oc-status__title" id="ocStatusTitle">Suspendido: su administrador no puede operar</h2>
+        <p class="oc-status__text">No puede aprobar, cargar ni confirmar afiliaciones. Sus deportistas conservan su estado.</p>${motivoHtml(S.mot)}`;
+    } else if (S.estado === 'En revisión') {
+      body = `<h2 class="oc-status__title" id="ocStatusTitle">Reactivado: está en revisión de la liga</h2>
+        <p class="oc-status__text">Está en la bandeja de la <strong>${ORG.liga}</strong>, que valida de nuevo sus datos actuales. Su administrador sigue sin poder operar hasta que la liga lo apruebe. <span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta P-08</span></p>`;
+    } else if (S.estado === 'Cancelado') {
+      body = `<h2 class="oc-status__title" id="ocStatusTitle">Cancelado de forma definitiva</h2>
+        <p class="oc-status__text">No se puede reactivar. Su información queda para consulta.</p>${motivoHtml(S.mot)}`;
+    }
+    const since = S.mot ? `desde el ${fmt(S.mot.f)}` : `desde el ${fmt(HOY)}`;
+    return `<section class="oc-status oc-status--single" aria-labelledby="ocStatusTitle">
+      <div><div class="oc-status__head">${badge(S.estado, 'large')}<span class="oc-status__since">${since}</span></div>${body}</div>
+    </section>`;
+  }
+
+  /* ═══════════════ Ficha ═══════════════ */
+  function crumbsHtml() {
+    const items = ORG.chain.map((n) => `<a class="naowee-breadcrumb__item" href="#" data-nav>${esc(n)}</a>`);
+    items.push(`<span class="naowee-breadcrumb__current" aria-current="page">${esc(ORG.nombre)}</span>`);
+    return `<nav class="naowee-breadcrumb od-crumbs" aria-label="Ruta jerárquica ascendente">${items.join(`<span class="naowee-breadcrumb__sep">${I.sep}</span>`)}</nav>
+      <div class="od-back"><button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-nav>${I.back}Volver</button></div>`;
+  }
+
+  function heroActionsHtml() {
+    if (isAdmin()) return '';
+    if (S.estado === 'Activo') {
+      return `<div class="oc-hero-acts">
+          <button type="button" class="naowee-btn naowee-btn--quiet naowee-btn--small" data-act="suspender">${I.pause}Suspender</button>
+          <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small oc-btn-neg" data-act="cancelar">${I.ban}Cancelar</button>
+        </div>`;
+    }
+    if (S.estado === 'Suspendido') {
+      return `<div class="oc-hero-acts"><button type="button" class="naowee-btn naowee-btn--loud naowee-btn--small" data-act="reactivar">${I.refresh}Reactivar</button></div>
+        <p class="oc-hero-note">Vuelve a revisión de la liga, no a Activo.</p>`;
+    }
+    return `<span class="od-ro">${I.lock} Sin acciones disponibles</span>`;
+  }
+
+  function heroHtml() {
+    const meta = [`NIT <b>${ORG.nit}</b>`, ORG.deporte, `Club ${ORG.tipoClub.toLowerCase()}`, `${ORG.municipio}, ${ORG.depto}`];
+    return `<div class="od-hero">
+      <div class="od-hero__emoji" aria-hidden="true">🛡️</div>
+      <div class="od-hero__main">
+        <div class="od-hero__title-row"><h1 class="od-hero__name" id="ocName" tabindex="-1">${esc(ORG.nombre)}</h1>${badge(S.estado)}</div>
+        <p class="od-hero__meta">${meta.join('<span class="od-dot">·</span>')}</p>
+      </div>
+      <div class="od-hero__actions">${heroActionsHtml()}</div>
+    </div>`;
+  }
+
+  const kv = (k, v) => `<div class="od-kv__row"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`;
+  const emptyState = (t, d) => `<div class="naowee-empty-state"><span class="naowee-empty-state__icon">${I.inboxLg}</span><p class="naowee-empty-state__title">${esc(t)}</p><p class="naowee-empty-state__description">${esc(d)}</p></div>`;
+
+  function panel(tab) {
+    if (tab === 'rep') {
+      if (!S.rep) return emptyState('Sin representante legal', isAdmin() ? 'Agrégalo al completar el registro.' : 'Este organismo aún no registra su representante legal.');
+      return `<div class="od-block"><dl class="od-kv">${kv('Nombre', 'Diana Loaiza Restrepo')}${kv('Documento', 'CC 1.113.645.210')}${kv('Correo electrónico', 'presidencia@ruedasdelsur.demo.co')}</dl></div>`;
+    }
+    if (tab === 'docs') {
+      const st = (d) => S.docs._all || S.docs[d] || 'ok';
+      const TAG = {
+        ok: ['positive', 'Adjunto'], pend: ['neutral', 'Pendiente'], falta: ['caution', 'Falta'], rech: ['negative', 'Por reemplazar']
+      };
+      const rows = DOCS.map((d) => {
+        const s = st(d); const [v, l] = TAG[s];
+        const file = s === 'ok' ? FILES[d] : s === 'rech' ? `${FILES[d]} · señalado en el rechazo` : s === 'falta' ? 'La liga lo pidió en la devolución' : 'Sin cargar';
+        return `<div class="od-doc ${s === 'ok' || s === 'rech' ? '' : 'od-doc--miss'}"><span class="od-doc__ico">${I.doc}</span><div style="min-width:0"><div class="od-doc__name">${esc(d)}</div><div class="od-doc__file">${esc(file)}</div></div><span class="od-doc__tag"><span class="naowee-badge naowee-badge--${v} naowee-badge--quiet naowee-badge--small">${l}</span></span></div>`;
+      }).join('');
+      return `<div class="od-block">${rows}</div>`;
+    }
+    if (tab === 'hier') {
+      const head = `<div class="od-counts"><span class="od-count"><b>${S.deps ? 3 : 0}</b> deportistas</span></div>
+        <p class="od-parent">Pertenece a: <strong>${ORG.liga}</strong> · Liga</p>`;
+      if (!S.deps) return head + emptyState('Sin deportistas afiliados', isAdmin() ? 'Podrás confirmar afiliaciones cuando tu club esté activo.' : 'Este club aún no tiene deportistas con afiliación confirmada.');
+      const note = S.estado === 'Cancelado'
+        ? `<div class="od-block">${msg('informative', 'info', 'Qué pasa con las afiliaciones de un club cancelado está <strong>pendiente de definir con Negocio</strong>.')}</div>`
+        : S.estado === 'Suspendido' ? `<div class="od-block">${msg('informative', 'info', 'La suspensión no cambia el estado de sus deportistas (propuesta P-18).')}</div>` : '';
+      return head + `<div class="od-children">${DEPORTISTAS.map((d) => `<div class="od-child"><span class="od-child__emoji" aria-hidden="true">🏃</span><div class="od-child__main"><div class="od-child__name">${esc(d.n)}</div><div class="od-child__sub">${esc(d.s)}</div></div><span class="od-child__badge"><span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Vinculado</span></span></div>`).join('')}</div>${note}`;
+    }
+    if (tab === 'hist') {
+      return `<div class="od-block">${S.hist.map((a) => `<div class="od-tl-row"><span class="od-tl-dot"></span><div><div class="od-tl-head"><strong>${esc(a.a)}</strong></div><div class="od-tl-sub">${[fmt(a.f), a.q, a.m].filter(Boolean).map(esc).join(' · ')}</div></div></div>`).join('')}</div>`;
+    }
+    return `<div class="od-block"><dl class="od-kv">
+      ${kv('Tipo de organismo', 'Club')}${kv('Tipo de club', ORG.tipoClub)}${kv('NIT / RUT', ORG.nit)}
+      ${kv('Naturaleza jurídica', 'Privada, sin ánimo de lucro')}${kv('Cobertura geográfica', 'Municipal')}
+      ${kv('Deporte', ORG.deporte)}${kv('Liga superior', ORG.liga)}
+      ${kv('Sede / dirección', `Calle 30 # 28-14, ${ORG.municipio}, ${ORG.depto}`)}
+      ${kv('Contacto institucional', '602 275 4410 · contacto@ruedasdelsur.demo.co')}
+      ${kv('Fecha de registro', fmt('2026-03-03'))}
+    </dl></div>`;
+  }
+
+  const TABS = [['info', 'Información'], ['rep', 'Representante legal'], ['docs', 'Documentos'], ['hier', 'Jerarquía'], ['hist', 'Historial']];
+
+  function render(focusName) {
+    renderShell();
+    const status = isAdmin() ? adminStatusHtml() : minStatusHtml();
+    $('detalleRoot').innerHTML = `
+      ${isAdmin() ? '' : crumbsHtml()}
+      ${status}
+      ${heroHtml()}
+      <div class="naowee-card od-tabs-card">
+        <div class="naowee-tabs" id="odTabs" role="tablist" aria-label="Secciones de la ficha">
+          ${TABS.map(([t, l]) => `<button type="button" class="naowee-tab ${t === S.tab ? 'naowee-tab--selected' : ''}" role="tab" id="tab-${t}" aria-controls="odPanel" data-tab="${t}" aria-selected="${t === S.tab}" tabindex="${t === S.tab ? 0 : -1}">${esc(l)}</button>`).join('')}
+        </div>
+        <div id="odPanel"></div>
+      </div>`;
+    document.querySelector('.page').classList.toggle('oc-admin', isAdmin());
+    paintPanel();
+    document.title = isAdmin() ? `Mi organismo · ${ORG.nombre}` : `${ORG.nombre} · Perfil del organismo`;
+    if (focusName) $('ocName').focus();
+  }
+  function paintPanel() {
+    $('odPanel').innerHTML = `<div class="od-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-${S.tab}">${panel(S.tab)}</div>`;
+  }
+
+  /* ═══════════════ Diálogo de sanción (reusa .reg-modal + campos .bj-*) ═══════════════ */
+  const ACCION = {
+    suspender: {
+      title: `Suspender ${ORG.nombre}`,
+      lead: msg('caution', 'alert', `<strong>Mientras dure la suspensión:</strong>`).replace('</p>', `</p><ul class="oc-consq">
+          <li>Su administrador no puede aprobar, cargar ni confirmar afiliaciones; su menú queda en «Mi organismo».</li>
+          <li>Sus deportistas y organismos de abajo no cambian de estado.<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta P-18</span></li>
+          <li>Puedes reactivarlo después: volverá a revisión de la ${ORG.liga}.</li>
+        </ul>`),
+      motivos: ['Reconocimiento deportivo vencido', 'Incumplimiento de requisitos legales', 'Orden de autoridad competente', 'Otro (explícalo en el detalle)'],
+      confirm: 'Suspender organismo', btn: 'bj-btn-danger', notify: `Se notificará a su administrador y a la ${ORG.liga}.`
+    },
+    cancelar: {
+      title: `Cancelar ${ORG.nombre}`,
+      lead: msg('negative', 'alert', `<strong>Es definitivo.</strong> Un organismo cancelado no se puede reactivar ni volver a operar en el SUID. Su información queda solo para consulta.`) +
+        `<p class="oc-help" style="margin:0">Qué pasa con sus deportistas y organismos de abajo está pendiente de definir con Negocio.</p>`,
+      motivos: ['Pérdida de personería jurídica', 'Reconocimiento deportivo revocado', 'Disolución del organismo', 'Otro (explícalo en el detalle)'],
+      confirm: 'Cancelar organismo', btn: 'bj-btn-danger', ack: 'Entiendo que la cancelación no se puede deshacer.', notify: `Se notificará a su administrador y a la ${ORG.liga}.`
+    },
+    reactivar: {
+      title: `Reactivar ${ORG.nombre}`,
+      lead: msg('informative', 'info', `No vuelve directo a Activo:`).replace('</p>', `</p><ul class="oc-consq">
+          <li>Pasa a <strong>En revisión</strong> y aparece en la bandeja de la ${ORG.liga}, que valida de nuevo sus datos actuales.</li>
+          <li>Su administrador sigue sin poder operar hasta que la liga lo apruebe.</li>
+          <li>Decisión pendiente con Negocio.<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">Propuesta P-08</span></li>
+        </ul>`),
+      motivos: ['Subsanó la causa de la suspensión', 'Terminó el plazo de la suspensión', 'Decisión de autoridad competente', 'Otro (explícalo en el detalle)'],
+      confirm: 'Reactivar y enviar a revisión', btn: 'naowee-btn--loud', notify: 'Se notificará a su administrador y a la liga.'
+    }
+  };
+
+  function openDialog(kind, opener) {
+    const A = ACCION[kind];
+    const ov = document.createElement('div');
+    ov.className = 'reg-modal-overlay bj-modal-ov';
+    ov.innerHTML = `
+      <div class="reg-modal bj-modal oc-dlg" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+        <div class="reg-modal__head"><h3 class="reg-modal__title" id="dlgTitle">${esc(A.title)}</h3><button type="button" class="reg-modal__close" data-close aria-label="Cerrar">${I.x}</button></div>
+        <div class="reg-modal__body">
+          ${A.lead}
+          <div class="bj-field">
+            <label class="bj-label" for="dlgMot">Motivo <span class="bj-req" aria-hidden="true">*</span></label>
+            <select class="bj-select" id="dlgMot" required aria-describedby="dlgMotErr">
+              <option value="">Selecciona un motivo</option>
+              ${A.motivos.map((m) => `<option>${esc(m)}</option>`).join('')}
+            </select>
+            <p class="bj-err" id="dlgMotErr" hidden>Selecciona un motivo para continuar.</p>
+          </div>
+          <div class="bj-field">
+            <label class="bj-label" for="dlgTxt">Detalle <span id="dlgTxtReq" class="bj-req" hidden aria-hidden="true">*</span></label>
+            <div class="naowee-textfield__input-wrap bj-ta-wrap" id="dlgTxtWrap"><textarea id="dlgTxt" rows="3" aria-describedby="dlgTxtHelp dlgTxtErr" placeholder="Qué pasó y, si aplica, qué debe hacer el organismo"></textarea></div>
+            <p class="oc-help" id="dlgTxtHelp">El organismo y su liga verán el motivo y este detalle. ${esc(A.notify)}</p>
+            <p class="bj-err" id="dlgTxtErr" hidden>Cuéntanos el motivo en el detalle.</p>
+          </div>
+          ${A.ack ? `<label class="oc-check"><input type="checkbox" id="dlgAck"><span>${esc(A.ack)}</span></label><p class="bj-err" id="dlgAckErr" hidden style="margin-top:-8px">Confirma que entiendes que es definitivo.</p>` : ''}
+        </div>
+        <div class="reg-modal__foot bj-modal__foot">
+          <button type="button" class="naowee-btn naowee-btn--mute" data-close>Volver</button>
+          <button type="button" class="naowee-btn ${A.btn}" id="dlgOk">${esc(A.confirm)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('is-open'));
+    const sel = ov.querySelector('#dlgMot');
+    setTimeout(() => sel.focus(), 60);
+
+    const close = (after) => {
+      if (ov.__closing) return; ov.__closing = true;
+      ov.classList.remove('is-open');
+      document.removeEventListener('keydown', onKey, true);
+      setTimeout(() => { ov.remove(); if (after) after(); else if (opener && document.body.contains(opener)) opener.focus(); }, 300);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (e.key !== 'Tab') return;
+      const f = [...ov.querySelectorAll('button, select, textarea, input')].filter((x) => !x.disabled && x.offsetParent !== null);
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey, true);
+    ov.addEventListener('click', (e) => { if (e.target === ov || e.target.closest('[data-close]')) close(); });
+
+    const isOtro = () => /^Otro/.test(sel.value);
+    sel.addEventListener('change', () => {
+      ov.querySelector('#dlgMotErr').hidden = true; sel.classList.remove('bj-select--err'); sel.removeAttribute('aria-invalid');
+      ov.querySelector('#dlgTxtReq').hidden = !isOtro();
+    });
+    ov.querySelector('#dlgTxt').addEventListener('input', () => { ov.querySelector('#dlgTxtErr').hidden = true; ov.querySelector('#dlgTxtWrap').classList.remove('is-err'); });
+    const ack = ov.querySelector('#dlgAck');
+    if (ack) ack.addEventListener('change', () => { ov.querySelector('#dlgAckErr').hidden = true; });
+
+    ov.querySelector('#dlgOk').addEventListener('click', () => {
+      const txt = ov.querySelector('#dlgTxt').value.trim();
+      let bad = null;
+      if (!sel.value) { ov.querySelector('#dlgMotErr').hidden = false; sel.classList.add('bj-select--err'); sel.setAttribute('aria-invalid', 'true'); bad = bad || sel; }
+      if (isOtro() && !txt) { ov.querySelector('#dlgTxtErr').hidden = false; ov.querySelector('#dlgTxtWrap').classList.add('is-err'); bad = bad || ov.querySelector('#dlgTxt'); }
+      if (ack && !ack.checked) { ov.querySelector('#dlgAckErr').hidden = false; bad = bad || ack; }
+      if (bad) { bad.focus(); return; }
+      close(() => apply(kind, sel.value, txt));
+    });
+  }
+
+  function apply(kind, motivo, detalle) {
+    const txt = /^Otro/.test(motivo) ? detalle : motivo;
+    const det = /^Otro/.test(motivo) ? '' : detalle;
+    if (kind === 'suspender') {
+      S.estado = 'Suspendido';
+      S.mot = { lbl: 'Motivo de la suspensión', txt, det, who: 'María F. Rojas', org: 'Ministerio del Deporte', f: HOY };
+      S.hist.unshift({ f: HOY, a: 'Suspendido', q: MIN_WHO, m: txt });
+      toast(`${ORG.nombre} quedó suspendido. Se notificó a su administrador y a la liga.`, 'caution');
+    } else if (kind === 'cancelar') {
+      S.estado = 'Cancelado';
+      S.mot = { lbl: 'Motivo de la cancelación', txt, det, who: 'María F. Rojas', org: 'Ministerio del Deporte', f: HOY };
+      S.hist.unshift({ f: HOY, a: 'Cancelado', q: MIN_WHO, m: txt });
+      toast(`${ORG.nombre} quedó cancelado.`, 'error');
+    } else {
+      S.estado = 'En revisión'; S.mot = null;
+      S.hist.unshift({ f: HOY, a: 'Reactivado: enviado a revisión de la liga', q: MIN_WHO, m: txt });
+      toast(`Reactivado. Ya está en la bandeja de la ${ORG.liga}.`, 'success');
+    }
+    render(true);
+  }
+
+  /* ═══════════════ Eventos ═══════════════ */
+  $('detalleRoot').addEventListener('click', (e) => {
+    const t = e.target.closest('.naowee-tab');
+    if (t) { selectTab(t.dataset.tab, false); return; }
+    const a = e.target.closest('[data-act]');
+    if (a) { openDialog(a.dataset.act, a); return; }
+    if (e.target.closest('[data-cta]')) { toast('Aquí se abre el formulario de registro con tus datos (fuera de esta maqueta).'); return; }
+    if (e.target.closest('[data-nav]')) { e.preventDefault(); toast('En esta maqueta solo está la ficha.'); }
+  });
+  function selectTab(tab, focus) {
+    S.tab = tab;
+    document.querySelectorAll('#odTabs .naowee-tab').forEach((b) => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle('naowee-tab--selected', on); b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    });
+    paintPanel();
+  }
+  $('detalleRoot').addEventListener('keydown', (e) => {
+    const t = e.target.closest('.naowee-tab');
+    if (!t || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const ids = TABS.map(([id]) => id); let i = ids.indexOf(t.dataset.tab);
+    i = e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length;
+    selectTab(ids[i], true);
+  });
+
+  /* ─── Shell: colapsar, drawer, chip de usuario ─── */
+  const sidebar = $('naoweeSidebar');
+  $('sidebarToggle').addEventListener('click', () => {
+    const c = sidebar.classList.toggle('collapsed');
+    $('sidebarToggle').setAttribute('aria-expanded', String(!c));
+    $('sidebarToggle').setAttribute('aria-label', c ? 'Expandir menú' : 'Colapsar menú');
+  });
+  $('headerBurger').addEventListener('click', () => document.body.classList.add('has-mobile-drawer-open'));
+  $('drawerBackdrop').addEventListener('click', () => document.body.classList.remove('has-mobile-drawer-open'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.body.classList.remove('has-mobile-drawer-open');
+      $('profileSwitcher').classList.remove('open');
+      $('userChipTrigger').setAttribute('aria-expanded', 'false');
+    }
+  });
+  const chip = $('userChipTrigger');
+  const toggleChip = (e) => { e.stopPropagation(); chip.setAttribute('aria-expanded', String($('profileSwitcher').classList.toggle('open'))); };
+  chip.addEventListener('click', toggleChip);
+  chip.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChip(e); } });
+  document.addEventListener('click', (e) => {
+    if (!$('profileSwitcher').contains(e.target)) { $('profileSwitcher').classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); }
+  });
+  $('sidebarNav').addEventListener('click', (e) => {
+    const row = e.target.closest('.nav-row');
+    if (!row) return;
+    e.preventDefault();
+    if (!row.classList.contains('active')) toast(`${row.querySelector('.lbl').textContent.trim()}: en esta maqueta solo está la ficha.`);
+    document.body.classList.remove('has-mobile-drawer-open');
+  });
+
+  /* ─── Toast (snackbar canónico #evToast) ─── */
+  let tTimer = null;
+  function toast(text, kind) {
+    let t = $('evToast');
+    if (!t) { t = document.createElement('div'); t.id = 'evToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.className = `evtoast--${kind || 'info'}`;
+    t.innerHTML = `<span class="evtoast__badge">${kind === 'error' ? I.x : kind === 'caution' ? I.pause : kind === 'success' ? I.check : I.info}</span><span class="evtoast__text"></span>`;
+    t.querySelector('.evtoast__text').textContent = text;
+    requestAnimationFrame(() => t.classList.add('is-visible'));
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('is-visible'), 3200);
+  }
+
+  /* ─── Conmutador de revisión ─── */
+  const pick = (k) => { load(k); render(); document.querySelector('.page').scrollTop = 0; };
+  $('reviewSel').addEventListener('change', (e) => pick(e.target.value));
+  const fromHash = location.hash.slice(1);
+  if (SCEN[fromHash]) $('reviewSel').value = fromHash;
+  pick($('reviewSel').value);
+})();
+</script>
+</body>
+</html>
