@@ -1378,9 +1378,9 @@ function seedMenoresDemo() {
   cambiarAfiliacion('DEP-028', 'CLU-001', 'Rechazada', { motivo: 'El documento no corresponde a la menor: el nombre no coincide con el de la tarjeta de identidad.' });
   solicitarAfiliacion({ sujetoId: 'DEP-025', organismoId: 'CLU-001', deporte: 'Patinaje', origen: 'tutor' });
   solicitarAfiliacion({ sujetoId: 'DEP-024', organismoId: 'CLU-007', deporte: 'Natación', origen: 'tutor' });
-  cambiarAfiliacion('DEP-024', 'CLU-007', 'Rechazada', { motivo: list[0].motivo });
+  cambiarAfiliacion('DEP-024', 'CLU-007', 'Rechazada', { motivo: ((list.find((s) => s.id === 'AF-DM2')) || {}).motivo });
   auditLog({ orgId: 'CLU-001', deportistaId: 'DEP-025', deportistaNombre: 'Mateo Gómez', fecha: '2026-11-18', responsable: 'Laura Marcela Gómez Restrepo', rol: 'Tutor', accion: 'Documento de parentesco cargado por el tutor', de: '', a: 'Enviada', motivo: '' });
-  auditLog({ orgId: 'CLU-007', deportistaId: 'DEP-024', deportistaNombre: 'Sara Gómez', fecha: '2026-11-14', responsable: 'Isabella Torres Peña', rol: 'CLUB', accion: 'Documento de parentesco rechazado', de: 'Enviada', a: 'Rechazada', motivo: list[0].motivo });
+  auditLog({ orgId: 'CLU-007', deportistaId: 'DEP-024', deportistaNombre: 'Sara Gómez', fecha: '2026-11-14', responsable: 'Isabella Torres Peña', rol: 'CLUB', accion: 'Documento de parentesco rechazado', de: 'Enviada', a: 'Rechazada', motivo: ((list.find((s) => s.id === 'AF-DM2')) || {}).motivo });
 }
 export function seedAfiliacionesDemo(mode) {
   if (mode !== 'demo') return;
