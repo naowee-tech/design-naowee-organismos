@@ -144,7 +144,18 @@
     /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
     { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
-    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
+    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · Óscar Cardona como persona: administra el club y, con su segundo rol, revisa documentos. No es deportista. */
+    { id: "DEP-029", nombre: "\xD3scar Cardona", tipoDoc: "CC", numDoc: "94321678", deporte: "Patinaje", modalidad: "", correo: "admin@clubpatincali.demo.co", fechaNac: "1985-04-12", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · usuarios internos invitados por el club como revisores de documentos (su perfil trae solo los datos del formulario). */
+    { id: "DEP-030", nombre: "Ana Luc\xEDa Mora", tipoDoc: "CC", numDoc: "52118790", deporte: "Patinaje", modalidad: "", correo: "ana.mora@clubpatincali.demo.co", fechaNac: "1990-08-21", sexo: "Mujer", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-031", nombre: "Juli\xE1n P\xE9rez Mora", tipoDoc: "CC", numDoc: "1144220118", deporte: "Patinaje", modalidad: "", correo: "julian.perez@clubpatincali.demo.co", fechaNac: "1998-02-14", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · más menores de ejemplo para «Revisión documental» (autodeclarados, sin club; los tutores son ficticios). */
+    { id: "DEP-026", nombre: "Isabella Rojas Mena", tipoDoc: "TI", numDoc: "1103456789", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "", fechaNac: "2012-03-08", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-027", nombre: "Juan Esteban Cruz", tipoDoc: "TI", numDoc: "1104567890", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2010-11-22", sexo: "Hombre", parentesco: "Tutor legal", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-028", nombre: "Salom\xE9 Vargas R\xEDos", tipoDoc: "TI", numDoc: "1105678901", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "", fechaNac: "2013-06-17", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · menor cuyo documento de parentesco espera al club (lo siembra seedAfiliacionesDemo). */
+    { id: "DEP-025", nombre: "Mateo G\xF3mez", tipoDoc: "TI", numDoc: "1098765003", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2015-09-04", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
   ];
   var SEED_ORGANISMOS = [
     ...COMITES,
@@ -193,6 +204,7 @@
     { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
     { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
     { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+    { id: "AF-P003", tipo: "personal", sujetoId: "DEP-029", organismoId: "CLU-001", deporte: "Patinaje", estado: "Vinculada", desde: "2026-10-01", origen: "solicitud", rol: "Revisor de documentos" },
     /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
     { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
   ];
@@ -210,7 +222,7 @@
   }
   var STORE_PREFIX = "naowee-organismos-";
   var SEED_FLAG = STORE_PREFIX + "demo-seeded";
-  var SEED_VERSION = "0.5.0";
+  var SEED_VERSION = "0.6.4";
   function readStore(key, fallback = null) {
     try {
       const raw = sessionStorage.getItem(STORE_PREFIX + key);
@@ -232,13 +244,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = (function() {
+    const seeded = function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    })();
+    }();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -382,13 +394,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = (function() {
+    const mode = function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    })();
+    }();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -470,6 +482,8 @@
     FEDERACION: "FED-040",
     LIGA: "LIG-001",
     CLUB: "CLU-001",
+    REVISOR_DOC: "CLU-001",
+    // v1.10.0: mismo club que el administrador
     DEPORTISTA: "DEP-001"
   };
   var TIPO_DE_ROL = { COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club" };
@@ -540,6 +554,9 @@
     refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
     id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+    checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.3 2.4 2.4 4.6-5"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
   };
   ICONS.user = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
@@ -614,6 +631,20 @@
       color: "#1f8923",
       short: "Confirma la afiliaci\xF3n de sus deportistas",
       group: "Organismos"
+    },
+    /* v1.10.0 · la misma persona (Óscar) con un segundo rol dentro del mismo club: solo revisa documentos y ve su perfil. */
+    REVISOR_DOC: {
+      code: "REVISOR_DOC",
+      label: "Revisor de documentos",
+      userName: "\xD3scar Cardona",
+      userEmail: "admin@clubpatincali.demo.co",
+      userDoc: "CC 94.321.678",
+      org: "Club Pat\xEDn Cali",
+      avatar: "OC",
+      color: "#1f8923",
+      short: "Revisa los documentos de parentesco de los menores",
+      group: "Organismos",
+      personaId: "DEP-029"
     },
     DEPORTISTA: {
       code: "DEPORTISTA",
@@ -735,11 +766,18 @@
          estado permanente del club. La bandeja es el trabajo pendiente. */
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
-        { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
+        { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" },
+        { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" }
       ] },
       { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
+    REVISOR_DOC: [
+      { section: null, items: [
+        { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" },
+        { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html?persona=DEP-029" }
+      ] }
+    ],
     DEPORTISTA: [
       { section: null, items: [
         { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
@@ -838,6 +876,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
+    if (code === "REVISOR_DOC") return "documentos.html";
     if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
@@ -869,12 +908,16 @@
     const href = hrefForItem(item, roleCode2);
     const tag = href ? "a" : "div";
     const hrefAttr = href ? ` href="${href}"` : "";
+    if (item.id === "documentos" && roleCode2 === "CLUB") {
+      const n = solicitudesDeClub(scopeFor(roleCode2)).filter((x) => x.esMenor && x.estado === "Enviada").length;
+      item = { ...item, badge: n || "" };
+    }
     return `
     <${tag} class="nav-row ${item.child ? "nav-row--child" : ""} ${isActive ? "active" : ""}" data-id="${item.id}"${hrefAttr}>
       ${isActive && !item.child ? '<span class="active-bar" aria-hidden="true"></span>' : ""}
       <span class="icon">${getIcon(item.icon)}</span>
       <span class="lbl">${item.label}</span>
-      ${item.badge ? `<span class="nav-badge">${item.badge}</span>` : ""}
+      ${item.badge ? `<span class="nav-badge${item.id === "documentos" ? " nav-badge--count" : ""}">${item.badge}</span>` : ""}
     </${tag}>
   `;
   }
@@ -972,6 +1015,8 @@
     <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir men\xFA">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    ${rolDemoHtml(role2.code)}
+    ${notifHtml(role2.code)}
     <div class="profile-switcher" id="profileSwitcher">
       <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-label="Mi cuenta">
         <div class="ava">
@@ -1000,6 +1045,8 @@
     </div>
   `;
     bindHeaderEvents(headerEl);
+    bindRolDemo(headerEl);
+    bindNotif(headerEl, role2.code);
     mountContexto(role2);
   }
   var TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
@@ -1024,6 +1071,119 @@
   function orgIco(o, size) {
     const c = COLOR_TIPO[o.tipo] || "#d74009";
     return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
+  }
+  var ROLES_DEL_CLUB = [
+    { code: "CLUB", nombre: "Administrador del club", desc: "Confirma afiliaciones, gestiona deportistas y usuarios, y revisa documentos." },
+    { code: "REVISOR_DOC", nombre: "Revisor de documentos", desc: "Revisa los documentos de parentesco de los menores y ve su perfil." }
+  ];
+  var esRolDelClub = (code) => ROLES_DEL_CLUB.some((x) => x.code === code);
+  function hrefRol(code, pagina) {
+    const comunes = code === "CLUB" ? ["documentos.html", "deportistas.html", "bandeja.html"] : ["documentos.html"];
+    return `${comunes.includes(pagina) ? pagina : homeForRole(code)}?role=${code}`;
+  }
+  function rolDemoHtml(code) {
+    if (!esRolDelClub(code)) return "";
+    const pagina = location.pathname.split("/").pop() || "index.html";
+    const actual = ROLES_DEL_CLUB.find((x) => x.code === code);
+    const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+    return `<div class="mp-hdr-tools" id="roleDemoHdr"><div class="mp-demo"><span class="naowee-badge">Solo demo</span>
+    <div class="naowee-dropdown mp-demo__dd" id="roleDemoDd">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Cambiar de rol">
+        <span class="naowee-dropdown__value">${actual.nombre}</span><span class="naowee-dropdown__chevron">${getIcon("chevron")}</span>
+      </button>
+      <div class="naowee-dropdown__menu" role="listbox" aria-label="Tus roles en este club">
+        ${ROLES_DEL_CLUB.map((x) => `<a class="naowee-dropdown__opt${x.code === code ? " is-selected" : ""}" role="option" aria-selected="${x.code === code}" href="${hrefRol(x.code, pagina)}">${x.nombre}${x.code === code ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${CHECK}</span>` : ""}</a>`).join("")}
+      </div>
+    </div></div></div>`;
+  }
+  var NOTIF_KEY = "naowee-organismos-notif-leidas";
+  var MES_N = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function notificaciones(code) {
+    const club = scopeFor(code);
+    return solicitudesDeClub(club).filter((x) => x.esMenor && x.estado === "Enviada" && x.documento).map((x) => {
+      const dep = getDeportista(x.deportistaId) || {};
+      const tutor = x.tutorId ? getDeportista(x.tutorId) : null;
+      const at = new Date(x.documento.cargadoAt || x.documento.cargado + "T12:00:00");
+      return { id: x.id, at, tutor: (tutor ? tutor.nombre : x.tutorNombre) || "El tutor", menor: dep.nombre || "un menor", corregido: !!x.documento.corregido };
+    }).sort((a, b) => b.at - a.at);
+  }
+  var leidasNotif = () => {
+    try {
+      return JSON.parse(sessionStorage.getItem(NOTIF_KEY) || "[]");
+    } catch (_) {
+      return [];
+    }
+  };
+  function notifHtml(code) {
+    if (!esRolDelClub(code)) return "";
+    const list = notificaciones(code);
+    const leidas = leidasNotif();
+    const n = list.filter((x) => !leidas.includes(x.id)).length;
+    const fmt = (d) => `${d.getDate()} ${MES_N[d.getMonth()]} ${d.getFullYear()} \xB7 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return `<div class="hdr-bell" id="hdrBell">
+    <button type="button" class="hdr-bell__btn" id="hdrBellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notificaciones${n ? `, ${n} sin leer` : ""}">${getIcon("bell")}${n ? `<span class="hdr-bell__n">${n}</span>` : ""}</button>
+    <div class="hdr-bell__panel" id="hdrBellPanel" role="dialog" aria-label="Notificaciones">
+      <div class="hdr-bell__h"><strong>Notificaciones</strong><button type="button" class="hdr-bell__all" id="hdrBellAll"${n ? "" : " disabled"}>Marcar como le\xEDdas</button></div>
+      ${list.length ? `<ul class="hdr-bell__l">${list.map((x) => `<li><a class="hdr-bell__i${leidas.includes(x.id) ? " is-read" : ""}" href="documentos.html?role=${code}&sol=${x.id}"><span class="hdr-bell__dot" aria-hidden="true"></span>
+        <span class="hdr-bell__t"><strong>Hay documentos pendientes de revisi\xF3n</strong>
+        <span>${x.tutor} ${x.corregido ? "corrigi\xF3" : "carg\xF3"} el documento de parentesco de ${x.menor}.</span><small>${fmt(x.at)}</small></span></a></li>`).join("")}</ul>` : '<p class="hdr-bell__empty">No hay documentos pendientes de revisi\xF3n.</p>'}
+    </div></div>`;
+  }
+  function bindNotif(headerEl, code) {
+    const box = headerEl.querySelector("#hdrBell");
+    if (!box) return;
+    const btn = box.querySelector("#hdrBellBtn");
+    const set = (open) => {
+      box.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!box.classList.contains("open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!box.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && box.classList.contains("open")) {
+        set(false);
+        btn.focus();
+      }
+    });
+    const all = box.querySelector("#hdrBellAll");
+    all.addEventListener("click", () => {
+      try {
+        sessionStorage.setItem(NOTIF_KEY, JSON.stringify(notificaciones(code).map((x) => x.id)));
+      } catch (_) {
+      }
+      box.querySelectorAll(".hdr-bell__i").forEach((a) => a.classList.add("is-read"));
+      const n = box.querySelector(".hdr-bell__n");
+      if (n) n.remove();
+      all.disabled = true;
+      btn.setAttribute("aria-label", "Notificaciones");
+    });
+  }
+  function bindRolDemo(headerEl) {
+    const dd = headerEl.querySelector("#roleDemoDd");
+    if (!dd) return;
+    const trg = dd.querySelector(".naowee-dropdown__trigger");
+    const set = (open) => {
+      dd.classList.toggle("naowee-dropdown--open", open);
+      trg.setAttribute("aria-expanded", String(open));
+    };
+    trg.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!dd.classList.contains("naowee-dropdown--open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!dd.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dd.classList.contains("naowee-dropdown--open")) {
+        set(false);
+        trg.focus();
+      }
+    });
   }
   function mountContexto(role2) {
     const lista = (role2.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
@@ -1303,11 +1463,16 @@
       if (el.dataset.mounted) return;
       const n = registry[el.dataset.devnote];
       if (!n) return;
+      if (el.closest(".page-head")) el.dataset.nobadge = "1";
       const list = (items) => `<ul>${(items || []).map((i) => `<li>${i}</li>`).join("")}</ul>`;
       const body = n.sections ? n.sections.map((s) => `<div class="wz-devnote__sec"><div class="wz-devnote__sec-title">${s.title}</div>${list(s.items)}</div>`).join("") : list(n.items);
-      el.innerHTML = `<span class="naowee-badge">Solo demo</span>Notas para devs
+      el.innerHTML = `${el.dataset.nobadge ? "" : '<span class="naowee-badge">Solo demo</span>'}Notas para devs
       <span class="wz-devnote__pop" role="tooltip"><span class="wz-devnote__head">${n.title} <em>\xB7 nota para devs, no es parte del producto</em></span>${body}</span>`;
       el.dataset.mounted = "1";
+      if (el.closest(".page-head")) {
+        el.classList.add("wz-devnote--fab");
+        document.body.appendChild(el);
+      }
     });
   }
 

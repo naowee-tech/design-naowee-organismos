@@ -132,6 +132,7 @@ const SCOPE = {
   FEDERACION: 'FED-040',
   LIGA: 'LIG-001',
   CLUB: 'CLU-001',
+  REVISOR_DOC: 'CLU-001',   // v1.10.0: mismo club que el administrador
   DEPORTISTA: 'DEP-001'
 };
 

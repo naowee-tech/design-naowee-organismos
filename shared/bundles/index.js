@@ -121,7 +121,18 @@
     /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
     { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
     { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
-    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
+    { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · Óscar Cardona como persona: administra el club y, con su segundo rol, revisa documentos. No es deportista. */
+    { id: "DEP-029", nombre: "\xD3scar Cardona", tipoDoc: "CC", numDoc: "94321678", deporte: "Patinaje", modalidad: "", correo: "admin@clubpatincali.demo.co", fechaNac: "1985-04-12", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · usuarios internos invitados por el club como revisores de documentos (su perfil trae solo los datos del formulario). */
+    { id: "DEP-030", nombre: "Ana Luc\xEDa Mora", tipoDoc: "CC", numDoc: "52118790", deporte: "Patinaje", modalidad: "", correo: "ana.mora@clubpatincali.demo.co", fechaNac: "1990-08-21", sexo: "Mujer", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-031", nombre: "Juli\xE1n P\xE9rez Mora", tipoDoc: "CC", numDoc: "1144220118", deporte: "Patinaje", modalidad: "", correo: "julian.perez@clubpatincali.demo.co", fechaNac: "1998-02-14", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · más menores de ejemplo para «Revisión documental» (autodeclarados, sin club; los tutores son ficticios). */
+    { id: "DEP-026", nombre: "Isabella Rojas Mena", tipoDoc: "TI", numDoc: "1103456789", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "", fechaNac: "2012-03-08", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-027", nombre: "Juan Esteban Cruz", tipoDoc: "TI", numDoc: "1104567890", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2010-11-22", sexo: "Hombre", parentesco: "Tutor legal", clubId: null, estado: "autodeclarado" },
+    { id: "DEP-028", nombre: "Salom\xE9 Vargas R\xEDos", tipoDoc: "TI", numDoc: "1105678901", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "", fechaNac: "2013-06-17", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+    /* v1.10.0 · menor cuyo documento de parentesco espera al club (lo siembra seedAfiliacionesDemo). */
+    { id: "DEP-025", nombre: "Mateo G\xF3mez", tipoDoc: "TI", numDoc: "1098765003", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2015-09-04", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
   ];
   var SEED_ORGANISMOS = [
     ...COMITES,
@@ -170,6 +181,7 @@
     { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
     { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
     { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+    { id: "AF-P003", tipo: "personal", sujetoId: "DEP-029", organismoId: "CLU-001", deporte: "Patinaje", estado: "Vinculada", desde: "2026-10-01", origen: "solicitud", rol: "Revisor de documentos" },
     /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
     { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
   ];
@@ -265,6 +277,8 @@
     FEDERACION: "FED-040",
     LIGA: "LIG-001",
     CLUB: "CLU-001",
+    REVISOR_DOC: "CLU-001",
+    // v1.10.0: mismo club que el administrador
     DEPORTISTA: "DEP-001"
   };
   var TIPO_DE_ROL = { COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club" };
@@ -334,6 +348,9 @@
     refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
     id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
     user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+    checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.3 2.4 2.4 4.6-5"/></svg>',
+    doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
   };
   ICONS.user = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
@@ -405,6 +422,20 @@
       color: "#1f8923",
       short: "Confirma la afiliaci\xF3n de sus deportistas",
       group: "Organismos"
+    },
+    /* v1.10.0 · la misma persona (Óscar) con un segundo rol dentro del mismo club: solo revisa documentos y ve su perfil. */
+    REVISOR_DOC: {
+      code: "REVISOR_DOC",
+      label: "Revisor de documentos",
+      userName: "\xD3scar Cardona",
+      userEmail: "admin@clubpatincali.demo.co",
+      userDoc: "CC 94.321.678",
+      org: "Club Pat\xEDn Cali",
+      avatar: "OC",
+      color: "#1f8923",
+      short: "Revisa los documentos de parentesco de los menores",
+      group: "Organismos",
+      personaId: "DEP-029"
     },
     DEPORTISTA: {
       code: "DEPORTISTA",
@@ -526,11 +557,18 @@
          estado permanente del club. La bandeja es el trabajo pendiente. */
       { section: "DEPORTISTAS", items: [
         { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
-        { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
+        { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" },
+        { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" }
       ] },
       { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
     ],
     /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
+    REVISOR_DOC: [
+      { section: null, items: [
+        { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" },
+        { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html?persona=DEP-029" }
+      ] }
+    ],
     DEPORTISTA: [
       { section: null, items: [
         { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
@@ -618,6 +656,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
+    if (code === "REVISOR_DOC") return "documentos.html";
     if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
@@ -630,7 +669,7 @@
   } catch (_) {
   }
   var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  var order = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
+  var order = ["MINDEPORTE", "MINISTRO", "TERRITORIAL", "COMITE", "FEDERACION", "LIGA", "CLUB", "REVISOR_DOC", "DEPORTISTA", ...esLocal() ? ["PERSONA"] : []];
   var CTA = {
     MINDEPORTE: "Abrir jerarqu\xEDa",
     MINISTRO: "Abrir jerarqu\xEDa",
@@ -639,6 +678,7 @@
     LIGA: "Abrir jerarqu\xEDa",
     TERRITORIAL: "Abrir jerarqu\xEDa",
     CLUB: "Abrir bandeja",
+    REVISOR_DOC: "Abrir revisi\xF3n documental",
     DEPORTISTA: "Abrir mi perfil",
     PERSONA: "Abrir mi perfil"
   };
@@ -669,6 +709,11 @@
     { color: "#002B5B", quien: "Mar\xEDa F. Rojas \xB7 Ministerio", titulo: "El Ministerio sanciona un club", desc: "Suspender, reactivar (vuelve a revisi\xF3n) y cancelar el registro como acci\xF3n definitiva.", href: "organismo-detalle.html?role=MINDEPORTE&id=CLU-003" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga", titulo: "La liga registra un deportista y le propone club", desc: "El club es obligatorio y queda como propuesta que el club confirma. Si el documento ya existe, no se crea otro.", href: "deportistas.html?role=LIGA&org=LIG-001&como=sandra" },
     { color: "#7c3aed", quien: "Sandra Mej\xEDa \xB7 Liga", titulo: "Carga masiva de deportistas", desc: "Plantilla con su club: nuevas, ya en el SUID y errores por fila. Los clubes confirman las propuestas en su bandeja.", href: "deportistas.html?role=LIGA&org=LIG-001&como=sandra&vista=cargue" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club aprueba el documento de un menor", desc: "Revisa el parentesco que subi\xF3 el tutor: aprueba y el menor queda afiliado, o rechaza con una nota que el tutor ve en su perfil.", href: "documentos.html?role=CLUB" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club invita a un revisor de documentos", desc: "Solo el club ofrece este rol: elige \xABRevisor de documentos\xBB en Invitar usuario y ve qu\xE9 puede y qu\xE9 no puede hacer.", href: "usuarios.html?role=CLUB" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "Cambiar de rol en el mismo club", desc: "Con el selector \xABSolo demo\xBB del encabezado pasa de administrador del club a revisor de documentos, y cambian el men\xFA y los permisos.", href: "documentos.html?role=CLUB" },
+    { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Revisor de documentos", titulo: "El revisor: solo su revisi\xF3n y su perfil", desc: "Men\xFA reducido, solo los documentos por revisar y su perfil con los datos del formulario de invitaci\xF3n.", href: "documentos.html?role=REVISOR_DOC" },
+    { color: "#0e7490", quien: "Laura G\xF3mez \xB7 tutora", titulo: "El tutor ve el rechazo y corrige", desc: "En \xABMis menores\xBB abre el motivo del club y recarga el documento o elige otro club; el club lo ve como \xABCorregido\xBB.", href: "perfil.html?role=PERSONA&roles=tutor&seccion=menores" },
     { color: "#1f8923", quien: "\xD3scar Cardona \xB7 Club", titulo: "El club confirma solicitudes y propuestas", desc: "Aprobar suma el club al deportista sin quitarle los que ya tiene.", href: "bandeja.html?role=CLUB" },
     { color: "#0e7490", quien: "Laura G\xF3mez \xB7 deportista, tutora y entrenadora", titulo: "La tutora registra a un menor", desc: "Mismo flujo de sports: documentos y datos b\xE1sicos. Queda en revisi\xF3n mientras se valida el parentesco.", href: "perfil.html?role=PERSONA&seccion=menores" },
     { color: "#0e7490", quien: "Laura G\xF3mez \xB7 deportista", titulo: "Afiliarse a un segundo club", desc: "Busca el club y pide afiliaci\xF3n; ve la cadena que hereda de cada club y puede retirarse de uno.", href: "perfil.html?role=PERSONA&seccion=afiliaciones" },

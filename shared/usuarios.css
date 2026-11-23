@@ -174,3 +174,25 @@
 @media (prefers-reduced-motion: reduce) {
   .us-row--new td { animation: none; }
 }
+
+/* Columna «Acciones»: un menú por fila */
+.us-th-acts { text-align: right; }
+.us-menu { display: flex; justify-content: flex-end; }
+.us-menu__btn { gap: 6px; }
+.us-menu__btn svg { width: 14px; height: 14px; transition: transform .2s; }
+.us-menu.is-open .us-menu__btn svg { transform: rotate(180deg); }
+.us-menu__list { position: fixed; z-index: 80; min-width: 190px; padding: 6px; background: var(--naowee-color-background-primary, #fff); border: 1px solid var(--naowee-color-border-default, #e7e9f3); border-radius: 12px; box-shadow: 0 12px 32px rgba(40, 40, 52, .16); display: none; flex-direction: column; gap: 2px; }
+.us-menu.is-open .us-menu__list { display: flex; }
+.us-menu__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--naowee-color-text-primary, #282834); text-align: left; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.us-menu__item svg { width: 16px; height: 16px; flex: none; color: var(--naowee-color-text-secondary, #646587); }
+.us-menu__item:hover { background: var(--naowee-color-gray-100, #f4f5f9); }
+.us-menu__item--neg, .us-menu__item--neg svg { color: var(--naowee-color-red-800, #b1232f); }
+.us-menu__item--neg:hover { background: var(--naowee-color-red-100, #fde8eb); }
+.us-menu__item:focus-visible, .us-menu__btn:focus-visible { outline: 2px solid var(--naowee-color-interactive-fill-loud-idle, #d74009); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .us-menu__btn svg { transition: none; } }
+
+/* Tres puntos verticales, alineados a la derecha de la columna «Acciones» */
+.us-menu__btn { width: 34px; min-width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 50%; }
+.us-menu__btn svg { width: 18px; height: 18px; transition: none; transform: none !important; }
+.us-menu { justify-content: center; margin: 0; }
+.us-th-acts { text-align: center !important; padding-right: 16px !important; }

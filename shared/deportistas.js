@@ -388,7 +388,7 @@ if (root) {
     if (!box || !puedeCrear || box.querySelector('#dpNuevo')) return;
     /* La carga masiva es de los organismos (P-07); el territorial registra uno a uno. */
     box.insertAdjacentHTML('beforeend', `
-      ${terr ? '' : `<a class="naowee-btn naowee-btn--quiet" id="dpMasivo" href="${esc(urlCon({ vista: 'cargue' }))}">${I.upload}Cargue masivo de deportistas</a>`}
+      ${terr ? '' : `<a class="naowee-btn naowee-btn--mute" id="dpMasivo" href="${esc(urlCon({ vista: 'cargue' }))}">${I.upload}Cargue masivo de deportistas</a>`}
       ${esClub ? `<button type="button" class="naowee-btn naowee-btn--quiet" id="dpBuscar">${I.search}Asociar autodeclarado</button>` : ''}
       <button type="button" class="naowee-btn naowee-btn--loud" id="dpNuevo">${I.plus}Registrar deportista</button>`);
     document.getElementById('dpNuevo').addEventListener('click', () => openRegistro());

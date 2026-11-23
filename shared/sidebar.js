@@ -28,6 +28,9 @@ const ICONS = {
   refresh:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
   id:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
   user:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  bell:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+  checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.3 2.4 2.4 4.6-5"/></svg>',
+  doc:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
   users:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
 };
 ICONS.user = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
@@ -80,6 +83,14 @@ export const ROLES = {
     userDoc: 'CC 94.321.678', org: 'Club Patín Cali', avatar: 'OC',
     color: '#1f8923', short: 'Confirma la afiliación de sus deportistas',
     group: 'Organismos'
+  },
+  /* v1.10.0 · la misma persona (Óscar) con un segundo rol dentro del mismo club: solo revisa documentos y ve su perfil. */
+  REVISOR_DOC: {
+    code: 'REVISOR_DOC', label: 'Revisor de documentos',
+    userName: 'Óscar Cardona', userEmail: 'admin@clubpatincali.demo.co',
+    userDoc: 'CC 94.321.678', org: 'Club Patín Cali', avatar: 'OC',
+    color: '#1f8923', short: 'Revisa los documentos de parentesco de los menores',
+    group: 'Organismos', personaId: 'DEP-029'
   },
   DEPORTISTA: {
     code: 'DEPORTISTA', label: 'Deportista',
@@ -190,11 +201,18 @@ const MENU_BY_ROLE = {
        estado permanente del club. La bandeja es el trabajo pendiente. */
     { section: 'DEPORTISTAS', items: [
         { id: 'deportistas', label: 'Mis deportistas',            icon: 'users', route: 'deportistas.html' },
-        { id: 'bandeja',     label: 'Solicitudes de deportistas', icon: 'inbox', route: 'bandeja.html' }
+        { id: 'bandeja',     label: 'Solicitudes de deportistas', icon: 'inbox', route: 'bandeja.html' },
+        { id: 'documentos',  label: 'Revisión documental',        icon: 'checkCircle', route: 'documentos.html' }
     ] },
     { section: 'MI ORGANISMO', items: [{ id: 'mi-organismo', label: 'Mi organismo', icon: 'id', route: 'organismo-detalle.html' }, { id: 'eventos', label: 'Eventos', icon: 'cal', route: 'organismo-detalle.html?tab=eventos' }, { id: 'usuarios', label: 'Usuarios', icon: 'users', route: 'usuarios.html' }] }
   ],
   /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
+  REVISOR_DOC: [
+    { section: null,          items: [
+        { id: 'documentos', label: 'Revisión documental', icon: 'checkCircle', route: 'documentos.html' },
+        { id: 'perfil',     label: 'Mi perfil',           icon: 'user',        route: 'perfil.html?persona=DEP-029' }
+    ] }
+  ],
   DEPORTISTA: [
     { section: null,          items: [
         { id: 'perfil', label: 'Mi perfil',     icon: 'user', route: 'perfil.html' },
@@ -299,6 +317,7 @@ export function getMenuForRole(code) {
 export function homeForRole(code) {
   if (organismoNoActivo(code)) return 'organismo-detalle.html';   // sin ?id = mi organismo
   if (code === 'CLUB') return 'bandeja.html';
+  if (code === 'REVISOR_DOC') return 'documentos.html';
   if (code === 'DEPORTISTA') return 'perfil.html';
   if (code === 'PERSONA') return 'perfil.html';
   return 'jerarquia.html';
@@ -335,12 +354,17 @@ function renderRow(item, activeId, roleCode) {
   const href = hrefForItem(item, roleCode);
   const tag = href ? 'a' : 'div';
   const hrefAttr = href ? ` href="${href}"` : '';
+  /* «Revisión documental»: contador de documentos de menores por revisar. */
+  if (item.id === 'documentos' && roleCode === 'CLUB') {
+    const n = solicitudesDeClub(scopeFor(roleCode)).filter((x) => x.esMenor && x.estado === 'Enviada').length;
+    item = { ...item, badge: n || '' };
+  }
   return `
     <${tag} class="nav-row ${item.child ? 'nav-row--child' : ''} ${isActive ? 'active' : ''}" data-id="${item.id}"${hrefAttr}>
       ${isActive && !item.child ? '<span class="active-bar" aria-hidden="true"></span>' : ''}
       <span class="icon">${getIcon(item.icon)}</span>
       <span class="lbl">${item.label}</span>
-      ${item.badge ? `<span class="nav-badge">${item.badge}</span>` : ''}
+      ${item.badge ? `<span class="nav-badge${item.id === 'documentos' ? ' nav-badge--count' : ''}">${item.badge}</span>` : ''}
     </${tag}>
   `;
 }
@@ -448,6 +472,8 @@ export function mountHeader({ headerEl, role }) {
     <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir menú">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    ${rolDemoHtml(role.code)}
+    ${notifHtml(role.code)}
     <div class="profile-switcher" id="profileSwitcher">
       <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-label="Mi cuenta">
         <div class="ava">
@@ -476,6 +502,8 @@ export function mountHeader({ headerEl, role }) {
     </div>
   `;
   bindHeaderEvents(headerEl);
+  bindRolDemo(headerEl);
+  bindNotif(headerEl, role.code);
   mountContexto(role);
 }
 
@@ -520,6 +548,86 @@ function orgIco(o, size) {
   const c = COLOR_TIPO[o.tipo] || '#d74009';
   return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
 }
+/* ─── Varios roles en el mismo organismo (v1.10.0) ───
+   Óscar administra el club y también revisa documentos. Misma franja que «Trabajas en», pero para cambiar de ROL
+   dentro del mismo club: el menú y lo que puede hacer cambian con el rol. */
+const ROLES_DEL_CLUB = [
+  { code: 'CLUB', nombre: 'Administrador del club', desc: 'Confirma afiliaciones, gestiona deportistas y usuarios, y revisa documentos.' },
+  { code: 'REVISOR_DOC', nombre: 'Revisor de documentos', desc: 'Revisa los documentos de parentesco de los menores y ve su perfil.' }
+];
+const esRolDelClub = (code) => ROLES_DEL_CLUB.some((x) => x.code === code);
+function hrefRol(code, pagina) {
+  const comunes = code === 'CLUB' ? ['documentos.html', 'deportistas.html', 'bandeja.html'] : ['documentos.html'];
+  return `${comunes.includes(pagina) ? pagina : homeForRole(code)}?role=${code}`;
+}
+/* Selector de rol en el encabezado (patrón del perfil multi-rol): pastilla «Solo demo» + dropdown del SDK. */
+function rolDemoHtml(code) {
+  if (!esRolDelClub(code)) return '';
+  const pagina = location.pathname.split('/').pop() || 'index.html';
+  const actual = ROLES_DEL_CLUB.find((x) => x.code === code);
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  return `<div class="mp-hdr-tools" id="roleDemoHdr"><div class="mp-demo"><span class="naowee-badge">Solo demo</span>
+    <div class="naowee-dropdown mp-demo__dd" id="roleDemoDd">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Cambiar de rol">
+        <span class="naowee-dropdown__value">${actual.nombre}</span><span class="naowee-dropdown__chevron">${getIcon('chevron')}</span>
+      </button>
+      <div class="naowee-dropdown__menu" role="listbox" aria-label="Tus roles en este club">
+        ${ROLES_DEL_CLUB.map((x) => `<a class="naowee-dropdown__opt${x.code === code ? ' is-selected' : ''}" role="option" aria-selected="${x.code === code}" href="${hrefRol(x.code, pagina)}">${x.nombre}${x.code === code ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${CHECK}</span>` : ''}</a>`).join('')}
+      </div>
+    </div></div></div>`;
+}
+/* ─── Notificaciones (club y revisor de documentos): un aviso por cada documento de menor por revisar ─── */
+const NOTIF_KEY = 'naowee-organismos-notif-leidas';
+const MES_N = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function notificaciones(code) {
+  const club = scopeFor(code);
+  return solicitudesDeClub(club).filter((x) => x.esMenor && x.estado === 'Enviada' && x.documento).map((x) => {
+    const dep = getDeportista(x.deportistaId) || {}; const tutor = x.tutorId ? getDeportista(x.tutorId) : null;
+    const at = new Date(x.documento.cargadoAt || (x.documento.cargado + 'T12:00:00'));
+    return { id: x.id, at, tutor: (tutor ? tutor.nombre : x.tutorNombre) || 'El tutor', menor: dep.nombre || 'un menor', corregido: !!x.documento.corregido };
+  }).sort((a, b) => b.at - a.at);
+}
+const leidasNotif = () => { try { return JSON.parse(sessionStorage.getItem(NOTIF_KEY) || '[]'); } catch (_) { return []; } };
+function notifHtml(code) {
+  if (!esRolDelClub(code)) return '';
+  const list = notificaciones(code); const leidas = leidasNotif();
+  const n = list.filter((x) => !leidas.includes(x.id)).length;
+  const fmt = (d) => `${d.getDate()} ${MES_N[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `<div class="hdr-bell" id="hdrBell">
+    <button type="button" class="hdr-bell__btn" id="hdrBellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notificaciones${n ? `, ${n} sin leer` : ''}">${getIcon('bell')}${n ? `<span class="hdr-bell__n">${n}</span>` : ''}</button>
+    <div class="hdr-bell__panel" id="hdrBellPanel" role="dialog" aria-label="Notificaciones">
+      <div class="hdr-bell__h"><strong>Notificaciones</strong><button type="button" class="hdr-bell__all" id="hdrBellAll"${n ? '' : ' disabled'}>Marcar como leídas</button></div>
+      ${list.length ? `<ul class="hdr-bell__l">${list.map((x) => `<li><a class="hdr-bell__i${leidas.includes(x.id) ? ' is-read' : ''}" href="documentos.html?role=${code}&sol=${x.id}"><span class="hdr-bell__dot" aria-hidden="true"></span>
+        <span class="hdr-bell__t"><strong>Hay documentos pendientes de revisión</strong>
+        <span>${x.tutor} ${x.corregido ? 'corrigió' : 'cargó'} el documento de parentesco de ${x.menor}.</span><small>${fmt(x.at)}</small></span></a></li>`).join('')}</ul>`
+      : '<p class="hdr-bell__empty">No hay documentos pendientes de revisión.</p>'}
+    </div></div>`;
+}
+function bindNotif(headerEl, code) {
+  const box = headerEl.querySelector('#hdrBell'); if (!box) return;
+  const btn = box.querySelector('#hdrBellBtn');
+  const set = (open) => { box.classList.toggle('open', open); btn.setAttribute('aria-expanded', String(open)); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); set(!box.classList.contains('open')); });
+  document.addEventListener('click', (e) => { if (!box.contains(e.target)) set(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && box.classList.contains('open')) { set(false); btn.focus(); } });
+  const all = box.querySelector('#hdrBellAll');
+  all.addEventListener('click', () => {
+    try { sessionStorage.setItem(NOTIF_KEY, JSON.stringify(notificaciones(code).map((x) => x.id))); } catch (_) {}
+    box.querySelectorAll('.hdr-bell__i').forEach((a) => a.classList.add('is-read'));
+    const n = box.querySelector('.hdr-bell__n'); if (n) n.remove();
+    all.disabled = true; btn.setAttribute('aria-label', 'Notificaciones');
+  });
+}
+function bindRolDemo(headerEl) {
+  const dd = headerEl.querySelector('#roleDemoDd');
+  if (!dd) return;
+  const trg = dd.querySelector('.naowee-dropdown__trigger');
+  const set = (open) => { dd.classList.toggle('naowee-dropdown--open', open); trg.setAttribute('aria-expanded', String(open)); };
+  trg.addEventListener('click', (e) => { e.stopPropagation(); set(!dd.classList.contains('naowee-dropdown--open')); });
+  document.addEventListener('click', (e) => { if (!dd.contains(e.target)) set(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dd.classList.contains('naowee-dropdown--open')) { set(false); trg.focus(); } });
+}
+
 function mountContexto(role) {
   const lista = (role.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
   const head = document.querySelector('.page-inner > .page-head, .page-inner .page-head');

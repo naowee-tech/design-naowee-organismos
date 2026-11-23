@@ -726,3 +726,10 @@
 .reg-deportes { display: flex; flex-direction: column; gap: 8px; grid-column: 1 / -1; }
 .reg-deportes__list { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .reg-deportes__hint { font-size: 12.5px; color: var(--text-secondary); }
+
+/* Bandeja de afiliaciones: buscador en píldora + filtros en desplegable (igual que Revisión documental). */
+.bj-bar2 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 20px 20px 14px; }
+.bj-bar2 .bj-search { flex: 0 1 340px; min-width: 220px; }
+.bj-bar2 .naowee-searchbox__input-wrap { border-radius: 9999px; height: 36px; padding: 4px 12px; }
+.bj-dd .naowee-dropdown__trigger { height: 36px; min-height: 36px; font-size: 12.5px; }
+.bj-dd .naowee-dropdown__chevron svg { width: 16px; height: 16px; }

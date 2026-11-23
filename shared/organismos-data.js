@@ -174,7 +174,18 @@ const DEPORTISTAS = [
   /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
   { id: 'DEP-022', nombre: 'Laura Marcela Gómez Restrepo', tipoDoc: 'CC', numDoc: '1032987456', deporte: 'Patinaje', modalidad: 'Carreras', correo: 'laura.gomez@correo.co', fechaNac: '1992-05-03', rolApoyo: 'Docente/Entrenador', clubId: 'CLU-001', estado: 'vinculado' },
   { id: 'DEP-023', nombre: 'Tomás Gómez', tipoDoc: 'TI', numDoc: '1098765001', deporte: 'Patinaje', modalidad: 'Carreras', correo: '', fechaNac: '2014-02-10', sexo: 'Hombre', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: 'CLU-001', estado: 'vinculado' },
-  { id: 'DEP-024', nombre: 'Sara Gómez', tipoDoc: 'TI', numDoc: '1098765002', deporte: 'Natación', modalidad: 'Estilo libre', correo: '', fechaNac: '2017-06-21', sexo: 'Mujer', docsEstado: 'revision', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' }
+  { id: 'DEP-024', nombre: 'Sara Gómez', tipoDoc: 'TI', numDoc: '1098765002', deporte: 'Natación', modalidad: 'Estilo libre', correo: '', fechaNac: '2017-06-21', sexo: 'Mujer', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' },
+  /* v1.10.0 · Óscar Cardona como persona: administra el club y, con su segundo rol, revisa documentos. No es deportista. */
+  { id: 'DEP-029', nombre: 'Óscar Cardona', tipoDoc: 'CC', numDoc: '94321678', deporte: 'Patinaje', modalidad: '', correo: 'admin@clubpatincali.demo.co', fechaNac: '1985-04-12', sexo: 'Hombre', esDeportista: false, usuarioInterno: true, rolInterno: 'Revisor de documentos', clubId: null, estado: 'autodeclarado' },
+  /* v1.10.0 · usuarios internos invitados por el club como revisores de documentos (su perfil trae solo los datos del formulario). */
+  { id: 'DEP-030', nombre: 'Ana Lucía Mora', tipoDoc: 'CC', numDoc: '52118790', deporte: 'Patinaje', modalidad: '', correo: 'ana.mora@clubpatincali.demo.co', fechaNac: '1990-08-21', sexo: 'Mujer', esDeportista: false, usuarioInterno: true, rolInterno: 'Revisor de documentos', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-031', nombre: 'Julián Pérez Mora', tipoDoc: 'CC', numDoc: '1144220118', deporte: 'Patinaje', modalidad: '', correo: 'julian.perez@clubpatincali.demo.co', fechaNac: '1998-02-14', sexo: 'Hombre', esDeportista: false, usuarioInterno: true, rolInterno: 'Revisor de documentos', clubId: null, estado: 'autodeclarado' },
+  /* v1.10.0 · más menores de ejemplo para «Revisión documental» (autodeclarados, sin club; los tutores son ficticios). */
+  { id: 'DEP-026', nombre: 'Isabella Rojas Mena', tipoDoc: 'TI', numDoc: '1103456789', deporte: 'Patinaje', modalidad: 'Artístico', correo: '', fechaNac: '2012-03-08', sexo: 'Mujer', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-027', nombre: 'Juan Esteban Cruz', tipoDoc: 'TI', numDoc: '1104567890', deporte: 'Patinaje', modalidad: 'Carreras', correo: '', fechaNac: '2010-11-22', sexo: 'Hombre', parentesco: 'Tutor legal', clubId: null, estado: 'autodeclarado' },
+  { id: 'DEP-028', nombre: 'Salomé Vargas Ríos', tipoDoc: 'TI', numDoc: '1105678901', deporte: 'Patinaje', modalidad: 'Hockey en línea', correo: '', fechaNac: '2013-06-17', sexo: 'Mujer', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' },
+  /* v1.10.0 · menor cuyo documento de parentesco espera al club (lo siembra seedAfiliacionesDemo). */
+  { id: 'DEP-025', nombre: 'Mateo Gómez', tipoDoc: 'TI', numDoc: '1098765003', deporte: 'Patinaje', modalidad: 'Carreras', correo: '', fechaNac: '2015-09-04', sexo: 'Hombre', tutorId: 'DEP-022', parentesco: 'Padre/Madre', clubId: null, estado: 'autodeclarado' }
 ];
 
 /* ─── Seed combinado (orden jerárquico: comités → federaciones → ligas → clubes) ─── */
@@ -272,6 +283,7 @@ const AFILIACIONES_EXTRA = [
   { id: 'AF-S901', tipo: 'deportista', sujetoId: 'DEP-022', organismoId: 'CLU-003', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-02', origen: 'solicitud' },
   { id: 'AF-P001', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Vinculada', desde: '2024-01-20', origen: 'solicitud', rol: 'Docente/Entrenador' },
   { id: 'AF-P002', tipo: 'personal', sujetoId: 'DEP-022', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-09-29', origen: 'solicitud', rol: 'Docente/Entrenador' },
+  { id: 'AF-P003', tipo: 'personal', sujetoId: 'DEP-029', organismoId: 'CLU-001', deporte: 'Patinaje', estado: 'Vinculada', desde: '2026-10-01', origen: 'solicitud', rol: 'Revisor de documentos' },
   /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
   { id: 'AF-C900', tipo: 'club', sujetoId: 'CLU-004', organismoId: 'LIG-001', deporte: 'Patinaje', estado: 'Solicitada', desde: null, fecha: '2026-10-06', origen: 'solicitud' }
 ];
@@ -295,7 +307,7 @@ function seedAfiliaciones() {
    ═══════════════════════════════════════════════════════════════ */
 const STORE_PREFIX = 'naowee-organismos-';
 const SEED_FLAG = STORE_PREFIX + 'demo-seeded';
-export const SEED_VERSION = '0.5.0';  // 0.5.0: club de otra liga pidiendo entrar; personas sin rol de deportista;   // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
+export const SEED_VERSION = '0.6.4';  // 0.6.0: documentos de parentesco de menores (revisión documental) y la persona Óscar con rol de revisor;   // 0.5.0: club de otra liga pidiendo entrar; personas sin rol de deportista;   // 0.4.0: usuarios del organismo; 0.3.0: Laura y sus menores, vínculos de personal;   // 0.3.0: Laura y sus menores en los datos, vínculos de personal;    // 0.2.0: afiliaciones como relación, deportes por organismo, sin cola de preinscritos
 
 export function readStore(key, fallback = null) {
   try {
@@ -864,6 +876,8 @@ function seedCicloDemo() {
    / Rechazada; Retirada la marca el propio deportista.
    ═══════════════════════════════════════════════════════════════ */
 const _todayISO = () => new Date().toISOString().slice(0, 10);
+/* Marca de tiempo completa (fecha y hora) para el historial documental. */
+const _nowISO = () => new Date().toISOString();
 const _norm = (s) => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /* Persiste un cambio en un deportista (seed vía overrides; nuevos in-place).
@@ -909,7 +923,9 @@ export function crearSolicitud(deportistaId, clubId, meta = {}) {
   const rec = {
     id: 'AF-' + String(list.length + 1).padStart(3, '0'),
     tipo: 'afiliacion', deportistaId, clubId, estado: 'Enviada', fecha: _todayISO(), origen,
-    ...(meta.proponenteId ? { proponenteId: meta.proponenteId } : {})
+    ...(meta.proponenteId ? { proponenteId: meta.proponenteId } : {}),
+    /* Menor: la solicitud lleva el documento de parentesco; aprobarlo = aprobar la afiliación (una sola decisión). */
+    ...(meta.documento ? { esMenor: true, tutorId: meta.tutorId || null, tutorNombre: meta.tutorNombre || '', documento: { nombre: meta.documento, estado: 'Pendiente', cargado: _todayISO(), cargadoAt: _nowISO(), ...(meta.corregido ? { corregido: true } : {}) } } : {})
   };
   list.unshift(rec);
   writeStore('solicitudes', list);
@@ -917,8 +933,8 @@ export function crearSolicitud(deportistaId, clubId, meta = {}) {
   const proponente = meta.proponenteId ? getOrganismo(meta.proponenteId) : null;
   auditLog({
     orgId: clubId, deportistaId, deportistaNombre: dep ? dep.nombre : '',
-    fecha: rec.fecha, responsable: proponente ? proponente.nombre : (dep ? dep.nombre : ''), rol: proponente ? proponente.tipo.toUpperCase() : 'DEPORTISTA',
-    accion: origen === 'propuesta' ? 'Club propuesto para el deportista' : 'Solicitud de afiliación enviada', de: '', a: 'Enviada', motivo: ''
+    fecha: rec.fecha, responsable: meta.documento ? (meta.tutorNombre || 'Tutor') : proponente ? proponente.nombre : (dep ? dep.nombre : ''), rol: meta.documento ? 'Tutor' : proponente ? proponente.tipo.toUpperCase() : 'DEPORTISTA',
+    accion: meta.documento ? 'Documento de parentesco cargado por el tutor' : origen === 'propuesta' ? 'Club propuesto para el deportista' : 'Solicitud de afiliación enviada', de: '', a: 'Enviada', motivo: ''
   });
   return { ...rec };
 }
@@ -983,19 +999,22 @@ export function resolverAfiliacion(solicitudId, resultado, meta = {}) {
   const s = list[i];
   const esRetiro = s.tipo === 'retiro';
   const estadoSol = resultado === 'aprobada' ? 'Aprobada' : 'Rechazada';
-  list[i] = { ...s, estado: estadoSol, motivo: meta.motivo || '', responsable: meta.responsable || '', resueltaFecha: _todayISO() };
+  list[i] = { ...s, estado: estadoSol, motivo: meta.motivo || '', responsable: meta.responsable || '', resueltaFecha: _todayISO(),
+    ...(s.documento ? { documento: { ...s.documento, estado: resultado === 'aprobada' ? 'Aprobado' : 'Rechazado', revisadoPor: meta.responsable || '', rolRevisor: meta.rol || 'CLUB', revisadoFecha: _todayISO(), revisadoAt: _nowISO() } } : {}) };
   writeStore('solicitudes', list);
   const dep = getDeportista(s.deportistaId);
   if (esRetiro) {
     if (resultado === 'aprobada') cambiarAfiliacion(s.deportistaId, s.clubId, 'Terminada', { fin: 'retiro' });
   } else {
-    cambiarAfiliacion(s.deportistaId, s.clubId, resultado === 'aprobada' ? 'Vinculada' : 'Rechazada', { motivo: meta.motivo });
+    const yaVinculado = afiliacionesDe(s.deportistaId, { vigentes: true }).some((a) => a.organismoId === s.clubId && a.tipo === 'deportista');
+    if (!yaVinculado) cambiarAfiliacion(s.deportistaId, s.clubId, resultado === 'aprobada' ? 'Vinculada' : 'Rechazada', { motivo: meta.motivo });
   }
   auditLog({
     orgId: s.clubId, deportistaId: s.deportistaId, deportistaNombre: dep ? dep.nombre : '',
-    fecha: _todayISO(), responsable: meta.responsable || '', rol: 'CLUB',
+    fecha: _todayISO(), responsable: meta.responsable || '', rol: meta.rol || 'CLUB',
     accion: esRetiro
       ? (resultado === 'aprobada' ? 'Baja confirmada' : 'Baja rechazada')
+      : s.documento ? (resultado === 'aprobada' ? 'Documento de parentesco aprobado · menor afiliado' : 'Documento de parentesco rechazado')
       : (resultado === 'aprobada' ? 'Afiliación aprobada' : 'Afiliación rechazada'),
     de: esRetiro ? 'Baja solicitada' : 'Enviada', a: estadoSol, motivo: meta.motivo || '', notif: true
   });
@@ -1076,7 +1095,7 @@ export function menoresDe(tutorId) { return allDeportistas().filter((d) => d.tut
 
 /* El tutor registra a un menor: queda deportista autodeclarado a su cargo (solo el tutor lo crea, P-21).
    No pasa por bandeja: el menor no pertenece a ningún organismo hasta que pida afiliación. */
-export function registrarMenor(tutorId, datos) {
+export function registrarMenor(tutorId, datos, { clubId } = {}) {
   const nuevos = readStore('deportistas-nuevos', []) || [];
   const dep = { modalidad: '', correo: '', ...datos, id: `DEP-M${String(nuevos.length + 1).padStart(3, '0')}`, tutorId, origen: 'tutor', fechaRegistro: _todayISO() };
   delete dep.clubId; delete dep.estado;
@@ -1084,7 +1103,33 @@ export function registrarMenor(tutorId, datos) {
   writeStore('deportistas-nuevos', nuevos);
   const tutor = getDeportista(tutorId);
   auditLog({ orgId: '', fecha: _todayISO(), deportistaId: dep.id, deportistaNombre: dep.nombre, responsable: tutor ? tutor.nombre : '', rol: 'Tutor', accion: 'Menor registrado por su tutor' });
+  /* v1.10.0 · el tutor elige el club al registrar: el documento de parentesco queda Pendiente ante ese club. */
+  if (clubId) crearSolicitud(dep.id, clubId, { origen: 'tutor', documento: datos.documentoParentesco || 'documento-parentesco.pdf', tutorId, tutorNombre: tutor ? tutor.nombre : '' });
   return getDeportista(dep.id);
+}
+
+/* Estado de la afiliación de un menor frente a su club, derivado de su solicitud más reciente:
+   'pendiente' (el club aún no revisa el documento) · 'rechazado' (con motivo) · 'afiliado' · 'sin-club'. */
+export function afiliacionDeMenor(menorId) {
+  const sol = allSolicitudes().find((s) => s.deportistaId === menorId && s.tipo !== 'retiro' && s.esMenor) || null;
+  const club = sol ? getOrganismo(sol.clubId) : null;
+  if (sol && sol.estado === 'Enviada') return { estado: 'pendiente', sol, club };
+  const vigente = afiliacionesDe(menorId, { vigentes: true }).find((a) => a.tipo === 'deportista');
+  if (vigente) return { estado: 'afiliado', sol, club: getOrganismo(vigente.organismoId) };
+  if (sol && sol.estado === 'Rechazada') return { estado: 'rechazado', sol, club };
+  return { estado: 'sin-club', sol, club };
+}
+/* Tras un rechazo, el tutor reenvía: recarga el documento al mismo club o elige otro. Abre una solicitud nueva. */
+export function reenviarDocumentoMenor(menorId, clubId, archivo) {
+  const prev = afiliacionDeMenor(menorId);
+  const dep = getDeportista(menorId);
+  const tutor = dep && dep.tutorId ? getDeportista(dep.tutorId) : null;
+  const doc = archivo || (prev.sol && prev.sol.documento ? prev.sol.documento.nombre : 'documento-parentesco.pdf');
+  const rec = crearSolicitud(menorId, clubId, { origen: 'tutor', documento: doc, tutorId: dep ? dep.tutorId : null, tutorNombre: tutor ? tutor.nombre : '', corregido: true });
+  const mismo = prev.sol && prev.sol.clubId === clubId;
+  auditLog({ orgId: clubId, fecha: _todayISO(), deportistaId: menorId, deportistaNombre: dep ? dep.nombre : '', responsable: tutor ? tutor.nombre : '', rol: 'Tutor',
+    accion: mismo ? 'Documento de parentesco recargado' : 'Documento reenviado a otro club', de: 'Rechazada', a: 'Enviada', motivo: '' });
+  return rec;
 }
 
 /* Personal deportivo ↔ organismo (P-05): la persona pide el vínculo y ese organismo lo confirma. */
@@ -1191,6 +1236,7 @@ export const MARCAS = { COC: ['olimpica'] };
 export const CATALOGO_ROLES = [
   { id: 'ADMIN', nombre: 'Administrador del organismo', desc: 'Cuenta principal: una por organismo. Aprueba al nivel de abajo, hace cargues y crea los usuarios internos.', creaRol: null, principal: true },
   { id: 'REVISOR', nombre: 'Revisor de registros', desc: 'Aprueba, devuelve o rechaza registros del nivel de abajo en nombre del organismo. Es quien decide cuando el administrador también administra el organismo en revisión.', creaRol: 'ADMIN', transversal: true, propuesta: 'Propuesta de Arquitectura (P-16 y P-24)' },
+  { id: 'REVISOR_DOC', nombre: 'Revisor de documentos', desc: 'Revisa el documento de parentesco que el tutor sube al registrar un menor: lo aprueba (el menor queda afiliado al club) o lo rechaza con una nota. Solo ve esa revisión y su propio perfil.', creaRol: 'ADMIN', transversal: true, soloTipo: 'club' },
   { id: 'GESTOR_COC', nombre: 'Gestor de comité olímpico', desc: 'Invita y asigna metodólogos; ve el Ciclo Olímpico y sus deportistas.', creaRol: 'ADMIN', marca: 'olimpica' },
   { id: 'METODOLOGO', nombre: 'Metodólogo', desc: 'Registra opiniones sobre los deportistas del Ciclo Olímpico (análisis cualitativo).', creaRol: 'GESTOR_COC', marca: 'olimpica' }
 ];
@@ -1202,7 +1248,8 @@ export const ROLES_MINISTERIO = [
 export function rolesDelOrganismo(orgId) {
   if (orgId === 'MIN') return ROLES_MINISTERIO;
   const marcas = MARCAS[orgId] || [];
-  return CATALOGO_ROLES.filter((r) => r.principal || r.transversal || marcas.includes(r.marca));
+  const tipo = (getOrganismo(orgId) || {}).tipo;
+  return CATALOGO_ROLES.filter((r) => (!r.soloTipo || r.soloTipo === tipo) && (r.principal || r.transversal || marcas.includes(r.marca)));
 }
 const USUARIOS_SEED = [
   { id: 'US-001', orgId: 'COC', rol: 'ADMIN', nombre: 'Camilo Duarte', doc: 'CC 79.456.123', correo: 'cduarte@coc.demo.co', estado: 'Activo', creadoPor: 'Ministerio del Deporte', fecha: '2025-11-02' },
@@ -1213,6 +1260,8 @@ const USUARIOS_SEED = [
   { id: 'US-006', orgId: 'FED-040', rol: 'REVISOR', nombre: 'Jaime Ortiz Salcedo', doc: 'CC 79.880.214', correo: 'registros@fedepatinaje.demo.co', estado: 'Activo', creadoPor: 'Alberto Herrera', fecha: '2026-03-01' },
   { id: 'US-007', orgId: 'LIG-001', rol: 'ADMIN', nombre: 'Sandra Mejía', doc: 'CC 31.567.890', correo: 'sandra.mejia@correo.demo.co', estado: 'Activo', creadoPor: 'Federación Colombiana de Patinaje', fecha: '2026-03-08' },
   { id: 'US-008', orgId: 'CLU-001', rol: 'ADMIN', nombre: 'Óscar Cardona', doc: 'CC 94.321.678', correo: 'admin@clubpatincali.demo.co', estado: 'Activo', creadoPor: 'Liga de Patinaje del Valle', fecha: '2026-03-25' },
+  { id: 'US-014', orgId: 'CLU-001', rol: 'REVISOR_DOC', nombre: 'Ana Lucía Mora', personaId: 'DEP-030', doc: 'CC 52.118.790', correo: 'ana.mora@clubpatincali.demo.co', estado: 'Activo', creadoPor: 'Óscar Cardona', fecha: '2026-10-15' },
+  { id: 'US-015', orgId: 'CLU-001', rol: 'REVISOR_DOC', nombre: 'Julián Pérez Mora', personaId: 'DEP-031', doc: 'CC 1.144.220.118', correo: 'julian.perez@clubpatincali.demo.co', estado: 'Invitado', creadoPor: 'Óscar Cardona', fecha: '2026-11-18' },
   { id: 'US-009', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'María F. Rojas', doc: 'CC 41.234.567', correo: 'maria.rojas@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
   { id: 'US-010', orgId: 'MIN', rol: 'ADMIN_MIN', nombre: 'Jorge Iván Peña', doc: 'CC 79.553.120', correo: 'jorge.pena@mindeporte.demo.co', estado: 'Activo', creadoPor: 'Naowee', fecha: '2025-10-20' },
   { id: 'US-011', orgId: 'MIN', rol: 'TERRITORIAL', nombre: 'Ana Lucía Valencia', doc: 'CC 66.912.345', correo: 'avalencia@valledelcauca.demo.gov.co', estado: 'Activo', creadoPor: 'María F. Rojas', fecha: '2026-08-01', ancla: { depto: 'Valle del Cauca' } },
@@ -1285,8 +1334,57 @@ export function buscarClubesActivos(query) {
    dirigidas al Club Patín Cali (CLU-001) desde deportistas autodeclarados, para
    que la bandeja del club arranque con algo que aprobar. Idempotente (flag
    demoSeed en la solicitud). Se llama desde afiliacion.js y bandeja.js (CLUB). */
+/* Menores de Laura con el documento de parentesco en cada estado: Mateo pendiente en Patín Cali
+   (aparece en la bandeja del club) y Sara rechazada por Aguas del Valle (el tutor recarga u otro club). */
+function seedMenoresDemo() {
+  const list = readStore('solicitudes', []) || [];
+  if (list.some((s) => s.demoMenor)) return;
+  list.unshift({ id: 'AF-DM1', tipo: 'afiliacion', deportistaId: 'DEP-025', clubId: 'CLU-001', estado: 'Enviada', fecha: '2026-11-18', origen: 'tutor', esMenor: true, tutorId: 'DEP-022',
+    documento: { nombre: 'registro-civil-mateo.pdf', estado: 'Pendiente', cargado: '2026-11-18' }, demoMenor: true });
+  list.unshift({ id: 'AF-DM2', tipo: 'afiliacion', deportistaId: 'DEP-024', clubId: 'CLU-007', estado: 'Rechazada', fecha: '2026-11-12', origen: 'tutor', esMenor: true, tutorId: 'DEP-022',
+    motivo: 'El documento está borroso: no se alcanza a leer el nombre del padre o la madre. Carga una copia nítida del registro civil.', responsable: 'Isabella Torres Peña', resueltaFecha: '2026-11-14',
+    documento: { nombre: 'registro-civil-sara.jpg', estado: 'Rechazado', cargado: '2026-11-12', revisadoPor: 'Isabella Torres Peña', rolRevisor: 'CLUB', revisadoFecha: '2026-11-14' }, demoMenor: true });
+  /* Mateo: cargado por la tutora el 18/11 a las 9:12. */
+  list[1].documento.cargadoAt = '2026-11-18T09:12:00'; list[1].tutorNombre = 'Laura Marcela Gómez Restrepo';
+  list[0].documento.cargadoAt = '2026-11-12T10:40:00'; list[0].documento.revision = { por: 'Isabella Torres Peña', rol: 'CLUB', at: '2026-11-14T08:50:00' }; list[0].documento.revisadoAt = '2026-11-14T09:05:00';
+  /* Más documentos de Club Patín Cali, con menores del plantel («Mis deportistas»): Felipe pendiente, Luciana rechazada por una revisora,
+     Manuela rechazada y corregida hasta quedar aprobada, y Tomás aprobado por el club. Los tutores de ejemplo son ficticios. */
+  list.unshift({ id: 'AF-DM3', tipo: 'afiliacion', deportistaId: 'DEP-018', clubId: 'CLU-001', estado: 'Enviada', fecha: '2026-11-19', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Andrés Quintero Mora', tutorDoc: 'CC 79.456.210',
+    documento: { nombre: 'registro-civil-felipe.pdf', estado: 'Pendiente', cargado: '2026-11-19', cargadoAt: '2026-11-19T16:40:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM4', tipo: 'afiliacion', deportistaId: 'DEP-023', clubId: 'CLU-001', estado: 'Aprobada', fecha: '2026-11-02', origen: 'tutor', esMenor: true, tutorId: 'DEP-022', tutorNombre: 'Laura Marcela Gómez Restrepo',
+    responsable: 'Óscar Cardona', resueltaFecha: '2026-11-03', documento: { nombre: 'registro-civil-tomas.pdf', estado: 'Aprobado', cargado: '2026-11-02', cargadoAt: '2026-11-02T11:05:00', revision: { por: 'Óscar Cardona', rol: 'CLUB', at: '2026-11-03T13:48:00' }, revisadoPor: 'Óscar Cardona', rolRevisor: 'CLUB', revisadoFecha: '2026-11-03', revisadoAt: '2026-11-03T14:10:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM5', tipo: 'afiliacion', deportistaId: 'DEP-021', clubId: 'CLU-001', estado: 'Rechazada', fecha: '2026-11-10', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Diana Hoyos Giraldo', tutorDoc: 'CC 52.331.908',
+    motivo: 'La imagen no permite validar los datos: baja calidad y poca iluminación.', responsable: 'Óscar Cardona', resueltaFecha: '2026-11-11',
+    documento: { nombre: 'registro-civil-luciana.pdf', estado: 'Rechazado', cargado: '2026-11-10', cargadoAt: '2026-11-10T08:30:00', revision: { por: 'Óscar Cardona', rol: 'REVISOR', at: '2026-11-11T09:52:00' }, revisadoPor: 'Óscar Cardona', rolRevisor: 'REVISOR', revisadoFecha: '2026-11-11', revisadoAt: '2026-11-11T10:05:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM6', tipo: 'afiliacion', deportistaId: 'DEP-015', clubId: 'CLU-001', estado: 'Rechazada', fecha: '2026-11-05', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Jorge Ospina Cárdenas', tutorDoc: 'CC 16.789.455',
+    motivo: 'El documento está cortado: no se alcanza a ver la fecha de nacimiento.', responsable: 'Ana Lucía Mora', resueltaFecha: '2026-11-06',
+    documento: { nombre: 'registro-civil-manuela.jpg', estado: 'Rechazado', cargado: '2026-11-05', cargadoAt: '2026-11-05T10:15:00', revision: { por: 'Ana Lucía Mora', rol: 'REVISOR', at: '2026-11-06T09:40:00' }, revisadoPor: 'Ana Lucía Mora', rolRevisor: 'REVISOR', revisadoFecha: '2026-11-06', revisadoAt: '2026-11-06T09:55:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM7', tipo: 'afiliacion', deportistaId: 'DEP-015', clubId: 'CLU-001', estado: 'Aprobada', fecha: '2026-11-08', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Jorge Ospina Cárdenas', tutorDoc: 'CC 16.789.455',
+    responsable: 'Óscar Cardona', resueltaFecha: '2026-11-09',
+    documento: { nombre: 'registro-civil-manuela.pdf', estado: 'Aprobado', cargado: '2026-11-08', cargadoAt: '2026-11-08T14:20:00', corregido: true, revision: { por: 'Óscar Cardona', rol: 'CLUB', at: '2026-11-09T10:30:00' }, revisadoPor: 'Óscar Cardona', rolRevisor: 'CLUB', revisadoFecha: '2026-11-09', revisadoAt: '2026-11-09T10:41:00' }, demoMenor: true });
+  list.unshift({ id: 'AF-DM8', tipo: 'afiliacion', deportistaId: 'DEP-026', clubId: 'CLU-001', estado: 'Enviada', fecha: '2026-11-20', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Paola Mena Duque', tutorDoc: 'CC 43.120.987',
+    documento: { nombre: 'registro-civil-isabella.pdf', estado: 'Pendiente', cargado: '2026-11-20', cargadoAt: '2026-11-20T08:15:00' }, demoMenor: true });
+  list.unshift({ id: 'AF-DM9', tipo: 'afiliacion', deportistaId: 'DEP-027', clubId: 'CLU-001', estado: 'Enviada', fecha: '2026-11-19', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Mauricio Cruz Pérez', tutorDoc: 'CC 71.220.456',
+    documento: { nombre: 'sentencia-tutela-juan-esteban.pdf', estado: 'Pendiente', cargado: '2026-11-19', cargadoAt: '2026-11-19T10:05:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM10', tipo: 'afiliacion', deportistaId: 'DEP-013', clubId: 'CLU-001', estado: 'Aprobada', fecha: '2026-10-28', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Gloria Cano Ruiz', tutorDoc: 'CC 38.456.120',
+    responsable: 'Óscar Cardona', resueltaFecha: '2026-10-29', documento: { nombre: 'registro-civil-sofia.pdf', estado: 'Aprobado', cargado: '2026-10-28', cargadoAt: '2026-10-28T15:20:00', revision: { por: 'Óscar Cardona', rol: 'REVISOR', at: '2026-10-29T08:55:00' }, revisadoPor: 'Óscar Cardona', rolRevisor: 'REVISOR', revisadoFecha: '2026-10-29', revisadoAt: '2026-10-29T09:12:00' }, demoMenor: true });
+  list.push({ id: 'AF-DM11', tipo: 'afiliacion', deportistaId: 'DEP-028', clubId: 'CLU-001', estado: 'Rechazada', fecha: '2026-11-13', origen: 'tutor', esMenor: true, tutorId: null, tutorNombre: 'Camila Ríos Ospina', tutorDoc: 'CC 1.144.201.330',
+    motivo: 'El documento no corresponde a la menor: el nombre no coincide con el de la tarjeta de identidad.', responsable: 'Óscar Cardona', resueltaFecha: '2026-11-14',
+    documento: { nombre: 'registro-civil-salome.jpg', estado: 'Rechazado', cargado: '2026-11-13', cargadoAt: '2026-11-13T17:45:00', revision: { por: 'Óscar Cardona', rol: 'CLUB', at: '2026-11-14T11:10:00' }, revisadoPor: 'Óscar Cardona', rolRevisor: 'CLUB', revisadoFecha: '2026-11-14', revisadoAt: '2026-11-14T11:24:00' }, demoMenor: true });
+  writeStore('solicitudes', list);
+  solicitarAfiliacion({ sujetoId: 'DEP-026', organismoId: 'CLU-001', deporte: 'Patinaje', origen: 'tutor' });
+  solicitarAfiliacion({ sujetoId: 'DEP-027', organismoId: 'CLU-001', deporte: 'Patinaje', origen: 'tutor' });
+  solicitarAfiliacion({ sujetoId: 'DEP-028', organismoId: 'CLU-001', deporte: 'Patinaje', origen: 'tutor' });
+  cambiarAfiliacion('DEP-028', 'CLU-001', 'Rechazada', { motivo: 'El documento no corresponde a la menor: el nombre no coincide con el de la tarjeta de identidad.' });
+  solicitarAfiliacion({ sujetoId: 'DEP-025', organismoId: 'CLU-001', deporte: 'Patinaje', origen: 'tutor' });
+  solicitarAfiliacion({ sujetoId: 'DEP-024', organismoId: 'CLU-007', deporte: 'Natación', origen: 'tutor' });
+  cambiarAfiliacion('DEP-024', 'CLU-007', 'Rechazada', { motivo: ((list.find((s) => s.id === 'AF-DM2')) || {}).motivo });
+  auditLog({ orgId: 'CLU-001', deportistaId: 'DEP-025', deportistaNombre: 'Mateo Gómez', fecha: '2026-11-18', responsable: 'Laura Marcela Gómez Restrepo', rol: 'Tutor', accion: 'Documento de parentesco cargado por el tutor', de: '', a: 'Enviada', motivo: '' });
+  auditLog({ orgId: 'CLU-007', deportistaId: 'DEP-024', deportistaNombre: 'Sara Gómez', fecha: '2026-11-14', responsable: 'Isabella Torres Peña', rol: 'CLUB', accion: 'Documento de parentesco rechazado', de: 'Enviada', a: 'Rechazada', motivo: ((list.find((s) => s.id === 'AF-DM2')) || {}).motivo });
+}
 export function seedAfiliacionesDemo(mode) {
   if (mode !== 'demo') return;
+  seedMenoresDemo();
   const list = readStore('solicitudes', []) || [];
   if (list.some((s) => s.demoSeed)) return;
   const seeds = [

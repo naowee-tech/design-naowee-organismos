@@ -22,7 +22,8 @@
     { title: 'Quién ve qué', items: [
       'Cada organismo Activo ve lo que cuelga directamente de él y está <strong>En revisión</strong>: lo que cargó y lo que se autorregistró eligiéndolo como superior. Aprobar, devolver a corrección y rechazar; devolver y rechazar exigen motivo y todo queda en la trazabilidad.',
       'Nadie decide si su propio organismo no está Activo. Federaciones: doble validación Comité + Ministerio, sin orden; queda Activa con los dos avales (P-19, cerrada el 2026-10-13).',
-      'El club ve aquí sus solicitudes de afiliación. Las marcadas <strong>Propuesta</strong> no las pidió el deportista: las abrió otro nivel que lo registró, uno a uno o por carga masiva (P-07 respondida: todos los organismos), y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene.'
+      'El club ve aquí sus solicitudes de afiliación. Las marcadas <strong>Propuesta</strong> no las pidió el deportista: las abrió otro nivel que lo registró, uno a uno o por carga masiva (P-07 respondida: todos los organismos), y siempre las confirma el club. Aprobar suma un club al deportista sin quitarle los que ya tiene.',
+      'Los <strong>menores</strong> ya no salen aquí: su documento de parentesco se aprueba en <strong>Revisión documental</strong> (v1.10.0, PROD-96). Los filtros son desplegables: Deporte, Tipo (afiliación, propuesta o baja) y Estado.'
     ] },
     { title: 'Una persona, varios organismos (P-15)', items: [
       'Los contextos son de la <strong>persona</strong>, no del rol: cada uno es un par rol ↔ organismo. En la demo, Sandra Mejía administra la Liga de Patinaje del Valle, la Liga de Natación del Valle y la Federación Colombiana de Patinaje (<code>PERSONAS</code> en shared/sidebar.js).',

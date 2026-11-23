@@ -23,6 +23,12 @@
       'El Ministerio crea a los <strong>usuarios territoriales</strong> (A-2), anclados a un departamento o a un municipio (<code>ancla: { depto }</code> o <code>{ depto, municipio }</code>). Consultan su territorio y registran deportistas autodeclarados; no aprueban.',
       'Si el territorio ya tiene un encargado activo, el diálogo lo avisa pero no bloquea.'
     ] },
+    { title: 'Revisor de documentos (v1.10.0)', items: [
+      'Rol transversal que <strong>solo existe en clubes</strong> (<code>soloTipo: \'club\'</code> en el catálogo) y solo lo crea el Administrador del organismo. Revisa el documento de parentesco de los menores (aprobar o rechazar con nota) y ve su propio perfil; nada más (PROD-96, DEP-1029/DEP-1030).',
+      'La columna <strong>Acciones</strong> es un menú de tres puntos por fila: <strong>Ver perfil</strong>, <strong>Reenviar</strong> (si está invitado) y <strong>Desactivar</strong> o <strong>Reactivar</strong>. Ver perfil abre la ficha de la persona en solo lectura, con las pestañas <strong>Datos</strong> e <strong>Historial</strong>.',
+      'El historial lista los movimientos de esa persona con el rol (documentos que aprobó o rechazó, con su nota) y su alta (invitación y activación). Solo lo ve el administrador del club que la invitó; el revisor, en su propio perfil, solo ve sus datos.',
+      'Pendiente en el back: el rol en el catálogo, la invitación por correo y un registro de movimientos por usuario y rol. Solo demo: Ana Lucía Mora (activa) y Julián Pérez Mora (invitado) son personas de ejemplo (<code>DEP-030</code> y <code>DEP-031</code>).'
+    ] },
     { title: 'Pendientes', items: [
       'P-16: roles internos por federación o comité (qué roles más necesita cada organismo).',
       'El <strong>Revisor de registros</strong> es un rol transversal propuesto, pendiente de ratificar en P-16. Es quien decide cuando el administrador también administra el organismo en revisión (P-24, opción b, decidida). En la demo ya se puede invitar, marcado como propuesto.',

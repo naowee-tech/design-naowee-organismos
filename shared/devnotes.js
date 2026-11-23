@@ -6,12 +6,15 @@ export function mountDevnotes(registry, root = document) {
     if (el.dataset.mounted) return;
     const n = registry[el.dataset.devnote];
     if (!n) return;
+    if (el.closest('.page-head')) el.dataset.nobadge = '1';
     const list = (items) => `<ul>${(items || []).map((i) => `<li>${i}</li>`).join('')}</ul>`;
     const body = n.sections
       ? n.sections.map((s) => `<div class="wz-devnote__sec"><div class="wz-devnote__sec-title">${s.title}</div>${list(s.items)}</div>`).join('')
       : list(n.items);
-    el.innerHTML = `<span class="naowee-badge">Solo demo</span>Notas para devs
+    el.innerHTML = `${el.dataset.nobadge ? '' : '<span class="naowee-badge">Solo demo</span>'}Notas para devs
       <span class="wz-devnote__pop" role="tooltip"><span class="wz-devnote__head">${n.title} <em>· nota para devs, no es parte del producto</em></span>${body}</span>`;
     el.dataset.mounted = '1';
+    /* Botón fijo en el margen: la pastilla sale del encabezado de la página (así no la recortan sus contenedores). */
+    if (el.closest('.page-head')) { el.classList.add('wz-devnote--fab'); document.body.appendChild(el); }
   });
 }

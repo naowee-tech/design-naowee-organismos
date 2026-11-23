@@ -9,7 +9,7 @@ cascada por el nivel inmediatamente superior.
 > System Naowee portado localmente. Todo el estado de la demo vive en
 > `sessionStorage` (efímero) — se reinicia desde el switcher de perfil.
 
-**Versión:** v1.0.0 · **Puerto local:** 4320
+**Versión:** v1.10.0 · **Puerto local:** 4320
 
 ---
 
@@ -38,7 +38,8 @@ Ministerio del Deporte (rectoría — admin central)
 | **Comité (COC)** | Jerarquía SND | Cabeza de sector · pre-registra y avala federaciones |
 | **Federación** | Jerarquía SND | Aprueba sus ligas · cargue masivo de ligas |
 | **Liga** | Jerarquía SND | Aprueba sus clubes · cargue masivo de clubes |
-| **Club** | Solicitudes de deportistas | Confirma la afiliación de sus deportistas |
+| **Club** | Solicitudes de deportistas | Confirma la afiliación de sus deportistas y revisa los documentos de parentesco de los menores |
+| **Revisor de documentos** | Revisión documental | Mismo club, otro rol: solo revisa documentos de menores y ve su perfil (se cambia con el selector «Solo demo») |
 | **Deportista** | Mi afiliación | Gestiona su afiliación a un club |
 
 Cambio de rol = recarga completa vía `?role=CODE` (no SPA — decisión Naowee).
@@ -52,6 +53,7 @@ Cambio de rol = recarga completa vía `?role=CODE` (no SPA — decisión Naowee)
 | `cargue.html` | ORG-02/03/04 | Cargue masivo por plantilla `.xlsx` (SheetJS): validación por fila, carga parcial e historial |
 | `bandeja.html` | ORG-06/08 | Bandeja de aprobaciones por rol: aprobar/rechazar/corrección (motivo obligatorio); federaciones con doble validación; el club confirma afiliaciones |
 | `organismo-detalle.html` | ORG-07 | Perfil 360° del organismo con tabs (Información · Rep. legal · Documentos · Jerarquía · **Historial/trazabilidad**) |
+| `documentos.html` | DOC-01..08 | **Revisión documental** del club: documentos de parentesco de los menores, vista de revisión con historial, aprobar o rechazar con nota; vista reducida del revisor de documentos |
 | `afiliacion.html` | ORG-05 | Perfil del deportista + flujo *Asociar a club* (buscar club Activo → enviar solicitud → herencia) |
 | `registro-publico.html` | HURU-01..04 | **Registro público de usuarios** (sin login): selector de tipo (deportista propio/tutor · personal deportivo · entidad) + wizard adaptativo con validación de documento no registrado, detección <18 → tutor, parentesco + firma, rol + certificaciones, docs de soporte → Preinscrito, políticas y notificación email/SMS |
 
@@ -61,7 +63,7 @@ Cada pantalla monta un **lanzador flotante “Recorrido por HU”** (patrón
 `naowee-guided-tour`, `shared/tour.js`). Al elegir una HU, navega a su pantalla y
 rol, resalta con *spotlight* dónde hacer clic y muestra tarea + propósito + “Paso
 N de M”. Sirve para **verificar en vivo** el cumplimiento de cada HU con el negocio.
-También se auto-arranca con `?tour=ORG-NN`.
+También se auto-arranca con `?tour=ORG-NN`. La fase 6 (`?tour=DOC-01` … `DOC-08`) recorre la revisión documental de menores: club, revisor, invitación, cambio de rol y perfil.
 
 ## Cómo correr
 

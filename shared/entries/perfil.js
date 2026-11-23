@@ -1,11 +1,12 @@
-  import { ROLES, mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher } from '../sidebar.js';
-  import { seedDemoData } from '../organismos-data.js';
+  import { ROLES, getDemoMode, mountSidebar, mountHeader, mountBackdrop, mountDemoSwitcher } from '../sidebar.js';
+  import { seedDemoData, seedAfiliacionesDemo } from '../organismos-data.js';
 import { resolveViewer, mountPerfil } from '../perfil.js';
   seedDemoData();
+  seedAfiliacionesDemo(getDemoMode());   // menores con el documento en cada estado (después de seedDemoData: éste reinicia las solicitudes)
   /* El shell muestra a QUIEN MIRA (visor), no a la persona del perfil. */
   const viewer = resolveViewer();
   const roleCode = viewer.shellRole;
-  const activeId = ['PERSONA', 'DEPORTISTA'].includes(roleCode) ? 'perfil' : roleCode === 'CLUB' ? 'deportistas' : null;
+  const activeId = ['PERSONA', 'DEPORTISTA', 'REVISOR_DOC'].includes(roleCode) ? 'perfil' : roleCode === 'CLUB' ? 'deportistas' : null;
   mountSidebar({ rootEl: document.getElementById('sidebarRoot'), roleCode, activeId });
   /* En escritorio el sidebar del shell arranca en riel de íconos: así la
      navegación agrupada del perfil es la única vertical expandida. No se

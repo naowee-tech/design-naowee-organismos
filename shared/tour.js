@@ -104,10 +104,10 @@
     'ORG-11': {
       ph: '2 · Personas y afiliación', page: 'perfil.html', role: 'PERSONA', demo: true, q: { seccion: 'menores' },
       title: 'El tutor registra a un menor',
-      purpose: 'Solo el tutor registra a su menor, con el mismo flujo de sports: documentos (vínculo, TI o RC, parentesco, consentimiento) y datos básicos. Queda en revisión mientras se valida el parentesco.',
+      purpose: 'Solo el tutor registra a su menor, con el mismo flujo de sports: documentos (vínculo, TI o RC, parentesco, consentimiento) y datos básicos. Queda «Pendiente de aprobación» hasta que el club que eligió valida el parentesco.',
       steps: [
         { sel: '.mp-minors', body: 'Los menores a cargo, con su estado. <b>Gestionar perfil</b> abre el perfil del menor, que administra su tutor.' },
-        { sel: '[data-menor-nuevo]', body: '<b>Registrar menor</b> abre los dos pasos. Valida que sea menor de 18 y que el documento no esté ya registrado.' }
+        { sel: '[data-menor-nuevo]', body: '<b>Registrar menor</b> abre los dos pasos. Valida que sea menor de 18 y que el documento no esté ya registrado; en el segundo paso el tutor elige el <b>club</b> que revisará el parentesco.' }
       ]
     },
     'ORG-12': {
@@ -217,9 +217,94 @@
         { sel: '#usPanel', body: 'Los usuarios internos con su rol, estado y quién los creó; búsqueda y filtro por estado. La pestaña <b>Roles del organismo</b> explica cada rol y quién lo crea.' },
         { sel: '[data-act="invite"]', body: '<b>Invitar usuario</b>: solo ofrece los roles que tú puedes crear y muestra qué puede y qué no cada uno.' }
       ]
+    },
+    /* ── Fase 6 · Revisión documental de menores (v1.10.0): el club y el revisor aprueban el parentesco dentro del SUID ── */
+    'DOC-01': {
+      ph: '6 · Revisión documental de menores', page: 'documentos.html', role: 'CLUB', demo: true,
+      title: 'El club aprueba el documento de un menor',
+      purpose: 'El tutor eligió el club al registrar al menor; el club revisa el documento de parentesco en el SUID, sin saltar a SPORT. Con una sola decisión, aprobar afilia al menor; rechazar exige una nota que el tutor ve en su perfil.',
+      steps: [
+        { sel: '.dx-kpis', body: 'El resumen de lo que tiene el club: <b>por revisar</b>, <b>aprobados</b> y <b>rechazados</b>. El contador del menú muestra los pendientes.' },
+        { sel: '.dx-bar', body: 'Busca por menor, tutor o documento y filtra por <b>deporte</b>, <b>estado</b> y <b>quién decidió</b> (club o revisor). La columna <b>Historial</b> dice quién decidió, cuándo y con qué rol.' },
+        { sel: '[data-rev]', body: '<b>Revisar</b> abre la vista del documento: a la izquierda la lista, a la derecha el detalle, el menor y la vista previa.', click: true },
+        { sel: '.dx-rtabs', body: '<b>Requerimientos</b> para decidir e <b>Historial</b> para ver la línea de tiempo: enviado (con «Corregido» si el tutor lo recargó), rechazado y aprobado.' },
+        { sel: '#dxA', body: '<b>✓ Aprobar</b> o <b>⊘ Rechazar</b>. Al rechazar aparece la <b>Nota</b>, obligatoria: es lo que el tutor lee para corregir.' },
+        { sel: '#dxSend', body: '<b>Enviar</b> abre una confirmación. Solo al aceptar queda registrada la decisión: el menor se afilia al club y hereda su liga y su federación, o el tutor recibe el rechazo.' }
+      ]
+    },
+    'DOC-02': {
+      ph: '6 · Revisión documental de menores', page: 'usuarios.html', role: 'CLUB', demo: true,
+      title: 'El club invita a un revisor de documentos',
+      purpose: 'Solo el club puede invitar el rol «Revisor de documentos»: llega un correo, la persona activa su cuenta y entra con un menú reducido. La lista del club muestra quién lo es y en qué estado está.',
+      steps: [
+        { sel: '#usPanel', body: 'Los usuarios internos del club: <b>Ana Lucía Mora</b> ya es revisora y <b>Julián Pérez</b> está <b>invitado</b>. La columna <b>Acciones</b> trae un menú de tres puntos por fila.' },
+        { sel: '[data-act="invite"]', body: '<b>Invitar usuario</b> pide nombre, documento, correo y <b>rol interno</b>.', click: true },
+        { sel: '#fRol', body: 'En <b>Rol interno</b> eliges <b>Revisor de documentos</b>. Solo lo ofrecen los clubes y solo lo invita el administrador del club.' },
+        { sel: '#fRolInfo', body: 'Qué <b>puede</b> (aprobar o rechazar el parentesco de los menores y ver su perfil) y qué <b>no puede</b> (afiliaciones de otros deportistas, usuarios, cargues, datos del club).' }
+      ]
+    },
+    'DOC-07': {
+      ph: '6 · Revisión documental de menores', page: 'usuarios.html', role: 'CLUB', demo: true,
+      title: 'El club abre el perfil del revisor y su historial',
+      purpose: 'Desde «Usuarios», el administrador del club abre el perfil de quien invitó. Ahí ve sus datos y la pestaña Historial, con los movimientos que hizo en su rol: documentos aprobados o rechazados, con la nota, y su alta.',
+      steps: [
+        { sel: '.us-th-acts', body: 'La columna <b>Acciones</b> trae un menú por fila, de tres puntos.' },
+        { sel: '.us-menu__btn', body: 'Ábrelo: <b>Ver perfil</b>, <b>Reenviar</b> (si está invitado) y <b>Desactivar</b>. <b>Ver perfil</b> abre la ficha de la persona en solo lectura; solo el administrador del club que la invitó puede entrar.' }
+      ]
+    },
+    'DOC-08': {
+      ph: '6 · Revisión documental de menores', page: 'perfil.html', role: 'CLUB', demo: true, q: { persona: 'DEP-030', from: 'usuarios.html?role=CLUB' },
+      title: 'El historial de un usuario interno',
+      purpose: 'El perfil de un revisor trae sus datos y el historial de lo que hizo con ese rol. El historial solo lo ve el club; el propio revisor, en su perfil, ve únicamente sus datos.',
+      steps: [
+        { sel: '.mp-hid', body: 'Nombre y, debajo, el <b>rol interno</b>. Los datos son los del formulario de invitación: nombre, tipo y número de documento y correo.' },
+        { sel: '#mpt-perfil-historial', body: 'La pestaña <b>Historial</b> está solo para el club.', click: true },
+        { sel: '.mp-tl', body: 'La línea de tiempo: cada documento que aprobó o rechazó (el <b>?</b> muestra la nota), su <b>cuenta activada</b> y la <b>invitación</b>, con fecha, hora y quién.' }
+      ]
+    },
+    'DOC-03': {
+      ph: '6 · Revisión documental de menores', page: 'documentos.html', role: 'CLUB', demo: true,
+      title: 'Cambiar de rol en el mismo club',
+      purpose: 'Óscar administra el club y también es revisor de documentos. Con el selector del encabezado pasa de un rol al otro sin salir de Club Patín Cali: cambian el menú y lo que puede hacer.',
+      steps: [
+        { sel: '#roleDemoHdr', body: 'El selector <b>Solo demo</b> del encabezado muestra con qué rol trabajas. Un mismo usuario puede tener varios roles dentro del mismo organismo.' },
+        { sel: '#roleDemoDd .naowee-dropdown__trigger', body: 'Ábrelo para ver los roles que tiene en este club.', click: true },
+        { sel: '#roleDemoDd a[href*="REVISOR_DOC"]', body: 'Al elegir <b>Revisor de documentos</b> el menú se reduce a <b>Revisión documental</b> y <b>Mi perfil</b>. Para volver, el mismo selector ofrece <b>Administrador del club</b>.' }
+      ]
+    },
+    'DOC-04': {
+      ph: '6 · Revisión documental de menores', page: 'documentos.html', role: 'REVISOR_DOC', demo: true,
+      title: 'El revisor: solo su revisión y su perfil',
+      purpose: 'El revisor de documentos únicamente ve los documentos que tiene por revisar (y los que él decidió) y su propio perfil. Su decisión queda en el historial con la etiqueta «Revisor».',
+      steps: [
+        { sel: '#naoweeSidebar', body: 'El menú trae solo <b>Revisión documental</b> y <b>Mi perfil</b>: no ve deportistas, solicitudes, usuarios ni datos del organismo.' },
+        { sel: '#hdrBell', body: 'La campana avisa de cada documento <b>pendiente de revisión</b>: quién lo cargó, de qué menor y cuándo. Cada aviso abre su revisión, y <b>Marcar como leídas</b> apaga el contador.' },
+        { sel: '.dx-panel', body: 'La lista muestra lo <b>pendiente</b> y lo que <b>él mismo decidió</b>; el club ve todo. Puede aprobar o rechazar (con nota) igual que el administrador.' },
+        { sel: '.nav-row[data-id="perfil"]', body: '<b>Mi perfil</b> abre su ficha, con solo los datos del formulario con el que lo invitó el club.' }
+      ]
+    },
+    'DOC-05': {
+      ph: '6 · Revisión documental de menores', page: 'perfil.html', role: 'REVISOR_DOC', demo: true, q: { persona: 'DEP-029' },
+      title: 'El perfil del revisor de documentos',
+      purpose: 'La persona invitada entra a su perfil con lo que pidió el formulario de invitación: nombre, documento, correo y rol interno. No lleva roles deportivos ni datos de salud o ubicación.',
+      steps: [
+        { sel: '.mp-hid', body: 'Nombre y, debajo, el <b>rol interno</b>. No lleva roles deportivos ni vínculos.' },
+        { sel: '.mp-fields', body: 'Solo los datos del formulario de invitación: <b>nombre completo</b>, <b>tipo y número de documento</b> y <b>correo</b>. Son de solo lectura y no hay historial: ese lo ve el club.' },
+        { sel: '#roleDemoHdr', body: 'Desde aquí también cambia de rol: vuelve a <b>Administrador del club</b> con el mismo selector.' }
+      ]
+    },
+    'DOC-06': {
+      ph: '6 · Revisión documental de menores', page: 'perfil.html', role: 'PERSONA', demo: true, q: { seccion: 'menores' },
+      title: 'El tutor ve el rechazo y corrige',
+      purpose: 'Si el club rechaza el documento, el tutor ve el motivo en «Mis menores» y puede recargar el documento según la nota o elegir otro club. Al reenviar, el historial del club muestra «Enviado · Corregido».',
+      steps: [
+        { sel: '.mp-tbl-wrap', body: 'Cada menor con su estado: <b>Aprobado</b>, <b>Pendiente de aprobación</b> o <b>Documento rechazado</b>, con la fecha.' },
+        { sel: '[data-motivo]', body: '<b>Ver motivo</b> despliega la nota del club.', click: true },
+        { sel: '[data-recargar]', body: '<b>Recargar documento</b> lo reenvía al mismo club; <b>Elegir otro club</b> abre una solicitud nueva en otro.' }
+      ]
     }
   };
-  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-11', 'ORG-12', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-10', 'ORG-07', 'ORG-13', 'ORG-14', 'ORG-15', 'ORG-16', 'ORG-17'];
+  var ORDER = ['HURU-01', 'HURU-03', 'HURU-04', 'ORG-01', 'ORG-02', 'ORG-03', 'ORG-04', 'ORG-05', 'ORG-11', 'ORG-12', 'ORG-06', 'ORG-08', 'ORG-09', 'ORG-10', 'ORG-07', 'ORG-13', 'ORG-14', 'ORG-15', 'ORG-16', 'ORG-17', 'DOC-01', 'DOC-02', 'DOC-03', 'DOC-07', 'DOC-08', 'DOC-04', 'DOC-05', 'DOC-06'];
 
   /* ── Estado ── */
   var curHu = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _spotFresh = false;
