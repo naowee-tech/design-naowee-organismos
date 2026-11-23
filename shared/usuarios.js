@@ -20,6 +20,7 @@ const toast = (m, t) => { if (window.naoweeToast) window.naoweeToast(m, t); };
 /* ─── Iconos (mismo trazo que shared/sidebar.js) ─── */
 const sv = (d, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 1.6}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const I = {
+  user: sv('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', 1.8),
   userPlus: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>', 1.8),
   usersLg: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 1.4),
   search: sv('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', 1.8),
@@ -46,6 +47,7 @@ const docKey = (d) => String(d || '').replace(/\D/g, '');
 const ALCANCE = {
   ADMIN: { si: ['Aprobar al nivel de abajo y hacer cargues', 'Crear y desactivar usuarios internos', 'Editar los datos del organismo'], no: ['Haber más de una por organismo', 'Crearse desde esta pantalla: la habilita el nivel superior'] },
   REVISOR: { si: ['Aprobar, devolver o rechazar registros del nivel de abajo', 'Decidir en nombre del organismo'], no: ['Crear ni desactivar usuarios', 'Hacer cargues masivos', 'Editar los datos del organismo'] },
+  REVISOR_DOC: { si: ['Aprobar o rechazar (con nota) el documento de parentesco de los menores', 'Ver su propio perfil'], no: ['Aprobar afiliaciones de otros deportistas', 'Crear ni desactivar usuarios', 'Hacer cargues masivos', 'Editar los datos del organismo'] },
   GESTOR_COC: { si: ['Invitar y asignar metodólogos', 'Ver el Ciclo Olímpico y sus deportistas'], no: ['Aprobar federaciones', 'Crear otros gestores', 'Editar los datos del comité'] },
   METODOLOGO: { si: ['Registrar opiniones sobre deportistas del Ciclo Olímpico', 'Ver las fichas de esos deportistas'], no: ['Invitar usuarios', 'Aprobar registros', 'Ver deportistas fuera del Ciclo Olímpico'] },
   ADMIN_MIN: { si: ['Crear comités y aprobar su parte de las federaciones', 'Sancionar y ver todo el sistema', 'Crear usuarios territoriales'], no: ['Crear otros administradores del Ministerio'] },
@@ -224,7 +226,7 @@ function usersHtml() {
   }
   const col2 = isMin ? 'Territorio' : 'Rol';
   return bar + help + `<div class="cg-table-wrap"><table class="cg-table bj-table">
-    <thead><tr><th scope="col">Usuario</th><th scope="col">${col2}</th><th scope="col">Estado</th><th scope="col">Creado por</th><th scope="col"><span class="us-sr">Acciones</span></th></tr></thead>
+    <thead><tr><th scope="col">Usuario</th><th scope="col">${col2}</th><th scope="col">Estado</th><th scope="col">Creado por</th><th scope="col" class="us-th-acts">Acciones</th></tr></thead>
     <tbody>${list.map((u) => rowHtml(u, col2)).join('')}</tbody>
   </table></div>`;
 }
@@ -238,6 +240,8 @@ function rowHtml(u, col2) {
   const when = u.estado === 'Invitado' ? `Invitado el ${fmt(u.fecha)}` : off ? `Creado el ${fmt(u.fecha)}` : `Desde el ${fmt(u.fecha)}`;
   const byRol = rolDeCreador(u.creadoPor);
   const acts = [];
+  /* El perfil de quien invitaste (con su historial de movimientos en el rol). */
+  if (u.personaId) acts.push(`<a class="naowee-btn naowee-btn--mute naowee-btn--small" href="perfil.html?role=${esc(roleCode)}&persona=${esc(u.personaId)}&from=${encodeURIComponent('usuarios.html?role=' + roleCode)}" aria-label="Ver el perfil de ${esc(u.nombre)}">${I.user}Ver perfil</a>`);
   if (u.estado === 'Invitado') acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="resend" data-id="${esc(u.id)}" aria-label="Reenviar invitación a ${esc(u.nombre)}">${I.mail}Reenviar</button>`);
   if (off) acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="reactivate" data-id="${esc(u.id)}" aria-label="Reactivar a ${esc(u.nombre)}">${I.refresh}Reactivar</button>`);
   else acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small us-btn-neg" data-act="deactivate" data-id="${esc(u.id)}" aria-label="Desactivar a ${esc(u.nombre)}">${I.ban}Desactivar</button>`);
@@ -246,7 +250,9 @@ function rowHtml(u, col2) {
     <td data-label="${col2}"><div>${second}</div></td>
     <td data-label="Estado"><div>${badge(ESTADO[u.estado] || 'neutral', u.estado)}<span class="us-sub us-nowrap">${when}</span></div></td>
     <td data-label="Creado por"><div><span class="us-cell-strong" style="font-weight:500">${esc(u.creadoPor)}${u.creadoPor === meName ? ' (tú)' : ''}</span>${byRol ? `<span class="us-sub">${esc(byRol)}</span>` : ''}</div></td>
-    <td class="bj-row-action" data-label=""><div class="us-acts">${acts.join('')}</div></td>
+    <td class="bj-row-action" data-label=""><div class="us-menu">
+      <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small us-menu__btn" data-menu aria-haspopup="menu" aria-expanded="false" aria-label="Acciones de ${esc(u.nombre)}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+      <div class="us-menu__list" role="menu">${acts.map((a) => a.replace('naowee-btn naowee-btn--mute naowee-btn--small us-btn-neg', 'us-menu__item us-menu__item--neg').replace('naowee-btn naowee-btn--mute naowee-btn--small', 'us-menu__item').replace(/^<(button|a) /, '<$1 role="menuitem" ')).join('')}</div></div></td>
   </tr>`;
 }
 
@@ -261,7 +267,7 @@ function rolesHtml() {
   let intro;
   if (isMin) intro = msg('informative', 'info', 'Los administradores del Ministerio los crea Naowee. Tú creas a los usuarios territoriales, anclados a un departamento o a un municipio.');
   else if (marcas.length) intro = msg('informative', 'info', `${esc(org.nombre)} tiene la marca <strong>${esc(marcas.map((m) => MARCA_NOMBRE[m] || m).join(', '))}</strong>; por eso puede usar sus roles. Los roles transversales sirven para cualquier organismo: hoy no hay ninguno aprobado y el Revisor de registros es una propuesta.`);
-  else intro = msg('informative', 'info', `${esc(org.nombre)} no tiene marcas: además de la cuenta principal, solo aplican los roles transversales. Hoy no hay ninguno aprobado; el Revisor de registros es una propuesta.`);
+  else intro = msg('informative', 'info', `${esc(org.nombre)} no tiene marcas: además de la cuenta principal, solo aplican los roles transversales. El Revisor de registros es una propuesta${org.tipo === 'club' ? '; el Revisor de documentos sí aplica a los clubes' : ''}.`);
   const users = internos();
   const card = (r) => {
     const yours = r.creaRol === viewerRol;
@@ -537,7 +543,24 @@ function reactivate(u) {
 }
 
 /* ═══════════════ Eventos ═══════════════ */
+/* Menú de acciones por fila (posición fija: la tabla recorta lo que sobresale). */
+function cerrarMenus() { root.querySelectorAll('.us-menu.is-open').forEach((m) => { m.classList.remove('is-open'); m.querySelector('[data-menu]').setAttribute('aria-expanded', 'false'); }); }
+document.addEventListener('click', (e) => { if (!e.target.closest('.us-menu')) cerrarMenus(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarMenus(); });
+window.addEventListener('scroll', cerrarMenus, true);
 function onClick(e) {
+  const mb = e.target.closest('[data-menu]');
+  if (mb) {
+    const m = mb.closest('.us-menu'); const abrir = !m.classList.contains('is-open');
+    cerrarMenus();
+    if (abrir) {
+      m.classList.add('is-open'); mb.setAttribute('aria-expanded', 'true');
+      const r = mb.getBoundingClientRect(); const l = m.querySelector('.us-menu__list');
+      l.style.top = `${r.bottom + 6}px`; l.style.left = `${Math.max(8, r.right - l.offsetWidth)}px`;
+    }
+    return;
+  }
+  if (e.target.closest('.us-menu__item')) cerrarMenus();
   const t = e.target.closest('.naowee-tab');
   if (t && root.contains(t)) { selectTab(t.dataset.tab, false); return; }
   if (e.target.closest('#usClear')) { S.q = ''; renderPanel('#usSearch'); return; }

@@ -623,6 +623,19 @@ const MODULE_NAME = 'Organismos';
                sin importar el comité (antes se validaba por sector).
              · Notas para devs actualizadas (sin carga histórica en esta entrega).
              Bundle de registro-publico regenerado. Cache-busters ?v=1.7.1. */
+/* v1.10.0 — REVISIÓN DOCUMENTAL DE MENORES dentro del SUID (hallazgo de QA DEP-1029/DEP-1030, definición PROD-96):
+             · El tutor elige el club al registrar al menor; el documento de parentesco queda «Pendiente de aprobación»
+               (ya no «En revisión» ni «lo valida el Ministerio»). Si el club lo rechaza, el tutor ve la nota y recarga
+               el documento o elige otro club («Mis menores» pasa a tabla).
+             · Nueva pantalla del club «Revisión documental» (documentos.html): lista con resumen y filtros, vista de
+               revisión con historial, aprobar o rechazar con nota, confirmación y notificaciones en el encabezado.
+               Una sola decisión: aprobar afilia al menor. Tres estados: Pendiente, Aprobado y Rechazado.
+             · Nuevo rol «Revisor de documentos» (solo clubes; lo invita el administrador): solo ve la revisión y su
+               perfil. Cambio de rol en el mismo club con el selector «Solo demo» del encabezado.
+             · Usuarios: columna Acciones con menú de tres puntos y Ver perfil del invitado, con su Historial.
+             · Solicitudes de deportistas: los menores salen de esa bandeja; filtros en desplegable.
+             · Notas para devs, recorrido guiado (fase 6: DOC-01..DOC-08), índice y datos de ejemplo.
+             · scripts/build.cjs ya no depende de una ruta de otra máquina (ESBUILD_PATH). Datos de demo: SEED 0.6.4. */
 /* v1.9.5 —  BANDEJA DE APROBACIÓN alineada al back de DEP-591 (2026-10-20):
              · Aprobar también pide observación: el back exige motivo en toda decisión.
              · Notas para devs en la bandeja con el contrato real (bandeja, decisiones
@@ -707,7 +720,7 @@ const MODULE_NAME = 'Organismos';
              · Casos para mostrar en el inicio, recorrido guiado con las fases
                nuevas, «Cambiar de perfil» en el chip, notas para devs.
              Cache-busters ?v=1.8.0. */
-const MODULE_VERSION = 'v1.9.5';
+const MODULE_VERSION = 'v1.10.0';
 
 (function () {
   function mount() {

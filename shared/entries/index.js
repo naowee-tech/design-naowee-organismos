@@ -3,10 +3,10 @@
   try { Object.keys(sessionStorage).filter((k) => k === 'naowee-organismos-persona' || k === 'naowee-organismos-territorio' || k.startsWith('naowee-organismos-ctx-')).forEach((k) => sessionStorage.removeItem(k)); } catch (_) {}
 
   const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
-  const order = ['MINDEPORTE', 'MINISTRO', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
+  const order = ['MINDEPORTE', 'MINISTRO', 'TERRITORIAL', 'COMITE', 'FEDERACION', 'LIGA', 'CLUB', 'REVISOR_DOC', 'DEPORTISTA', ...(esLocal() ? ['PERSONA'] : [])];
   const CTA = {
     MINDEPORTE: 'Abrir jerarquía', MINISTRO: 'Abrir jerarquía', COMITE: 'Abrir jerarquía', FEDERACION: 'Abrir jerarquía',
-    LIGA: 'Abrir jerarquía', TERRITORIAL: 'Abrir jerarquía', CLUB: 'Abrir bandeja', DEPORTISTA: 'Abrir mi perfil', PERSONA: 'Abrir mi perfil'
+    LIGA: 'Abrir jerarquía', TERRITORIAL: 'Abrir jerarquía', CLUB: 'Abrir bandeja', REVISOR_DOC: 'Abrir revisión documental', DEPORTISTA: 'Abrir mi perfil', PERSONA: 'Abrir mi perfil'
   };
 
   document.getElementById('grid').innerHTML = order.map((code) => {
@@ -39,6 +39,11 @@
     { color: '#002B5B', quien: 'María F. Rojas · Ministerio', titulo: 'El Ministerio sanciona un club', desc: 'Suspender, reactivar (vuelve a revisión) y cancelar el registro como acción definitiva.', href: 'organismo-detalle.html?role=MINDEPORTE&id=CLU-003' },
     { color: '#7c3aed', quien: 'Sandra Mejía · Liga', titulo: 'La liga registra un deportista y le propone club', desc: 'El club es obligatorio y queda como propuesta que el club confirma. Si el documento ya existe, no se crea otro.', href: 'deportistas.html?role=LIGA&org=LIG-001&como=sandra' },
     { color: '#7c3aed', quien: 'Sandra Mejía · Liga', titulo: 'Carga masiva de deportistas', desc: 'Plantilla con su club: nuevas, ya en el SUID y errores por fila. Los clubes confirman las propuestas en su bandeja.', href: 'deportistas.html?role=LIGA&org=LIG-001&como=sandra&vista=cargue' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club aprueba el documento de un menor', desc: 'Revisa el parentesco que subió el tutor: aprueba y el menor queda afiliado, o rechaza con una nota que el tutor ve en su perfil.', href: 'documentos.html?role=CLUB' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club invita a un revisor de documentos', desc: 'Solo el club ofrece este rol: elige «Revisor de documentos» en Invitar usuario y ve qué puede y qué no puede hacer.', href: 'usuarios.html?role=CLUB' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'Cambiar de rol en el mismo club', desc: 'Con el selector «Solo demo» del encabezado pasa de administrador del club a revisor de documentos, y cambian el menú y los permisos.', href: 'documentos.html?role=CLUB' },
+    { color: '#1f8923', quien: 'Óscar Cardona · Revisor de documentos', titulo: 'El revisor: solo su revisión y su perfil', desc: 'Menú reducido, solo los documentos por revisar y su perfil con los datos del formulario de invitación.', href: 'documentos.html?role=REVISOR_DOC' },
+    { color: '#0e7490', quien: 'Laura Gómez · tutora', titulo: 'El tutor ve el rechazo y corrige', desc: 'En «Mis menores» abre el motivo del club y recarga el documento o elige otro club; el club lo ve como «Corregido».', href: 'perfil.html?role=PERSONA&roles=tutor&seccion=menores' },
     { color: '#1f8923', quien: 'Óscar Cardona · Club', titulo: 'El club confirma solicitudes y propuestas', desc: 'Aprobar suma el club al deportista sin quitarle los que ya tiene.', href: 'bandeja.html?role=CLUB' },
     { color: '#0e7490', quien: 'Laura Gómez · deportista, tutora y entrenadora', titulo: 'La tutora registra a un menor', desc: 'Mismo flujo de sports: documentos y datos básicos. Queda en revisión mientras se valida el parentesco.', href: 'perfil.html?role=PERSONA&seccion=menores' },
     { color: '#0e7490', quien: 'Laura Gómez · deportista', titulo: 'Afiliarse a un segundo club', desc: 'Busca el club y pide afiliación; ve la cadena que hereda de cada club y puede retirarse de uno.', href: 'perfil.html?role=PERSONA&seccion=afiliaciones' },

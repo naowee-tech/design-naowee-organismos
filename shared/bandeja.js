@@ -180,6 +180,8 @@ function renderNoBandeja() {
    El club es el ÚNICO aprobador de la afiliación de un deportista (ORG-05). Al
    aprobar, el deportista queda vinculado y hereda la liga + federación del club. */
 let afilFiltro = 'Pendientes';
+let afilDeporte = 'Todos';      // filtros en desplegable (mismo patrón que Revisión documental)
+let afilTipo = 'Todos';
 const AFIL_ESTADO = { Pendientes: 'Enviada', Aprobadas: 'Aprobada', Rechazadas: 'Rechazada' };
 const AFIL_SOL_VARIANT = { Enviada: 'caution', Aprobada: 'positive', Rechazada: 'negative', Retirada: 'neutral' };
 const MOTIVOS_AFIL = [
@@ -197,10 +199,15 @@ function solBadge(estado) {
 
 function renderAfiliaciones() {
   const club = scopeId ? getOrganismo(scopeId) : null;
-  const rows = solicitudesDeClub(scopeId).map((s) => ({ ...s, dep: getDeportista(s.deportistaId) })).filter((r) => r.dep);
+  /* Los menores (documento de parentesco) se aprueban en «Revisión documental». */
+  const rows = solicitudesDeClub(scopeId).filter((s) => !s.esMenor).map((s) => ({ ...s, dep: getDeportista(s.deportistaId) })).filter((r) => r.dep);
 
   let view = rows;
   if (afilFiltro !== 'Todas') { const est = AFIL_ESTADO[afilFiltro]; if (est) view = rows.filter((r) => r.estado === est); }
+  const tipoDe = (r) => (r.tipo === 'retiro' ? 'Baja' : r.origen === 'propuesta' ? 'Propuesta' : 'Afiliación');
+  const deportes = ['Todos', ...new Set(rows.map((r) => r.dep.deporte).filter(Boolean))];
+  if (afilDeporte !== 'Todos') view = view.filter((r) => r.dep.deporte === afilDeporte);
+  if (afilTipo !== 'Todos') view = view.filter((r) => tipoDe(r) === afilTipo);
   if (query) { const q = norm(query); view = view.filter((r) => norm(r.dep.nombre).includes(q) || norm(r.dep.numDoc).includes(q) || norm(r.dep.deporte).includes(q)); }
   view.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 
@@ -210,16 +217,16 @@ function renderAfiliaciones() {
       : `Vista de <strong>oversight</strong> (solo lectura) de solicitudes de afiliación.`)}
 
     <div class="naowee-card bj-panel">
-      <div class="bj-panel__bar">
+      <div class="bj-bar2">
         <div class="naowee-searchbox bj-search">
           <div class="naowee-searchbox__input-wrap">
             <span class="naowee-searchbox__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <input class="naowee-searchbox__input" id="bjSearch" placeholder="Buscar por nombre, documento o deporte…" value="${esc(query)}">
           </div>
         </div>
-      </div>
-      <div class="naowee-tabs bj-tabs" id="bjFilters">
-        ${['Pendientes', 'Aprobadas', 'Rechazadas', 'Todas'].map((f) => `<button type="button" class="naowee-tab ${afilFiltro === f ? 'naowee-tab--selected' : ''}" data-af="${f}">${f}</button>`).join('')}
+        ${afDd('deporte', 'Deporte', afilDeporte, deportes.map((d) => [d, d]))}
+        ${afDd('tipo', 'Tipo', afilTipo, [['Todos', 'Todos'], ['Afiliación', 'Afiliación'], ['Propuesta', 'Propuesta'], ['Baja', 'Baja']])}
+        ${afDd('estado', 'Estado', afilFiltro, [['Pendientes', 'Pendientes'], ['Aprobadas', 'Aprobadas'], ['Rechazadas', 'Rechazadas'], ['Todas', 'Todas']])}
       </div>
       ${view.length ? `
         <div class="cg-table-wrap">
@@ -241,6 +248,12 @@ function renderAfiliaciones() {
   wire();
 }
 
+/* Desplegable de filtro de la bandeja de afiliaciones (.naowee-dropdown canónico). */
+function afDd(key, label, val, opts) {
+  const cur = opts.find((o) => o[0] === val) || opts[0];
+  return `<div class="naowee-dropdown bj-dd" data-afk="${key}"><button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox"><span class="naowee-dropdown__value">${label}: ${esc(cur[1])}</span><span class="naowee-dropdown__chevron">${I.chevron}</span></button>
+    <div class="naowee-dropdown__menu" role="listbox">${opts.map((o) => `<div class="naowee-dropdown__opt${o[0] === val ? ' naowee-dropdown__opt--selected' : ''}" role="option" data-v="${esc(o[0])}">${esc(o[1])}</div>`).join('')}</div></div>`;
+}
 function afilById(sid) { return solicitudesDeClub(scopeId).find((s) => s.id === sid) || null; }
 
 function openAfilDetail(sid) {
@@ -679,6 +692,15 @@ function wire() {
     f.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => { estadoFiltro = b.dataset.f; page = 1; render(); }));
     f.querySelectorAll('[data-af]').forEach((b) => b.addEventListener('click', () => { afilFiltro = b.dataset.af; render(); }));
   }
+  root.querySelectorAll('.bj-dd').forEach((dd) => {
+    const cerrar = () => document.querySelectorAll('.bj-dd.naowee-dropdown--open').forEach((d) => d.classList.remove('naowee-dropdown--open'));
+    dd.querySelector('.naowee-dropdown__trigger').addEventListener('click', (e) => { e.stopPropagation(); const o = dd.classList.contains('naowee-dropdown--open'); cerrar(); if (!o) dd.classList.add('naowee-dropdown--open'); });
+    dd.querySelectorAll('.naowee-dropdown__opt').forEach((o) => o.addEventListener('click', () => {
+      const k = dd.dataset.afk; if (k === 'deporte') afilDeporte = o.dataset.v; else if (k === 'tipo') afilTipo = o.dataset.v; else afilFiltro = o.dataset.v;
+      render();
+    }));
+  });
+  document.addEventListener('click', () => document.querySelectorAll('.bj-dd.naowee-dropdown--open').forEach((d) => d.classList.remove('naowee-dropdown--open')), { once: true });
   // Filtro de sector (native select) + paginación de la tabla de organismos.
   const sec = document.getElementById('bjSector');
   if (sec) sec.addEventListener('change', (e) => { sectorFiltro = e.target.value; page = 1; render(); });

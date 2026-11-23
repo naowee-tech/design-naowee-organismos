@@ -68,13 +68,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = (function() {
+    const seeded = function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    })();
+    }();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -146,13 +146,13 @@
     return orgId2 ? list.filter((a) => a.orgId === orgId2) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = (function() {
+    const mode = function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    })();
+    }();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -209,7 +209,8 @@
   function rolesDelOrganismo(orgId2) {
     if (orgId2 === "MIN") return ROLES_MINISTERIO;
     const marcas = MARCAS[orgId2] || [];
-    return CATALOGO_ROLES.filter((r) => r.principal || r.transversal || marcas.includes(r.marca));
+    const tipo = (getOrganismo(orgId2) || {}).tipo;
+    return CATALOGO_ROLES.filter((r) => (!r.soloTipo || r.soloTipo === tipo) && (r.principal || r.transversal || marcas.includes(r.marca)));
   }
   function usuariosDe(orgId2) {
     let list = readStore("usuarios", null);
@@ -367,7 +368,18 @@
         /* Fase 2 · persona multi-rol: Laura es deportista, tutora de dos menores y entrenadora. */
         { id: "DEP-022", nombre: "Laura Marcela G\xF3mez Restrepo", tipoDoc: "CC", numDoc: "1032987456", deporte: "Patinaje", modalidad: "Carreras", correo: "laura.gomez@correo.co", fechaNac: "1992-05-03", rolApoyo: "Docente/Entrenador", clubId: "CLU-001", estado: "vinculado" },
         { id: "DEP-023", nombre: "Tom\xE1s G\xF3mez", tipoDoc: "TI", numDoc: "1098765001", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2014-02-10", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: "CLU-001", estado: "vinculado" },
-        { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", docsEstado: "revision", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
+        { id: "DEP-024", nombre: "Sara G\xF3mez", tipoDoc: "TI", numDoc: "1098765002", deporte: "Nataci\xF3n", modalidad: "Estilo libre", correo: "", fechaNac: "2017-06-21", sexo: "Mujer", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+        /* v1.10.0 · Óscar Cardona como persona: administra el club y, con su segundo rol, revisa documentos. No es deportista. */
+        { id: "DEP-029", nombre: "\xD3scar Cardona", tipoDoc: "CC", numDoc: "94321678", deporte: "Patinaje", modalidad: "", correo: "admin@clubpatincali.demo.co", fechaNac: "1985-04-12", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+        /* v1.10.0 · usuarios internos invitados por el club como revisores de documentos (su perfil trae solo los datos del formulario). */
+        { id: "DEP-030", nombre: "Ana Luc\xEDa Mora", tipoDoc: "CC", numDoc: "52118790", deporte: "Patinaje", modalidad: "", correo: "ana.mora@clubpatincali.demo.co", fechaNac: "1990-08-21", sexo: "Mujer", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+        { id: "DEP-031", nombre: "Juli\xE1n P\xE9rez Mora", tipoDoc: "CC", numDoc: "1144220118", deporte: "Patinaje", modalidad: "", correo: "julian.perez@clubpatincali.demo.co", fechaNac: "1998-02-14", sexo: "Hombre", esDeportista: false, usuarioInterno: true, rolInterno: "Revisor de documentos", clubId: null, estado: "autodeclarado" },
+        /* v1.10.0 · más menores de ejemplo para «Revisión documental» (autodeclarados, sin club; los tutores son ficticios). */
+        { id: "DEP-026", nombre: "Isabella Rojas Mena", tipoDoc: "TI", numDoc: "1103456789", deporte: "Patinaje", modalidad: "Art\xEDstico", correo: "", fechaNac: "2012-03-08", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+        { id: "DEP-027", nombre: "Juan Esteban Cruz", tipoDoc: "TI", numDoc: "1104567890", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2010-11-22", sexo: "Hombre", parentesco: "Tutor legal", clubId: null, estado: "autodeclarado" },
+        { id: "DEP-028", nombre: "Salom\xE9 Vargas R\xEDos", tipoDoc: "TI", numDoc: "1105678901", deporte: "Patinaje", modalidad: "Hockey en l\xEDnea", correo: "", fechaNac: "2013-06-17", sexo: "Mujer", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" },
+        /* v1.10.0 · menor cuyo documento de parentesco espera al club (lo siembra seedAfiliacionesDemo). */
+        { id: "DEP-025", nombre: "Mateo G\xF3mez", tipoDoc: "TI", numDoc: "1098765003", deporte: "Patinaje", modalidad: "Carreras", correo: "", fechaNac: "2015-09-04", sexo: "Hombre", tutorId: "DEP-022", parentesco: "Padre/Madre", clubId: null, estado: "autodeclarado" }
       ];
       SEED_ORGANISMOS = [
         ...COMITES,
@@ -397,12 +409,13 @@
         { id: "AF-S901", tipo: "deportista", sujetoId: "DEP-022", organismoId: "CLU-003", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-02", origen: "solicitud" },
         { id: "AF-P001", tipo: "personal", sujetoId: "DEP-022", organismoId: "LIG-001", deporte: "Patinaje", estado: "Vinculada", desde: "2024-01-20", origen: "solicitud", rol: "Docente/Entrenador" },
         { id: "AF-P002", tipo: "personal", sujetoId: "DEP-022", organismoId: "CLU-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-09-29", origen: "solicitud", rol: "Docente/Entrenador" },
+        { id: "AF-P003", tipo: "personal", sujetoId: "DEP-029", organismoId: "CLU-001", deporte: "Patinaje", estado: "Vinculada", desde: "2026-10-01", origen: "solicitud", rol: "Revisor de documentos" },
         /* Un club ya activo en Antioquia pide entrar también a la liga del Valle (P-20): la liga solo aprueba el vínculo. */
         { id: "AF-C900", tipo: "club", sujetoId: "CLU-004", organismoId: "LIG-001", deporte: "Patinaje", estado: "Solicitada", desde: null, fecha: "2026-10-06", origen: "solicitud" }
       ];
       STORE_PREFIX = "naowee-organismos-";
       SEED_FLAG = STORE_PREFIX + "demo-seeded";
-      SEED_VERSION = "0.5.0";
+      SEED_VERSION = "0.6.4";
       _todayISO = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       TER_PREFIX = "TER:";
       nombreTerritorio = (t) => t.municipio ? `${t.municipio} (${t.depto})` : t.depto;
@@ -410,6 +423,7 @@
       CATALOGO_ROLES = [
         { id: "ADMIN", nombre: "Administrador del organismo", desc: "Cuenta principal: una por organismo. Aprueba al nivel de abajo, hace cargues y crea los usuarios internos.", creaRol: null, principal: true },
         { id: "REVISOR", nombre: "Revisor de registros", desc: "Aprueba, devuelve o rechaza registros del nivel de abajo en nombre del organismo. Es quien decide cuando el administrador tambi\xE9n administra el organismo en revisi\xF3n.", creaRol: "ADMIN", transversal: true, propuesta: "Propuesta de Arquitectura (P-16 y P-24)" },
+        { id: "REVISOR_DOC", nombre: "Revisor de documentos", desc: "Revisa el documento de parentesco que el tutor sube al registrar un menor: lo aprueba (el menor queda afiliado al club) o lo rechaza con una nota. Solo ve esa revisi\xF3n y su propio perfil.", creaRol: "ADMIN", transversal: true, soloTipo: "club" },
         { id: "GESTOR_COC", nombre: "Gestor de comit\xE9 ol\xEDmpico", desc: "Invita y asigna metod\xF3logos; ve el Ciclo Ol\xEDmpico y sus deportistas.", creaRol: "ADMIN", marca: "olimpica" },
         { id: "METODOLOGO", nombre: "Metod\xF3logo", desc: "Registra opiniones sobre los deportistas del Ciclo Ol\xEDmpico (an\xE1lisis cualitativo).", creaRol: "GESTOR_COC", marca: "olimpica" }
       ];
@@ -426,6 +440,8 @@
         { id: "US-006", orgId: "FED-040", rol: "REVISOR", nombre: "Jaime Ortiz Salcedo", doc: "CC 79.880.214", correo: "registros@fedepatinaje.demo.co", estado: "Activo", creadoPor: "Alberto Herrera", fecha: "2026-03-01" },
         { id: "US-007", orgId: "LIG-001", rol: "ADMIN", nombre: "Sandra Mej\xEDa", doc: "CC 31.567.890", correo: "sandra.mejia@correo.demo.co", estado: "Activo", creadoPor: "Federaci\xF3n Colombiana de Patinaje", fecha: "2026-03-08" },
         { id: "US-008", orgId: "CLU-001", rol: "ADMIN", nombre: "\xD3scar Cardona", doc: "CC 94.321.678", correo: "admin@clubpatincali.demo.co", estado: "Activo", creadoPor: "Liga de Patinaje del Valle", fecha: "2026-03-25" },
+        { id: "US-014", orgId: "CLU-001", rol: "REVISOR_DOC", nombre: "Ana Luc\xEDa Mora", personaId: "DEP-030", doc: "CC 52.118.790", correo: "ana.mora@clubpatincali.demo.co", estado: "Activo", creadoPor: "\xD3scar Cardona", fecha: "2026-10-15" },
+        { id: "US-015", orgId: "CLU-001", rol: "REVISOR_DOC", nombre: "Juli\xE1n P\xE9rez Mora", personaId: "DEP-031", doc: "CC 1.144.220.118", correo: "julian.perez@clubpatincali.demo.co", estado: "Invitado", creadoPor: "\xD3scar Cardona", fecha: "2026-11-18" },
         { id: "US-009", orgId: "MIN", rol: "ADMIN_MIN", nombre: "Mar\xEDa F. Rojas", doc: "CC 41.234.567", correo: "maria.rojas@mindeporte.demo.co", estado: "Activo", creadoPor: "Naowee", fecha: "2025-10-20" },
         { id: "US-010", orgId: "MIN", rol: "ADMIN_MIN", nombre: "Jorge Iv\xE1n Pe\xF1a", doc: "CC 79.553.120", correo: "jorge.pena@mindeporte.demo.co", estado: "Activo", creadoPor: "Naowee", fecha: "2025-10-20" },
         { id: "US-011", orgId: "MIN", rol: "TERRITORIAL", nombre: "Ana Luc\xEDa Valencia", doc: "CC 66.912.345", correo: "avalencia@valledelcauca.demo.gov.co", estado: "Activo", creadoPor: "Mar\xEDa F. Rojas", fecha: "2026-08-01", ancla: { depto: "Valle del Cauca" } },
@@ -515,6 +531,8 @@
         FEDERACION: "FED-040",
         LIGA: "LIG-001",
         CLUB: "CLU-001",
+        REVISOR_DOC: "CLU-001",
+        // v1.10.0: mismo club que el administrador
         DEPORTISTA: "DEP-001"
       };
       TIPO_DE_ROL = { COMITE: "comite", FEDERACION: "federacion", LIGA: "liga", CLUB: "club" };
@@ -563,6 +581,7 @@
   function homeForRole(code) {
     if (organismoNoActivo(code)) return "organismo-detalle.html";
     if (code === "CLUB") return "bandeja.html";
+    if (code === "REVISOR_DOC") return "documentos.html";
     if (code === "DEPORTISTA") return "perfil.html";
     if (code === "PERSONA") return "perfil.html";
     return "jerarquia.html";
@@ -594,12 +613,16 @@
     const href = hrefForItem(item, roleCode3);
     const tag = href ? "a" : "div";
     const hrefAttr = href ? ` href="${href}"` : "";
+    if (item.id === "documentos" && roleCode3 === "CLUB") {
+      const n = solicitudesDeClub(scopeFor(roleCode3)).filter((x) => x.esMenor && x.estado === "Enviada").length;
+      item = { ...item, badge: n || "" };
+    }
     return `
     <${tag} class="nav-row ${item.child ? "nav-row--child" : ""} ${isActive ? "active" : ""}" data-id="${item.id}"${hrefAttr}>
       ${isActive && !item.child ? '<span class="active-bar" aria-hidden="true"></span>' : ""}
       <span class="icon">${getIcon(item.icon)}</span>
       <span class="lbl">${item.label}</span>
-      ${item.badge ? `<span class="nav-badge">${item.badge}</span>` : ""}
+      ${item.badge ? `<span class="nav-badge${item.id === "documentos" ? " nav-badge--count" : ""}">${item.badge}</span>` : ""}
     </${tag}>
   `;
   }
@@ -695,6 +718,8 @@
     <button class="header-burger" id="headerBurger" type="button" aria-label="Abrir men\xFA">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    ${rolDemoHtml(role3.code)}
+    ${notifHtml(role3.code)}
     <div class="profile-switcher" id="profileSwitcher">
       <div class="user-chip" id="userChipTrigger" role="button" tabindex="0" aria-haspopup="menu" aria-label="Mi cuenta">
         <div class="ava">
@@ -723,6 +748,8 @@
     </div>
   `;
     bindHeaderEvents(headerEl);
+    bindRolDemo(headerEl);
+    bindNotif(headerEl, role3.code);
     mountContexto(role3);
   }
   function inicialesOrg(nombre) {
@@ -744,6 +771,105 @@
   function orgIco(o, size) {
     const c = COLOR_TIPO[o.tipo] || "#d74009";
     return `<span class="ctx-ico" aria-hidden="true" style="--tipo-color:${c};width:${size}px;height:${size}px">${inicialesOrg(o.nombre)}</span>`;
+  }
+  function hrefRol(code, pagina) {
+    const comunes = code === "CLUB" ? ["documentos.html", "deportistas.html", "bandeja.html"] : ["documentos.html"];
+    return `${comunes.includes(pagina) ? pagina : homeForRole(code)}?role=${code}`;
+  }
+  function rolDemoHtml(code) {
+    if (!esRolDelClub(code)) return "";
+    const pagina = location.pathname.split("/").pop() || "index.html";
+    const actual = ROLES_DEL_CLUB.find((x) => x.code === code);
+    const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+    return `<div class="mp-hdr-tools" id="roleDemoHdr"><div class="mp-demo"><span class="naowee-badge">Solo demo</span>
+    <div class="naowee-dropdown mp-demo__dd" id="roleDemoDd">
+      <button type="button" class="naowee-dropdown__trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Cambiar de rol">
+        <span class="naowee-dropdown__value">${actual.nombre}</span><span class="naowee-dropdown__chevron">${getIcon("chevron")}</span>
+      </button>
+      <div class="naowee-dropdown__menu" role="listbox" aria-label="Tus roles en este club">
+        ${ROLES_DEL_CLUB.map((x) => `<a class="naowee-dropdown__opt${x.code === code ? " is-selected" : ""}" role="option" aria-selected="${x.code === code}" href="${hrefRol(x.code, pagina)}">${x.nombre}${x.code === code ? `<span class="naowee-dropdown__opt-check" aria-hidden="true">${CHECK}</span>` : ""}</a>`).join("")}
+      </div>
+    </div></div></div>`;
+  }
+  function notificaciones(code) {
+    const club = scopeFor(code);
+    return solicitudesDeClub(club).filter((x) => x.esMenor && x.estado === "Enviada" && x.documento).map((x) => {
+      const dep = getDeportista(x.deportistaId) || {};
+      const tutor = x.tutorId ? getDeportista(x.tutorId) : null;
+      const at = new Date(x.documento.cargadoAt || x.documento.cargado + "T12:00:00");
+      return { id: x.id, at, tutor: (tutor ? tutor.nombre : x.tutorNombre) || "El tutor", menor: dep.nombre || "un menor", corregido: !!x.documento.corregido };
+    }).sort((a, b) => b.at - a.at);
+  }
+  function notifHtml(code) {
+    if (!esRolDelClub(code)) return "";
+    const list = notificaciones(code);
+    const leidas = leidasNotif();
+    const n = list.filter((x) => !leidas.includes(x.id)).length;
+    const fmt2 = (d) => `${d.getDate()} ${MES_N[d.getMonth()]} ${d.getFullYear()} \xB7 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return `<div class="hdr-bell" id="hdrBell">
+    <button type="button" class="hdr-bell__btn" id="hdrBellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notificaciones${n ? `, ${n} sin leer` : ""}">${getIcon("bell")}${n ? `<span class="hdr-bell__n">${n}</span>` : ""}</button>
+    <div class="hdr-bell__panel" id="hdrBellPanel" role="dialog" aria-label="Notificaciones">
+      <div class="hdr-bell__h"><strong>Notificaciones</strong><button type="button" class="hdr-bell__all" id="hdrBellAll"${n ? "" : " disabled"}>Marcar como le\xEDdas</button></div>
+      ${list.length ? `<ul class="hdr-bell__l">${list.map((x) => `<li><a class="hdr-bell__i${leidas.includes(x.id) ? " is-read" : ""}" href="documentos.html?role=${code}&sol=${x.id}"><span class="hdr-bell__dot" aria-hidden="true"></span>
+        <span class="hdr-bell__t"><strong>Hay documentos pendientes de revisi\xF3n</strong>
+        <span>${x.tutor} ${x.corregido ? "corrigi\xF3" : "carg\xF3"} el documento de parentesco de ${x.menor}.</span><small>${fmt2(x.at)}</small></span></a></li>`).join("")}</ul>` : '<p class="hdr-bell__empty">No hay documentos pendientes de revisi\xF3n.</p>'}
+    </div></div>`;
+  }
+  function bindNotif(headerEl, code) {
+    const box = headerEl.querySelector("#hdrBell");
+    if (!box) return;
+    const btn = box.querySelector("#hdrBellBtn");
+    const set = (open) => {
+      box.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!box.classList.contains("open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!box.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && box.classList.contains("open")) {
+        set(false);
+        btn.focus();
+      }
+    });
+    const all2 = box.querySelector("#hdrBellAll");
+    all2.addEventListener("click", () => {
+      try {
+        sessionStorage.setItem(NOTIF_KEY, JSON.stringify(notificaciones(code).map((x) => x.id)));
+      } catch (_) {
+      }
+      box.querySelectorAll(".hdr-bell__i").forEach((a) => a.classList.add("is-read"));
+      const n = box.querySelector(".hdr-bell__n");
+      if (n) n.remove();
+      all2.disabled = true;
+      btn.setAttribute("aria-label", "Notificaciones");
+    });
+  }
+  function bindRolDemo(headerEl) {
+    const dd = headerEl.querySelector("#roleDemoDd");
+    if (!dd) return;
+    const trg = dd.querySelector(".naowee-dropdown__trigger");
+    const set = (open) => {
+      dd.classList.toggle("naowee-dropdown--open", open);
+      trg.setAttribute("aria-expanded", String(open));
+    };
+    trg.addEventListener("click", (e) => {
+      e.stopPropagation();
+      set(!dd.classList.contains("naowee-dropdown--open"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!dd.contains(e.target)) set(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dd.classList.contains("naowee-dropdown--open")) {
+        set(false);
+        trg.focus();
+      }
+    });
   }
   function mountContexto(role3) {
     const lista = (role3.contextos || []).map((c) => ({ ...c, o: getOrganismo(c.org) })).filter((c) => c.o);
@@ -1005,7 +1131,7 @@
       }
     });
   }
-  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
+  var COLLAPSED_KEY, ICONS, ROLES, NIVELES_JERARQUIA, NIVEL_JERARQUIA_IDX, NIVEL_PROPIO, jerarquiaItems, MENU_BY_ROLE, PERSONAS, PERSONA_KEY, PERSONA_POR_ROL, ROLE_DEFAULT, ROLES_ORGANISMO, MENU_NO_ACTIVO, _toastTimer, _tooltipEl, TIPO_TXT, COLOR_TIPO, NO_INICIAL, ROLES_DEL_CLUB, esRolDelClub, NOTIF_KEY, MES_N, leidasNotif, HOME_DEMO, MODE_KEY, TOUR_KEY, esLocal, ROLE_GROUPS;
   var init_sidebar = __esm({
     "shared/sidebar.js"() {
       init_permissions();
@@ -1022,6 +1148,9 @@
         refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
         id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c0-1.5 1.5-2.2 3-2.2s3 .7 3 2.2"/><line x1="15" y1="10" x2="18" y2="10"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
         user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+        bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+        checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.3 2.4 2.4 4.6-5"/></svg>',
+        doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
         users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
       };
       ICONS.user = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
@@ -1093,6 +1222,20 @@
           color: "#1f8923",
           short: "Confirma la afiliaci\xF3n de sus deportistas",
           group: "Organismos"
+        },
+        /* v1.10.0 · la misma persona (Óscar) con un segundo rol dentro del mismo club: solo revisa documentos y ve su perfil. */
+        REVISOR_DOC: {
+          code: "REVISOR_DOC",
+          label: "Revisor de documentos",
+          userName: "\xD3scar Cardona",
+          userEmail: "admin@clubpatincali.demo.co",
+          userDoc: "CC 94.321.678",
+          org: "Club Pat\xEDn Cali",
+          avatar: "OC",
+          color: "#1f8923",
+          short: "Revisa los documentos de parentesco de los menores",
+          group: "Organismos",
+          personaId: "DEP-029"
         },
         DEPORTISTA: {
           code: "DEPORTISTA",
@@ -1209,11 +1352,18 @@
              estado permanente del club. La bandeja es el trabajo pendiente. */
           { section: "DEPORTISTAS", items: [
             { id: "deportistas", label: "Mis deportistas", icon: "users", route: "deportistas.html" },
-            { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" }
+            { id: "bandeja", label: "Solicitudes de deportistas", icon: "inbox", route: "bandeja.html" },
+            { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" }
           ] },
           { section: "MI ORGANISMO", items: [{ id: "mi-organismo", label: "Mi organismo", icon: "id", route: "organismo-detalle.html" }, { id: "eventos", label: "Eventos", icon: "cal", route: "organismo-detalle.html?tab=eventos" }, { id: "usuarios", label: "Usuarios", icon: "users", route: "usuarios.html" }] }
         ],
         /* Fase 2: el perfil multi-rol es la ficha única de la persona; el carné sigue en afiliacion.html. */
+        REVISOR_DOC: [
+          { section: null, items: [
+            { id: "documentos", label: "Revisi\xF3n documental", icon: "checkCircle", route: "documentos.html" },
+            { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html?persona=DEP-029" }
+          ] }
+        ],
         DEPORTISTA: [
           { section: null, items: [
             { id: "perfil", label: "Mi perfil", icon: "user", route: "perfil.html" },
@@ -1286,6 +1436,20 @@
       TIPO_TXT = { comite: "Comit\xE9", federacion: "Federaci\xF3n", liga: "Liga", club: "Club" };
       COLOR_TIPO = { comite: "#d74009", federacion: "#1f78d1", liga: "#7c3aed", club: "#1f8923" };
       NO_INICIAL = /* @__PURE__ */ new Set(["liga", "club", "federaci\xF3n", "federacion", "comit\xE9", "comite", "colombiana", "colombiano", "de", "del", "la", "el", "los", "las", "y", "deportivo"]);
+      ROLES_DEL_CLUB = [
+        { code: "CLUB", nombre: "Administrador del club", desc: "Confirma afiliaciones, gestiona deportistas y usuarios, y revisa documentos." },
+        { code: "REVISOR_DOC", nombre: "Revisor de documentos", desc: "Revisa los documentos de parentesco de los menores y ve su perfil." }
+      ];
+      esRolDelClub = (code) => ROLES_DEL_CLUB.some((x) => x.code === code);
+      NOTIF_KEY = "naowee-organismos-notif-leidas";
+      MES_N = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+      leidasNotif = () => {
+        try {
+          return JSON.parse(sessionStorage.getItem(NOTIF_KEY) || "[]");
+        } catch (_) {
+          return [];
+        }
+      };
       HOME_DEMO = { CLUB: "bandeja.html", DEPORTISTA: "perfil.html", PERSONA: "perfil.html" };
       MODE_KEY = "naowee-organismos-demo-mode";
       TOUR_KEY = "naowee-organismos-tour-seen";
@@ -1433,7 +1597,7 @@
     }
     const col2 = isMin ? "Territorio" : "Rol";
     return bar + help + `<div class="cg-table-wrap"><table class="cg-table bj-table">
-    <thead><tr><th scope="col">Usuario</th><th scope="col">${col2}</th><th scope="col">Estado</th><th scope="col">Creado por</th><th scope="col"><span class="us-sr">Acciones</span></th></tr></thead>
+    <thead><tr><th scope="col">Usuario</th><th scope="col">${col2}</th><th scope="col">Estado</th><th scope="col">Creado por</th><th scope="col" class="us-th-acts">Acciones</th></tr></thead>
     <tbody>${list.map((u) => rowHtml(u, col2)).join("")}</tbody>
   </table></div>`;
   }
@@ -1444,6 +1608,7 @@
     const when = u.estado === "Invitado" ? `Invitado el ${fmt(u.fecha)}` : off ? `Creado el ${fmt(u.fecha)}` : `Desde el ${fmt(u.fecha)}`;
     const byRol = rolDeCreador(u.creadoPor);
     const acts = [];
+    if (u.personaId) acts.push(`<a class="naowee-btn naowee-btn--mute naowee-btn--small" href="perfil.html?role=${esc(roleCode)}&persona=${esc(u.personaId)}&from=${encodeURIComponent("usuarios.html?role=" + roleCode)}" aria-label="Ver el perfil de ${esc(u.nombre)}">${I.user}Ver perfil</a>`);
     if (u.estado === "Invitado") acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="resend" data-id="${esc(u.id)}" aria-label="Reenviar invitaci\xF3n a ${esc(u.nombre)}">${I.mail}Reenviar</button>`);
     if (off) acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" data-act="reactivate" data-id="${esc(u.id)}" aria-label="Reactivar a ${esc(u.nombre)}">${I.refresh}Reactivar</button>`);
     else acts.push(`<button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small us-btn-neg" data-act="deactivate" data-id="${esc(u.id)}" aria-label="Desactivar a ${esc(u.nombre)}">${I.ban}Desactivar</button>`);
@@ -1452,7 +1617,9 @@
     <td data-label="${col2}"><div>${second}</div></td>
     <td data-label="Estado"><div>${badge(ESTADO[u.estado] || "neutral", u.estado)}<span class="us-sub us-nowrap">${when}</span></div></td>
     <td data-label="Creado por"><div><span class="us-cell-strong" style="font-weight:500">${esc(u.creadoPor)}${u.creadoPor === meName ? " (t\xFA)" : ""}</span>${byRol ? `<span class="us-sub">${esc(byRol)}</span>` : ""}</div></td>
-    <td class="bj-row-action" data-label=""><div class="us-acts">${acts.join("")}</div></td>
+    <td class="bj-row-action" data-label=""><div class="us-menu">
+      <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small us-menu__btn" data-menu aria-haspopup="menu" aria-expanded="false" aria-label="Acciones de ${esc(u.nombre)}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+      <div class="us-menu__list" role="menu">${acts.map((a) => a.replace("naowee-btn naowee-btn--mute naowee-btn--small us-btn-neg", "us-menu__item us-menu__item--neg").replace("naowee-btn naowee-btn--mute naowee-btn--small", "us-menu__item").replace(/^<(button|a) /, '<$1 role="menuitem" ')).join("")}</div></div></td>
   </tr>`;
   }
   function creadorTxt(r) {
@@ -1465,7 +1632,7 @@
     let intro;
     if (isMin) intro = msg("informative", "info", "Los administradores del Ministerio los crea Naowee. T\xFA creas a los usuarios territoriales, anclados a un departamento o a un municipio.");
     else if (marcas.length) intro = msg("informative", "info", `${esc(org.nombre)} tiene la marca <strong>${esc(marcas.map((m) => MARCA_NOMBRE[m] || m).join(", "))}</strong>; por eso puede usar sus roles. Los roles transversales sirven para cualquier organismo: hoy no hay ninguno aprobado y el Revisor de registros es una propuesta.`);
-    else intro = msg("informative", "info", `${esc(org.nombre)} no tiene marcas: adem\xE1s de la cuenta principal, solo aplican los roles transversales. Hoy no hay ninguno aprobado; el Revisor de registros es una propuesta.`);
+    else intro = msg("informative", "info", `${esc(org.nombre)} no tiene marcas: adem\xE1s de la cuenta principal, solo aplican los roles transversales. El Revisor de registros es una propuesta${org.tipo === "club" ? "; el Revisor de documentos s\xED aplica a los clubes" : ""}.`);
     const users = internos();
     const card = (r) => {
       const yours = r.creaRol === viewerRol;
@@ -1767,7 +1934,29 @@
     renderPanel(`[data-act="deactivate"][data-id="${u.id}"]`);
     toast(prev === "Invitado" ? `${u.nombre} vuelve a Invitado. Le reenviamos la invitaci\xF3n.` : `${u.nombre} est\xE1 activo de nuevo.`, "success");
   }
+  function cerrarMenus() {
+    root.querySelectorAll(".us-menu.is-open").forEach((m) => {
+      m.classList.remove("is-open");
+      m.querySelector("[data-menu]").setAttribute("aria-expanded", "false");
+    });
+  }
   function onClick(e) {
+    const mb = e.target.closest("[data-menu]");
+    if (mb) {
+      const m = mb.closest(".us-menu");
+      const abrir = !m.classList.contains("is-open");
+      cerrarMenus();
+      if (abrir) {
+        m.classList.add("is-open");
+        mb.setAttribute("aria-expanded", "true");
+        const r = mb.getBoundingClientRect();
+        const l = m.querySelector(".us-menu__list");
+        l.style.top = `${r.bottom + 6}px`;
+        l.style.left = `${Math.max(8, r.right - l.offsetWidth)}px`;
+      }
+      return;
+    }
+    if (e.target.closest(".us-menu__item")) cerrarMenus();
     const t = e.target.closest(".naowee-tab");
     if (t && root.contains(t)) {
       selectTab(t.dataset.tab, false);
@@ -1808,6 +1997,7 @@
       };
       sv = (d, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 1.6}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
       I = {
+        user: sv('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', 1.8),
         userPlus: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>', 1.8),
         usersLg: sv('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>', 1.4),
         search: sv('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', 1.8),
@@ -1835,6 +2025,7 @@
       ALCANCE = {
         ADMIN: { si: ["Aprobar al nivel de abajo y hacer cargues", "Crear y desactivar usuarios internos", "Editar los datos del organismo"], no: ["Haber m\xE1s de una por organismo", "Crearse desde esta pantalla: la habilita el nivel superior"] },
         REVISOR: { si: ["Aprobar, devolver o rechazar registros del nivel de abajo", "Decidir en nombre del organismo"], no: ["Crear ni desactivar usuarios", "Hacer cargues masivos", "Editar los datos del organismo"] },
+        REVISOR_DOC: { si: ["Aprobar o rechazar (con nota) el documento de parentesco de los menores", "Ver su propio perfil"], no: ["Aprobar afiliaciones de otros deportistas", "Crear ni desactivar usuarios", "Hacer cargues masivos", "Editar los datos del organismo"] },
         GESTOR_COC: { si: ["Invitar y asignar metod\xF3logos", "Ver el Ciclo Ol\xEDmpico y sus deportistas"], no: ["Aprobar federaciones", "Crear otros gestores", "Editar los datos del comit\xE9"] },
         METODOLOGO: { si: ["Registrar opiniones sobre deportistas del Ciclo Ol\xEDmpico", "Ver las fichas de esos deportistas"], no: ["Invitar usuarios", "Aprobar registros", "Ver deportistas fuera del Ciclo Ol\xEDmpico"] },
         ADMIN_MIN: { si: ["Crear comit\xE9s y aprobar su parte de las federaciones", "Sancionar y ver todo el sistema", "Crear usuarios territoriales"], no: ["Crear otros administradores del Ministerio"] },
@@ -1902,6 +2093,13 @@
           if (w && w.classList.contains("naowee-textfield--error")) setErr(ov, w.dataset.field, null);
         });
       });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".us-menu")) cerrarMenus();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") cerrarMenus();
+      });
+      window.addEventListener("scroll", cerrarMenus, true);
       root.addEventListener("click", onClick);
       headAct.addEventListener("click", onClick);
       root.addEventListener("input", (e) => {
@@ -1941,11 +2139,16 @@
       if (el.dataset.mounted) return;
       const n = registry[el.dataset.devnote];
       if (!n) return;
+      if (el.closest(".page-head")) el.dataset.nobadge = "1";
       const list = (items) => `<ul>${(items || []).map((i) => `<li>${i}</li>`).join("")}</ul>`;
       const body = n.sections ? n.sections.map((s) => `<div class="wz-devnote__sec"><div class="wz-devnote__sec-title">${s.title}</div>${list(s.items)}</div>`).join("") : list(n.items);
-      el.innerHTML = `<span class="naowee-badge">Solo demo</span>Notas para devs
+      el.innerHTML = `${el.dataset.nobadge ? "" : '<span class="naowee-badge">Solo demo</span>'}Notas para devs
       <span class="wz-devnote__pop" role="tooltip"><span class="wz-devnote__head">${n.title} <em>\xB7 nota para devs, no es parte del producto</em></span>${body}</span>`;
       el.dataset.mounted = "1";
+      if (el.closest(".page-head")) {
+        el.classList.add("wz-devnote--fab");
+        document.body.appendChild(el);
+      }
     });
   }
   var init_devnotes = __esm({
@@ -1977,6 +2180,12 @@
       "Reuni\xF3n con Producto del 2026-10-09: en la Suite los administradores del Ministerio son <strong>por m\xF3dulo</strong> (por ejemplo, Direcci\xF3n de Fomento \u2192 Eventos; Infraestructura \u2192 Escenarios), bajo un administrador general de la Suite que ve todo. Los de esta pantalla son los del m\xF3dulo de Organismos. La matriz de roles del Ministerio por m\xF3dulo est\xE1 pendiente de levantar con Producto.",
       "El Ministerio crea a los <strong>usuarios territoriales</strong> (A-2), anclados a un departamento o a un municipio (<code>ancla: { depto }</code> o <code>{ depto, municipio }</code>). Consultan su territorio y registran deportistas autodeclarados; no aprueban.",
       "Si el territorio ya tiene un encargado activo, el di\xE1logo lo avisa pero no bloquea."
+    ] },
+    { title: "Revisor de documentos (v1.10.0)", items: [
+      "Rol transversal que <strong>solo existe en clubes</strong> (<code>soloTipo: 'club'</code> en el cat\xE1logo) y solo lo crea el Administrador del organismo. Revisa el documento de parentesco de los menores (aprobar o rechazar con nota) y ve su propio perfil; nada m\xE1s (PROD-96, DEP-1029/DEP-1030).",
+      "La columna <strong>Acciones</strong> es un men\xFA de tres puntos por fila: <strong>Ver perfil</strong>, <strong>Reenviar</strong> (si est\xE1 invitado) y <strong>Desactivar</strong> o <strong>Reactivar</strong>. Ver perfil abre la ficha de la persona en solo lectura, con las pesta\xF1as <strong>Datos</strong> e <strong>Historial</strong>.",
+      "El historial lista los movimientos de esa persona con el rol (documentos que aprob\xF3 o rechaz\xF3, con su nota) y su alta (invitaci\xF3n y activaci\xF3n). Solo lo ve el administrador del club que la invit\xF3; el revisor, en su propio perfil, solo ve sus datos.",
+      "Pendiente en el back: el rol en el cat\xE1logo, la invitaci\xF3n por correo y un registro de movimientos por usuario y rol. Solo demo: Ana Luc\xEDa Mora (activa) y Juli\xE1n P\xE9rez Mora (invitado) son personas de ejemplo (<code>DEP-030</code> y <code>DEP-031</code>)."
     ] },
     { title: "Pendientes", items: [
       "P-16: roles internos por federaci\xF3n o comit\xE9 (qu\xE9 roles m\xE1s necesita cada organismo).",
