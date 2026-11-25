@@ -1,8 +1,13 @@
 (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
   var __export = (target, all2) => {
     for (var name in all2)
@@ -68,13 +73,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -146,13 +151,13 @@
     return orgId2 ? list.filter((a) => a.orgId === orgId2) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;

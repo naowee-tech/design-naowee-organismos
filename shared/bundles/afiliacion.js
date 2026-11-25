@@ -221,13 +221,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -284,6 +284,9 @@
       writeStore("afiliaciones", list);
     }
     return list.map((a) => ({ ...a }));
+  }
+  function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
+    return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === "Vinculada"));
   }
   function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
     const list = allAfiliaciones();
@@ -385,13 +388,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -446,6 +449,10 @@
     const dep = getDeportista(deportistaId);
     const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== "retiro" && s.estado === "Enviada");
     if (prev) return { ...prev };
+    if (!meta.documento && dep && dep.tutorId) {
+      const pen = afiliacionDeMenor(deportistaId);
+      if (pen.estado === "pendiente") return { ...pen.sol };
+    }
     const origen = meta.origen || "solicitud";
     const rec = {
       id: "AF-" + String(list.length + 1).padStart(3, "0"),
@@ -543,10 +550,12 @@
     const dep = getDeportista(deportistaId);
     const list = readStore("solicitudes", []) || [];
     const clubes = /* @__PURE__ */ new Set();
+    const archivado = /* @__PURE__ */ new Set();
     const upd = list.map((s) => {
       if (s.deportistaId === deportistaId && (s.estado === "Enviada" || s.estado === "Aprobada") && (!clubId || s.clubId === clubId)) {
         clubes.add(s.clubId);
-        return { ...s, estado: "Retirada", resueltaFecha: _todayISO() };
+        if (s.documento && s.estado === "Enviada") archivado.add(s.clubId);
+        return { ...s, estado: "Retirada", resueltaFecha: _todayISO(), ...s.documento && s.estado === "Enviada" ? { documento: { ...s.documento, estado: "Archivado", archivadoAt: _nowISO() } } : {} };
       }
       return s;
     });
@@ -562,13 +571,22 @@
         fecha: _todayISO(),
         responsable: dep ? dep.nombre : "",
         rol: "DEPORTISTA",
-        accion: "Afiliaci\xF3n retirada",
+        accion: archivado.has(c) ? "Documento de parentesco archivado: el tutor cancel\xF3 la solicitud" : "Afiliaci\xF3n retirada",
         de: era ? "Vinculado" : "Enviada",
-        a: "Retirada",
+        a: archivado.has(c) ? "Archivado" : "Retirada",
         motivo: ""
       });
     });
     return getDeportista(deportistaId);
+  }
+  function afiliacionDeMenor(menorId) {
+    const sol = allSolicitudes().find((s) => s.deportistaId === menorId && s.tipo !== "retiro" && s.esMenor) || null;
+    const club = sol ? getOrganismo(sol.clubId) : null;
+    if (sol && sol.estado === "Enviada") return { estado: "pendiente", sol, club };
+    const vigente = afiliacionesDe(menorId, { vigentes: true }).find((a) => a.tipo === "deportista");
+    if (vigente) return { estado: "afiliado", sol, club: getOrganismo(vigente.organismoId) };
+    if (sol && sol.estado === "Rechazada") return { estado: "rechazado", sol, club };
+    return { estado: "sin-club", sol, club };
   }
   function buscarClubesActivos(query) {
     const q = String(query || "").trim();
@@ -769,9 +787,9 @@
     cambiarAfiliacion("DEP-028", "CLU-001", "Rechazada", { motivo: "El documento no corresponde a la menor: el nombre no coincide con el de la tarjeta de identidad." });
     solicitarAfiliacion({ sujetoId: "DEP-025", organismoId: "CLU-001", deporte: "Patinaje", origen: "tutor" });
     solicitarAfiliacion({ sujetoId: "DEP-024", organismoId: "CLU-007", deporte: "Nataci\xF3n", origen: "tutor" });
-    cambiarAfiliacion("DEP-024", "CLU-007", "Rechazada", { motivo: list[0].motivo });
+    cambiarAfiliacion("DEP-024", "CLU-007", "Rechazada", { motivo: (list.find((s) => s.id === "AF-DM2") || {}).motivo });
     auditLog({ orgId: "CLU-001", deportistaId: "DEP-025", deportistaNombre: "Mateo G\xF3mez", fecha: "2026-11-18", responsable: "Laura Marcela G\xF3mez Restrepo", rol: "Tutor", accion: "Documento de parentesco cargado por el tutor", de: "", a: "Enviada", motivo: "" });
-    auditLog({ orgId: "CLU-007", deportistaId: "DEP-024", deportistaNombre: "Sara G\xF3mez", fecha: "2026-11-14", responsable: "Isabella Torres Pe\xF1a", rol: "CLUB", accion: "Documento de parentesco rechazado", de: "Enviada", a: "Rechazada", motivo: list[0].motivo });
+    auditLog({ orgId: "CLU-007", deportistaId: "DEP-024", deportistaNombre: "Sara G\xF3mez", fecha: "2026-11-14", responsable: "Isabella Torres Pe\xF1a", rol: "CLUB", accion: "Documento de parentesco rechazado", de: "Enviada", a: "Rechazada", motivo: (list.find((s) => s.id === "AF-DM2") || {}).motivo });
   }
   function seedAfiliacionesDemo(mode) {
     if (mode !== "demo") return;

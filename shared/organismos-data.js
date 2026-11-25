@@ -919,6 +919,8 @@ export function crearSolicitud(deportistaId, clubId, meta = {}) {
   const dep = getDeportista(deportistaId);
   const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== 'retiro' && s.estado === 'Enviada');
   if (prev) return { ...prev };
+  /* Menor con documento pendiente: no se abren otras afiliaciones hasta que el club decida (Producto, 25-nov). */
+  if (!meta.documento && dep && dep.tutorId) { const pen = afiliacionDeMenor(deportistaId); if (pen.estado === 'pendiente') return { ...pen.sol }; }
   const origen = meta.origen || 'solicitud';
   const rec = {
     id: 'AF-' + String(list.length + 1).padStart(3, '0'),
@@ -1028,10 +1030,13 @@ export function retirarAfiliacion(deportistaId, meta = {}, clubId) {
   const dep = getDeportista(deportistaId);
   const list = readStore('solicitudes', []) || [];
   const clubes = new Set();
+  const archivado = new Set();
   const upd = list.map((s) => {
     if (s.deportistaId === deportistaId && (s.estado === 'Enviada' || s.estado === 'Aprobada') && (!clubId || s.clubId === clubId)) {
       clubes.add(s.clubId);
-      return { ...s, estado: 'Retirada', resueltaFecha: _todayISO() };
+      if (s.documento && s.estado === 'Enviada') archivado.add(s.clubId);
+      /* Documento de un menor sin decisión: se archiva y el intento queda en el historial (Producto, 25-nov). */
+      return { ...s, estado: 'Retirada', resueltaFecha: _todayISO(), ...(s.documento && s.estado === 'Enviada' ? { documento: { ...s.documento, estado: 'Archivado', archivadoAt: _nowISO() } } : {}) };
     }
     return s;
   });
@@ -1043,7 +1048,7 @@ export function retirarAfiliacion(deportistaId, meta = {}, clubId) {
     auditLog({
       orgId: c, deportistaId, deportistaNombre: dep ? dep.nombre : '',
       fecha: _todayISO(), responsable: dep ? dep.nombre : '', rol: 'DEPORTISTA',
-      accion: 'Afiliación retirada', de: era ? 'Vinculado' : 'Enviada', a: 'Retirada', motivo: ''
+      accion: archivado.has(c) ? 'Documento de parentesco archivado: el tutor canceló la solicitud' : 'Afiliación retirada', de: era ? 'Vinculado' : 'Enviada', a: archivado.has(c) ? 'Archivado' : 'Retirada', motivo: ''
     });
   });
   return getDeportista(deportistaId);

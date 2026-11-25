@@ -1,7 +1,12 @@
 (() => {
   var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __esm = (fn, res) => function __init() {
-    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  var __esm = (fn, res, err) => function __init() {
+    if (err) throw err[0];
+    try {
+      return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+    } catch (e) {
+      throw err = [e], e;
+    }
   };
 
   // shared/estados.js
@@ -63,13 +68,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -128,6 +133,9 @@
       writeStore("afiliaciones", list);
     }
     return list.map((a) => ({ ...a }));
+  }
+  function afiliacionesDe(sujetoId, { vigentes = false } = {}) {
+    return allAfiliaciones().filter((a) => a.sujetoId === sujetoId && (!vigentes || a.estado === "Vinculada"));
   }
   function solicitarAfiliacion({ tipo = "deportista", sujetoId, organismoId, deporte = "", origen = "solicitud", proponenteId = null }) {
     const list = allAfiliaciones();
@@ -292,13 +300,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -347,6 +355,10 @@
     const dep = getDeportista(deportistaId);
     const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== "retiro" && s.estado === "Enviada");
     if (prev) return { ...prev };
+    if (!meta.documento && dep && dep.tutorId) {
+      const pen = afiliacionDeMenor(deportistaId);
+      if (pen.estado === "pendiente") return { ...pen.sol };
+    }
     const origen = meta.origen || "solicitud";
     const rec = {
       id: "AF-" + String(list.length + 1).padStart(3, "0"),
@@ -417,6 +429,15 @@
     const [y, m, d] = fechaNac.split("-").map(Number);
     const h = /* @__PURE__ */ new Date();
     return h.getFullYear() - y - (h.getMonth() + 1 < m || h.getMonth() + 1 === m && h.getDate() < d ? 1 : 0);
+  }
+  function afiliacionDeMenor(menorId) {
+    const sol = allSolicitudes().find((s) => s.deportistaId === menorId && s.tipo !== "retiro" && s.esMenor) || null;
+    const club = sol ? getOrganismo(sol.clubId) : null;
+    if (sol && sol.estado === "Enviada") return { estado: "pendiente", sol, club };
+    const vigente = afiliacionesDe(menorId, { vigentes: true }).find((a) => a.tipo === "deportista");
+    if (vigente) return { estado: "afiliado", sol, club: getOrganismo(vigente.organismoId) };
+    if (sol && sol.estado === "Rechazada") return { estado: "rechazado", sol, club };
+    return { estado: "sin-club", sol, club };
   }
   function asociarAutodeclarado(depId, clubId, meta = {}) {
     const dep = getDeportista(depId);

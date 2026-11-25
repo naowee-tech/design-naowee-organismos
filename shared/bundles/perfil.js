@@ -227,13 +227,13 @@
     }
   }
   function seedDemoData() {
-    const seeded = function() {
+    const seeded = (function() {
       try {
         return localStorage.getItem(SEED_FLAG);
       } catch (_) {
         return null;
       }
-    }();
+    })();
     seedTrazabilidadDemo();
     if (seeded === SEED_VERSION) {
       return { seeded: false, version: SEED_VERSION };
@@ -384,13 +384,13 @@
     return orgId ? list.filter((a) => a.orgId === orgId) : list;
   }
   function seedTrazabilidadDemo() {
-    const mode = function() {
+    const mode = (function() {
       try {
         return localStorage.getItem("naowee-organismos-demo-mode");
       } catch (_) {
         return null;
       }
-    }();
+    })();
     if (mode === "blank") return;
     seedCicloDemo();
     if (allAudit("FED-040").length) return;
@@ -442,6 +442,10 @@
     const dep = getDeportista(deportistaId);
     const prev = list.find((s) => s.deportistaId === deportistaId && s.clubId === clubId && s.tipo !== "retiro" && s.estado === "Enviada");
     if (prev) return { ...prev };
+    if (!meta.documento && dep && dep.tutorId) {
+      const pen = afiliacionDeMenor(deportistaId);
+      if (pen.estado === "pendiente") return { ...pen.sol };
+    }
     const origen = meta.origen || "solicitud";
     const rec = {
       id: "AF-" + String(list.length + 1).padStart(3, "0"),
@@ -577,10 +581,12 @@
     const dep = getDeportista(deportistaId);
     const list = readStore("solicitudes", []) || [];
     const clubes = /* @__PURE__ */ new Set();
+    const archivado = /* @__PURE__ */ new Set();
     const upd = list.map((s) => {
       if (s.deportistaId === deportistaId && (s.estado === "Enviada" || s.estado === "Aprobada") && (!clubId || s.clubId === clubId)) {
         clubes.add(s.clubId);
-        return { ...s, estado: "Retirada", resueltaFecha: _todayISO() };
+        if (s.documento && s.estado === "Enviada") archivado.add(s.clubId);
+        return { ...s, estado: "Retirada", resueltaFecha: _todayISO(), ...s.documento && s.estado === "Enviada" ? { documento: { ...s.documento, estado: "Archivado", archivadoAt: _nowISO() } } : {} };
       }
       return s;
     });
@@ -596,9 +602,9 @@
         fecha: _todayISO(),
         responsable: dep ? dep.nombre : "",
         rol: "DEPORTISTA",
-        accion: "Afiliaci\xF3n retirada",
+        accion: archivado.has(c) ? "Documento de parentesco archivado: el tutor cancel\xF3 la solicitud" : "Afiliaci\xF3n retirada",
         de: era ? "Vinculado" : "Enviada",
-        a: "Retirada",
+        a: archivado.has(c) ? "Archivado" : "Retirada",
         motivo: ""
       });
     });
@@ -955,9 +961,9 @@
     cambiarAfiliacion("DEP-028", "CLU-001", "Rechazada", { motivo: "El documento no corresponde a la menor: el nombre no coincide con el de la tarjeta de identidad." });
     solicitarAfiliacion({ sujetoId: "DEP-025", organismoId: "CLU-001", deporte: "Patinaje", origen: "tutor" });
     solicitarAfiliacion({ sujetoId: "DEP-024", organismoId: "CLU-007", deporte: "Nataci\xF3n", origen: "tutor" });
-    cambiarAfiliacion("DEP-024", "CLU-007", "Rechazada", { motivo: list[0].motivo });
+    cambiarAfiliacion("DEP-024", "CLU-007", "Rechazada", { motivo: (list.find((s) => s.id === "AF-DM2") || {}).motivo });
     auditLog({ orgId: "CLU-001", deportistaId: "DEP-025", deportistaNombre: "Mateo G\xF3mez", fecha: "2026-11-18", responsable: "Laura Marcela G\xF3mez Restrepo", rol: "Tutor", accion: "Documento de parentesco cargado por el tutor", de: "", a: "Enviada", motivo: "" });
-    auditLog({ orgId: "CLU-007", deportistaId: "DEP-024", deportistaNombre: "Sara G\xF3mez", fecha: "2026-11-14", responsable: "Isabella Torres Pe\xF1a", rol: "CLUB", accion: "Documento de parentesco rechazado", de: "Enviada", a: "Rechazada", motivo: list[0].motivo });
+    auditLog({ orgId: "CLU-007", deportistaId: "DEP-024", deportistaNombre: "Sara G\xF3mez", fecha: "2026-11-14", responsable: "Isabella Torres Pe\xF1a", rol: "CLUB", accion: "Documento de parentesco rechazado", de: "Enviada", a: "Rechazada", motivo: (list.find((s) => s.id === "AF-DM2") || {}).motivo });
   }
   function seedAfiliacionesDemo(mode) {
     if (mode !== "demo") return;
@@ -3027,7 +3033,7 @@
       id: "mpH-afil",
       title: "Afiliaciones",
       desc: viewer.kind === "org" ? `Afiliaciones de ${P.corto} a clubes de tu jurisdicci\xF3n. Cada club aprueba la suya.` : third ? "Clubes en los que la persona est\xE1 inscrita como deportista. El club aprueba cada solicitud." : "Clubes en los que est\xE1s inscrita como deportista. El club aprueba cada solicitud.",
-      acts: own ? `<button class="mp-btn mp-btn--pri" type="button" data-solicitar-af>${ic("plus", "sm")}Solicitar afiliaci\xF3n</button>` : "",
+      acts: own ? DEP.tutorId && afiliacionDeMenor(PERSONA_ID).estado === "pendiente" ? `<button class="mp-btn mp-btn--pri" type="button" disabled title="El club a\xFAn revisa el documento de parentesco">${ic("plus", "sm")}Solicitar afiliaci\xF3n</button>` : `<button class="mp-btn mp-btn--pri" type="button" data-solicitar-af>${ic("plus", "sm")}Solicitar afiliaci\xF3n</button>` : "",
       note: "afiliaciones"
     })}
       ${list.length ? `<ul class="mp-list">${list.map((a) => orgRow(a, "af", "el club")).join("")}</ul>` : `<div class="mp-card mp-empty"><div class="mp-tile">${ic("building")}</div><h3>Sin afiliaciones</h3><p>${own ? "Solicita la afiliaci\xF3n a un club para competir con \xE9l." : "No tiene afiliaciones a clubes."}</p></div>`}

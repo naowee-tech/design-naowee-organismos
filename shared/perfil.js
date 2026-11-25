@@ -719,7 +719,9 @@ function secAfiliaciones() {
         desc: viewer.kind === 'org' ? `Afiliaciones de ${P.corto} a clubes de tu jurisdicción. Cada club aprueba la suya.`
           : third ? 'Clubes en los que la persona está inscrita como deportista. El club aprueba cada solicitud.'
           : 'Clubes en los que estás inscrita como deportista. El club aprueba cada solicitud.',
-        acts: own ? `<button class="mp-btn mp-btn--pri" type="button" data-solicitar-af>${ic('plus', 'sm')}Solicitar afiliación</button>` : '',
+        acts: own ? (DEP.tutorId && afiliacionDeMenor(PERSONA_ID).estado === 'pendiente'
+          ? `<button class="mp-btn mp-btn--pri" type="button" disabled title="El club aún revisa el documento de parentesco">${ic('plus', 'sm')}Solicitar afiliación</button>`
+          : `<button class="mp-btn mp-btn--pri" type="button" data-solicitar-af>${ic('plus', 'sm')}Solicitar afiliación</button>`) : '',
         note: 'afiliaciones' })}
       ${list.length ? `<ul class="mp-list">${list.map((a) => orgRow(a, 'af', 'el club')).join('')}</ul>`
         : `<div class="mp-card mp-empty"><div class="mp-tile">${ic('building')}</div><h3>Sin afiliaciones</h3><p>${own ? 'Solicita la afiliación a un club para competir con él.' : 'No tiene afiliaciones a clubes.'}</p></div>`}
